@@ -11,7 +11,7 @@
     'category': 'Uncategorized',  # Category of the module (e.g., Tools, Sales, Accounting)
     'depends': ['base', 'web'],  # Dependencies: base and web are required
     'data': [
-        # XML files to load
+        'security/ir.model.access.csv',
         'views/dynamic_query_views.xml',  # Contains the form view and action
     ],
     'assets': {
