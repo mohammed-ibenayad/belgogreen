@@ -1,6 +1,6 @@
 {
     'name': 'LLM Reports',
-    'version': '1.0',
+    'version': '1.0.1',
     'summary': 'Generate dynamic reports using natural language queries',
     'description': """
         This module allows users to input natural language queries, which are sent to an LLM to generate Odoo-compatible queries.
