@@ -6,8 +6,8 @@
         This module allows users to input natural language queries, which are sent to an LLM to generate Odoo-compatible queries.
         The results are displayed in Odoo's standard views.
     """,
-    'author': 'Your Name',
-    'website': 'https://yourwebsite.com',
+    'author': 'Mohammed Iben Ayad',
+    'website': 'https://ibenayad.link/',
     'category': 'Reporting',
     'depends': ['base', 'web', 'base_setup'],
     'data': [
