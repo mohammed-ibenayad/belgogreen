@@ -90,8 +90,31 @@ class DynamicQueryReport(models.TransientModel):
     
     You are a helpful assistant that converts natural language queries into Odoo domain filters. Return only the JSON response with 'model' and 'domain' keys. Use list syntax with square brackets [] for conditions, like: ["field", "operator", "value"]. If you want to return all records, return an empty list [] as the domain value.
     
-    Example for date ranges: For "dates in A OR dates in B", use:
-    ["|", "&", ["date", ">=", "A_start"], ["date", "<=", "A_end"], "&", ["date", ">=", "B_start"], ["date", "<=", "B_end"]]
+    Domain Construction Patterns:
+    1. Basic Comparison:
+       - Equality: ["field", "=", value]
+       - Inequality: ["field", "!=", value]
+       - Greater/Less: ["field", ">", value], ["field", "<", value]
+       - List membership: ["field", "in", [val1, val2]]
+    
+    2. Text Search:
+       - Case insensitive: ["name", "ilike", "search_term"]
+       - Case sensitive: ["name", "like", "search_term"]
+       - Negation: ["name", "not ilike", "search_term"]
+    
+    3. Date Ranges:
+       - Single range: ["date", ">=", "start_date"], ["date", "<=", "end_date"]
+       - Multiple ranges (OR): ["|", "&", ["date", ">=", "range1_start"], ["date", "<=", "range1_end"],
+                                   "&", ["date", ">=", "range2_start"], ["date", "<=", "range2_end"]]
+    
+    4. Special Values:
+       - Null checks: ["field", "=", False]
+       - Not null: ["field", "!=", False]
+    
+    5. Logical Operators:
+       - AND (implicit): [["field1", "=", val1], ["field2", "=", val2]]
+       - OR: ["|", ["field1", "=", val1], ["field2", "=", val2]]
+       - Multiple OR: ["|", "|", ["field1", "=", val1], ["field2", "=", val2], ["field3", "=", val3]]
     
     Do not include any markdown formatting or code blocks in your response.
     
