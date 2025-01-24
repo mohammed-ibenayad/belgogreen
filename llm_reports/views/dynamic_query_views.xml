@@ -26,7 +26,7 @@
                <footer>
                    <button string="Submit" type="object" name="process_input" class="btn-primary"/>
                    <button string="Cancel" class="btn-secondary" special="cancel"/>
-                   <button name="%(action_open_feedback)d" string="Feedback" type="action" class="btn-warning oe_highlight float-right"/>
+                   <button name="%(llm_reports.action_open_feedback)d" string="Feedback" type="action" class="btn-warning oe_highlight float-right"/>
                </footer>
            </form>
        </field>

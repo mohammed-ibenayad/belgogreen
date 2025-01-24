@@ -12,8 +12,8 @@
     'depends': ['base', 'web', 'base_setup'],
     'data': [
         'security/ir.model.access.csv',
-        'views/dynamic_query_views.xml',
         'views/feedback_views.xml',
+        'views/dynamic_query_views.xml'
     ],
     'installable': True,
     'application': True,
