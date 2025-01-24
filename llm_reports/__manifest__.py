@@ -13,6 +13,7 @@
     'data': [
         'security/ir.model.access.csv',
         'views/dynamic_query_views.xml',
+        'views/feedback_views.xml',
     ],
     'installable': True,
     'application': True,
