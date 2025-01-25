@@ -6,7 +6,7 @@ class UserFeedback(models.TransientModel):
     _description = 'User Feedback Collection'
 
     feedback = fields.Text(string="Your Feedback", required=True)
-    email = fields.Char(string="Email for updates (optional)")
+    email = fields.Char(string="Your email for getting updates")
     wants_updates = fields.Boolean(string="Notify me when released", default=True)
 
     @api.constrains('email')
