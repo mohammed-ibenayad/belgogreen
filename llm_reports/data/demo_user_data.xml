@@ -6,5 +6,5 @@
            <field name="password">demo</field>
            <field name="active" eval="True"/>
        </record>
-   </data>
+   </data> 
 </odoo>
