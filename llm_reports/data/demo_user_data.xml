@@ -1,0 +1,8 @@
+<odoo>
+    <data noupdate="0">
+        <record id="base.user_demo" model="res.users">
+            <field name="login">demo</field>
+            <field name="password">demo</field>
+        </record>
+    </data>
+</odoo>
