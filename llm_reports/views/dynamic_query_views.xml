@@ -42,6 +42,5 @@
    </record>
 
    <!-- Menu Items -->
-   <menuitem id="menu_dynamic_query_report_root" name="AskOdoo"/>
-   <menuitem id="menu_dynamic_query_report" name="AskOdoo" parent="menu_dynamic_query_report_root" action="action_dynamic_query_report" sequence="10"/>
+   <menuitem id="menu_dynamic_query_report" name="AskOdoo"  action="action_dynamic_query_report" sequence="10" web_icon="llm_reports,static/description/icon.png"/> 
 </odoo>
