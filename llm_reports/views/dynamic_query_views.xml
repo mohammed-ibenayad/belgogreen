@@ -16,6 +16,8 @@
                            <li>"List all products with stock less than 10"</li>
                            <li>"Show all calendar events scheduled for tomorrow"</li>
                            <li>"Find appointments with the status 'Confirmed' for this week"</li>
+                           <p></p>
+                           <button name="%(llm_reports.action_open_feedback)d" string="Upcoming Release ->" type="action" class="btn-warning oe_highlight float-right"/>
                        </ul>
                    </div>
                    <group>
@@ -24,9 +26,8 @@
                    </group>
                </sheet>
                <footer>
-                   <button string="Submit" type="object" name="process_input" class="btn-primary"/>
-                   <button string="Cancel" class="btn-secondary" special="cancel"/>
-                   <button name="%(llm_reports.action_open_feedback)d" string="Upcoming Release ->" type="action" class="btn-warning oe_highlight float-right"/>
+                   <button string="Submit (CTRL + Enter)" type="object" name="process_input" class="btn-primary"/>
+                   <button string="Cancel" class="btn-secondary" special="cancel"/>                   
                </footer>
            </form>
        </field>

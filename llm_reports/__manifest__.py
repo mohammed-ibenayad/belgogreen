@@ -16,6 +16,11 @@
         'views/dynamic_query_views.xml',
         'data/demo_user_data.xml'
     ],
+    'assets': {
+        'web.assets_backend': [
+            'llm_reports/static/js/form_controller.js',
+        ],
+    },
     'installable': True,
     'application': True,
     'license': 'LGPL-3',

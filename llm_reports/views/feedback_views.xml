@@ -8,7 +8,7 @@
                 <sheet>
                     <div class="alert alert-info" role="alert">Your feedback helps us improve!</div>
                     <group>
-                        <field name="feedback" placeholder="How did you find the plugin ..."/>
+                        <field name="feedback" placeholder="How did you find AskOdoo App ..."/>
                         <field name="wants_updates"/>
                         <group col="1" invisible="not wants_updates">
                             <field name="email" placeholder="your@email.com"/>

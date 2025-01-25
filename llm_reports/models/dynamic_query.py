@@ -12,7 +12,7 @@ class DynamicQueryReport(models.TransientModel):
     _name = 'dynamic.query.report'
     _description = 'Dynamic Query Report'
 
-    user_input = fields.Text(string="Enter your query", required=True)
+    user_input = fields.Text(string="Enter your query", required=False)
     save_filter_checkbox = fields.Boolean(string="Save Filter", help="Check this box to save the filter for future use.")
 
     def clean_llm_response(self, content):
@@ -177,13 +177,31 @@ The model '{model_name}' has the following fields:
             _logger.error(f"Failed to save filter: {str(e)}")
             raise ValueError(f"Failed to save filter: {str(e)}")
 
+    @api.onchange('user_input')
+    def _onchange_user_input(self):
+        if self.user_input and self.user_input.endswith('\n'):
+            self.user_input = self.user_input.rstrip()
+            return self.process_input()
+
     def process_input(self):
         try:
+            if not self.user_input or self.user_input.strip() == '':
+                return {
+                    'type': 'ir.actions.client',
+                    'tag': 'display_notification',
+                    'params': {
+                        'title': 'Warning',
+                        'message': 'Please enter a query before submitting.',
+                        'type': 'warning',
+                        'sticky': False,
+                    }
+                }
+    
             # Step 1: Discover the model name
             model_name = self.discover_model_name(self.user_input)
             if not model_name:
                 raise ValueError("Unable to identify the model from the query.")
-
+    
             # Step 2: Generate the domain filter using the discovered model name
             llm_response = self.generate_domain_filter(self.user_input, model_name)
             
@@ -201,16 +219,17 @@ The model '{model_name}' has the following fields:
             if self.save_filter_checkbox and filter_name:
                 filter_id = self.save_filter(model_name, domain_filter, filter_name)
             
-            # Step 4: Return the action with the filter applied
+            # Step 4: Return the action with the filter applied and modified target
             action = {
                 'type': 'ir.actions.act_window',
-                'name': f'Query Results ({len(records)} records)',
+                'name': f'{model._description or model._name} - Search Results ({len(records)} records)',
                 'res_model': model_name,
                 'view_mode': 'list,form',
                 'domain': domain_filter,
-                'target': 'current',
+                'target': 'main',
+                'flags': {'mode': 'primary'}
             }
-
+    
             # If a filter was created, pass its ID to the action context
             if filter_id:
                 action['context'] = {
