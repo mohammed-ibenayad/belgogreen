@@ -8,7 +8,7 @@
                 <sheet>
                     <div class="alert alert-info" role="alert">Your feedback helps us improve!</div>
                     <group>
-                        <field name="feedback" placeholder="Type your feedback here..."/>
+                        <field name="feedback" placeholder="How did you find the plugin ..."/>
                         <field name="wants_updates"/>
                         <group col="1" invisible="not wants_updates">
                             <field name="email" placeholder="your@email.com"/>
@@ -24,7 +24,7 @@
     </record>
 
     <record id="action_open_feedback" model="ir.actions.act_window">
-        <field name="name">Submit Feedback</field>
+        <field name="name">Subscribe to Receive Beta Release Updates</field>
         <field name="res_model">user.feedback</field>
         <field name="view_mode">form</field>
         <field name="target">new</field>

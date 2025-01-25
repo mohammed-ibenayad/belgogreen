@@ -20,13 +20,13 @@
                    </div>
                    <group>
                        <field name="user_input" placeholder="Enter your query in natural language..." help="You can ask for any information about sales orders, customers, products, etc. Use natural language and be specific about conditions like dates, amounts, or status."/>
-                       <field name="save_filter_checkbox" widget="boolean_checkbox" help="Check this box to save the filter for future use."/>
+                       <field name="save_filter_checkbox" widget="boolean" help="Check this box to save the filter for future use."/>
                    </group>
                </sheet>
                <footer>
                    <button string="Submit" type="object" name="process_input" class="btn-primary"/>
                    <button string="Cancel" class="btn-secondary" special="cancel"/>
-                   <button name="%(llm_reports.action_open_feedback)d" string="Feedback" type="action" class="btn-warning oe_highlight float-right"/>
+                   <button name="%(llm_reports.action_open_feedback)d" string="Upcoming Release ->" type="action" class="btn-warning oe_highlight float-right"/>
                </footer>
            </form>
        </field>
