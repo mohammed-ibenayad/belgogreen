@@ -44,8 +44,6 @@ class DynamicQueryReport(models.TransientModel):
 
     def send_to_llm(self, messages, temperature=0.1):
 
-        #api_key = "sk-069b3d69eeb04fde960b27182745ba4d"
-        #base_url="https://api.deepseek.com"
         """Send messages to LLM using securely stored API key."""
         try:
             # Get API key from system parameters
