@@ -33,6 +33,7 @@
         'security/ir.model.access.csv',
         'views/feedback_views.xml',
         'views/dynamic_query_views.xml',
+        'data/system_param_data.xml',
         'data/demo_user_data.xml'
     ],
     'assets': {

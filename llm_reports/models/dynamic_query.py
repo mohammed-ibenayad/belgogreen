@@ -43,16 +43,28 @@ class DynamicQueryReport(models.TransientModel):
             raise ValueError(f"Failed to retrieve fields for model {model_name}: {str(e)}")
 
     def send_to_llm(self, messages, temperature=0.1):
-        api_key = "sk-069b3d69eeb04fde960b27182745ba4d"
-        
+
+        #api_key = "sk-069b3d69eeb04fde960b27182745ba4d"
+        #base_url="https://api.deepseek.com"
+        """Send messages to LLM using securely stored API key."""
         try:
+            # Get API key from system parameters
+            api_key = self.env['ir.config_parameter'].sudo().get_param('natural_query.llm_api_key')
+            base_url = self.env['ir.config_parameter'].sudo().get_param(
+                'natural_query.llm_base_url', 
+                default='https://api.deepseek.com'
+            )
+            
+            if not api_key:
+                raise ValueError("LLM API Key not configured. Please set it in System Parameters.")
+                
             client = OpenAI(
                 api_key=api_key,
-                base_url="https://api.deepseek.com"
+                base_url=base_url
             )
-
-            _logger.info(f"Sending messages to LLM: {messages}")
-
+    
+            _logger.info("Sending messages to LLM")  # Don't log the actual messages for security
+    
             response = client.chat.completions.create(
                 model="deepseek-chat",
                 messages=messages,
@@ -61,13 +73,12 @@ class DynamicQueryReport(models.TransientModel):
             )
             
             content = response.choices[0].message.content
-            _logger.info(f"Raw LLM response: {content}")
+            _logger.info("Received response from LLM")  # Don't log the actual response
             
             cleaned_content = self.clean_llm_response(content)
             
             try:
                 parsed_response = json.loads(cleaned_content)
-                _logger.info(f"Parsed response: {parsed_response}")
                 return parsed_response
                 
             except json.JSONDecodeError as e:
@@ -75,7 +86,7 @@ class DynamicQueryReport(models.TransientModel):
             
         except Exception as e:
             _logger.error(f"API request failed: {str(e)}")
-            raise ValueError(f"API request failed: {str(e)}")
+            raise ValueError(f"API request failed: {str(e)}")        
 
     def discover_model_name(self, user_input):
         # First step: Ask the LLM to identify the model name
