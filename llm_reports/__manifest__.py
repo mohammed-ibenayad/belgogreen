@@ -21,11 +21,11 @@
         [Note]: This module uses AI to interpret natural language search queries. Search queries are processed externally to convert them into Odoo filters. No database content or sensitive data is transmitted - only the search query text.
 
     """,
-    'author': 'Mohammed Iben Ayad',
-    'website': 'https://ibenayad.link/',
+    'author': 'BS Improvement',
+    'website': 'https://bsimprovement.com/',
     'support': 'mohammed.ibenayad@gmail.com',
     'license': 'OPL-1',
-    'price': 195.99,
+    'price': 189.99,
     'currency': 'EUR',
     'category': 'Reporting',
     'depends': ['base', 'web', 'base_setup'],

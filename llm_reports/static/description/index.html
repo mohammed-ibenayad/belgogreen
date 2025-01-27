@@ -1,269 +1,319 @@
 <!DOCTYPE html>
 <html>
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="utf-8"/>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/4.6.2/css/bootstrap.min.css"/>
-        <style>
-            .bg-light { background-color: #f8f9fa !important; }
-            .shadow-sm { box-shadow: 0 .125rem .25rem rgba(0,0,0,.075) !important; }
-            .shadow-lg { box-shadow: 0 1rem 3rem rgba(0,0,0,.175) !important; }
-            .text-primary { color: #007bff !important; }
-            .text-success { color: #28a745 !important; }
-            .py-5 { padding-top: 3rem !important; padding-bottom: 3rem !important; }
-            .mt-5 { margin-top: 3rem !important; }
-            .mb-4 { margin-bottom: 1.5rem !important; }
-            .mb-5 { margin-bottom: 3rem !important; }
-            
-            /* Modified image styling with reduced size */
-            .img-center {
-                display: block;
-                margin: 2rem auto;
-                max-width: 50%; /* Reduced from 80% to 50% */
-                width: auto;
-                height: auto;
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/4.6.2/css/bootstrap.min.css"/>
+    <style>
+        /* Scope all styles under a specific class to avoid conflicts */
+        .natural-query-landing {
+            /* Base utility classes without !important */
+            --primary-color: #007bff;
+            --success-color: #28a745;
+            --light-bg: #f8f9fa;
+        }
+
+        .natural-query-landing .bg-light {
+            background-color: var(--light-bg);
+        }
+
+        .natural-query-landing .shadow-sm {
+            box-shadow: 0 .125rem .25rem rgba(0,0,0,.075);
+        }
+
+        .natural-query-landing .shadow-lg {
+            box-shadow: 0 1rem 3rem rgba(0,0,0,.175);
+        }
+
+        .natural-query-landing .text-primary {
+            color: var(--primary-color);
+        }
+
+        .natural-query-landing .text-success {
+            color: var(--success-color);
+        }
+
+        /* Container styles */
+        .natural-query-landing .nq-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            overflow: hidden;
+        }
+
+        /* Feature specific styles */
+        .natural-query-landing .feature-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto 2rem;
+            padding: 0;
+        }
+
+        .natural-query-landing .feature-image {
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+            max-height: 450px;
+            margin: 1rem auto;
+            display: block;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 10px;
+            background: white;
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            object-fit: contain;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+        }
+
+        .natural-query-landing .feature-image:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .natural-query-landing .feature-content {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+        .natural-query-landing .feature-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .natural-query-landing .feature-tag {
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 13px;
+            color: white;
+        }
+
+        .natural-query-landing .nlp-tag {
+            background-color: #74c0fc;
+        }
+
+        .natural-query-landing .filtering-tag {
+            background-color: #4dabf7;
+        }
+
+        /* Card styles */
+        .natural-query-landing .nq-card {
+            border: none;
+            transition: transform 0.2s;
+        }
+
+        .natural-query-landing .nq-card:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            .natural-query-landing .nq-container {
+                padding: 0 10px;
             }
-            
-            .feature-image {
-                width: 100%;
-                margin: 1rem auto;
-                display: block;
-                border: 2px solid #e9ecef;
-                border-radius: 12px;
-                padding: 15px;
-                background: white;
-                transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+
+            .natural-query-landing .feature-container {
+                max-width: 95%;
             }
-            
-            .feature-image:hover {
-                transform: translateY(-5px);
-                box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+
+            .natural-query-landing .feature-image {
+                max-height: 350px;
+                padding: 8px;
             }
-            
-            /* Additional media query for even smaller icon on mobile */
-            @media (max-width: 768px) {
-                .img-center {
-                    max-width: 60%;
-                }
+
+            .natural-query-landing .feature-content {
+                max-width: 95%;
             }
-            
-            /* Rest of the styles remain the same */
-            .container {
-                max-width: 1200px;
-                margin: 0 auto;
-                padding: 0 20px;
-            }
-            
-            .feature-tags {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 10px;
-                margin-top: 15px;
-            }
-            
-            .feature-tag {
-                padding: 8px 15px;
-                border-radius: 20px;
-                font-size: 14px;
-                color: white;
-            }
-            
-            .nlp-tag {
-                background-color: #74c0fc;
-            }
-            
-            .filtering-tag {
-                background-color: #4dabf7;
-            }
-        </style>
-    </head>
-    <!-- Rest of the HTML remains exactly the same -->
+        }
+    </style>
+</head>
 <body>
-
-<div class="container">
-    <!-- Previous sections remain exactly the same -->
-    <!-- HERO SECTION -->
-    <div class="row mt-5">
-        <div class="col-lg-6">
-            <h1 class="display-4 mb-4">Query Your Data in Plain Language</h1>
-            <p class="lead mb-4">Transform complex database queries into natural conversations across 95+ languages.</p>
-            <div class="alert alert-info">
-                <strong>Built for Odoo 17.0 & 18.0</strong> - Enterprise & Community Compatible
-            </div>
-        </div>
-        <div class="col-lg-6">
-            <img src="icon_bg.png" class="img-fluid shadow-lg rounded img-center" alt="Natural Query Interface"/>
-        </div>
-    </div>
-
-    <!-- VALUE PROPOSITION -->
-    <div class="row mt-5 py-5 bg-light rounded">
-        <div class="col-md-12 text-center">
-            <h2 class="mb-4">Why Natural Query?</h2>
-            <div class="row mt-4">
-                <div class="col-md-4">
-                    <div class="card h-100 border-0 shadow-sm">
-                        <div class="card-body">
-                            <i class="fa fa-language fa-3x text-primary mb-3"></i>
-                            <h4>Multilingual</h4>
-                            <p>Query in any language - from Arabic to Chinese to Spanish</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card h-100 border-0 shadow-sm">
-                        <div class="card-body">
-                            <i class="fa fa-bolt fa-3x text-primary mb-3"></i>
-                            <h4>Lightning Fast</h4>
-                            <p>Get instant results without writing complex filters</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card h-100 border-0 shadow-sm">
-                        <div class="card-body">
-                            <i class="fa fa-users fa-3x text-primary mb-3"></i>
-                            <h4>For Everyone</h4>
-                            <p>No technical knowledge required</p>
-                        </div>
-                    </div>
+<!-- Add the natural-query-landing class to the main container -->
+<div class="natural-query-landing">
+    <div class="nq-container">
+        <!-- HERO SECTION -->
+        <div class="row mt-5">
+            <div class="col-lg-6">
+                <h1 class="display-4 mb-4">Query Your Data in Plain Language</h1>
+                <p class="lead mb-4">Transform complex database queries into natural conversations across 95+ languages.</p>
+                <div class="alert alert-info">
+                    <strong>Built for Odoo 17.0 & 18.0</strong> - Enterprise & Community Compatible
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- FEATURES SHOWCASE - Modified Section -->
-    <div class="row mt-5">
-        <div class="col-md-12">
-            <h2 class="text-center mb-5">Powerful Features</h2>
-        </div>
-        
-        <!-- Feature Images in Single Row -->
-        <div class="col-12 mb-5">
-            <img src="main_1.png" class="feature-image rounded shadow mb-4" alt="Multilingual Interface"/>
-            <h4>Natural Language Processing</h4>
-            <div class="feature-tags">
-                <span class="feature-tag nlp-tag">Ask questions in your language</span>
-                <span class="feature-tag nlp-tag">Context-aware queries</span>
-                <span class="feature-tag nlp-tag">Smart field detection</span>
-            </div>
-        </div>
-        
-        <div class="col-12 mb-5">
-            <img src="main_2.png" class="feature-image rounded shadow mb-4" alt="Smart Filtering"/>
-            <h4>Smart Filtering</h4>
-            <div class="feature-tags">
-                <span class="feature-tag filtering-tag">Save frequent queries</span>
-                <span class="feature-tag filtering-tag">Share filters with team</span>
-                <span class="feature-tag filtering-tag">Quick access shortcuts</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Rest of the sections remain exactly the same -->
-    <!-- EXAMPLE QUERIES -->
-    <div class="row mt-5 py-5 bg-light rounded">
-        <div class="col-md-12">
-            <h2 class="text-center mb-5">Example Queries</h2>
-            <div class="row">
-                <div class="col-md-4">
-                    <div class="card mb-4">
-                        <div class="card-body">
-                            <h5 class="card-title">Sales Analysis</h5>
-                            <p class="card-text">"Show me all sales orders from last month with amount > $1000"</p>
+        <!-- VALUE PROPOSITION -->
+        <div class="row mt-5 py-5 bg-light rounded">
+            <div class="col-md-12 text-center">
+                <h2 class="mb-4">Why Natural Query?</h2>
+                <div class="row mt-4">
+                    <div class="col-md-4">
+                        <div class="nq-card shadow-sm">
+                            <div class="card-body">
+                                <i class="fa fa-language fa-3x text-primary mb-3"></i>
+                                <h4>Multilingual</h4>
+                                <p>Query in any language - from Arabic to Chinese to Spanish</p>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card mb-4">
-                        <div class="card-body">
-                            <h5 class="card-title">Customer Insights</h5>
-                            <p class="card-text">"Find customers from New York who bought products this year"</p>
+                    <div class="col-md-4">
+                        <div class="nq-card shadow-sm">
+                            <div class="card-body">
+                                <i class="fa fa-bolt fa-3x text-primary mb-3"></i>
+                                <h4>Lightning Fast</h4>
+                                <p>Get instant results without writing complex filters</p>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card mb-4">
-                        <div class="card-body">
-                            <h5 class="card-title">Inventory Management</h5>
-                            <p class="card-text">"List all products with stock less than 10"</p>
+                    <div class="col-md-4">
+                        <div class="nq-card shadow-sm">
+                            <div class="card-body">
+                                <i class="fa fa-users fa-3x text-primary mb-3"></i>
+                                <h4>For Everyone</h4>
+                                <p>No technical knowledge required</p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- BENEFITS SECTION -->
-    <div class="row mt-5">
-        <div class="col-md-12">
-            <h2 class="text-center mb-5">Key Benefits</h2>
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="mb-4">
-                        <h4><i class="fa fa-clock text-primary"></i> Save Time</h4>
-                        <p>Reduce report creation time by 90% with instant natural language queries</p>
-                    </div>
-                    <div class="mb-4">
-                        <h4><i class="fa fa-chart-line text-primary"></i> Increase Productivity</h4>
-                        <p>Get insights faster without technical knowledge or complex filters</p>
+        <!-- FEATURES SHOWCASE -->
+        <div class="row mt-5">
+            <div class="col-md-12">
+                <h2 class="text-center mb-5">Powerful Features</h2>
+            </div>
+            
+            <div class="feature-container">
+                <img src="main_1.png" class="feature-image" alt="Multilingual Interface"/>
+                <div class="feature-content">
+                    <h4>Natural Language Processing</h4>
+                    <div class="feature-tags">
+                        <span class="feature-tag nlp-tag">Ask questions in your language</span>
+                        <span class="feature-tag nlp-tag">Context-aware queries</span>
+                        <span class="feature-tag nlp-tag">Smart field detection</span>
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <div class="mb-4">
-                        <h4><i class="fa fa-globe text-primary"></i> Break Language Barriers</h4>
-                        <p>Enable international teams to access data in their preferred language</p>
-                    </div>
-                    <div class="mb-4">
-                        <h4><i class="fa fa-shield-alt text-primary"></i> Maintain Control</h4>
-                        <p>Keep your data secure with built-in access control and permissions</p>
+            </div>
+            
+            <div class="feature-container">
+                <img src="main_2.png" class="feature-image" alt="Smart Filtering"/>
+                <div class="feature-content">
+                    <h4>Smart Filtering</h4>
+                    <div class="feature-tags">
+                        <span class="feature-tag filtering-tag">Save frequent queries</span>
+                        <span class="feature-tag filtering-tag">Share filters with team</span>
+                        <span class="feature-tag filtering-tag">Quick access shortcuts</span>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- TECHNICAL SPECS -->
-    <div class="row mt-5 py-5 bg-light rounded">
-        <div class="col-md-12">
-            <h2 class="text-center mb-5">Technical Specifications</h2>
-            <div class="row">
-                <div class="col-md-4">
-                    <h5>System Requirements</h5>
-                    <ul class="list-unstyled">
-                        <li><i class="fa fa-check text-success"></i> Odoo 17.0 and above</li>
-                        <li><i class="fa fa-check text-success"></i> Enterprise/Community</li>
-                        <li><i class="fa fa-check text-success"></i> All Databases</li>
-                    </ul>
-                </div>
-                <div class="col-md-4">
-                    <h5>Support</h5>
-                    <ul class="list-unstyled">
-                        <li><i class="fa fa-check text-success"></i> 6 Months Bug Support</li>
-                        <li><i class="fa fa-check text-success"></i> Documentation</li>
-                        <li><i class="fa fa-check text-success"></i> Email Support</li>
-                    </ul>
-                </div>
-                <div class="col-md-4">
-                    <h5>Updates</h5>
-                    <ul class="list-unstyled">
-                        <li><i class="fa fa-check text-success"></i> Regular Updates</li>
-                        <li><i class="fa fa-check text-success"></i> Security Patches</li>
-                        <li><i class="fa fa-check text-success"></i> Feature Additions</li>
-                    </ul>
+        <!-- EXAMPLE QUERIES -->
+        <div class="row mt-5 py-5 bg-light rounded">
+            <div class="col-md-12">
+                <h2 class="text-center mb-5">Example Queries</h2>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="nq-card mb-4">
+                            <div class="card-body">
+                                <h5 class="card-title">Sales Analysis</h5>
+                                <p class="card-text">"Show me all sales orders from last month with amount > $1000"</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="nq-card mb-4">
+                            <div class="card-body">
+                                <h5 class="card-title">Customer Insights</h5>
+                                <p class="card-text">"Find customers from New York who bought products this year"</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="nq-card mb-4">
+                            <div class="card-body">
+                                <h5 class="card-title">Inventory Management</h5>
+                                <p class="card-text">"List all products with stock less than 10"</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- CONTACT SECTION -->
-    <div class="row mt-5 mb-5">
-        <div class="col-md-12 text-center">
-            <h2 class="mb-4">Need Help?</h2>
-            <p>Contact our support team at <strong>mohammed.ibenayad@gmail.com</strong></p>
+        <!-- BENEFITS SECTION -->
+        <div class="row mt-5">
+            <div class="col-md-12">
+                <h2 class="text-center mb-5">Key Benefits</h2>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-4">
+                            <h4><i class="fa fa-clock text-primary"></i> Save Time</h4>
+                            <p>Reduce report creation time by 90% with instant natural language queries</p>
+                        </div>
+                        <div class="mb-4">
+                            <h4><i class="fa fa-chart-line text-primary"></i> Increase Productivity</h4>
+                            <p>Get insights faster without technical knowledge or complex filters</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-4">
+                            <h4><i class="fa fa-globe text-primary"></i> Break Language Barriers</h4>
+                            <p>Enable international teams to access data in their preferred language</p>
+                        </div>
+                        <div class="mb-4">
+                            <h4><i class="fa fa-shield-alt text-primary"></i> Maintain Control</h4>
+                            <p>Keep your data secure with built-in access control and permissions</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TECHNICAL SPECS -->
+        <div class="row mt-5 py-5 bg-light rounded">
+            <div class="col-md-12">
+                <h2 class="text-center mb-5">Technical Specifications</h2>
+                <div class="row">
+                    <div class="col-md-4">
+                        <h5>System Requirements</h5>
+                        <ul class="list-unstyled">
+                            <li><i class="fa fa-check text-success"></i> Odoo 17.0 and above</li>
+                            <li><i class="fa fa-check text-success"></i> Enterprise/Community</li>
+                            <li><i class="fa fa-check text-success"></i> All Databases</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h5>Support</h5>
+                        <ul class="list-unstyled">
+                            <li><i class="fa fa-check text-success"></i> 6 Months Bug Support</li>
+                            <li><i class="fa fa-check text-success"></i> Documentation</li>
+                            <li><i class="fa fa-check text-success"></i> Email Support</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h5>Updates</h5>
+                        <ul class="list-unstyled">
+                            <li><i class="fa fa-check text-success"></i> Regular Updates</li>
+                            <li><i class="fa fa-check text-success"></i> Security Patches</li>
+                            <li><i class="fa fa-check text-success"></i> Feature Additions</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTACT SECTION -->
+        <div class="row mt-5 mb-5">
+            <div class="col-md-12 text-center">
+                <h2 class="mb-4">Need Help?</h2>
+                <p>Contact our support team at <strong>mohammed.ibenayad@gmail.com</strong></p>
+            </div>
         </div>
     </div>
 </div>
