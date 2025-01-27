@@ -6,10 +6,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/4.6.2/css/bootstrap.min.css"/>
     <style>
-        /* Force proper stacking context */
         body {
+            font-family: "Montserrat", sans-serif;
             position: relative;
             z-index: 1;
+            color: #333;
         }
         
         .container {
@@ -18,37 +19,38 @@
             background: white;
         }
         
-        /* Enlarge FontAwesome icons */
         .feature-icon {
             font-size: 3em !important;
-            color: #0074ff !important;
+            color: #7847D9 !important;
             margin-bottom: 20px;
             display: block !important;
             width: auto !important;
             height: auto !important;
         }
         
-        /* Explicit styling for cards */
         .shadow-card {
             position: relative;
-            z-index: 3;
-            border-radius: 10px !important;
-            padding: 25px !important;
+            border-radius: 12px !important;
+            padding: 32px !important;
             box-shadow: 0 5px 15px rgba(0,0,0,0.15) !important;
             background: white !important;
             height: 100% !important;
             margin-bottom: 20px !important;
-            border: 1px solid #eee !important;
+            border: 1px solid #B6BCCD !important;
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .shadow-card:hover {
+            transform: translateY(-5px);
         }
         
-        /* Explicit styling for feature tags */
         .feature-tag {
             display: inline-block !important;
             padding: 8px 15px !important;
             border-radius: 20px !important;
             font-size: 14px !important;
             color: white !important;
-            background-color: #74c0fc !important;
+            background-color: #7847D9 !important;
             margin: 5px !important;
             border: none !important;
             font-weight: normal !important;
@@ -56,7 +58,6 @@
             text-align: center !important;
         }
         
-        /* Explicit styling for feature images */
         .feature-image {
             display: block !important;
             width: 100% !important;
@@ -69,54 +70,59 @@
             z-index: 3 !important;
             border: 1px solid #eee !important;
         }
-        
-        /* Explicit heading styles */
+
+        .hero-section {
+            background: #F8F8F8;
+            border-radius: 16px;
+            padding: 60px 40px;
+            margin-bottom: 4rem;
+        }
+
+        .features-section {
+            background: #F5F5F7;
+            border-radius: 16px;
+            padding: 60px 40px;
+            margin-bottom: 4rem;
+            border: 1px solid #EBEEF2;
+        }
+
+        .alert-info {
+            background-color: #7847D9;
+            border-color: #7847D9;
+            color: white;
+        }
+
         h1, h2, h3, h4, h5 {
-            color: #333 !important;
+            color: #1A202C !important;
             margin-bottom: 1rem !important;
             font-weight: 600 !important;
-            position: relative !important;
-            z-index: 4 !important;
         }
-        
-        /* Explicit text styles */
+
         p {
-            color: #666 !important;
-            margin-bottom: 1rem !important;
+            color: #64728F !important;
             line-height: 1.6 !important;
         }
-        
-        /* Section spacing */
-        section {
-            margin-bottom: 4rem !important;
-            position: relative !important;
-            z-index: 2 !important;
-        }
-        
-        /* List styling */
+
         .list-unstyled li {
-            margin-bottom: 0.5rem !important;
-            color: #666 !important;
+            color: #64728F !important;
+            margin-bottom: 0.8rem !important;
         }
-        
+
         .list-unstyled .fa-check {
-            color: #28a745 !important;
+            color: #7847D9 !important;
             margin-right: 0.5rem !important;
         }
-        
-        /* Center align text in cards */
-        .text-center {
-            text-align: center !important;
+
+        .contact-section {
+            background: #0A1425;
+            border-radius: 12px;
+            padding: 3rem;
+            color: white;
+            margin-top: 4rem;
         }
-        
-        /* Add spacing between sections */
-        .mb-5 {
-            margin-bottom: 3rem !important;
-        }
-        
-        .py-5 {
-            padding-top: 3rem !important;
-            padding-bottom: 3rem !important;
+
+        .contact-section h2, .contact-section p {
+            color: white !important;
         }
     </style>
 </head>
@@ -124,40 +130,44 @@
 
 <div class="container py-5">
     <!-- Hero Section -->
-    <div class="row align-items-center mb-5">
-        <div class="col-lg-12 text-center">
-            <h1 class="display-4 mb-4">Query Your Data in Plain Language</h1>
-            <p class="lead mb-4">Transform complex database queries into natural conversations across 95+ languages</p>
-            <div class="alert alert-info">
-                <strong>Built for Odoo 17.0 & 18.0</strong> - Enterprise & Community Compatible
+    <div class="hero-section">
+        <div class="row align-items-center">
+            <div class="col-lg-12 text-center">
+                <h1 class="display-4 mb-4">Query Your Data in Plain Language</h1>
+                <p class="lead mb-4">Transform complex database queries into natural conversations across 95+ languages</p>
+                <div class="alert alert-info">
+                    <strong>Built for Odoo 17.0 & 18.0</strong> - Enterprise & Community Compatible
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Features -->
-    <div class="row mb-5">
-        <div class="col-lg-12">
-            <h2 class="text-center mb-4">Core Features</h2>
-        </div>
-        <div class="col-md-4">
-            <div class="shadow-card mb-4 text-center">
-                <i class="fa fa-language feature-icon"></i>
-                <h4>Multilingual</h4>
-                <p>Query in any language - from Arabic to Chinese to Spanish</p>
+    <div class="features-section">
+        <div class="row">
+            <div class="col-lg-12">
+                <h2 class="text-center mb-4">Core Features</h2>
             </div>
-        </div>
-        <div class="col-md-4">
-            <div class="shadow-card mb-4 text-center">
-                <i class="fa fa-bolt feature-icon"></i>
-                <h4>Lightning Fast</h4>
-                <p>Get instant results without writing complex filters</p>
+            <div class="col-md-4">
+                <div class="shadow-card mb-4 text-center">
+                    <i class="fa fa-language feature-icon"></i>
+                    <h4>Multilingual</h4>
+                    <p>Query in any language - from Arabic to Chinese to Spanish</p>
+                </div>
             </div>
-        </div>
-        <div class="col-md-4">
-            <div class="shadow-card mb-4 text-center">
-                <i class="fa fa-users feature-icon"></i>
-                <h4>For Everyone</h4>
-                <p>No technical knowledge required</p>
+            <div class="col-md-4">
+                <div class="shadow-card mb-4 text-center">
+                    <i class="fa fa-bolt feature-icon"></i>
+                    <h4>Lightning Fast</h4>
+                    <p>Get instant results without writing complex filters</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="shadow-card mb-4 text-center">
+                    <i class="fa fa-users feature-icon"></i>
+                    <h4>For Everyone</h4>
+                    <p>No technical knowledge required</p>
+                </div>
             </div>
         </div>
     </div>
@@ -186,78 +196,84 @@
     </div>
 
     <!-- Example Queries -->
-    <div class="row mb-5">
-        <div class="col-12">
-            <h2 class="text-center mb-4">Example Queries</h2>
-        </div>
-        <div class="col-md-4">
-            <div class="shadow-card mb-4">
-                <i class="fa fa-line-chart feature-icon"></i>
-                <h5>Sales Analysis</h5>
-                <p>"Show me all sales orders from last month with amount > $1000"</p>
+    <div class="features-section">
+        <div class="row">
+            <div class="col-12">
+                <h2 class="text-center mb-4">Example Queries</h2>
             </div>
-        </div>
-        <div class="col-md-4">
-            <div class="shadow-card mb-4">
-                <i class="fa fa-user feature-icon"></i>
-                <h5>Customer Insights</h5>
-                <p>"Find customers from New York who bought products this year"</p>
+            <div class="col-md-4">
+                <div class="shadow-card mb-4">
+                    <i class="fa fa-line-chart feature-icon"></i>
+                    <h5>Sales Analysis</h5>
+                    <p>"Show me all sales orders from last month with amount > $1000"</p>
+                </div>
             </div>
-        </div>
-        <div class="col-md-4">
-            <div class="shadow-card mb-4">
-                <i class="fa fa-cubes feature-icon"></i>
-                <h5>Inventory Management</h5>
-                <p>"List all products with stock less than 10"</p>
+            <div class="col-md-4">
+                <div class="shadow-card mb-4">
+                    <i class="fa fa-user feature-icon"></i>
+                    <h5>Customer Insights</h5>
+                    <p>"Find customers from New York who bought products this year"</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="shadow-card mb-4">
+                    <i class="fa fa-cubes feature-icon"></i>
+                    <h5>Inventory Management</h5>
+                    <p>"List all products with stock less than 10"</p>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Tech Specs -->
-    <div class="row mb-5">
-        <div class="col-12">
-            <h2 class="text-center mb-4">Technical Specifications</h2>
-        </div>
-        <div class="col-md-4">
-            <div class="shadow-card mb-4">
-                <i class="fa fa-cogs feature-icon"></i>
-                <h5>System Requirements</h5>
-                <ul class="list-unstyled">
-                    <li><i class="fa fa-check text-success"></i> Odoo 17.0 and above</li>
-                    <li><i class="fa fa-check text-success"></i> Enterprise/Community</li>
-                    <li><i class="fa fa-check text-success"></i> All Databases</li>
-                </ul>
+    <div class="features-section">
+        <div class="row">
+            <div class="col-12">
+                <h2 class="text-center mb-4">Technical Specifications</h2>
             </div>
-        </div>
-        <div class="col-md-4">
-            <div class="shadow-card mb-4">
-                <i class="fa fa-life-ring feature-icon"></i>
-                <h5>Support</h5>
-                <ul class="list-unstyled">
-                    <li><i class="fa fa-check text-success"></i> 6 Months Bug Support</li>
-                    <li><i class="fa fa-check text-success"></i> Documentation</li>
-                    <li><i class="fa fa-check text-success"></i> Email Support</li>
-                </ul>
+            <div class="col-md-4">
+                <div class="shadow-card mb-4">
+                    <i class="fa fa-cogs feature-icon"></i>
+                    <h5>System Requirements</h5>
+                    <ul class="list-unstyled">
+                        <li><i class="fa fa-check"></i> Odoo 17.0 and above</li>
+                        <li><i class="fa fa-check"></i> Enterprise/Community</li>
+                        <li><i class="fa fa-check"></i> All Databases</li>
+                    </ul>
+                </div>
             </div>
-        </div>
-        <div class="col-md-4">
-            <div class="shadow-card mb-4">
-                <i class="fa fa-refresh feature-icon"></i>
-                <h5>Updates</h5>
-                <ul class="list-unstyled">
-                    <li><i class="fa fa-check text-success"></i> Regular Updates</li>
-                    <li><i class="fa fa-check text-success"></i> Security Patches</li>
-                    <li><i class="fa fa-check text-success"></i> Feature Additions</li>
-                </ul>
+            <div class="col-md-4">
+                <div class="shadow-card mb-4">
+                    <i class="fa fa-life-ring feature-icon"></i>
+                    <h5>Support</h5>
+                    <ul class="list-unstyled">
+                        <li><i class="fa fa-check"></i> 6 Months Bug Support</li>
+                        <li><i class="fa fa-check"></i> Documentation</li>
+                        <li><i class="fa fa-check"></i> Email Support</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="shadow-card mb-4">
+                    <i class="fa fa-refresh feature-icon"></i>
+                    <h5>Updates</h5>
+                    <ul class="list-unstyled">
+                        <li><i class="fa fa-check"></i> Regular Updates</li>
+                        <li><i class="fa fa-check"></i> Security Patches</li>
+                        <li><i class="fa fa-check"></i> Feature Additions</li>
+                    </ul>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Contact -->
-    <div class="row">
-        <div class="col-12 text-center">
-            <h2 class="mb-4">Need Help?</h2>
-            <p>Contact our support team at <strong>mohammed.ibenayad@gmail.com</strong></p>
+    <div class="contact-section">
+        <div class="row">
+            <div class="col-12 text-center">
+                <h2 class="mb-4">Need Help?</h2>
+                <p>Contact our support team at <strong>mohammed.ibenayad@gmail.com</strong></p>
+            </div>
         </div>
     </div>
 </div>
