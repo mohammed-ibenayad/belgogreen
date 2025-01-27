@@ -42,8 +42,7 @@
         ],
     },
     'images': [
-        'static/description/banner.png',
-        'static/description/main_screenshot.png',
+        'static/description/main_screenshot.gif',
         'static/description/main_1.png',
         'static/description/main_2.png'
     ],
