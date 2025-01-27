@@ -21,8 +21,8 @@
         [Note]: This module uses AI to interpret natural language search queries. Search queries are processed externally to convert them into Odoo filters. No database content or sensitive data is transmitted - only the search query text.
 
     """,
-    'author': 'BS Improvement',
-    'website': 'https://bsimprovement.com/',
+    'author': 'BS Improvement Consulting',
+    'website': 'https://www.bsimprovement.com/',
     'support': 'mohammed.ibenayad@gmail.com',
     'license': 'OPL-1',
     'price': 189.99,
