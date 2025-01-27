@@ -6,52 +6,117 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/4.6.2/css/bootstrap.min.css"/>
     <style>
-        .feature-icon {
-            font-size: 48px;
-            color: #0074ff;
-            margin-bottom: 20px;
+        /* Force proper stacking context */
+        body {
+            position: relative;
+            z-index: 1;
         }
         
-        .shadow-card {
-            border-radius: 10px;
-            padding: 25px;
-            box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
+        .container {
+            position: relative;
+            z-index: 2;
             background: white;
-            height: 100%;
-            transition: transform 0.2s ease-in-out;
         }
         
-        .shadow-card:hover {
-            transform: translateY(-5px);
+        /* Enlarge FontAwesome icons */
+        .feature-icon {
+            font-size: 3em !important;
+            color: #0074ff !important;
+            margin-bottom: 20px;
+            display: block !important;
+            width: auto !important;
+            height: auto !important;
         }
         
+        /* Explicit styling for cards */
+        .shadow-card {
+            position: relative;
+            z-index: 3;
+            border-radius: 10px !important;
+            padding: 25px !important;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15) !important;
+            background: white !important;
+            height: 100% !important;
+            margin-bottom: 20px !important;
+            border: 1px solid #eee !important;
+        }
+        
+        /* Explicit styling for feature tags */
         .feature-tag {
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 14px;
-            color: white;
-            display: inline-block;
-            margin: 5px;
-            background-color: #74c0fc;
+            display: inline-block !important;
+            padding: 8px 15px !important;
+            border-radius: 20px !important;
+            font-size: 14px !important;
+            color: white !important;
+            background-color: #74c0fc !important;
+            margin: 5px !important;
+            border: none !important;
+            font-weight: normal !important;
+            line-height: 1.5 !important;
+            text-align: center !important;
         }
         
+        /* Explicit styling for feature images */
         .feature-image {
-            width: 100%;
-            border-radius: 12px;
-            box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
-            margin: 1rem 0;
-            transition: transform 0.2s ease-in-out;
+            display: block !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            height: auto !important;
+            border-radius: 12px !important;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15) !important;
+            margin: 1rem auto !important;
+            position: relative !important;
+            z-index: 3 !important;
+            border: 1px solid #eee !important;
         }
         
-        .feature-image:hover {
-            transform: translateY(-5px);
+        /* Explicit heading styles */
+        h1, h2, h3, h4, h5 {
+            color: #333 !important;
+            margin-bottom: 1rem !important;
+            font-weight: 600 !important;
+            position: relative !important;
+            z-index: 4 !important;
         }
         
-        .screenshot {
-            width: 100%;
-            border-radius: 12px;
-            box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
-            margin: 1rem 0;
+        /* Explicit text styles */
+        p {
+            color: #666 !important;
+            margin-bottom: 1rem !important;
+            line-height: 1.6 !important;
+        }
+        
+        /* Section spacing */
+        section {
+            margin-bottom: 4rem !important;
+            position: relative !important;
+            z-index: 2 !important;
+        }
+        
+        /* List styling */
+        .list-unstyled li {
+            margin-bottom: 0.5rem !important;
+            color: #666 !important;
+        }
+        
+        .list-unstyled .fa-check {
+            color: #28a745 !important;
+            margin-right: 0.5rem !important;
+        }
+        
+        /* Center align text in cards */
+        .text-center {
+            text-align: center !important;
+        }
+        
+        /* Add spacing between sections */
+        .mb-5 {
+            margin-bottom: 3rem !important;
+        }
+        
+        .py-5 {
+            padding-top: 3rem !important;
+            padding-bottom: 3rem !important;
         }
     </style>
 </head>
