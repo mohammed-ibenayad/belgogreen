@@ -10,7 +10,7 @@
                        <p><strong>How to use:</strong> Type your query in any language. The system understands and processes queries across multiple languages.</p>
                        <p><strong>Example queries / Exemples de requêtes / Beispielabfragen / أمثلة على الاستعلامات / Consultas de ejemplo:</strong></p>
                        <ul>
-                           <li>🇬🇧 "Show all invoices from last quarter with payment status 'Pending'"</li>
+                           <li>🇬🇧 "Show all invoices this quarter with payment status pending"</li>
                            <li>🇫🇷 "Afficher les commandes clients de Paris avec un montant supérieur à 5000€"</li>
                            <li>🇩🇪 "Zeige alle Produkte mit weniger als 20 Einheiten im Lagerbestand"</li>
                            <li>🇸🇦 "اعرض جميع المبيعات التي تمت في الشهر الماضي مع إجمالي القيمة"</li>

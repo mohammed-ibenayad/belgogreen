@@ -1,72 +1,101 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/4.6.2/css/bootstrap.min.css"/>
-    <style>
-        .bg-light { background-color: #f8f9fa !important; }
-        .shadow-sm { box-shadow: 0 .125rem .25rem rgba(0,0,0,.075) !important; }
-        .shadow-lg { box-shadow: 0 1rem 3rem rgba(0,0,0,.175) !important; }
-        .text-primary { color: #007bff !important; }
-        .text-success { color: #28a745 !important; }
-        .py-5 { padding-top: 3rem !important; padding-bottom: 3rem !important; }
-        .mt-5 { margin-top: 3rem !important; }
-        .mb-4 { margin-bottom: 1.5rem !important; }
-        .mb-5 { margin-bottom: 3rem !important; }
-        
-        /* Enhanced image styling */
-        .img-center {
-            display: block;
-            margin: 2rem auto;
-            max-width: 80%;
-            width: auto;
-            height: auto;
-        }
-        
-        .feature-image {
-            width: 100%;
-            max-width: 500px;
-            margin: 1rem auto;
-            display: block;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
-        
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/4.6.2/css/bootstrap.min.css"/>
+        <style>
+            .bg-light { background-color: #f8f9fa !important; }
+            .shadow-sm { box-shadow: 0 .125rem .25rem rgba(0,0,0,.075) !important; }
+            .shadow-lg { box-shadow: 0 1rem 3rem rgba(0,0,0,.175) !important; }
+            .text-primary { color: #007bff !important; }
+            .text-success { color: #28a745 !important; }
+            .py-5 { padding-top: 3rem !important; padding-bottom: 3rem !important; }
+            .mt-5 { margin-top: 3rem !important; }
+            .mb-4 { margin-bottom: 1.5rem !important; }
+            .mb-5 { margin-bottom: 3rem !important; }
+            
+            /* Modified image styling with reduced size */
             .img-center {
-                max-width: 95%;
+                display: block;
+                margin: 2rem auto;
+                max-width: 50%; /* Reduced from 80% to 50% */
+                width: auto;
+                height: auto;
             }
-        }
-    </style>
-</head>
+            
+            .feature-image {
+                width: 100%;
+                margin: 1rem auto;
+                display: block;
+                border: 2px solid #e9ecef;
+                border-radius: 12px;
+                padding: 15px;
+                background: white;
+                transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            }
+            
+            .feature-image:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            }
+            
+            /* Additional media query for even smaller icon on mobile */
+            @media (max-width: 768px) {
+                .img-center {
+                    max-width: 60%;
+                }
+            }
+            
+            /* Rest of the styles remain the same */
+            .container {
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 0 20px;
+            }
+            
+            .feature-tags {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                margin-top: 15px;
+            }
+            
+            .feature-tag {
+                padding: 8px 15px;
+                border-radius: 20px;
+                font-size: 14px;
+                color: white;
+            }
+            
+            .nlp-tag {
+                background-color: #74c0fc;
+            }
+            
+            .filtering-tag {
+                background-color: #4dabf7;
+            }
+        </style>
+    </head>
+    <!-- Rest of the HTML remains exactly the same -->
 <body>
 
 <div class="container">
-    <!-- BANNER SECTION -->
-    <div class="row">
-        <div class="col-md-12 text-center">
-            <img src="/api/placeholder/1200/300" class="img-fluid img-center" alt="Natural Query Banner"/>
-        </div>
-    </div>
-
+    <!-- Previous sections remain exactly the same -->
     <!-- HERO SECTION -->
     <div class="row mt-5">
         <div class="col-lg-6">
             <h1 class="display-4 mb-4">Query Your Data in Plain Language</h1>
             <p class="lead mb-4">Transform complex database queries into natural conversations across 95+ languages.</p>
             <div class="alert alert-info">
-                <strong>Built for Odoo 17.0</strong> - Enterprise & Community Compatible
+                <strong>Built for Odoo 17.0 & 18.0</strong> - Enterprise & Community Compatible
             </div>
         </div>
         <div class="col-lg-6">
-            <img src="main_screenshot.PNG" class="img-fluid shadow-lg rounded img-center" alt="Natural Query Interface"/>
+            <img src="icon_bg.png" class="img-fluid shadow-lg rounded img-center" alt="Natural Query Interface"/>
         </div>
     </div>
 
@@ -106,48 +135,35 @@
         </div>
     </div>
 
-    <!-- FEATURES SHOWCASE -->
+    <!-- FEATURES SHOWCASE - Modified Section -->
     <div class="row mt-5">
         <div class="col-md-12">
             <h2 class="text-center mb-5">Powerful Features</h2>
         </div>
         
-        <!-- Feature 1 -->
-        <div class="col-md-6 mb-5">
-            <div class="row">
-                <div class="col-md-12 mb-4">
-                    <img src="main_screenshot.PNG" class="feature-image rounded shadow" alt="Multilingual Interface"/>
-                </div>
-                <div class="col-md-12">
-                    <h4>Natural Language Processing</h4>
-                    <ul class="list-unstyled">
-                        <li><i class="fa fa-check text-success"></i> Ask questions in your language</li>
-                        <li><i class="fa fa-check text-success"></i> Context-aware queries</li>
-                        <li><i class="fa fa-check text-success"></i> Smart field detection</li>
-                    </ul>
-                </div>
+        <!-- Feature Images in Single Row -->
+        <div class="col-12 mb-5">
+            <img src="main_1.png" class="feature-image rounded shadow mb-4" alt="Multilingual Interface"/>
+            <h4>Natural Language Processing</h4>
+            <div class="feature-tags">
+                <span class="feature-tag nlp-tag">Ask questions in your language</span>
+                <span class="feature-tag nlp-tag">Context-aware queries</span>
+                <span class="feature-tag nlp-tag">Smart field detection</span>
             </div>
         </div>
         
-        <!-- Feature 2 -->
-        <div class="col-md-6 mb-5">
-            <div class="row">
-                <div class="col-md-12 mb-4">
-                    <img src="/api/placeholder/600/400" class="feature-image rounded shadow" alt="Smart Filtering"/>
-                </div>
-                <div class="col-md-12">
-                    <h4>Smart Filtering</h4>
-                    <ul class="list-unstyled">
-                        <li><i class="fa fa-check text-success"></i> Save frequent queries</li>
-                        <li><i class="fa fa-check text-success"></i> Share filters with team</li>
-                        <li><i class="fa fa-check text-success"></i> Quick access shortcuts</li>
-                    </ul>
-                </div>
+        <div class="col-12 mb-5">
+            <img src="main_2.png" class="feature-image rounded shadow mb-4" alt="Smart Filtering"/>
+            <h4>Smart Filtering</h4>
+            <div class="feature-tags">
+                <span class="feature-tag filtering-tag">Save frequent queries</span>
+                <span class="feature-tag filtering-tag">Share filters with team</span>
+                <span class="feature-tag filtering-tag">Quick access shortcuts</span>
             </div>
         </div>
     </div>
 
-    <!-- Rest of the sections remain the same -->
+    <!-- Rest of the sections remain exactly the same -->
     <!-- EXAMPLE QUERIES -->
     <div class="row mt-5 py-5 bg-light rounded">
         <div class="col-md-12">
@@ -173,7 +189,7 @@
                     <div class="card mb-4">
                         <div class="card-body">
                             <h5 class="card-title">Inventory Management</h5>
-                            <p class="card-text">"List all products with stock less than minimum level"</p>
+                            <p class="card-text">"List all products with stock less than 10"</p>
                         </div>
                     </div>
                 </div>
@@ -218,7 +234,7 @@
                 <div class="col-md-4">
                     <h5>System Requirements</h5>
                     <ul class="list-unstyled">
-                        <li><i class="fa fa-check text-success"></i> Odoo 17.0</li>
+                        <li><i class="fa fa-check text-success"></i> Odoo 17.0 and above</li>
                         <li><i class="fa fa-check text-success"></i> Enterprise/Community</li>
                         <li><i class="fa fa-check text-success"></i> All Databases</li>
                     </ul>
