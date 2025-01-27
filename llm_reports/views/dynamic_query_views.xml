@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-   <!-- Main Form View -->
    <record id="view_dynamic_query_report_form" model="ir.ui.view">
        <field name="name">dynamic.query.report.form</field>
        <field name="model">dynamic.query.report</field>
@@ -8,21 +7,21 @@
            <form string="Dynamic Query Report">
                <sheet>
                    <div class="alert alert-info" role="alert">
-                       <p><strong>How to use:</strong> Type your query in natural language. The system will understand and find the relevant records.</p>
-                       <p><strong>Example queries:</strong></p>
+                       <p><strong>How to use:</strong> Type your query in any language. The system understands and processes queries across multiple languages.</p>
+                       <p><strong>Example queries / Exemples de requêtes / Beispielabfragen / أمثلة على الاستعلامات / Consultas de ejemplo:</strong></p>
                        <ul>
-                           <li>"Show me all sales orders created in the last 30 days with amount greater than 1000"</li>
-                           <li>"Find customers from New York who made purchases this year"</li>
-                           <li>"List all products with stock less than 10"</li>
-                           <li>"Show all calendar events scheduled for tomorrow"</li>
-                           <li>"Find appointments with the status 'Confirmed' for this week"</li>
+                           <li>🇬🇧 "Show all invoices from last quarter with payment status 'Pending'"</li>
+                           <li>🇫🇷 "Afficher les commandes clients de Paris avec un montant supérieur à 5000€"</li>
+                           <li>🇩🇪 "Zeige alle Produkte mit weniger als 20 Einheiten im Lagerbestand"</li>
+                           <li>🇸🇦 "اعرض جميع المبيعات التي تمت في الشهر الماضي مع إجمالي القيمة"</li>
+                           <li>🇪🇸 "Mostrar los clientes que han comprado más de 10000€ este año"</li>
                            <p></p>
                            <button name="%(llm_reports.action_open_feedback)d" string="Upcoming Release ->" type="action" class="btn-warning oe_highlight float-right"/>
                        </ul>
                    </div>
                    <group>
-                       <field name="user_input" placeholder="Enter your query in natural language..." help="You can ask for any information about sales orders, customers, products, etc. Use natural language and be specific about conditions like dates, amounts, or status."/>
-                       <field name="save_filter_checkbox" widget="boolean" help="Check this box to save the filter for future use."/>
+                       <field name="user_input" placeholder="Enter your query in any language..." help="Ask anything about your data in your preferred language. The system will understand and process your request."/>
+                       <field name="save_filter_checkbox" widget="boolean" help="Save this query as a filter for future use"/>
                    </group>
                </sheet>
                <footer>
@@ -33,15 +32,13 @@
        </field>
    </record>
 
-   <!-- Main Action -->
    <record id="action_dynamic_query_report" model="ir.actions.act_window">
-       <field name="name">AskOdoo</field>
+       <field name="name">Natural Query</field>
        <field name="res_model">dynamic.query.report</field>
        <field name="view_mode">form</field>
        <field name="target">new</field>
        <field name="view_id" ref="view_dynamic_query_report_form"/>
    </record>
 
-   <!-- Menu Items -->
-   <menuitem id="menu_dynamic_query_report" name="AskOdoo"  action="action_dynamic_query_report" sequence="10" web_icon="llm_reports,static/description/icon.png"/> 
+   <menuitem id="menu_dynamic_query_report" name="Natural Query" action="action_dynamic_query_report" sequence="10" web_icon="llm_reports,static/description/icon.png"/>
 </odoo>

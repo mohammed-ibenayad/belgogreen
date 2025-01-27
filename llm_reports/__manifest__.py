@@ -1,13 +1,32 @@
 {
-    'name': 'LLM Reports',
-    'version': '1.0.1',
-    'summary': 'Generate dynamic reports using natural language queries',
+    'name': 'Natural Query',
+    'version': '17.0.1.0.0',
+    'summary': 'Multilingual AI-Powered Natural Language Reports',
     'description': """
-        This module allows users to input natural language queries, which are sent to an LLM to generate Odoo-compatible queries.
-        The results are displayed in Odoo's standard views.
+        Transform data access across language barriers with AI-powered natural language queries.
+        
+        Key Features:
+        - Query in 95+ languages including Arabic, Spanish, French, German, Chinese
+        - Get instant reports and filtered views in your language
+        - AI understands context across languages
+        - Save frequently used queries as filters
+        - Seamless integration with Odoo views
+        
+        Perfect for:
+        - International teams
+        - Multilingual organizations
+        - Global businesses
+        - Non-technical users
+
+        [Note]: This module uses AI to interpret natural language search queries. Search queries are processed externally to convert them into Odoo filters. No database content or sensitive data is transmitted - only the search query text.
+        
     """,
     'author': 'Mohammed Iben Ayad',
     'website': 'https://ibenayad.link/',
+    'support': 'mohammed.ibenayad@gmail.com',
+    'license': 'OPL-1',
+    'price': 195.99,
+    'currency': 'EUR',
     'category': 'Reporting',
     'depends': ['base', 'web', 'base_setup'],
     'data': [
@@ -21,7 +40,13 @@
             'llm_reports/static/js/form_controller.js',
         ],
     },
+    'images': [
+        'static/description/banner.png',
+        'static/description/main_screenshot.png',
+        'static/description/main_1.png',
+        'static/description/main_2.png'
+    ],
     'installable': True,
     'application': True,
-    'license': 'LGPL-3',
+    'live_test_url': 'https://query.odoo.com',
 }
