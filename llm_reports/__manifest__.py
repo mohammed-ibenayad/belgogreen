@@ -1,6 +1,6 @@
 {
     'name': 'Natural Query',
-    'version': '17.0.1.0.0',
+    'version': '18.0.1.0.0',
     'summary': 'Multilingual AI-Powered Natural Language Reports',
     'description': """
         Transform data access across language barriers with AI-powered natural language queries.
@@ -19,7 +19,7 @@
         - Non-technical users
 
         [Note]: This module uses AI to interpret natural language search queries. Search queries are processed externally to convert them into Odoo filters. No database content or sensitive data is transmitted - only the search query text.
-        
+
     """,
     'author': 'Mohammed Iben Ayad',
     'website': 'https://ibenayad.link/',
