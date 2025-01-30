@@ -38,7 +38,7 @@
     ],
     'assets': {
         'web.assets_backend': [
-            'llm_reports/static/js/form_controller.js',
+            'llm_reports/static/src/js/form_controller.js',
         ],
     },
     'images': [
