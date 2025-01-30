@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Query Your Data in Plain Language</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"/>
-    <link rel="preload" href="//apps.odoocdn.com/web/static/src/libs/fontawesome/fonts/fontawesome-webfont.woff2?v=4.7.0" as="font" crossorigin="">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.carousel.min.css"/>
-    <link rel="stylesheet" href="//apps.odoocdn.com/web/static/lib/fontawesome/css/font-awesome.css"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"/>
+<link rel="preload" href="https://apps.odoocdn.com/web/static/src/libs/fontawesome/fonts/fontawesome-webfont.woff2?v=4.7.0" as="font" crossorigin="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.carousel.min.css"/>
+<link rel="stylesheet" href="https://apps.odoocdn.com/web/static/lib/fontawesome/css/font-awesome.css"/>
     <!-- Keep the existing styles -->
     <style>
         :root {
@@ -57,15 +57,36 @@
         </div>
         <!-- Tab Navigation -->
         <div class="mb-4 bg-white" style="border: 1px solid #EBEEF2; border-radius: 6px; box-shadow: 0px 8px 20px -4px rgba(0, 0, 0, 0.10);">
-            <ul class="nav nav-tabs justify-content-center bg-white py-2" id="myTab" role="tablist">
+            <ul class="nav nav-tabs justify-content-center bg-white py-2" id="myTab" role="tablist" style="border-radius: 6px 6px 0 0;">
                 <li class="nav-item">
-                    <a class="nav-link active" data-bs-toggle="tab" href="#overview" role="tab">Overview</a>
+                    <a aria-controls="overview" 
+                       aria-bs-selected="true"
+                       class="nav-link active" 
+                       data-bs-toggle="tab"
+                       href="#overview" 
+                       id="overview-tab" 
+                       role="tab">
+                        Overview</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" data-bs-toggle="tab" href="#features" role="tab">Features</a>
+                    <a aria-controls="feature"
+                       aria-bs-selected="false"
+                       class="nav-link py-2" 
+                       data-bs-toggle="tab"
+                       href="#features" 
+                       id="feature-tab" 
+                       role="tab">
+                        Features</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" data-bs-toggle="tab" href="#technical" role="tab">Technical Specs</a>
+                    <a aria-controls="technical" 
+                       aria-bs-selected="false" 
+                       class="nav-link" 
+                       data-bs-toggle="tab"
+                       href="#technical" 
+                       id="technical-tab" 
+                       role="tab">
+                        Technical Specs</a>
                 </li>
             </ul>
 
