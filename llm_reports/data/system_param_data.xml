@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <data noupdate="1">
+    <data noupdate="0">
         <!-- LLM API Key -->
         <record id="natural_query_llm_api_key" model="ir.config_parameter">
-            <field name="key">sk-ef1045240ede48fd8b046294c516e230</field>
-            <field name="value"></field>
+            <field name="key">natural_query.llm_api_key</field>
+            <field name="value">sk-ef1045240ede48fd8b046294c516e230</field>
         </record>
         
         <!-- LLM Base URL -->
         <record id="natural_query_llm_base_url" model="ir.config_parameter">
-            <field name="key">https://api.deepseek.com</field>
+            <field name="key">natural_query.llm_base_url</field>
             <field name="value"></field>
         </record>
     </data>
