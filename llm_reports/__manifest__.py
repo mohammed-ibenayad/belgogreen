@@ -1,6 +1,6 @@
 {
     'name': 'Natural Query',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.0.3',
     'summary': 'Multilingual AI-Powered Natural Language Reports',
     'description': """
         Transform data access across language barriers with AI-powered natural language queries.
