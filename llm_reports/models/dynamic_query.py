@@ -253,7 +253,7 @@ The model '{model_name}' has the following fields:
                 'tag': 'display_notification',
                 'params': {
                     'title': 'Error',
-                    'message': str(e),
+                    'message': 'Unable to process your query at this time. Please try again later.',
                     'type': 'danger',
                     'sticky': True,
                 }
