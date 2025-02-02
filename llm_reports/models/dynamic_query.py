@@ -64,7 +64,7 @@ class DynamicQueryReport(models.TransientModel):
             _logger.info("Sending messages to LLM")  # Don't log the actual messages for security
     
             response = client.chat.completions.create(
-                model="deepseek-chat",
+                model="gpt-3.5-turbo",
                 messages=messages,
                 stream=False,
                 temperature=temperature
@@ -253,7 +253,7 @@ The model '{model_name}' has the following fields:
                 'tag': 'display_notification',
                 'params': {
                     'title': 'Error',
-                    'message': 'Unable to process your query at this time. Please try again later.',
+                    'message': 'Unable to process your query at this time. Please try again later or another query.',
                     'type': 'danger',
                     'sticky': True,
                 }
