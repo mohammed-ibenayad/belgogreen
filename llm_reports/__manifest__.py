@@ -1,6 +1,6 @@
 {
     'name': 'Natural Query',
-    'version': '18.0.1.0.3',
+    'version': '18.0.1.0.4',
     'summary': 'Multilingual AI-Powered Natural Language Reports',
     'description': """
         Transform data access across language barriers with AI-powered natural language queries.
@@ -23,9 +23,9 @@
     """,
     'author': 'BS Improvement Consulting',
     'website': 'https://www.bsimprovement.com/',
-    'support': 'mohammed.ibenayad@gmail.com',
+    'support': 'mibenayad@bsimprovement.com',
     'license': 'OPL-1',
-    'price': 189.99,
+    'price': 159.99,
     'currency': 'EUR',
     'category': 'Reporting',
     'depends': ['base', 'web', 'base_setup'],

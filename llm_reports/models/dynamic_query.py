@@ -58,7 +58,7 @@ class DynamicQueryReport(models.TransientModel):
                 
             client = OpenAI(
                 api_key=api_key,
-                base_url=base_url
+                #base_url=base_url
             )
     
             _logger.info("Sending messages to LLM")  # Don't log the actual messages for security
