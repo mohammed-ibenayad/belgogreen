@@ -54,9 +54,6 @@ logs/
 local_*.py
 .local_*
 
-# Specific file to ignore
-**/system_param_data.xml
-
 # Backup files
 *~
 *.bak
