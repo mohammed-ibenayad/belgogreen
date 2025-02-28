@@ -1,0 +1,64 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Virtual environments
+venv/
+ENV/
+env/
+.env
+
+# IDE specific files
+.idea/
+.vscode/
+*.sublime-*
+.project
+.pydevproject
+
+# Odoo specific
+*.log
+filestore/
+.settings/
+*.pyc
+*.pyo
+.venv
+.python-version
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+
+# Testing
+.coverage
+coverage/
+htmlcov/
+.tox/
+.pytest_cache/
+nosetests.xml
+coverage.xml
+
+# Logs
+logs/
+*.log
+
+# Local configuration files
+local_*.py
+.local_*
+
+# Specific file to ignore
+system_param_data.xml
+
+# Backup files
+*~
+*.bak
+*.swp
+*.tmp
