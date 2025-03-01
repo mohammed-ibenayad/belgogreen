@@ -59,3 +59,6 @@ local_*.py
 *.bak
 *.swp
 *.tmp
+
+# sensitive Odoo files
+**/system_param_data.xml
