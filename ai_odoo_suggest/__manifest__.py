@@ -21,4 +21,14 @@
     'installable': True,
     'auto_install': False,
     'license': 'LGPL-3',
+    'external_dependencies': {
+        'python': [
+            'openai',
+            'pydub',
+            'requests',
+            'SpeechRecognition',
+            'librosa',
+            'numpy',
+        ],
+    },
 }

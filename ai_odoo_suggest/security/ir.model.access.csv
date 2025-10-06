@@ -1,2 +1,2 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_ai_odoo_suggest_ai_odoo_suggest,ai_odoo_suggest.ai_odoo_suggest,model_ai_odoo_suggest_ai_odoo_suggest,base.group_user,1,1,1,1
+access_ai_odoo_suggest_user,ai.odoo.suggest.user,model_ai_odoo_suggest,base.group_user,1,1,1,1
