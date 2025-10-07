@@ -27,8 +27,8 @@
             'openai',
             'pydub',
         ],
-        'bin': [
-        'ffmpeg',  # System binary dependency
-        ],
+        #'bin': [
+        #'ffmpeg',  # System binary dependency
+        #],
     },
 }
