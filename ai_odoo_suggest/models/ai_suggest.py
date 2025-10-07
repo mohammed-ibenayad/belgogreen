@@ -6,6 +6,7 @@ import base64
 import io
 import tempfile
 import openai
+import os
 from datetime import datetime
 
 _logger = logging.getLogger(__name__)
@@ -98,6 +99,7 @@ class AIOdooSuggest(models.Model):
 
     def _transcribe_audio(self):
         """Transcribe audio file using OpenAI Whisper"""
+        import os
         self.ensure_one()
         
         if not self.audio_file:
@@ -274,18 +276,92 @@ Example response format:
         
         for i, action in enumerate(actions):
             body = f"""
-<div class="alert alert-info">
-    <h5>🤖 AI Suggestion #{i+1}</h5>
+<div class="alert alert-info mt-3 mb-3" style="border-left: 4px solid #17a2b8;">
+    <h5 class="alert-heading">
+        <i class="fa fa-robot"></i> AI Suggestion #{i+1}
+    </h5>
     <p><strong>Action:</strong> {action.get('description', 'No description')}</p>
-    <p><strong>Model:</strong> <code>{action.get('model', '')}</code></p>
-    <p><strong>Operation:</strong> <span class="badge badge-primary">{action.get('action', '').upper()}</span></p>
+    <p class="mb-1">
+        <strong>Model:</strong> <code>{action.get('model', '')}</code><br/>
+        <strong>Operation:</strong> <span class="badge badge-primary">{action.get('action', '').upper()}</span>
+    </p>
     <hr/>
-    <div class="mt-2">
-        <button class="btn btn-sm btn-success" onclick="odoo.__DEBUG__.services['web.rpc']('/ai_odoo_suggest/confirm', {{suggestion_id: {self.id}, action_index: {i}}})">
-            ✓ Confirm
+    <div class="d-flex gap-2 mt-3">
+        <button class="btn btn-success btn-sm" 
+                onclick="
+                    event.preventDefault();
+                    const btn = this;
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class=\\'fa fa-spinner fa-spin\\'></i> Processing...';
+                    fetch('/ai_odoo_suggest/confirm', {{
+                        method: 'POST',
+                        headers: {{
+                            'Content-Type': 'application/json',
+                        }},
+                        body: JSON.stringify({{
+                            jsonrpc: '2.0',
+                            method: 'call',
+                            params: {{
+                                suggestion_id: {self.id},
+                                action_index: {i}
+                            }},
+                            id: Math.floor(Math.random() * 1000000)
+                        }})
+                    }}).then(r => r.json()).then(data => {{
+                        if (data.result && data.result.success) {{
+                            btn.innerHTML = '<i class=\\'fa fa-check\\'></i> Confirmed';
+                            btn.classList.remove('btn-success');
+                            btn.classList.add('btn-secondary');
+                        }} else {{
+                            btn.innerHTML = '<i class=\\'fa fa-times\\'></i> Error';
+                            btn.disabled = false;
+                            alert('Error: ' + (data.result?.message || 'Unknown error'));
+                        }}
+                    }}).catch(err => {{
+                        btn.innerHTML = '<i class=\\'fa fa-exclamation-triangle\\'></i> Error';
+                        btn.disabled = false;
+                        alert('Network error: ' + err.message);
+                    }});
+                ">
+            <i class="fa fa-check"></i> Confirm
         </button>
-        <button class="btn btn-sm btn-danger ml-2" onclick="odoo.__DEBUG__.services['web.rpc']('/ai_odoo_suggest/reject', {{suggestion_id: {self.id}, action_index: {i}}})">
-            ✗ Reject
+        <button class="btn btn-danger btn-sm"
+                onclick="
+                    event.preventDefault();
+                    const btn = this;
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class=\\'fa fa-spinner fa-spin\\'></i> Processing...';
+                    fetch('/ai_odoo_suggest/reject', {{
+                        method: 'POST',
+                        headers: {{
+                            'Content-Type': 'application/json',
+                        }},
+                        body: JSON.stringify({{
+                            jsonrpc: '2.0',
+                            method: 'call',
+                            params: {{
+                                suggestion_id: {self.id},
+                                action_index: {i}
+                            }},
+                            id: Math.floor(Math.random() * 1000000)
+                        }})
+                    }}).then(r => r.json()).then(data => {{
+                        if (data.result && data.result.success) {{
+                            btn.innerHTML = '<i class=\\'fa fa-times\\'></i> Rejected';
+                            btn.classList.remove('btn-danger');
+                            btn.classList.add('btn-secondary');
+                        }} else {{
+                            btn.innerHTML = '<i class=\\'fa fa-exclamation-triangle\\'></i> Error';
+                            btn.disabled = false;
+                            alert('Error: ' + (data.result?.message || 'Unknown error'));
+                        }}
+                    }}).catch(err => {{
+                        btn.innerHTML = '<i class=\\'fa fa-exclamation-triangle\\'></i> Error';
+                        btn.disabled = false;
+                        alert('Network error: ' + err.message);
+                    }});
+                ">
+            <i class="fa fa-times"></i> Reject
         </button>
     </div>
 </div>
