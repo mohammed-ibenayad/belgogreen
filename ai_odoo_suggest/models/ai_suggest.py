@@ -3,7 +3,6 @@ from odoo.exceptions import UserError
 import json
 import logging
 import base64
-from pydub import AudioSegment
 import io
 import tempfile
 import openai
