@@ -7,7 +7,7 @@
         This module intercepts audio messages in discuss, transcribes them using AI,
         and suggests actions to create, update, or delete records in Odoo.
     """,
-    'depends': ['mail', 'base'],
+    'depends': ['base', 'mail'],
     'data': [
         'security/ir.model.access.csv',
         'views/ai_suggest_views.xml',

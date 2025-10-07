@@ -3,7 +3,7 @@
     <record id="view_mail_message_form_inherit_ai_suggest" model="ir.ui.view">
         <field name="name">mail.message.form.inherit.ai.suggest</field>
         <field name="model">mail.message</field>
-        <field name="inherit_id" ref="mail.view_message_form"/>
+        <field name="inherit_id" ref="mail.mail_message_view_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='attachment_ids']" position="after">
                 <field name="ai_suggest_ids" readonly="1" invisible="1"/>

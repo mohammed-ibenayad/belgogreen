@@ -5,12 +5,17 @@
         <field name="name">ai.odoo.suggest.list</field>
         <field name="model">ai.odoo.suggest</field>
         <field name="arch" type="xml">
-            <list string="AI Suggestions">
+            <list string="AI Suggestions" default_order="create_date desc">
                 <field name="name"/>
-                <field name="user_id"/>
-                <field name="channel_id"/>
-                <field name="status"/>
-                <field name="create_date"/>
+                <field name="user_id" optional="show"/>
+                <field name="channel_id" optional="show"/>
+                <field name="status" decoration-info="status == 'pending'" 
+                       decoration-primary="status == 'transcribed'" 
+                       decoration-success="status == 'executed'"
+                       decoration-warning="status == 'processed'"
+                       decoration-danger="status == 'rejected'"
+                       widget="badge"/>
+                <field name="create_date" optional="show"/>
             </list>
         </field>
     </record>
@@ -22,46 +27,141 @@
         <field name="arch" type="xml">
             <form string="AI Suggestion">
                 <header>
-                    <field name="status" widget="statusbar" statusbar_visible="pending,transcribed,processed,confirmed,executed"/>
+                    <button name="action_process" type="object" string="Process Audio" 
+                            class="btn-primary" 
+                            invisible="status != 'pending'"
+                            confirm="Are you sure you want to process this audio message?"/>
+                    <field name="status" widget="statusbar" 
+                           statusbar_visible="pending,transcribed,processed,confirmed,executed"
+                           readonly="1"/>
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
                         <button name="action_process" type="object" string="Process Audio" 
                                 class="oe_stat_button" icon="fa-cogs"
-                                invisible="status != 'pending'"/>
+                                invisible="status != 'pending'"
+                                help="Click to transcribe and process the audio file"/>
                     </div>
+                    
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1" placeholder="AI Suggestion Title"/>
+                        </h1>
+                    </div>
+                    
                     <group>
                         <group>
-                            <field name="name"/>
-                            <field name="user_id"/>
-                            <field name="channel_id"/>
+                            <field name="user_id" readonly="1"/>
+                            <field name="channel_id" readonly="1"/>
+                            <field name="message_id" readonly="1" invisible="1"/>
                         </group>
                         <group>
-                            <field name="create_date"/>
-                            <field name="status"/>
+                            <field name="create_date" readonly="1"/>
                         </group>
                     </group>
                     
                     <notebook>
-                        <page string="Audio">
-                            <field name="audio_filename"/>
-                            <field name="audio_file" filename="audio_filename"/>
+                        <page string="Audio" name="audio">
+                            <group>
+                                <field name="audio_filename" readonly="1"/>
+                                <field name="audio_file" filename="audio_filename" 
+                                       widget="binary" readonly="1"/>
+                            </group>
                         </page>
-                        <page string="Transcription">
-                            <field name="transcription" nolabel="1"/>
+                        
+                        <page string="Transcription" name="transcription" 
+                              invisible="not transcription">
+                            <group>
+                                <field name="transcription" nolabel="1" 
+                                       widget="text" readonly="1"
+                                       placeholder="Audio transcription will appear here..."/>
+                            </group>
                         </page>
-                        <page string="AI Response">
-                            <field name="ai_response" nolabel="1"/>
+                        
+                        <page string="AI Response" name="ai_response" 
+                              invisible="not ai_response">
+                            <group>
+                                <field name="ai_response" nolabel="1" 
+                                       widget="text" readonly="1"
+                                       placeholder="AI analysis will appear here..."/>
+                            </group>
                         </page>
-                        <page string="Suggested Actions">
-                            <field name="suggested_actions" nolabel="1"/>
+                        
+                        <page string="Suggested Actions" name="suggested_actions" 
+                              invisible="not suggested_actions">
+                            <group>
+                                <div class="alert alert-info" role="alert">
+                                    <strong>Suggested Actions:</strong> These are the actions proposed by the AI based on the audio transcription.
+                                </div>
+                                <field name="suggested_actions" nolabel="1" 
+                                       widget="text" readonly="1"
+                                       placeholder="Suggested actions in JSON format will appear here..."/>
+                            </group>
                         </page>
-                        <page string="Executed Actions">
-                            <field name="executed_actions" nolabel="1"/>
+                        
+                        <page string="Executed Actions" name="executed_actions" 
+                              invisible="not executed_actions">
+                            <group>
+                                <div class="alert alert-success" role="alert">
+                                    <strong>Executed Actions:</strong> Actions that have been confirmed and executed.
+                                </div>
+                                <field name="executed_actions" nolabel="1" 
+                                       widget="text" readonly="1"
+                                       placeholder="Executed actions will appear here..."/>
+                            </group>
                         </page>
                     </notebook>
                 </sheet>
+                
+                <div class="oe_chatter">
+                    <field name="message_follower_ids" groups="base.group_user"/>
+                    <field name="message_ids"/>
+                </div>
             </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_ai_odoo_suggest_search" model="ir.ui.view">
+        <field name="name">ai.odoo.suggest.search</field>
+        <field name="model">ai.odoo.suggest</field>
+        <field name="arch" type="xml">
+            <search string="AI Suggestions">
+                <field name="name" string="Title" filter_domain="[('name', 'ilike', self)]"/>
+                <field name="user_id"/>
+                <field name="channel_id"/>
+                <field name="transcription"/>
+                
+                <filter string="Pending" name="filter_pending" 
+                        domain="[('status', '=', 'pending')]"/>
+                <filter string="Transcribed" name="filter_transcribed" 
+                        domain="[('status', '=', 'transcribed')]"/>
+                <filter string="Processed" name="filter_processed" 
+                        domain="[('status', '=', 'processed')]"/>
+                <filter string="Executed" name="filter_executed" 
+                        domain="[('status', '=', 'executed')]"/>
+                <filter string="Rejected" name="filter_rejected" 
+                        domain="[('status', '=', 'rejected')]"/>
+                
+                <separator/>
+                <filter string="My Suggestions" name="filter_my_suggestions" 
+                        domain="[('user_id', '=', uid)]"/>
+                <filter string="Today" name="filter_today" 
+                        domain="[('create_date', '&gt;=', datetime.datetime.combine(context_today(), datetime.time(0,0,0)))]"/>
+                <filter string="Last 7 Days" name="filter_week" 
+                        domain="[('create_date', '&gt;=', (context_today() - datetime.timedelta(days=7)).strftime('%Y-%m-%d'))]"/>
+                
+                <group expand="0" string="Group By">
+                    <filter string="Status" name="group_status" 
+                            context="{'group_by': 'status'}"/>
+                    <filter string="User" name="group_user" 
+                            context="{'group_by': 'user_id'}"/>
+                    <filter string="Channel" name="group_channel" 
+                            context="{'group_by': 'channel_id'}"/>
+                    <filter string="Creation Date" name="group_create_date" 
+                            context="{'group_by': 'create_date:day'}"/>
+                </group>
+            </search>
         </field>
     </record>
 
@@ -70,11 +170,28 @@
         <field name="name">AI Suggestions</field>
         <field name="res_model">ai.odoo.suggest</field>
         <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_ai_odoo_suggest_search"/>
+        <field name="context">{'search_default_filter_processed': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first AI Suggestion
+            </p>
+            <p>
+                AI Suggestions are automatically created when audio messages are sent in channels.
+                The system will transcribe the audio and suggest relevant Odoo actions.
+            </p>
+        </field>
     </record>
 
     <!-- Menu -->
-    <menuitem id="menu_ai_odoo_suggest_root" name="AI Suggestions" sequence="100"/>
-    <menuitem id="menu_ai_odoo_suggest" name="AI Suggestions" 
+    <menuitem id="menu_ai_odoo_suggest_root" 
+              name="AI Suggestions" 
+              sequence="100"
+              web_icon="ai_odoo_suggest,static/description/icon.png"/>
+    
+    <menuitem id="menu_ai_odoo_suggest" 
+              name="Suggestions" 
               parent="menu_ai_odoo_suggest_root" 
-              action="action_ai_odoo_suggest" sequence="10"/>
+              action="action_ai_odoo_suggest" 
+              sequence="10"/>
 </odoo>
