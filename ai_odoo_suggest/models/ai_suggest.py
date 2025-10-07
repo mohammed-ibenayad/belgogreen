@@ -34,7 +34,7 @@ class AIOdooSuggest(models.Model):
     ], default='pending', required=True, tracking=True)  # Add tracking=True
     executed_actions = fields.Text('Executed Actions')
     user_id = fields.Many2one('res.users', 'User', compute='_compute_user_id', store=True)
-    channel_id = fields.Many2one('mail.channel', 'Channel', compute='_compute_channel_id', store=True)
+    channel_id = fields.Many2one('discuss.channel', 'Channel', compute='_compute_channel_id', store=True)
 
     @api.depends('message_id.author_id')
     def _compute_user_id(self):
@@ -49,7 +49,7 @@ class AIOdooSuggest(models.Model):
     @api.depends('message_id.model', 'message_id.res_id')
     def _compute_channel_id(self):
         for record in self:
-            if record.message_id and record.message_id.model == 'mail.channel':
+            if record.message_id and record.message_id.model == 'discuss.channel':
                 record.channel_id = record.message_id.res_id
             else:
                 record.channel_id = False
@@ -294,7 +294,7 @@ Example response format:
 """
             
             self.env['mail.message'].sudo().create({
-                'model': 'mail.channel',
+                'model': 'discuss.channel',
                 'res_id': self.channel_id.id,
                 'body': body,
                 'message_type': 'notification',
@@ -429,7 +429,7 @@ Example response format:
 """
         
         self.env['mail.message'].sudo().create({
-            'model': 'mail.channel',
+            'model': 'discuss.channel',
             'res_id': self.channel_id.id,
             'body': body,
             'message_type': 'notification',
@@ -457,7 +457,7 @@ Example response format:
 """
             
             self.env['mail.message'].sudo().create({
-                'model': 'mail.channel',
+                'model': 'discuss.channel',
                 'res_id': self.channel_id.id,
                 'body': body,
                 'message_type': 'notification',

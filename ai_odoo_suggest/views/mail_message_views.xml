@@ -7,6 +7,7 @@
         <field name="inherit_id" ref="mail.mail_message_view_form"/>
         <field name="arch" type="xml">
             <!-- Add the field after body field -->
+            <!-- ai_suggest_ids is invisible because it's accessed programmatically, not displayed in UI -->
             <field name="body" position="after">
                 <field name="ai_suggest_ids" invisible="1"/>
             </field>

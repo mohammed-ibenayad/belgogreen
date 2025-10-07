@@ -19,7 +19,7 @@ class MailMessage(models.Model):
         
         for message in messages:
             # Check if this is an audio message in a channel
-            if (message.model == 'mail.channel' and 
+            if (message.model == 'discuss.channel' and 
                 message.attachment_ids and 
                 any(att.mimetype and 'audio' in att.mimetype for att in message.attachment_ids)):
                 
