@@ -11,7 +11,7 @@
                 <group string="AI Suggestions" invisible="not ai_suggest_ids">
                     <field name="ai_suggest_ids" nolabel="1">
                         <tree>
-                            <field name="name"/>
+                            <field name="name"/>  <!-- This is okay because ai.odoo.suggest HAS a name field -->
                             <field name="status" widget="badge"/>
                             <field name="create_date"/>
                         </tree>
