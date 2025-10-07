@@ -274,98 +274,43 @@ Example response format:
         if not self.channel_id or not actions:
             return
         
+        base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+        
         for i, action in enumerate(actions):
+            description = action.get('description', 'No description')
+            model = action.get('model', '')
+            action_type = action.get('action', '').upper()
+            
+            # Create URLs for confirm and reject
+            confirm_url = f"{base_url}/ai_odoo_suggest/confirm_link?suggestion_id={self.id}&action_index={i}"
+            reject_url = f"{base_url}/ai_odoo_suggest/reject_link?suggestion_id={self.id}&action_index={i}"
+            
             body = f"""
-<div class="alert alert-info mt-3 mb-3" style="border-left: 4px solid #17a2b8;">
-    <h5 class="alert-heading">
-        <i class="fa fa-robot"></i> AI Suggestion #{i+1}
-    </h5>
-    <p><strong>Action:</strong> {action.get('description', 'No description')}</p>
-    <p class="mb-1">
-        <strong>Model:</strong> <code>{action.get('model', '')}</code><br/>
-        <strong>Operation:</strong> <span class="badge badge-primary">{action.get('action', '').upper()}</span>
-    </p>
-    <hr/>
-    <div class="d-flex gap-2 mt-3">
-        <button class="btn btn-success btn-sm" 
-                onclick="
-                    event.preventDefault();
-                    const btn = this;
-                    btn.disabled = true;
-                    btn.innerHTML = '<i class=\\'fa fa-spinner fa-spin\\'></i> Processing...';
-                    fetch('/ai_odoo_suggest/confirm', {{
-                        method: 'POST',
-                        headers: {{
-                            'Content-Type': 'application/json',
-                        }},
-                        body: JSON.stringify({{
-                            jsonrpc: '2.0',
-                            method: 'call',
-                            params: {{
-                                suggestion_id: {self.id},
-                                action_index: {i}
-                            }},
-                            id: Math.floor(Math.random() * 1000000)
-                        }})
-                    }}).then(r => r.json()).then(data => {{
-                        if (data.result && data.result.success) {{
-                            btn.innerHTML = '<i class=\\'fa fa-check\\'></i> Confirmed';
-                            btn.classList.remove('btn-success');
-                            btn.classList.add('btn-secondary');
-                        }} else {{
-                            btn.innerHTML = '<i class=\\'fa fa-times\\'></i> Error';
-                            btn.disabled = false;
-                            alert('Error: ' + (data.result?.message || 'Unknown error'));
-                        }}
-                    }}).catch(err => {{
-                        btn.innerHTML = '<i class=\\'fa fa-exclamation-triangle\\'></i> Error';
-                        btn.disabled = false;
-                        alert('Network error: ' + err.message);
-                    }});
-                ">
-            <i class="fa fa-check"></i> Confirm
-        </button>
-        <button class="btn btn-danger btn-sm"
-                onclick="
-                    event.preventDefault();
-                    const btn = this;
-                    btn.disabled = true;
-                    btn.innerHTML = '<i class=\\'fa fa-spinner fa-spin\\'></i> Processing...';
-                    fetch('/ai_odoo_suggest/reject', {{
-                        method: 'POST',
-                        headers: {{
-                            'Content-Type': 'application/json',
-                        }},
-                        body: JSON.stringify({{
-                            jsonrpc: '2.0',
-                            method: 'call',
-                            params: {{
-                                suggestion_id: {self.id},
-                                action_index: {i}
-                            }},
-                            id: Math.floor(Math.random() * 1000000)
-                        }})
-                    }}).then(r => r.json()).then(data => {{
-                        if (data.result && data.result.success) {{
-                            btn.innerHTML = '<i class=\\'fa fa-times\\'></i> Rejected';
-                            btn.classList.remove('btn-danger');
-                            btn.classList.add('btn-secondary');
-                        }} else {{
-                            btn.innerHTML = '<i class=\\'fa fa-exclamation-triangle\\'></i> Error';
-                            btn.disabled = false;
-                            alert('Error: ' + (data.result?.message || 'Unknown error'));
-                        }}
-                    }}).catch(err => {{
-                        btn.innerHTML = '<i class=\\'fa fa-exclamation-triangle\\'></i> Error';
-                        btn.disabled = false;
-                        alert('Network error: ' + err.message);
-                    }});
-                ">
-            <i class="fa fa-times"></i> Reject
-        </button>
+    <div style="border-left: 4px solid #17a2b8; padding: 15px; margin: 10px 0; background-color: #f8f9fa; border-radius: 5px;">
+        <h5 style="color: #17a2b8; margin-bottom: 10px;">
+            <span style="font-size: 1.2em;">🤖</span> AI Suggestion #{i+1}
+        </h5>
+        <p style="margin: 5px 0;"><strong>Action:</strong> {description}</p>
+        <p style="margin: 5px 0;"><strong>Model:</strong> <code>{model}</code></p>
+        <p style="margin: 5px 0;"><strong>Operation:</strong> <span style="background-color: #007bff; color: white; padding: 3px 8px; border-radius: 3px; font-size: 0.85em;">{action_type}</span></p>
+        <hr style="margin: 10px 0;"/>
+        <div style="margin-top: 10px;">
+            <a href="{confirm_url}" 
+               style="display: inline-block; background-color: #28a745; color: white; text-decoration: none; padding: 8px 15px; border-radius: 4px; margin-right: 5px; font-size: 14px;"
+               target="_blank">
+                ✓ Confirm Action
+            </a>
+            <a href="{reject_url}" 
+               style="display: inline-block; background-color: #dc3545; color: white; text-decoration: none; padding: 8px 15px; border-radius: 4px; font-size: 14px;"
+               target="_blank">
+                ✗ Reject Action
+            </a>
+        </div>
+        <p style="margin-top: 10px; font-size: 0.85em; color: #6c757d;">
+            💡 Click the links above to confirm or reject this suggestion
+        </p>
     </div>
-</div>
-"""
+    """
             
             self.env['mail.message'].sudo().create({
                 'model': 'discuss.channel',

@@ -12,6 +12,7 @@
         'security/ir.model.access.csv',
         'views/ai_suggest_views.xml',
         'views/mail_message_views.xml',
+        'views/action_result_template.xml',
     ],
     'assets': {
         'web.assets_backend': [

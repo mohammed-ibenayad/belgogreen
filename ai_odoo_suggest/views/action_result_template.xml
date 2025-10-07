@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="action_result" name="AI Suggestion Action Result">
+        <t t-call="web.layout">
+            <div class="container mt-5">
+                <div class="row justify-content-center">
+                    <div class="col-md-8">
+                        <div t-attf-class="alert alert-#{success and 'success' or 'danger'}" role="alert">
+                            <h4 class="alert-heading">
+                                <i t-attf-class="fa #{success and 'fa-check-circle' or 'fa-times-circle'}"></i>
+                                <t t-esc="title"/>
+                            </h4>
+                            <hr/>
+                            <p class="mb-0"><t t-esc="message"/></p>
+                        </div>
+                        <div class="mt-3">
+                            <t t-if="channel_id">
+                                <a t-attf-href="/web#action=mail.action_discuss&amp;active_id=discuss.channel_{{channel_id}}" 
+                                   class="btn btn-primary">
+                                    <i class="fa fa-arrow-left"></i> Back to Discuss
+                                </a>
+                            </t>
+                            <a href="/web" class="btn btn-secondary ml-2">
+                                <i class="fa fa-home"></i> Go to Home
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>
