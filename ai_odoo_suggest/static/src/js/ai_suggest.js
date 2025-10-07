@@ -1,39 +1,55 @@
-odoo.define('ai_odoo_suggest.AISuggest', function (require) {
-    'use strict';
+/** @odoo-module **/
 
-    var core = require('web.core');
-    var rpc = require('web.rpc');
+import { registry } from "@web/core/registry";
+import { rpc } from "@web/core/network/rpc";
 
-    $(document).ready(function() {
-        // Handle AI suggestion confirm/reject buttons
-        $(document).on('click', '.ai-confirm', function() {
-            var suggestionId = $(this).data('suggestion-id');
-            var actionIndex = $(this).data('action-index');
+// Handle AI suggestion confirm/reject buttons in chat messages
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle AI suggestion confirm buttons
+    document.addEventListener('click', function(event) {
+        const confirmBtn = event.target.closest('.ai-confirm');
+        if (confirmBtn) {
+            const suggestionId = parseInt(confirmBtn.dataset.suggestionId);
+            const actionIndex = parseInt(confirmBtn.dataset.actionIndex);
             
-            rpc.query({
+            rpc('/web/dataset/call_kw/ai.odoo.suggest/confirm_action', {
                 model: 'ai.odoo.suggest',
                 method: 'confirm_action',
-                args: [suggestionId, actionIndex],
+                args: [[suggestionId], actionIndex],
+                kwargs: {}
             }).then(function(result) {
-                if (result.status === 'success') {
+                if (result && result.success) {
                     console.log('Action confirmed');
+                    // Optionally reload or update the UI
+                    confirmBtn.disabled = true;
+                    confirmBtn.textContent = '✓ Confirmed';
                 }
+            }).catch(function(error) {
+                console.error('Error confirming action:', error);
             });
-        });
-
-        $(document).on('click', '.ai-reject', function() {
-            var suggestionId = $(this).data('suggestion-id');
-            var actionIndex = $(this).data('action-index');
+        }
+        
+        // Handle AI suggestion reject buttons
+        const rejectBtn = event.target.closest('.ai-reject');
+        if (rejectBtn) {
+            const suggestionId = parseInt(rejectBtn.dataset.suggestionId);
+            const actionIndex = parseInt(rejectBtn.dataset.actionIndex);
             
-            rpc.query({
+            rpc('/web/dataset/call_kw/ai.odoo.suggest/reject_action', {
                 model: 'ai.odoo.suggest',
                 method: 'reject_action',
-                args: [suggestionId, actionIndex],
+                args: [[suggestionId], actionIndex],
+                kwargs: {}
             }).then(function(result) {
-                if (result.status === 'success') {
+                if (result && result.success) {
                     console.log('Action rejected');
+                    // Optionally reload or update the UI
+                    rejectBtn.disabled = true;
+                    rejectBtn.textContent = '✗ Rejected';
                 }
+            }).catch(function(error) {
+                console.error('Error rejecting action:', error);
             });
-        });
+        }
     });
 });
