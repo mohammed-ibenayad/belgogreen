@@ -14,14 +14,15 @@ _logger = logging.getLogger(__name__)
 class AIOdooSuggest(models.Model):
     _name = 'ai.odoo.suggest'
     _description = 'AI Odoo Suggestions'
+    _inherit = ['mail.thread', 'mail.activity.mixin']  # Add this line
     _order = 'create_date desc'
 
-    name = fields.Char('Title', required=True)
+    name = fields.Char('Title', required=True, tracking=True)  # Add tracking=True
     message_id = fields.Many2one('mail.message', 'Original Message', required=True, ondelete='cascade')
     audio_file = fields.Binary('Audio File', attachment=True)
     audio_filename = fields.Char('Audio Filename')
-    transcription = fields.Text('Transcription')
-    ai_response = fields.Text('AI Response')
+    transcription = fields.Text('Transcription', tracking=True)  # Add tracking=True
+    ai_response = fields.Text('AI Response', tracking=True)  # Add tracking=True
     suggested_actions = fields.Text('Suggested Actions', help='JSON format of suggested actions')
     status = fields.Selection([
         ('pending', 'Pending'),
@@ -30,7 +31,7 @@ class AIOdooSuggest(models.Model):
         ('confirmed', 'Confirmed'),
         ('rejected', 'Rejected'),
         ('executed', 'Executed'),
-    ], default='pending', required=True)
+    ], default='pending', required=True, tracking=True)  # Add tracking=True
     executed_actions = fields.Text('Executed Actions')
     user_id = fields.Many2one('res.users', 'User', compute='_compute_user_id', store=True)
     channel_id = fields.Many2one('mail.channel', 'Channel', compute='_compute_channel_id', store=True)
