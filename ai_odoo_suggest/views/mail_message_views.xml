@@ -9,7 +9,7 @@
             <!-- Add the field after body field -->
             <!-- ai_suggest_ids is invisible because it's accessed programmatically, not displayed in UI -->
             <field name="body" position="after">
-                <field name="ai_suggest_ids" invisible="1" force_save="1"/>
+                <field name="ai_suggest_ids" invisible="1" force_save="1" groups="base.group_system"/>
             </field>
         </field>
     </record>
