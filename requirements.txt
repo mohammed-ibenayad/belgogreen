@@ -1,6 +1,2 @@
-openai==1.40.2
+openai>=1.40.0
 pydub>=0.25.1
-requests>=2.28.0
-SpeechRecognition>=3.10.0
-librosa>=0.10.0
-numpy>=1.21.0
