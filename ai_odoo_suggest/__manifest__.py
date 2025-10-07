@@ -25,7 +25,6 @@
     'external_dependencies': {
         'python': [
             'openai',
-            'pydub',
         ],
         #'bin': [
         #'ffmpeg',  # System binary dependency

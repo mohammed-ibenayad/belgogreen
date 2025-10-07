@@ -104,29 +104,28 @@ class AIOdooSuggest(models.Model):
         if not self.audio_file:
             return
             
-        # Decode the audio file
         audio_data = base64.b64decode(self.audio_file)
         
-        # Convert to proper format for transcription
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as temp_file:
+        # Determine file extension from filename or default to mp3
+        file_ext = '.mp3'
+        if self.audio_filename:
+            _, ext = os.path.splitext(self.audio_filename)
+            if ext:
+                file_ext = ext
+        
+        with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as temp_file:
             temp_file.write(audio_data)
             temp_file_path = temp_file.name
         
         try:
-            # Convert audio to proper format if needed
-            audio = AudioSegment.from_file(temp_file_path)
-            audio.export(temp_file_path, format="mp3")
-            
-            # Transcribe using OpenAI Whisper
+            # Try direct transcription (works for mp3, webm, m4a, etc.)
             transcription = self._call_whisper_api(temp_file_path)
             self.transcription = transcription
             self.status = 'transcribed'
-            
-            # Process transcription with AI agent
             self._process_with_ai_agent()
             
         except Exception as e:
-            _logger.error(f"Error transcribing audio: {str(e)}")
+            _logger.error(f"Error transcribing audio ({file_ext}): {str(e)}")
             self.transcription = f"Error transcribing audio: {str(e)}"
             self.status = 'pending'
         finally:
