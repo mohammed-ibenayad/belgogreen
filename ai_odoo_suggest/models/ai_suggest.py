@@ -31,7 +31,7 @@ class AIOdooSuggest(models.Model):
         ('confirmed', 'Confirmed'),
         ('rejected', 'Rejected'),
         ('executed', 'Executed'),
-    ], default='pending', tracking=True)
+    ], default='pending')
     executed_actions = fields.Text('Executed Actions')
     user_id = fields.Many2one('res.users', 'User', compute='_compute_user_id', store=True)
     channel_id = fields.Many2one('mail.channel', 'Channel', compute='_compute_channel_id', store=True)
@@ -41,10 +41,13 @@ class AIOdooSuggest(models.Model):
         for record in self:
             record.user_id = record.message_id.author_id
 
-    @api.depends('message_id.channel_ids')
+    @api.depends('message_id.model', 'message_id.res_id')
     def _compute_channel_id(self):
         for record in self:
-            record.channel_id = record.message_id.channel_ids[:1]
+            if record.message_id.model == 'mail.channel':
+                record.channel_id = record.message_id.res_id
+            else:
+                record.channel_id = False
 
     @api.model
     def process_audio_message(self, message_id):
