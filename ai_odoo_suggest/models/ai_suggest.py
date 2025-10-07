@@ -45,9 +45,16 @@ class AIOdooSuggest(models.Model):
     def _compute_channel_id(self):
         for record in self:
             if record.message_id.model == 'mail.channel':
-                record.channel_id = record.message_id.res_id
+                record.channel_id = self.env['mail.channel'].browse(record.message_id.res_id)
             else:
                 record.channel_id = False
+
+    def action_process(self):
+        """Manual process button"""
+        for record in self:
+            if record.status == 'pending':
+                record._transcribe_audio()
+        return True
 
     @api.model
     def process_audio_message(self, message_id):
