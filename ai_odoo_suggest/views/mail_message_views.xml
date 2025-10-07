@@ -1,12 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- Inherit mail.message form view -->
     <record id="view_mail_message_form_inherit_ai_suggest" model="ir.ui.view">
         <field name="name">mail.message.form.inherit.ai.suggest</field>
         <field name="model">mail.message</field>
         <field name="inherit_id" ref="mail.mail_message_view_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='attachment_ids']" position="after">
-                <field name="ai_suggest_ids" readonly="1" invisible="1"/>
+            <!-- Add the field inside the sheet, at the end -->
+            <xpath expr="//sheet" position="inside">
+                <group string="AI Suggestions" invisible="not ai_suggest_ids">
+                    <field name="ai_suggest_ids" nolabel="1">
+                        <tree>
+                            <field name="name"/>
+                            <field name="status" widget="badge"/>
+                            <field name="create_date"/>
+                        </tree>
+                    </field>
+                </group>
             </xpath>
         </field>
     </record>
