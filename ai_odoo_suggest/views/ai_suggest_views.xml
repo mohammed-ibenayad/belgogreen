@@ -77,40 +77,4 @@
     <menuitem id="menu_ai_odoo_suggest" name="AI Suggestions" 
               parent="menu_ai_odoo_suggest_root" 
               action="action_ai_odoo_suggest" sequence="10"/>
-
-    <!-- Configuration -->
-    <record id="config_settings_view_form" model="ir.ui.view">
-        <field name="name">config.settings.view.form.inherit.ai.odoo.suggest</field>
-        <field name="model">res.config.settings</field>
-        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
-        <field name="arch" type="xml">
-            <xpath expr="//div[@class='app_settings_block']" position="inside">
-                <div class="app_settings_block" data-string="AI Odoo Suggest" string="AI Odoo Suggest">
-                    <h2>AI Configuration</h2>
-                    <div class="row mt16 o_settings_container">
-                        <div class="col-12 col-lg-6 o_setting_box">
-                            <div class="o_setting_left_pane">
-                                <field name="openai_api_key"/>
-                            </div>
-                            <div class="o_setting_right_pane">
-                                <label for="openai_api_key"/>
-                                <div class="text-muted">
-                                    API key for OpenAI services (Whisper for transcription, GPT for processing)
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </xpath>
-        </field>
-    </record>
-
-    <record id="res_config_settings_openai_api_key" model="ir.model.fields">
-        <field name="name">openai_api_key</field>
-        <field name="model">res.config.settings</field>
-        <field name="field_description">OpenAI API Key</field>
-        <field name="ttype">char</field>
-        <field name="size">100</field>
-        <field name="config_parameter" eval="1"/>
-    </record>
 </odoo>
