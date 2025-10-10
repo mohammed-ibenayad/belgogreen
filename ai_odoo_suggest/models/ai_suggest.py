@@ -14,15 +14,15 @@ _logger = logging.getLogger(__name__)
 class AIOdooSuggest(models.Model):
     _name = 'ai.odoo.suggest'
     _description = 'AI Odoo Suggestions'
-    _inherit = ['mail.thread', 'mail.activity.mixin']  # Add this line
+    _inherit = ['mail.thread', 'mail.activity.mixin']
     _order = 'create_date desc'
 
-    name = fields.Char('Title', required=True, tracking=True)  # Add tracking=True
+    name = fields.Char('Title', required=True, tracking=True)
     message_id = fields.Many2one('mail.message', 'Original Message', required=True, ondelete='cascade')
     audio_file = fields.Binary('Audio File', attachment=True)
     audio_filename = fields.Char('Audio Filename')
-    transcription = fields.Text('Transcription', tracking=True)  # Add tracking=True
-    ai_response = fields.Text('AI Response', tracking=True)  # Add tracking=True
+    transcription = fields.Text('Transcription', tracking=True)
+    ai_response = fields.Text('AI Response', tracking=True)
     suggested_actions = fields.Text('Suggested Actions', help='JSON format of suggested actions')
     status = fields.Selection([
         ('pending', 'Pending'),
@@ -31,7 +31,7 @@ class AIOdooSuggest(models.Model):
         ('confirmed', 'Confirmed'),
         ('rejected', 'Rejected'),
         ('executed', 'Executed'),
-    ], default='pending', required=True, tracking=True)  # Add tracking=True
+    ], default='pending', required=True, tracking=True)
     executed_actions = fields.Text('Executed Actions')
     user_id = fields.Many2one('res.users', 'User', compute='_compute_user_id', store=True)
     channel_id = fields.Many2one('discuss.channel', 'Channel', compute='_compute_channel_id', store=True)
@@ -286,39 +286,50 @@ Example response format:
             reject_url = f"{base_url}/ai_odoo_suggest/reject_link?suggestion_id={self.id}&action_index={i}"
             
             body = f"""
-    <div style="border-left: 4px solid #17a2b8; padding: 15px; margin: 10px 0; background-color: #f8f9fa; border-radius: 5px;">
-        <h5 style="color: #17a2b8; margin-bottom: 10px;">
-            <span style="font-size: 1.2em;">🤖</span> AI Suggestion #{i+1}
-        </h5>
-        <p style="margin: 5px 0;"><strong>Action:</strong> {description}</p>
-        <p style="margin: 5px 0;"><strong>Model:</strong> <code>{model}</code></p>
-        <p style="margin: 5px 0;"><strong>Operation:</strong> <span style="background-color: #007bff; color: white; padding: 3px 8px; border-radius: 3px; font-size: 0.85em;">{action_type}</span></p>
-        <hr style="margin: 10px 0;"/>
-        <div style="margin-top: 10px;">
+<div style="padding: 15px; margin: 10px 0; background-color: #d4edda; border-radius: 8px;">
+    <div style="background-color: #ffffff; border: 1px solid #dee2e6; padding: 20px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        <h3 style="color: #155724; margin: 0 0 15px 0; font-size: 18px; font-weight: 600;">
+            <span style="font-size: 24px; margin-right: 8px;">🤖</span>AI Suggestion #{i+1}
+        </h3>
+        <p style="margin: 10px 0; color: #333; line-height: 1.6;">
+            <strong>Action:</strong> {description}
+        </p>
+        <p style="margin: 10px 0; color: #333;">
+            <strong>Model:</strong> <span style="color: #721c24; font-family: 'Courier New', monospace;">{model}</span>
+        </p>
+        <p style="margin: 10px 0; color: #333;">
+            <strong>Operation:</strong> <span style="background-color: #007bff; color: white; padding: 4px 12px; border-radius: 4px; font-size: 13px; font-weight: 600;">{action_type}</span>
+        </p>
+        <hr style="border: none; border-top: 1px solid #dee2e6; margin: 15px 0;"/>
+        <div style="margin-top: 15px;">
             <a href="{confirm_url}" 
-               style="display: inline-block; background-color: #28a745; color: white; text-decoration: none; padding: 8px 15px; border-radius: 4px; margin-right: 5px; font-size: 14px;"
+               style="display: inline-block; background-color: #28a745; color: white; text-decoration: none; padding: 10px 24px; border-radius: 6px; margin-right: 10px; font-size: 14px; font-weight: 600;"
                target="_blank">
                 ✓ Confirm Action
             </a>
             <a href="{reject_url}" 
-               style="display: inline-block; background-color: #dc3545; color: white; text-decoration: none; padding: 8px 15px; border-radius: 4px; font-size: 14px;"
+               style="display: inline-block; background-color: #dc3545; color: white; text-decoration: none; padding: 10px 24px; border-radius: 6px; font-size: 14px; font-weight: 600;"
                target="_blank">
                 ✗ Reject Action
             </a>
         </div>
-        <p style="margin-top: 10px; font-size: 0.85em; color: #6c757d;">
+        <p style="margin-top: 15px; margin-bottom: 0; font-size: 13px; color: #6c757d;">
             💡 Click the links above to confirm or reject this suggestion
         </p>
     </div>
-    """
+</div>
+"""
             
-            self.env['mail.message'].sudo().create({
+            message = self.env['mail.message'].sudo().create({
                 'model': 'discuss.channel',
                 'res_id': self.channel_id.id,
                 'body': body,
                 'message_type': 'notification',
                 'author_id': self.env.user.partner_id.id,
             })
+            
+            # Add real-time notification
+            self.channel_id._notify_thread(message)
 
     def confirm_action(self, action_index):
         """Confirm and execute a specific action"""
@@ -440,20 +451,31 @@ Example response format:
             return
         
         body = f"""
-<div class="alert alert-success">
-    <h5>✅ Action Executed Successfully</h5>
-    <p><strong>Action:</strong> {action.get('description', '')}</p>
-    <p><strong>Result:</strong> {result.get('message', 'Action completed')}</p>
+<div style="padding: 15px; margin: 10px 0; background-color: #d4edda; border-radius: 8px;">
+    <div style="background-color: #ffffff; border: 1px solid #dee2e6; padding: 20px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        <h3 style="color: #155724; margin: 0 0 15px 0; font-size: 18px; font-weight: 600;">
+            <span style="font-size: 24px; margin-right: 8px;">✅</span>Action Executed Successfully
+        </h3>
+        <p style="margin: 10px 0; color: #333; line-height: 1.6;">
+            <strong>Action:</strong> {action.get('description', '')}
+        </p>
+        <p style="margin: 10px 0 0 0; color: #333; line-height: 1.6;">
+            <strong>Result:</strong> {result.get('message', 'Action completed')}
+        </p>
+    </div>
 </div>
 """
         
-        self.env['mail.message'].sudo().create({
+        message = self.env['mail.message'].sudo().create({
             'model': 'discuss.channel',
             'res_id': self.channel_id.id,
             'body': body,
             'message_type': 'notification',
             'author_id': self.env.user.partner_id.id,
         })
+        
+        # Add real-time notification
+        self.channel_id._notify_thread(message)
 
     def reject_action(self, action_index):
         """Reject a specific action"""
@@ -469,18 +491,27 @@ Example response format:
         # Send rejection message
         if self.channel_id:
             body = f"""
-<div class="alert alert-warning">
-    <h5>❌ Action Rejected</h5>
-    <p><strong>Action:</strong> {action.get('description', '')}</p>
+<div style="padding: 15px; margin: 10px 0; background-color: #f8d7da; border-radius: 8px;">
+    <div style="background-color: #ffffff; border: 1px solid #dee2e6; padding: 20px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        <h3 style="color: #721c24; margin: 0 0 15px 0; font-size: 18px; font-weight: 600;">
+            <span style="font-size: 24px; margin-right: 8px;">❌</span>Action Rejected
+        </h3>
+        <p style="margin: 10px 0 0 0; color: #333; line-height: 1.6;">
+            <strong>Action:</strong> {action.get('description', '')}
+        </p>
+    </div>
 </div>
 """
             
-            self.env['mail.message'].sudo().create({
+            message = self.env['mail.message'].sudo().create({
                 'model': 'discuss.channel',
                 'res_id': self.channel_id.id,
                 'body': body,
                 'message_type': 'notification',
                 'author_id': self.env.user.partner_id.id,
             })
+            
+            # Add real-time notification
+            self.channel_id._notify_thread(message)
         
         return {'success': True, 'message': 'Action rejected'}
