@@ -94,9 +94,6 @@
                                 <field name="company_id" groups="base.group_multi_company" readonly="1"/>
                             </group>
                         </group>
-                        <group string="Notes">
-                            <field name="notes" nolabel="1" placeholder="Additional notes..."/>
-                        </group>
                     </sheet>
                     <!-- Chatter -->
                     <chatter/>
