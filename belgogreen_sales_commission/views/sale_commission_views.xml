@@ -98,6 +98,8 @@
                             <field name="notes" nolabel="1" placeholder="Additional notes..."/>
                         </group>
                     </sheet>
+                    <!-- Chatter -->
+                    <chatter/>
                 </form>
             </field>
         </record>
