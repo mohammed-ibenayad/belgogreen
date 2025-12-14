@@ -148,14 +148,10 @@
                                     You can select additional optional deductions above.
                                 </div>
                             </page>
-                            <page string="Claimant Notes" name="notes">
-                                <field name="notes" placeholder="Reason for claim..." readonly="state not in ['draft', 'pending']"/>
-                            </page>
-                            <page string="Admin Notes" name="admin_notes" groups="belgogreen_sales_commission.group_commission_manager">
-                                <field name="admin_notes" placeholder="Internal notes..."/>
-                            </page>
                         </notebook>
                     </sheet>
+                    <!-- Chatter -->
+                    <chatter/>
                 </form>
             </field>
         </record>
