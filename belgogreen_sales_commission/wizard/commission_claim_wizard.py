@@ -22,10 +22,6 @@ class CommissionClaimWizard(models.TransientModel):
         compute='_compute_total_amount',
         digits='Product Price',
     )
-    notes = fields.Text(
-        string='Notes',
-        help='Optional notes about this claim',
-    )
     currency_id = fields.Many2one(
         'res.currency',
         string='Currency',
@@ -85,7 +81,6 @@ class CommissionClaimWizard(models.TransientModel):
         claim = self.env['sale.commission.claim'].create({
             'user_id': self.env.uid,
             'commission_ids': [(6, 0, self.commission_ids.ids)],
-            'notes': self.notes or '',
         })
 
         # Update commission payment status to 'claimed'
