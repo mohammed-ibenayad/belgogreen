@@ -36,15 +36,15 @@
                 <div class="alert alert-info" role="alert">
                     <p><strong>Important:</strong></p>
                     <ul>
-                        <li>You are about to submit a claim for <strong><field name="commission_count" readonly="1" nolabel="1" class="oe_inline"/> commission(s)</strong></li>
+                        <li>You are about to create a claim for <strong><field name="commission_count" readonly="1" nolabel="1" class="oe_inline"/> commission(s)</strong></li>
                         <li>Total amount to be claimed: <strong><field name="total_amount" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1" nolabel="1" class="oe_inline"/></strong></li>
-                        <li>Once submitted, your claim will be reviewed by management</li>
-                        <li>You will be notified when your claim is approved or rejected</li>
+                        <li>The claim will be created in draft state - you can review and add more commissions</li>
+                        <li>Submit the claim when ready for management review</li>
                     </ul>
                 </div>
 
                 <footer>
-                    <button name="action_confirm_claim" string="Submit Claim" type="object" class="btn-primary"/>
+                    <button name="action_confirm_claim" string="Create Claim" type="object" class="btn-primary"/>
                     <button string="Cancel" class="btn-secondary" special="cancel"/>
                 </footer>
             </form>

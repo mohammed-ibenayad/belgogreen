@@ -77,25 +77,20 @@ class CommissionClaimWizard(models.TransientModel):
         if not self.commission_ids:
             raise UserError(_('No commissions selected.'))
 
-        # Create the claim
+        # Create the claim in draft state
+        # Commissions will be marked as 'claimed' when claim is submitted
         claim = self.env['sale.commission.claim'].create({
             'user_id': self.env.uid,
             'commission_ids': [(6, 0, self.commission_ids.ids)],
         })
-
-        # Update commission payment status to 'claimed'
-        self.commission_ids.write({'payment_status': 'claimed'})
-
-        # Notify admins
-        claim._notify_admins()
 
         # Return action to view the created claim
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
-                'title': _('Claim Submitted'),
-                'message': _('Your claim %s for %s commissions totaling %s has been submitted successfully.') % (
+                'title': _('Claim Created'),
+                'message': _('Your claim %s with %s commission(s) totaling %s has been created. Review and submit when ready.') % (
                     claim.name,
                     len(self.commission_ids),
                     '{:,.2f} {}'.format(self.total_amount, self.currency_id.symbol)
