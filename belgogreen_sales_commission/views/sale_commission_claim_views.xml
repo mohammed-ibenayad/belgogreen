@@ -41,7 +41,10 @@
                                 invisible="state != 'pending'"
                                 groups="belgogreen_sales_commission.group_commission_manager"
                                 confirm="Are you sure you want to reject this claim?"/>
-                        <field name="state" widget="statusbar" statusbar_visible="draft,pending,approved,po_sent,po_confirmed"/>
+                        <button name="unlink" string="Delete" type="object"
+                                invisible="state != 'draft'"
+                                confirm="Are you sure you want to delete this draft claim?"/>
+                        <field name="state" widget="statusbar" statusbar_visible="draft,pending,approved"/>
                     </header>
                     <sheet>
                         <div class="oe_button_box" name="button_box">
