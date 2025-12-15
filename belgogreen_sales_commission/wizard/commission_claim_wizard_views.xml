@@ -33,10 +33,6 @@
                     </field>
                 </group>
 
-                <group string="Additional Information">
-                    <field name="notes" placeholder="Optional notes about this claim..." nolabel="1"/>
-                </group>
-
                 <div class="alert alert-info" role="alert">
                     <p><strong>Important:</strong></p>
                     <ul>
