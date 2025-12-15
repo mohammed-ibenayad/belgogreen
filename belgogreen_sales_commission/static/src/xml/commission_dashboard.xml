@@ -10,7 +10,7 @@
             <div class="o_dashboard_header">
                 <h1>Commission Dashboard</h1>
                 <button class="btn btn-primary dashboard_refresh">
-                    <i class="fa fa-refresh"/> Refresh
+                    <i class="fa fa-refresh"/> Actualiser
                 </button>
             </div>
 
@@ -48,7 +48,7 @@
                             </div>
                             <div class="card_content">
                                 <h3 class="kpi_value" id="month_total">$0</h3>
-                                <p class="kpi_label">This Month</p>
+                                <p class="kpi_label" id="month_label">Ce mois</p>
                                 <div class="kpi_stats">
                                     <span class="stat_item">
                                         <i class="fa fa-list"/>
@@ -122,77 +122,10 @@
                     <div class="col-md-4">
                         <div class="dashboard_card chart_card">
                             <div class="card_header">
-                                <h4><i class="fa fa-pie-chart"/> By Status</h4>
+                                <h4><i class="fa fa-bar-chart"/> By Status</h4>
                             </div>
                             <div class="card_body">
                                 <canvas id="status_chart" height="180"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <!-- Team Performance Chart -->
-                    <div class="col-md-12">
-                        <div class="dashboard_card chart_card">
-                            <div class="card_header">
-                                <h4><i class="fa fa-bar-chart"/> Team Performance (This Month)</h4>
-                            </div>
-                            <div class="card_body">
-                                <canvas id="team_chart" height="60"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Tables Section -->
-            <div class="dashboard_tables_section">
-                <div class="row">
-                    <!-- Recent Commissions -->
-                    <div class="col-md-6">
-                        <div class="dashboard_card table_card">
-                            <div class="card_header">
-                                <h4><i class="fa fa-history"/> Recent Commissions</h4>
-                            </div>
-                            <div class="card_body">
-                                <table class="table table-hover" id="recent_commissions_table">
-                                    <thead>
-                                        <tr>
-                                            <th>Date</th>
-                                            <th>Order</th>
-                                            <th>Amount</th>
-                                            <th>Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <!-- Populated by JS -->
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Team Members -->
-                    <div class="col-md-6">
-                        <div class="dashboard_card table_card">
-                            <div class="card_header">
-                                <h4><i class="fa fa-users"/> My Team</h4>
-                            </div>
-                            <div class="card_body">
-                                <table class="table table-hover" id="team_members_table">
-                                    <thead>
-                                        <tr>
-                                            <th>Name</th>
-                                            <th>Role</th>
-                                            <th>Unpaid</th>
-                                            <th>Count</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <!-- Populated by JS -->
-                                    </tbody>
-                                </table>
                             </div>
                         </div>
                     </div>

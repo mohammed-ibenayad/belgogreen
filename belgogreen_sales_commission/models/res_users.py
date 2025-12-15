@@ -132,6 +132,26 @@ class ResUsers(models.Model):
         help='Description détaillée de l\'anomalie hiérarchique'
     )
 
+    has_active_commission_plan = fields.Boolean(
+        string='Has Active Commission Plan',
+        compute='_compute_has_active_commission_plan',
+        help='True if user is in an active hierarchical commission plan'
+    )
+
+    @api.depends('commission_role_id')
+    def _compute_has_active_commission_plan(self):
+        """Check if user is in an active commission plan"""
+        for user in self:
+            if not user.commission_role_id:
+                user.has_active_commission_plan = False
+            else:
+                # Check if there's an active plan for the user's role
+                active_plans = self.env['hr.commission.plan'].search([
+                    ('commission_role_id', '=', user.commission_role_id.id),
+                    ('active', '=', True),
+                ], limit=1)
+                user.has_active_commission_plan = bool(active_plans)
+
     @api.depends('my_commission_ids', 'my_commission_ids.payment_status', 'my_commission_ids.commission_amount')
     def _compute_commission_stats(self):
         """Compute commission statistics for the user"""
