@@ -72,12 +72,12 @@ class CommissionDashboard(models.TransientModel):
             return False
 
         # Check if there's an active plan for the user's role
-        active_plans = self.env['hr.commission.plan'].search([
-            ('commission_role_id', '=', user.commission_role_id.id),
-            ('active', '=', True),
-        ])
+        active_plans = self.env['sale.commission.plan'].search([
+            ('is_hierarchical', '=', True),
+            ('state', '=', 'approved'),
+        ], limit=1)
 
-        return len(active_plans) > 0
+        return bool(active_plans)
 
     def _compute_kpis(self, my_commissions, team_commissions, first_day_month, today):
         """Compute KPI metrics"""

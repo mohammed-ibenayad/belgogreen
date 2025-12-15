@@ -145,10 +145,10 @@ class ResUsers(models.Model):
             if not user.commission_role_id:
                 user.has_active_commission_plan = False
             else:
-                # Check if there's an active plan for the user's role
-                active_plans = self.env['hr.commission.plan'].search([
-                    ('commission_role_id', '=', user.commission_role_id.id),
-                    ('active', '=', True),
+                # Check if there's an active hierarchical plan
+                active_plans = self.env['sale.commission.plan'].search([
+                    ('is_hierarchical', '=', True),
+                    ('state', '=', 'approved'),
                 ], limit=1)
                 user.has_active_commission_plan = bool(active_plans)
 
