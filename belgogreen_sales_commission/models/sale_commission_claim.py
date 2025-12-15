@@ -479,7 +479,7 @@ class SaleCommissionClaim(models.Model):
             'state': 'draft',
             'company_id': self[0].company_id.id,
             'currency_id': self[0].currency_id.id,
-            'notes': self._generate_batch_po_notes(),
+            'note': self._generate_batch_po_notes(),
         }
 
         po = self.env['purchase.order'].create(po_vals)
