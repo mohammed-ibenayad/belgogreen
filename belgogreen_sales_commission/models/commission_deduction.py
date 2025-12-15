@@ -121,8 +121,6 @@ class CommissionDeduction(models.Model):
         readonly=True
     )
 
-    notes = fields.Text(string='Notes')
-
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:

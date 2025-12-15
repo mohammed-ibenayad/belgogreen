@@ -60,17 +60,6 @@ class SaleCommissionClaim(models.Model):
     ], string='State', default='pending', required=True, tracking=True,
        help='Pending: Awaiting review | Approved: Ready to pay | Rejected: Denied')
 
-    notes = fields.Text(
-        string='Claimant Notes',
-        help='Notes from the salesperson about this claim'
-    )
-
-    admin_notes = fields.Text(
-        string='Admin Notes',
-        tracking=True,
-        help='Internal notes from the administrator'
-    )
-
     processed_by = fields.Many2one(
         'res.users',
         string='Processed By',
@@ -394,8 +383,6 @@ class SaleCommissionClaim(models.Model):
     def _notify_claimant(self, decision):
         """Notify claimant about claim decision"""
         message = _('Your commission claim %s has been %s.') % (self.name, decision)
-        if self.admin_notes:
-            message += _('\n\nAdmin notes: %s') % self.admin_notes
 
         self.message_post(
             body=message,
@@ -488,10 +475,7 @@ class SaleCommissionClaim(models.Model):
         self.write({'purchase_order_id': po.id})
 
         # Create main PO line with total gross commission amount
-        if len(self) == 1:
-            line_name = _('Commission Payment - %s') % self.name
-        else:
-            line_name = _('Commission Payment - %s claims') % len(self)
+        line_name = _('Commission Payment')
 
         self.env['purchase.order.line'].create({
             'order_id': po.id,
@@ -538,62 +522,44 @@ class SaleCommissionClaim(models.Model):
         return self._generate_batch_po_notes()
 
     def _generate_batch_po_notes(self):
-        """Generate notes for PO with deduction breakdown (supports single and batch)"""
+        """Generate notes for PO with commission list and deduction breakdown"""
         notes = _('Commission Payment Details\n')
         notes += _('═' * 50) + '\n\n'
 
-        if len(self) == 1:
-            # Single claim
-            notes += _('Claim Reference: %s\n') % self.name
-            notes += _('Claimant: %s\n') % self.user_id.name
-            notes += _('Number of Commissions: %s\n\n') % self.commission_count
-        else:
-            # Batch claims
-            notes += _('Batch Payment - %s Claims\n') % len(self)
-            notes += _('Claims: %s\n') % ', '.join(self.mapped('name'))
-            notes += _('Employee: %s\n') % self[0].user_id.name
-            notes += _('Total Commissions: %s\n\n') % sum(self.mapped('commission_count'))
-
-        notes += _('Financial Breakdown:\n')
+        # List all commissions
+        all_commissions = self.mapped('commission_ids')
+        notes += _('Commissions Paid:\n')
         notes += _('─' * 50) + '\n'
 
-        total_gross = sum(self.mapped('total_amount'))
-        total_deductions = sum(self.mapped('total_deductions'))
-        total_net = sum(self.mapped('net_amount'))
+        for commission in all_commissions:
+            notes += _('  • %s: %s %s\n') % (
+                commission.name,
+                commission.commission_amount,
+                self[0].currency_id.symbol
+            )
 
-        notes += _('Gross Commissions: %s %s\n') % (total_gross, self[0].currency_id.symbol)
+        notes += _('─' * 50) + '\n'
+        total_gross = sum(self.mapped('total_amount'))
+        notes += _('Total Commissions: %s %s\n') % (total_gross, self[0].currency_id.symbol)
 
         # List all deductions
         all_deductions = self.mapped('all_deduction_ids')
         if all_deductions:
             notes += _('\nDeductions:\n')
-            for claim in self:
-                if claim.all_deduction_ids:
-                    if len(self) > 1:
-                        notes += _('  Claim %s:\n') % claim.name
-                    for deduction in claim.all_deduction_ids:
-                        indent = '    ' if len(self) > 1 else '  '
-                        notes += _('%s• %s (%s): -%s %s\n') % (
-                            indent,
-                            deduction.deduction_type.replace('_', ' ').title(),
-                            deduction.name,
-                            deduction.amount,
-                            self[0].currency_id.symbol
-                        )
             notes += _('─' * 50) + '\n'
+            for deduction in all_deductions:
+                notes += _('  • %s (%s): -%s %s\n') % (
+                    deduction.deduction_type.replace('_', ' ').title(),
+                    deduction.name,
+                    deduction.amount,
+                    self[0].currency_id.symbol
+                )
+            notes += _('─' * 50) + '\n'
+            total_deductions = sum(self.mapped('total_deductions'))
             notes += _('Total Deductions: -%s %s\n') % (total_deductions, self[0].currency_id.symbol)
 
         notes += _('═' * 50) + '\n'
+        total_net = sum(self.mapped('net_amount'))
         notes += _('NET AMOUNT: %s %s\n') % (total_net, self[0].currency_id.symbol)
-
-        # Add claimant notes if any
-        claim_notes = self.filtered(lambda c: c.notes)
-        if claim_notes:
-            notes += _('\nClaimant Notes:\n')
-            for claim in claim_notes:
-                if len(self) > 1:
-                    notes += _('%s: %s\n') % (claim.name, claim.notes)
-                else:
-                    notes += _('%s\n') % claim.notes
 
         return notes
