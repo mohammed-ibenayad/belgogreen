@@ -186,6 +186,7 @@ export class CommissionDashboard extends Component {
         // Update KPI values
         this.updateElement('#my_total', this.formatCurrency(kpis.my_total));
         this.updateElement('#my_pending', this.formatCurrency(kpis.my_pending));
+        this.updateElement('#my_paid', this.formatCurrency(kpis.my_paid));
         this.updateElement('#my_count', kpis.my_count);
 
         this.updateElement('#month_total', this.formatCurrency(kpis.my_month_total));
@@ -200,8 +201,6 @@ export class CommissionDashboard extends Component {
         this.updateElement('#team_total', this.formatCurrency(kpis.team_total));
         this.updateElement('#team_pending', this.formatCurrency(kpis.team_pending));
         this.updateElement('#team_members', kpis.team_members);
-
-        this.updateElement('#pending_claims', kpis.pending_claims);
     }
 
     updateCharts(charts) {
@@ -331,13 +330,14 @@ export class CommissionDashboard extends Component {
     }
 
     showGenerationNotification(result) {
-        // Show notification for commission generation
-        const message = `${result.count} commission(s) generated - Total: ${this.formatCurrency(result.total_amount)}`;
+        // Show notification for commission generation with claimable amount
+        const message = `${result.count} commission(s) créée(s) - Montant total: ${this.formatCurrency(result.total_amount)}\nMontant réclamable: ${this.formatCurrency(result.claimable_amount || result.total_amount)}`;
 
         if (this.notification) {
             this.notification.add(message, {
-                title: 'Commissions Generated',
+                title: 'Commissions générées',
                 type: 'success',
+                sticky: false,
             });
         } else {
             // Fallback if notification service not available

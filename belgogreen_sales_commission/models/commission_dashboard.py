@@ -240,6 +240,7 @@ class CommissionDashboard(models.TransientModel):
                 continue
 
         # Calculate total amount of commissions created for this user
+        claimable_amount = 0
         if total_commissions_created > 0:
             # Get commissions created for current user from processed orders
             recent_commissions = self.env['sale.commission'].search([
@@ -249,9 +250,14 @@ class CommissionDashboard(models.TransientModel):
 
             total_amount = sum(recent_commissions.mapped('commission_amount'))
 
+            # Calculate claimable amount (unpaid commissions for current user)
+            unpaid_commissions = recent_commissions.filtered(lambda c: c.payment_status == 'unpaid')
+            claimable_amount = sum(unpaid_commissions.mapped('commission_amount'))
+
         return {
             'count': total_commissions_created,
             'total_amount': total_amount,
+            'claimable_amount': claimable_amount,
             'success': True,
             'message': f'{total_commissions_created} commission(s) created from {len(processed_orders)} order(s)'
         }

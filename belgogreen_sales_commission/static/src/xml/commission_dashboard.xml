@@ -8,7 +8,7 @@
             </div>
 
             <div class="o_dashboard_header">
-                <h1>Commission Dashboard</h1>
+                <h1>Tableau de bord des commissions</h1>
                 <button class="btn btn-primary dashboard_refresh">
                     <i class="fa fa-refresh"/> Actualiser
                 </button>
@@ -25,11 +25,11 @@
                             </div>
                             <div class="card_content">
                                 <h3 class="kpi_value" id="my_total">$0</h3>
-                                <p class="kpi_label">My Total Commissions</p>
+                                <p class="kpi_label">Mes commissions totales</p>
                                 <div class="kpi_stats">
                                     <span class="stat_item">
                                         <i class="fa fa-hourglass-half"/>
-                                        <span id="my_pending">$0</span> Pending
+                                        <span id="my_pending">$0</span> En attente
                                     </span>
                                     <span class="stat_item">
                                         <i class="fa fa-check"/>
@@ -40,9 +40,28 @@
                         </div>
                     </div>
 
-                    <!-- This Month Card -->
+                    <!-- Paid Commissions Card -->
                     <div class="col-md-3 col-sm-6">
                         <div class="dashboard_card kpi_card card_success">
+                            <div class="card_icon">
+                                <i class="fa fa-check-circle fa-3x"/>
+                            </div>
+                            <div class="card_content">
+                                <h3 class="kpi_value" id="my_paid">$0</h3>
+                                <p class="kpi_label">Commissions payées</p>
+                                <div class="kpi_stats">
+                                    <span class="stat_item">
+                                        <i class="fa fa-money"/>
+                                        Montant versé
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- This Month Card -->
+                    <div class="col-md-3 col-sm-6">
+                        <div class="dashboard_card kpi_card card_info">
                             <div class="card_icon">
                                 <i class="fa fa-calendar fa-3x"/>
                             </div>
@@ -61,40 +80,21 @@
 
                     <!-- Team Performance Card -->
                     <div class="col-md-3 col-sm-6">
-                        <div class="dashboard_card kpi_card card_info">
+                        <div class="dashboard_card kpi_card card_warning">
                             <div class="card_icon">
                                 <i class="fa fa-users fa-3x"/>
                             </div>
                             <div class="card_content">
                                 <h3 class="kpi_value" id="team_total">$0</h3>
-                                <p class="kpi_label">Team Commissions</p>
+                                <p class="kpi_label">Commissions d'équipe</p>
                                 <div class="kpi_stats">
                                     <span class="stat_item">
                                         <i class="fa fa-user"/>
-                                        <span id="team_members">0</span> Members
+                                        <span id="team_members">0</span> Membres
                                     </span>
                                     <span class="stat_item">
                                         <i class="fa fa-hourglass-half"/>
-                                        <span id="team_pending">$0</span> Pending
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Pending Actions Card -->
-                    <div class="col-md-3 col-sm-6">
-                        <div class="dashboard_card kpi_card card_warning">
-                            <div class="card_icon">
-                                <i class="fa fa-bell fa-3x"/>
-                            </div>
-                            <div class="card_content">
-                                <h3 class="kpi_value" id="pending_claims">0</h3>
-                                <p class="kpi_label">Claims to Approve</p>
-                                <div class="kpi_stats">
-                                    <span class="stat_item">
-                                        <i class="fa fa-users"/>
-                                        From Your Team
+                                        <span id="team_pending">$0</span> En attente
                                     </span>
                                 </div>
                             </div>
@@ -110,7 +110,7 @@
                     <div class="col-md-8">
                         <div class="dashboard_card chart_card">
                             <div class="card_header">
-                                <h4><i class="fa fa-line-chart"/> Commission Trend (Last 6 Months)</h4>
+                                <h4><i class="fa fa-line-chart"/> Tendance des commissions (6 derniers mois)</h4>
                             </div>
                             <div class="card_body">
                                 <canvas id="trend_chart" height="80"></canvas>
@@ -122,7 +122,7 @@
                     <div class="col-md-4">
                         <div class="dashboard_card chart_card">
                             <div class="card_header">
-                                <h4><i class="fa fa-bar-chart"/> By Status</h4>
+                                <h4><i class="fa fa-bar-chart"/> Par statut</h4>
                             </div>
                             <div class="card_body">
                                 <canvas id="status_chart" height="180"></canvas>
