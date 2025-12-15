@@ -100,6 +100,9 @@ class SaleCommissionClaim(models.Model):
         'claim_optional_deduction_rel',
         'claim_id', 'deduction_id',
         string='Optional Deductions',
+        compute='_compute_deductions',
+        store=True,
+        readonly=False,
         help="User-selected optional deductions"
     )
 
@@ -212,7 +215,7 @@ class SaleCommissionClaim(models.Model):
 
     @api.depends('user_id', 'state')
     def _compute_deductions(self):
-        """Auto-load mandatory deductions for the user"""
+        """Auto-load deductions based on claim state"""
         for claim in self:
             if claim.user_id and claim.state in ['draft', 'pending']:
                 # Load pending mandatory deductions
@@ -223,8 +226,23 @@ class SaleCommissionClaim(models.Model):
                     ('company_id', '=', claim.company_id.id)
                 ])
                 claim.mandatory_deduction_ids = mandatory
+                # Optional deductions are manually selected, don't auto-load in draft/pending
+            elif claim.id:
+                # For approved/rejected claims, load all deductions that were applied to this claim
+                mandatory = self.env['commission.deduction'].search([
+                    ('claim_id', '=', claim.id),
+                    ('deduction_category', '=', 'mandatory'),
+                ])
+                claim.mandatory_deduction_ids = mandatory
+
+                optional = self.env['commission.deduction'].search([
+                    ('claim_id', '=', claim.id),
+                    ('deduction_category', '=', 'optional'),
+                ])
+                claim.optional_deduction_ids = optional
             else:
                 claim.mandatory_deduction_ids = False
+                claim.optional_deduction_ids = False
 
     @api.depends('commission_ids', 'commission_ids.commission_amount',
                  'mandatory_deduction_ids', 'mandatory_deduction_ids.amount',
@@ -523,43 +541,47 @@ class SaleCommissionClaim(models.Model):
 
     def _generate_batch_po_notes(self):
         """Generate notes for PO with commission list and deduction breakdown"""
-        notes = _('Commission Payment Details\n')
-        notes += _('═' * 50) + '\n\n'
+        lines = []
+        lines.append('Commission Payment Details')
+        lines.append('=' * 50)
+        lines.append('')
 
         # List all commissions
         all_commissions = self.mapped('commission_ids')
-        notes += _('Commissions Paid:\n')
-        notes += _('─' * 50) + '\n'
+        lines.append('Commissions Paid:')
+        lines.append('-' * 50)
 
         for commission in all_commissions:
-            notes += _('  • %s: %s %s\n') % (
+            lines.append('  • %s: %s %s' % (
                 commission.name,
                 commission.commission_amount,
                 self[0].currency_id.symbol
-            )
+            ))
 
-        notes += _('─' * 50) + '\n'
+        lines.append('-' * 50)
         total_gross = sum(self.mapped('total_amount'))
-        notes += _('Total Commissions: %s %s\n') % (total_gross, self[0].currency_id.symbol)
+        lines.append('Total Commissions: %s %s' % (total_gross, self[0].currency_id.symbol))
 
         # List all deductions
         all_deductions = self.mapped('all_deduction_ids')
         if all_deductions:
-            notes += _('\nDeductions:\n')
-            notes += _('─' * 50) + '\n'
+            lines.append('')
+            lines.append('Deductions:')
+            lines.append('-' * 50)
             for deduction in all_deductions:
-                notes += _('  • %s (%s): -%s %s\n') % (
+                lines.append('  • %s (%s): -%s %s' % (
                     deduction.deduction_type.replace('_', ' ').title(),
                     deduction.name,
                     deduction.amount,
                     self[0].currency_id.symbol
-                )
-            notes += _('─' * 50) + '\n'
+                ))
+            lines.append('-' * 50)
             total_deductions = sum(self.mapped('total_deductions'))
-            notes += _('Total Deductions: -%s %s\n') % (total_deductions, self[0].currency_id.symbol)
+            lines.append('Total Deductions: -%s %s' % (total_deductions, self[0].currency_id.symbol))
 
-        notes += _('═' * 50) + '\n'
+        lines.append('')
+        lines.append('=' * 50)
         total_net = sum(self.mapped('net_amount'))
-        notes += _('NET AMOUNT: %s %s\n') % (total_net, self[0].currency_id.symbol)
+        lines.append('NET AMOUNT: %s %s' % (total_net, self[0].currency_id.symbol))
 
-        return notes
+        return '\n'.join(lines)
