@@ -90,11 +90,11 @@
                             </div>
                             <div class="card_content">
                                 <h3 class="kpi_value" id="pending_claims">0</h3>
-                                <p class="kpi_label">Pending Approvals</p>
+                                <p class="kpi_label">Claims to Approve</p>
                                 <div class="kpi_stats">
                                     <span class="stat_item">
-                                        <i class="fa fa-exclamation-triangle"/>
-                                        Needs Action
+                                        <i class="fa fa-users"/>
+                                        From Your Team
                                     </span>
                                 </div>
                             </div>

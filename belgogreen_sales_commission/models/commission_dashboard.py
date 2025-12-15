@@ -168,27 +168,70 @@ class CommissionDashboard(models.TransientModel):
     def generate_my_commissions(self):
         """Generate commissions for the current user from unprocessed sales orders
 
-        Only generates direct sales and override commissions (not team commissions)
+        Only generates commissions for orders with paid invoices
         Returns count and total amount of generated commissions
         """
         user = self.env.user
 
-        # Find all confirmed sales orders for this user with paid invoices
+        # Find commission plan first
+        commission_plan = self.env['sale.commission.plan'].search([
+            ('is_hierarchical', '=', True),
+            ('state', '=', 'approved'),
+            ('company_id', '=', user.company_id.id)
+        ], limit=1)
+
+        if not commission_plan:
+            return {
+                'count': 0,
+                'total_amount': 0,
+                'success': False,
+                'message': 'No approved hierarchical commission plan found'
+            }
+
+        # Find confirmed sales orders for this user that have paid invoices
         SaleOrder = self.env['sale.order']
-        orders = SaleOrder.search([
-            ('state', 'in', ['sale', 'done']),
-            ('user_id', '=', user.id),  # Orders owned by current user
+        Invoice = self.env['account.move']
+
+        # Get all paid invoices for sale orders belonging to current user
+        paid_invoices = Invoice.search([
+            ('move_type', '=', 'out_invoice'),
+            ('state', '=', 'posted'),
+            ('payment_state', 'in', ['paid', 'in_payment']),
+            ('invoice_origin', '!=', False),  # Has a source document
         ])
 
+        # Filter to get orders from these invoices that belong to current user
+        order_ids = set()
+        for invoice in paid_invoices:
+            # Get the sale order from this invoice
+            sale_orders = SaleOrder.search([
+                ('name', '=', invoice.invoice_origin),
+                ('user_id', '=', user.id),
+                ('state', 'in', ['sale', 'done']),
+            ])
+            if sale_orders:
+                order_ids.update(sale_orders.ids)
+
+        if not order_ids:
+            return {
+                'count': 0,
+                'total_amount': 0,
+                'success': True,
+                'message': 'No orders with paid invoices found'
+            }
+
+        orders = SaleOrder.browse(list(order_ids))
         total_commissions_created = 0
         total_amount = 0
+        processed_orders = []
 
         for order in orders:
             # Generate commissions for this order (will create for entire hierarchy)
             try:
                 result = order._generate_commissions()
-                if result['success']:
+                if result['success'] and result['commissions_created'] > 0:
                     total_commissions_created += result['commissions_created']
+                    processed_orders.append(order.id)
             except Exception as e:
                 # Log error but continue processing other orders
                 import logging
@@ -198,10 +241,10 @@ class CommissionDashboard(models.TransientModel):
 
         # Calculate total amount of commissions created for this user
         if total_commissions_created > 0:
-            # Get commissions created in this session for current user
+            # Get commissions created for current user from processed orders
             recent_commissions = self.env['sale.commission'].search([
                 ('user_id', '=', user.id),
-                ('sale_order_id', 'in', orders.ids),
+                ('sale_order_id', 'in', processed_orders),
             ], order='create_date desc', limit=total_commissions_created)
 
             total_amount = sum(recent_commissions.mapped('commission_amount'))
@@ -210,4 +253,5 @@ class CommissionDashboard(models.TransientModel):
             'count': total_commissions_created,
             'total_amount': total_amount,
             'success': True,
+            'message': f'{total_commissions_created} commission(s) created from {len(processed_orders)} order(s)'
         }
