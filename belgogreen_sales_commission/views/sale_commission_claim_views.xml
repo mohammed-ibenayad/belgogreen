@@ -89,7 +89,9 @@
                         </group>
                         <notebook>
                             <page string="Commissions" name="commissions">
-                                <field name="commission_ids" readonly="state != 'pending'">
+                                <field name="commission_ids"
+                                       readonly="state != 'draft'"
+                                       domain="[('user_id', '=', user_id), ('payment_status', '=', 'unpaid'), ('state', '=', 'confirmed'), ('can_be_paid', '=', True)]">
                                     <list decoration-success="payment_status == 'paid'"
                                           create="false"
                                           delete="1">
@@ -105,40 +107,43 @@
                                 </field>
                             </page>
                             <page string="Deductions" name="deductions">
+                                <!-- All Deductions in one list -->
+                                <field name="all_deduction_ids" nolabel="1" readonly="1">
+                                    <list create="false" delete="false" edit="false">
+                                        <field name="name" string="Reference" width="120px"/>
+                                        <field name="deduction_type" string="Type" width="140px"/>
+                                        <field name="deduction_category" string="Category" width="100px"
+                                               widget="badge"
+                                               decoration-danger="deduction_category == 'mandatory'"
+                                               decoration-info="deduction_category == 'optional'"/>
+                                        <field name="amount" string="Amount" sum="Total Deductions" width="100px"/>
+                                        <field name="description" string="Description"/>
+                                    </list>
+                                </field>
+
+                                <!-- Financial Summary -->
                                 <group>
-                                    <group string="Mandatory Deductions" col="1">
-                                        <field name="mandatory_deduction_ids" nolabel="1" readonly="1">
-                                            <list create="false" delete="false" edit="false"
-                                                  decoration-danger="deduction_category == 'mandatory'">
-                                                <field name="name" string="Reference" width="120px"/>
-                                                <field name="deduction_type" string="Type" width="140px"/>
-                                                <field name="amount" string="Amount" sum="Total Mandatory" width="100px"/>
-                                                <field name="description" string="Description"/>
-                                                <field name="deduction_category" column_invisible="1"/>
-                                            </list>
-                                        </field>
-                                        <field name="total_mandatory_deductions" readonly="1" class="oe_subtotal_footer_separator"/>
+                                    <group>
+                                        <field name="total_mandatory_deductions" readonly="1" string="Mandatory Deductions"/>
+                                        <field name="total_optional_deductions" readonly="1" string="Optional Deductions"/>
                                     </group>
-                                    <group string="Optional Deductions" col="1">
-                                        <field name="optional_deduction_ids" nolabel="1"
-                                               readonly="state != 'draft'"
-                                               domain="[('user_id', '=', user_id), ('deduction_category', '=', 'optional'), ('state', '=', 'pending')]">
-                                            <list create="false" delete="true"
-                                                  decoration-info="deduction_category == 'optional'">
-                                                <field name="name" string="Reference" width="120px"/>
-                                                <field name="deduction_type" string="Type" width="140px"/>
-                                                <field name="amount" string="Amount" sum="Total Optional" width="100px"/>
-                                                <field name="description" string="Description"/>
-                                                <field name="deduction_category" column_invisible="1"/>
-                                            </list>
-                                        </field>
-                                        <field name="total_optional_deductions" readonly="1" class="oe_subtotal_footer_separator"/>
+                                    <group>
+                                        <field name="total_deductions" readonly="1" class="oe_subtotal_footer_separator" string="Total Deductions"/>
                                     </group>
                                 </group>
-                                <div class="alert alert-warning" role="alert" invisible="not mandatory_deduction_ids">
+
+                                <div class="alert alert-info" role="alert" invisible="not all_deduction_ids or state != 'draft'">
                                     <strong>ℹ️ Note:</strong> Mandatory deductions are automatically applied and cannot be removed.
-                                    You can select additional optional deductions above.
+                                    You can select optional deductions using the "Optional Deductions" field above in draft state.
                                 </div>
+
+                                <!-- Optional Deductions Selection (only visible in draft) -->
+                                <group string="Select Optional Deductions" invisible="state != 'draft'">
+                                    <field name="optional_deduction_ids" nolabel="1"
+                                           widget="many2many_tags"
+                                           domain="[('user_id', '=', user_id), ('deduction_category', '=', 'optional'), ('state', '=', 'pending')]"
+                                           options="{'color_field': 'deduction_type', 'no_create': True}"/>
+                                </group>
                             </page>
                         </notebook>
                     </sheet>
