@@ -156,8 +156,6 @@ class SaleCommission(models.Model):
     )
 
     # Additional Info
-    notes = fields.Text(string='Notes')
-
     is_adjustment = fields.Boolean(
         string='Is Adjustment',
         default=False,
