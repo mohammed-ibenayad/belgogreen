@@ -267,17 +267,20 @@
         <!-- Note: This action shows all commissions visible to the current user based on record rules.
              The actual filtering happens automatically via the hierarchical record rules. -->
         <record id="action_sale_commission_team" model="ir.actions.act_window">
-            <field name="name">Team Commissions</field>
+            <field name="name">Commissions d'équipe</field>
             <field name="res_model">sale.commission</field>
             <field name="view_mode">list,form,kanban,pivot,graph</field>
             <field name="context">{'search_default_group_user': 1}</field>
             <field name="help" type="html">
                 <p class="o_view_nocontent_smiling_face">
-                    No team commissions found
+                    Aucune commission d'équipe trouvée
                 </p>
                 <p>
-                    Your team's commissions will appear here once sales orders are invoiced and paid.
-                    You will see commissions for all users in your hierarchy.
+                    <strong>Note:</strong> Cette vue affiche les commissions de tous les membres de votre équipe.
+                </p>
+                <p>
+                    Si vous ne gérez pas d'équipe, cette vue restera vide.
+                    Les commissions de votre équipe apparaîtront ici une fois que les commandes de vente seront facturées et payées.
                 </p>
             </field>
         </record>

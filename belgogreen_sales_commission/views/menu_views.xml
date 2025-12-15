@@ -18,25 +18,25 @@
 
         <!-- My Commission Menu (for users) -->
         <menuitem id="menu_my_commission"
-                  name="My Commissions"
+                  name="Mes commissions"
                   parent="menu_commission_root"
                   sequence="10"
                   groups="belgogreen_sales_commission.group_commission_user"/>
 
         <menuitem id="menu_my_commission_overview"
-                  name="Overview"
+                  name="Aperçu"
                   parent="menu_my_commission"
                   action="action_sale_commission_my"
                   sequence="10"/>
 
         <menuitem id="menu_my_commission_claims"
-                  name="My Claims"
+                  name="Mes réclamations"
                   parent="menu_my_commission"
                   action="action_sale_commission_claim_my"
                   sequence="20"/>
 
         <menuitem id="menu_team_commissions"
-                  name="Team Commissions"
+                  name="Commissions d'équipe"
                   parent="menu_my_commission"
                   action="action_sale_commission_team"
                   sequence="30"/>
