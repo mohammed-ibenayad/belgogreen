@@ -257,8 +257,8 @@ class SaleCommission(models.Model):
         """Allow user to claim their commission"""
         self.ensure_one()
         if self.payment_status == 'unpaid':
-            self.payment_status = 'claimed'
-            # Create a claim record
+            # Create a claim record in draft state
+            # Commission will be marked as 'claimed' when claim is submitted
             claim = self.env['sale.commission.claim'].create({
                 'user_id': self.user_id.id,
                 'commission_ids': [(6, 0, [self.id])],

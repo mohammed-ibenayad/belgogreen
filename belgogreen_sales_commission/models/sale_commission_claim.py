@@ -54,11 +54,12 @@ class SaleCommissionClaim(models.Model):
     )
 
     state = fields.Selection([
+        ('draft', 'Draft'),
         ('pending', 'Pending'),
         ('approved', 'Approved'),
         ('rejected', 'Rejected')
-    ], string='State', default='pending', required=True, tracking=True,
-       help='Pending: Awaiting review | Approved: Ready to pay | Rejected: Denied')
+    ], string='State', default='draft', required=True, tracking=True,
+       help='Draft: Being prepared | Pending: Awaiting review | Approved: Ready to pay | Rejected: Denied')
 
     processed_by = fields.Many2one(
         'res.users',
@@ -295,6 +296,9 @@ class SaleCommissionClaim(models.Model):
             raise UserError(_('Please select at least one commission to claim.'))
         if self.net_amount <= 0:
             raise UserError(_('Net claim amount must be positive.'))
+
+        # Update commission status to claimed
+        self.commission_ids.write({'payment_status': 'claimed'})
 
         self.write({'state': 'pending'})
         self._notify_admins()
