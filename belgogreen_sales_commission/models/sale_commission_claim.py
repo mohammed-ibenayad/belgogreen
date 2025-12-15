@@ -467,6 +467,14 @@ class SaleCommissionClaim(models.Model):
                 'Please contact your administrator to configure the commission service product.'
             ))
 
+        # Get commission deduction product (with 0% VAT)
+        deduction_product = self.env.ref('belgogreen_sales_commission.product_commission_deduction', raise_if_not_found=False)
+        if not deduction_product:
+            raise UserError(_(
+                'Commission deduction product not found. '
+                'Please contact your administrator to configure the commission deduction product.'
+            ))
+
         # Validate all claims are from same user
         users = self.mapped('user_id')
         if len(users) > 1:
@@ -529,7 +537,7 @@ class SaleCommissionClaim(models.Model):
 
                 self.env['purchase.order.line'].create({
                     'order_id': po.id,
-                    'product_id': product.id,
+                    'product_id': deduction_product.id,  # Use deduction product with 0% VAT
                     'name': deduction_line_name,
                     'product_qty': 1,
                     'price_unit': -deduction.amount,

@@ -17,5 +17,20 @@ This product represents commission payments to salespeople.
             </field>
         </record>
 
+        <!-- Commission Deduction Product with 0% VAT -->
+        <record id="product_commission_deduction" model="product.product">
+            <field name="name">Commission Deduction Service</field>
+            <field name="default_code">COMM-SVC-DED-001</field>
+            <field name="type">service</field>
+            <field name="list_price">0.0</field>
+            <field name="standard_price">0.0</field>
+            <field name="purchase_ok" eval="True"/>
+            <field name="sale_ok" eval="False"/>
+            <field name="description">
+Service product used for commission deductions in purchase orders.
+This product represents deductions applied to commission payments (with 0% VAT).
+            </field>
+        </record>
+
     </data>
 </odoo>
