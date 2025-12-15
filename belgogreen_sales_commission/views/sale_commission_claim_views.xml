@@ -89,7 +89,9 @@
                         </group>
                         <notebook>
                             <page string="Commissions" name="commissions">
-                                <field name="commission_ids" readonly="state != 'pending'">
+                                <field name="commission_ids"
+                                       readonly="state != 'draft'"
+                                       domain="[('user_id', '=', user_id), ('payment_status', '=', 'unpaid'), ('state', '=', 'confirmed'), ('can_be_paid', '=', True)]">
                                     <list decoration-success="payment_status == 'paid'"
                                           create="false"
                                           delete="1">
