@@ -168,10 +168,26 @@ class CommissionDashboard(models.TransientModel):
     def generate_my_commissions(self):
         """Generate commissions for the current user from unprocessed sales orders
 
+        NEW BEHAVIOR: Each user generates ONLY their own commissions:
+        - Direct commissions from their own orders
+        - Override commissions from all subordinates' orders
+
+        No automatic cascade upward - each person responsible for generating their own.
+
         Only generates commissions for orders with paid invoices
         Returns count and total amount of generated commissions
         """
         user = self.env.user
+
+        # Check if user has commission role
+        if not user.commission_role_id:
+            return {
+                'count': 0,
+                'total_amount': 0,
+                'claimable_amount': 0,
+                'success': False,
+                'message': 'You do not have a commission role assigned'
+            }
 
         # Find commission plan first
         commission_plan = self.env['sale.commission.plan'].search([
@@ -184,26 +200,95 @@ class CommissionDashboard(models.TransientModel):
             return {
                 'count': 0,
                 'total_amount': 0,
+                'claimable_amount': 0,
                 'success': False,
                 'message': 'No approved hierarchical commission plan found'
             }
 
-        # Find confirmed sales orders for this user that have paid invoices
+        # Get role configuration for current user
+        role_config = self.env['hr.commission.role.config'].search([
+            ('plan_id', '=', commission_plan.id),
+            ('role_id', '=', user.commission_role_id.id),
+            ('active', '=', True)
+        ], limit=1)
+
+        if not role_config:
+            return {
+                'count': 0,
+                'total_amount': 0,
+                'claimable_amount': 0,
+                'success': False,
+                'message': f'No active configuration found for role {user.commission_role_id.name} in the commission plan'
+            }
+
         SaleOrder = self.env['sale.order']
         Invoice = self.env['account.move']
 
-        # Get all paid invoices for sale orders belonging to current user
+        commissions_created = 0
+        total_amount = 0
+
+        # 1. DIRECT COMMISSIONS: Process user's own orders
+        direct_orders = self._get_eligible_orders_for_user(user, Invoice, SaleOrder)
+        for order in direct_orders:
+            created = self._create_commission_for_user(
+                user=user,
+                role=user.commission_role_id,
+                commission_type='direct',
+                order=order,
+                commission_plan=commission_plan,
+                role_config=role_config
+            )
+            commissions_created += created
+
+        # 2. OVERRIDE COMMISSIONS: Process subordinates' orders
+        subordinate_ids = user._get_all_subordinate_ids()
+        if subordinate_ids:
+            subordinates = self.env['res.users'].browse(subordinate_ids)
+            for subordinate in subordinates:
+                subordinate_orders = self._get_eligible_orders_for_user(subordinate, Invoice, SaleOrder)
+                for order in subordinate_orders:
+                    created = self._create_commission_for_user(
+                        user=user,  # Commission for current user, not subordinate
+                        role=user.commission_role_id,
+                        commission_type='override',
+                        order=order,
+                        commission_plan=commission_plan,
+                        role_config=role_config
+                    )
+                    commissions_created += created
+
+        # Calculate total and claimable amounts for current user
+        claimable_amount = 0
+        if commissions_created > 0:
+            recent_commissions = self.env['sale.commission'].search([
+                ('user_id', '=', user.id),
+            ], order='create_date desc', limit=commissions_created)
+
+            total_amount = sum(recent_commissions.mapped('commission_amount'))
+            unpaid_commissions = recent_commissions.filtered(lambda c: c.payment_status == 'unpaid')
+            claimable_amount = sum(unpaid_commissions.mapped('commission_amount'))
+
+        return {
+            'count': commissions_created,
+            'total_amount': total_amount,
+            'claimable_amount': claimable_amount,
+            'success': True,
+            'message': f'{commissions_created} commission(s) created for {user.name}'
+        }
+
+    def _get_eligible_orders_for_user(self, user, Invoice, SaleOrder):
+        """Get sale orders with paid invoices for a specific user"""
+        # Get all paid invoices
         paid_invoices = Invoice.search([
             ('move_type', '=', 'out_invoice'),
             ('state', '=', 'posted'),
             ('payment_state', 'in', ['paid', 'in_payment']),
-            ('invoice_origin', '!=', False),  # Has a source document
+            ('invoice_origin', '!=', False),
         ])
 
-        # Filter to get orders from these invoices that belong to current user
+        # Filter to get orders from these invoices that belong to the user
         order_ids = set()
         for invoice in paid_invoices:
-            # Get the sale order from this invoice
             sale_orders = SaleOrder.search([
                 ('name', '=', invoice.invoice_origin),
                 ('user_id', '=', user.id),
@@ -212,52 +297,62 @@ class CommissionDashboard(models.TransientModel):
             if sale_orders:
                 order_ids.update(sale_orders.ids)
 
-        if not order_ids:
-            return {
-                'count': 0,
-                'total_amount': 0,
-                'success': True,
-                'message': 'No orders with paid invoices found'
-            }
+        return SaleOrder.browse(list(order_ids))
 
-        orders = SaleOrder.browse(list(order_ids))
-        total_commissions_created = 0
-        total_amount = 0
-        processed_orders = []
+    def _create_commission_for_user(self, user, role, commission_type, order, commission_plan, role_config):
+        """Create a single commission record for a user on a specific order
 
-        for order in orders:
-            # Generate commissions for this order (will create for entire hierarchy)
-            try:
-                result = order._generate_commissions()
-                if result['success'] and result['commissions_created'] > 0:
-                    total_commissions_created += result['commissions_created']
-                    processed_orders.append(order.id)
-            except Exception as e:
-                # Log error but continue processing other orders
-                import logging
-                _logger = logging.getLogger(__name__)
-                _logger.error("Error generating commissions for order %s: %s", order.name, str(e))
+        Returns: 1 if commission created, 0 if already exists or error
+        """
+        # Get paid invoices for this order
+        paid_invoices = order.invoice_ids.filtered(
+            lambda inv: inv.move_type == 'out_invoice'
+            and inv.state == 'posted'
+            and inv.payment_state in ['paid', 'in_payment']
+        )
+
+        if not paid_invoices:
+            return 0
+
+        commissions_created = 0
+        for invoice in paid_invoices:
+            # Check if commission already exists
+            existing_commission = self.env['sale.commission'].search([
+                ('invoice_id', '=', invoice.id),
+                ('sale_order_id', '=', order.id),
+                ('user_id', '=', user.id),
+                ('role_id', '=', role.id),
+                ('commission_type', '=', commission_type)
+            ], limit=1)
+
+            if existing_commission:
                 continue
 
-        # Calculate total amount of commissions created for this user
-        claimable_amount = 0
-        if total_commissions_created > 0:
-            # Get commissions created for current user from processed orders
-            recent_commissions = self.env['sale.commission'].search([
-                ('user_id', '=', user.id),
-                ('sale_order_id', 'in', processed_orders),
-            ], order='create_date desc', limit=total_commissions_created)
+            # Calculate period
+            period = invoice.invoice_date.strftime('%Y-%m') if invoice.invoice_date else fields.Date.today().strftime('%Y-%m')
+            base_amount = invoice.amount_total
 
-            total_amount = sum(recent_commissions.mapped('commission_amount'))
+            # Create commission record
+            try:
+                self.env['sale.commission'].create({
+                    'user_id': user.id,
+                    'role_id': role.id,
+                    'commission_type': commission_type,
+                    'sale_order_id': order.id,
+                    'invoice_id': invoice.id,
+                    'plan_id': commission_plan.id,
+                    'date': invoice.invoice_date or fields.Date.today(),
+                    'period': period,
+                    'base_amount': base_amount,
+                    'payment_status': 'unpaid',
+                    'state': 'confirmed',
+                    'company_id': order.company_id.id,
+                    'currency_id': order.currency_id.id,
+                })
+                commissions_created += 1
+            except Exception as e:
+                import logging
+                _logger = logging.getLogger(__name__)
+                _logger.error("Error creating commission for %s on order %s: %s", user.name, order.name, str(e))
 
-            # Calculate claimable amount (unpaid commissions for current user)
-            unpaid_commissions = recent_commissions.filtered(lambda c: c.payment_status == 'unpaid')
-            claimable_amount = sum(unpaid_commissions.mapped('commission_amount'))
-
-        return {
-            'count': total_commissions_created,
-            'total_amount': total_amount,
-            'claimable_amount': claimable_amount,
-            'success': True,
-            'message': f'{total_commissions_created} commission(s) created from {len(processed_orders)} order(s)'
-        }
+        return commissions_created
