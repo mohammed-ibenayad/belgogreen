@@ -81,18 +81,23 @@ class PurchaseOrder(models.Model):
                     'payment_amount': po.amount_total,  # Net amount from PO
                     'payment_date': fields.Date.context_today(self),
                     'state': 'draft',
-                    'notes': _('Auto-generated from Purchase Order %s\nClaims: %s\n\n'
-                               'This payment was automatically created when the employee confirmed the PO.\n'
-                               'Please review and confirm to proceed with payment.') % (
+                })
+
+                # Add note to payment chatter
+                payment.message_post(
+                    body=_('Auto-generated from Purchase Order %s\nClaims: %s\n\n'
+                           'This payment was automatically created when the employee confirmed the PO.\n'
+                           'Please review and confirm to proceed with payment.') % (
                         po.name,
                         ', '.join(po.claim_ids.mapped('name'))
-                    )
-                })
+                    ),
+                    subject=_('Payment Created'),
+                )
 
                 # Update commission status to processing
                 all_commissions.write({'payment_status': 'processing'})
 
-                # Notify manager about auto-created payment
+                # Notify manager about auto-created payment on PO
                 po.message_post(
                     body=_('Payment %s was automatically created and is ready for processing.') % payment.name,
                     subject=_('Payment Ready'),
