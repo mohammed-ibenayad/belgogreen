@@ -18,6 +18,7 @@ export class CommissionDashboard extends Component {
             this.rpc = useService("rpc");
             this.orm = useService("orm");
             this.actionService = useService("action");
+            this.notification = useService("notification");
         } catch (e) {
             console.log("Services not available, will use fallback:", e.message);
             // Services might not be available yet, we'll use fallback
@@ -29,6 +30,7 @@ export class CommissionDashboard extends Component {
             loading: true,
             chartLoaded: false,
             error: null,
+            currency: null,
         });
 
         onWillStart(async () => {
@@ -101,6 +103,11 @@ export class CommissionDashboard extends Component {
             console.log("Dashboard data received:", data);
             this.state.data = data;
 
+            // Store currency info
+            if (data && data.currency) {
+                this.state.currency = data.currency;
+            }
+
             // Add null checks before accessing nested properties
             if (data && data.kpis) {
                 console.log("Updating KPIs...", data.kpis);
@@ -110,9 +117,13 @@ export class CommissionDashboard extends Component {
                 console.log("Updating charts...", data.charts);
                 this.updateCharts(data.charts);
             }
-            if (data && data.recent && data.team) {
-                console.log("Updating tables...");
-                this.updateTables(data.recent, data.team);
+            if (data && data.user_info) {
+                this.updateCardStyles(data.user_info);
+            }
+
+            // Show notification if commission generation occurred
+            if (data.generation_result && data.generation_result.count > 0) {
+                this.showGenerationNotification(data.generation_result);
             }
 
             console.log("Dashboard updated successfully!");
@@ -143,6 +154,11 @@ export class CommissionDashboard extends Component {
             const data = await this.rpc('/commission/dashboard/data', {});
             this.state.data = data;
 
+            // Store currency info
+            if (data && data.currency) {
+                this.state.currency = data.currency;
+            }
+
             // Add null checks before accessing nested properties
             if (data && data.kpis) {
                 this.updateKPIs(data.kpis);
@@ -150,8 +166,13 @@ export class CommissionDashboard extends Component {
             if (data && data.charts) {
                 this.updateCharts(data.charts);
             }
-            if (data && data.recent && data.team) {
-                this.updateTables(data.recent, data.team);
+            if (data && data.user_info) {
+                this.updateCardStyles(data.user_info);
+            }
+
+            // Show notification if commission generation occurred
+            if (data.generation_result && data.generation_result.count > 0) {
+                this.showGenerationNotification(data.generation_result);
             }
         } catch (error) {
             console.error('Error loading dashboard data:', error);
@@ -170,6 +191,12 @@ export class CommissionDashboard extends Component {
         this.updateElement('#month_total', this.formatCurrency(kpis.my_month_total));
         this.updateElement('#month_count', kpis.my_month_count);
 
+        // Update month label with month name
+        const monthLabel = document.querySelector('#month_label');
+        if (monthLabel && kpis.current_month_name) {
+            monthLabel.textContent = 'Ce mois (' + kpis.current_month_name + ')';
+        }
+
         this.updateElement('#team_total', this.formatCurrency(kpis.team_total));
         this.updateElement('#team_pending', this.formatCurrency(kpis.team_pending));
         this.updateElement('#team_members', kpis.team_members);
@@ -186,11 +213,8 @@ export class CommissionDashboard extends Component {
         // Monthly Trend Chart
         this.createTrendChart(charts.monthly_trend);
 
-        // Status Distribution Chart
+        // Status Distribution Chart (as histogram)
         this.createStatusChart(charts.state_distribution);
-
-        // Team Performance Chart
-        this.createTeamChart(charts.team_performance);
     }
 
     createTrendChart(data) {
@@ -257,51 +281,13 @@ export class CommissionDashboard extends Component {
         };
 
         window.statusChart = new Chart(ctx, {
-            type: 'doughnut',
+            type: 'bar',  // Changed to bar for histogram
             data: {
                 labels: Object.keys(data).map(k => k.charAt(0).toUpperCase() + k.slice(1)),
                 datasets: [{
+                    label: 'Commission Amount',
                     data: Object.values(data),
                     backgroundColor: Object.keys(data).map(k => colors[k]),
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: (context) => {
-                                const label = context.label || '';
-                                const value = this.formatCurrency(context.parsed);
-                                return label + ': ' + value;
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-    createTeamChart(data) {
-        const ctx = document.getElementById('team_chart');
-        if (!ctx || !data || data.length === 0 || typeof Chart === 'undefined') return;
-
-        if (window.teamChart) {
-            window.teamChart.destroy();
-        }
-
-        window.teamChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: data.map(d => d.name),
-                datasets: [{
-                    label: 'Commission Amount',
-                    data: data.map(d => d.amount),
-                    backgroundColor: '#017e84',
                 }]
             },
             options: {
@@ -331,41 +317,31 @@ export class CommissionDashboard extends Component {
         });
     }
 
-    updateTables(recent, team) {
-        // Update Recent Commissions Table
-        const commissionsTable = document.querySelector('#recent_commissions_table tbody');
-        if (commissionsTable) {
-            commissionsTable.innerHTML = '';
-            recent.commissions.forEach(comm => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${comm.date}</td>
-                    <td>${comm.order}</td>
-                    <td>${this.formatCurrency(comm.amount)}</td>
-                    <td><span class="badge badge-${this.getStatusBadge(comm.state)}">${comm.state}</span></td>
-                `;
-                row.style.cursor = 'pointer';
-                row.addEventListener('click', () => this.openCommission(comm.id));
-                commissionsTable.appendChild(row);
-            });
+    updateCardStyles(user_info) {
+        // Gray out team commissions card if user doesn't manage a team
+        const teamCard = document.querySelector('.col-md-3:has(#team_total)');
+        if (teamCard && !user_info.has_team) {
+            teamCard.style.opacity = '0.5';
+            teamCard.style.filter = 'grayscale(50%)';
+            const cardElement = teamCard.querySelector('.dashboard_card');
+            if (cardElement) {
+                cardElement.style.backgroundColor = '#e9ecef';
+            }
         }
+    }
 
-        // Update Team Members Table
-        const teamTable = document.querySelector('#team_members_table tbody');
-        if (teamTable) {
-            teamTable.innerHTML = '';
-            team.members.forEach(member => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${member.name}</td>
-                    <td>${member.role}</td>
-                    <td>${this.formatCurrency(member.unpaid_total)}</td>
-                    <td>${member.commission_count}</td>
-                `;
-                row.style.cursor = 'pointer';
-                row.addEventListener('click', () => this.openUser(member.id));
-                teamTable.appendChild(row);
+    showGenerationNotification(result) {
+        // Show notification for commission generation
+        const message = `${result.count} commission(s) generated - Total: ${this.formatCurrency(result.total_amount)}`;
+
+        if (this.notification) {
+            this.notification.add(message, {
+                title: 'Commissions Generated',
+                type: 'success',
             });
+        } else {
+            // Fallback if notification service not available
+            alert(message);
         }
     }
 
@@ -377,6 +353,18 @@ export class CommissionDashboard extends Component {
     }
 
     formatCurrency(value) {
+        // Use company currency if available
+        if (this.state.currency && this.state.currency.symbol) {
+            const formatted = parseFloat(value || 0).toFixed(this.state.currency.decimal_places || 2);
+            // Position: 'before' or 'after'
+            if (this.state.currency.position === 'after') {
+                return formatted + ' ' + this.state.currency.symbol;
+            } else {
+                return this.state.currency.symbol + ' ' + formatted;
+            }
+        }
+
+        // Fallback to default formatting
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
             currency: 'USD'
@@ -394,10 +382,60 @@ export class CommissionDashboard extends Component {
     }
 
     async onRefreshClick() {
-        if (this.rpc) {
-            await this.loadDashboardData();
-        } else {
-            await this.loadDashboardDataFallback();
+        // Call refresh endpoint which also generates commissions
+        this.state.loading = true;
+        try {
+            let data;
+            if (this.rpc) {
+                data = await this.rpc('/commission/dashboard/refresh', {});
+            } else {
+                // Fallback
+                const response = await fetch('/commission/dashboard/refresh', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        jsonrpc: "2.0",
+                        method: "call",
+                        params: {}
+                    })
+                });
+                const result = await response.json();
+                data = result.result;
+            }
+
+            this.state.data = data;
+
+            // Store currency info
+            if (data && data.currency) {
+                this.state.currency = data.currency;
+            }
+
+            // Update UI
+            if (data && data.kpis) {
+                this.updateKPIs(data.kpis);
+            }
+            if (data && data.charts) {
+                this.updateCharts(data.charts);
+            }
+            if (data && data.user_info) {
+                this.updateCardStyles(data.user_info);
+            }
+
+            // Show notification if commissions were generated
+            if (data.generation_result && data.generation_result.count > 0) {
+                this.showGenerationNotification(data.generation_result);
+            }
+        } catch (error) {
+            console.error('Error refreshing dashboard:', error);
+            if (this.notification) {
+                this.notification.add('Error refreshing dashboard: ' + error.message, {
+                    type: 'danger',
+                });
+            }
+        } finally {
+            this.state.loading = false;
         }
     }
 
