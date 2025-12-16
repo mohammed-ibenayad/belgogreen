@@ -24,17 +24,18 @@ def create_hierarchical_commission_plans(env):
     # ========================================================================
     print("STEP 1: Finding companies...")
 
-    company_amss = env['res.company'].search([('name', '=', 'AMSS MANAGEMENT SRL')], limit=1)
-    if not company_amss:
-        print("ERROR: Company 'AMSS MANAGEMENT SRL' not found!")
+    # Using company IDs directly (more reliable than name search)
+    company_amss = env['res.company'].browse(2)  # AMSS MANAGEMENT SRL
+    if not company_amss.exists():
+        print("ERROR: Company with ID 2 (AMSS MANAGEMENT SRL) not found!")
         return False
-    print(f"✓ Found AMSS MANAGEMENT SRL (ID: {company_amss.id})")
+    print(f"✓ Found {company_amss.name} (ID: {company_amss.id})")
 
-    company_naturisol = env['res.company'].search([('name', '=', 'NATUR\'ISOL SRL')], limit=1)
-    if not company_naturisol:
-        print("ERROR: Company 'NATUR'ISOL SRL' not found!")
+    company_naturisol = env['res.company'].browse(3)  # NATUR'ISOL SRL
+    if not company_naturisol.exists():
+        print("ERROR: Company with ID 3 (NATUR'ISOL SRL) not found!")
         return False
-    print(f"✓ Found NATUR'ISOL SRL (ID: {company_naturisol.id})")
+    print(f"✓ Found {company_naturisol.name} (ID: {company_naturisol.id})")
 
     # ========================================================================
     # STEP 2: Define user mapping
