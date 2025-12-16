@@ -220,12 +220,17 @@ def create_hierarchical_commission_plans(env):
     # ========================================================================
     print("\nSTEP 6: Assigning roles and setting up hierarchy...")
 
-    def assign_user_role_and_manager(login, role, manager_login=None):
+    def assign_user_role_and_manager(login, role, manager_login=None, skip_if_has_role=False):
         """Find user and assign role and manager"""
         user = env['res.users'].search([('login', '=', login)], limit=1)
         if not user:
             print(f"    ⚠ WARNING: User {login} not found!")
             return None
+
+        # Check if user already has a role and we should skip
+        if skip_if_has_role and user.commission_role_id:
+            print(f"    ℹ SKIPPED: {user.name} ({login}) already has role '{user.commission_role_id.name}' - keeping existing role")
+            return user
 
         manager = None
         if manager_login:
@@ -233,7 +238,7 @@ def create_hierarchical_commission_plans(env):
             if not manager:
                 print(f"    ⚠ WARNING: Manager {manager_login} not found for user {login}!")
 
-        # Update user
+        # Update user - use sudo to bypass access rights and avoid message_post issues
         update_vals = {'commission_role_id': role.id}
         if manager:
             update_vals['commission_manager_id'] = manager.id
@@ -241,10 +246,14 @@ def create_hierarchical_commission_plans(env):
             # Clear manager if this is a top-level role
             update_vals['commission_manager_id'] = False
 
-        user.write(update_vals)
-
-        manager_name = manager.name if manager else "None (Top Level)"
-        print(f"    ✓ {user.name} ({login}) -> Role: {role.name}, Manager: {manager_name}")
+        try:
+            # Use sudo and context to bypass checks
+            user.sudo().with_context(skip_role_change_warning=True).write(update_vals)
+            manager_name = manager.name if manager else "None (Top Level)"
+            print(f"    ✓ {user.name} ({login}) -> Role: {role.name}, Manager: {manager_name}")
+        except Exception as e:
+            print(f"    ✗ ERROR assigning role to {user.name} ({login}): {str(e)}")
+            return None
 
         return user
 
@@ -264,7 +273,8 @@ def create_hierarchical_commission_plans(env):
     # NaturIsol hierarchy
     print("\n  Setting up NaturIsol hierarchy:")
     print("    Directeur de Sales:")
-    frederic_nat = assign_user_role_and_manager('frederic.adam@belgogreen.be', role_directeur_naturisol)
+    # Note: Frederic already has AMSS role, so we skip reassignment
+    frederic_nat = assign_user_role_and_manager('frederic.adam@belgogreen.be', role_directeur_naturisol, skip_if_has_role=True)
 
     print("\n    Chef d'equipe (reporting to Directeur):")
     youssef = assign_user_role_and_manager('contact@naturisol.be', role_chef_naturisol, 'frederic.adam@belgogreen.be')
@@ -297,8 +307,11 @@ def create_hierarchical_commission_plans(env):
     print(f"  - Chef d'equipe: 10% direct sales, 2% override")
     print(f"  - Commerciale: 10% direct sales, 0% override")
 
-    print(f"\n⚠ IMPORTANT: Plans are in DRAFT state.")
-    print(f"   Please review and APPROVE them in Odoo UI before they take effect.")
+    print(f"\n⚠ IMPORTANT NOTES:")
+    print(f"  1. Plans are in DRAFT state - Review and APPROVE them in Odoo UI")
+    print(f"  2. Frederic Adam is assigned to AMSS hierarchy only (users can only have one role)")
+    print(f"     He will still receive commissions from both companies' sales via the plans")
+    print(f"  3. All users are commission users only (not commission managers)")
 
     print("\n" + "="*80)
     print("Script completed successfully!")

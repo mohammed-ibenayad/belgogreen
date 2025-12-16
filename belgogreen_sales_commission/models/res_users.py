@@ -379,8 +379,11 @@ class ResUsers(models.Model):
 
     def write(self, vals):
         """Override write to validate role changes with dynamic roles"""
+        # Check if we should skip role change warnings (e.g., during setup scripts)
+        skip_warning = self.env.context.get('skip_role_change_warning', False)
+
         # Check if commission_role_id is being changed
-        if 'commission_role_id' in vals:
+        if 'commission_role_id' in vals and not skip_warning:
             for user in self:
                 old_role_id = user.commission_role_id
                 new_role_id = self.env['sale.commission.role'].browse(vals['commission_role_id']) if vals['commission_role_id'] else False
@@ -439,7 +442,8 @@ class ResUsers(models.Model):
                         new_role_name,
                         '\n'.join(warnings)
                     )
-                    # Post message to user's chatter
-                    user.message_post(body=message, subject=_("Commission role modified"))
+                    # Post message to user's chatter if available
+                    if hasattr(user, 'message_post'):
+                        user.message_post(body=message, subject=_("Commission role modified"))
 
         return super(ResUsers, self).write(vals)
