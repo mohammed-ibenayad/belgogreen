@@ -111,10 +111,16 @@ class CommissionDashboard(models.TransientModel):
         team_pending = sum(team_commissions.filtered(lambda c: c.payment_status == 'unpaid').mapped('commission_amount'))
         team_members_count = len(set(team_commissions.mapped('user_id')))
 
-        # Pending actions (claims to approve)
+        # Pending actions (claims to approve from subordinates in any plan)
+        # Get subordinate user IDs from plan assignments
+        subordinate_assignments = self.env['sale.commission.plan.user'].search([
+            ('manager_id', '=', self.env.user.id)
+        ])
+        subordinate_user_ids = subordinate_assignments.mapped('user_id').ids
+
         pending_claims = self.env['sale.commission.claim'].search_count([
             ('state', '=', 'pending'),
-            ('user_id.commission_manager_id', '=', self.env.user.id)
+            ('user_id', 'in', subordinate_user_ids)
         ])
 
         return {
@@ -129,7 +135,7 @@ class CommissionDashboard(models.TransientModel):
             'team_pending': team_pending,
             'team_members': team_members_count,
             'pending_claims': pending_claims,
-            'hierarchy_issues': self.env.user.subordinate_count if hasattr(self.env.user, 'has_hierarchy_anomaly') and self.env.user.has_hierarchy_anomaly else 0,
+            'hierarchy_issues': 0,  # Removed - not applicable in plan-based architecture
         }
 
     def _compute_chart_data(self, user, start_date, end_date):
