@@ -132,8 +132,55 @@
                             </div>
                         </group>
                     </page>
+
+                    <!-- Users & Hierarchy Tab (NEW for plan-based architecture) -->
+                    <page string="Users &amp; Hierarchy"
+                          name="users_hierarchy"
+                          invisible="type != 'hierarchical'">
+                        <field name="user_ids">
+                            <list editable="bottom">
+                                <field name="user_id" domain="[('company_id', '=', parent.company_id)]"/>
+                                <field name="role_id" domain="[('company_id', '=', parent.company_id)]"/>
+                                <field name="role_sequence" string="Level" readonly="1"/>
+                                <field name="manager_id"/>
+                                <field name="company_id" column_invisible="1"/>
+                            </list>
+                        </field>
+                        <group>
+                            <div class="alert alert-info" role="alert">
+                                <strong>Plan-Based Role Assignment:</strong>
+                                <ul>
+                                    <li>Assign each user to this plan with their role</li>
+                                    <li>Set their manager within this plan's hierarchy</li>
+                                    <li>Users can have different roles in different plans</li>
+                                    <li>Top-level users (Directeur) should have NO manager</li>
+                                </ul>
+                                <br/>
+                                <strong>Example Hierarchy:</strong>
+                                <ul>
+                                    <li>Frederic Adam: Directeur de Sales, Manager: (none)</li>
+                                    <li>Corine Detilleux: Chef d'équipe, Manager: Frederic Adam</li>
+                                    <li>John Doe: Commerciale, Manager: Corine Detilleux</li>
+                                </ul>
+                            </div>
+                        </group>
+                    </page>
                 </xpath>
 
+            </field>
+        </record>
+
+        <!-- Hide base module's user_ids view if it exists -->
+        <record id="hide_base_user_ids_tab" model="ir.ui.view">
+            <field name="name">sale.commission.plan.form.hide.base.users</field>
+            <field name="model">sale.commission.plan</field>
+            <field name="inherit_id" ref="sale_commission.sale_commission_plan_view_form"/>
+            <field name="priority">99</field>
+            <field name="arch" type="xml">
+                <!-- Hide the base module's Users tab if it exists -->
+                <xpath expr="//page[@name='users']" position="attributes">
+                    <attribute name="invisible">1</attribute>
+                </xpath>
             </field>
         </record>
 
