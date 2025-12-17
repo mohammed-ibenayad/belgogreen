@@ -170,20 +170,6 @@
             </field>
         </record>
 
-        <!-- Hide base module's user_ids view if it exists -->
-        <record id="hide_base_user_ids_tab" model="ir.ui.view">
-            <field name="name">sale.commission.plan.form.hide.base.users</field>
-            <field name="model">sale.commission.plan</field>
-            <field name="inherit_id" ref="sale_commission.sale_commission_plan_view_form"/>
-            <field name="priority">99</field>
-            <field name="arch" type="xml">
-                <!-- Hide the base module's Users tab if it exists -->
-                <xpath expr="//page[@name='users']" position="attributes">
-                    <attribute name="invisible">1</attribute>
-                </xpath>
-            </field>
-        </record>
-
         <!-- Tree view - Standalone with low priority (base module view takes precedence if exists) -->
         <record id="view_sale_commission_plan_tree_hierarchical" model="ir.ui.view">
             <field name="name">sale.commission.plan.tree.hierarchical</field>
