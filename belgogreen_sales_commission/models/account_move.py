@@ -49,15 +49,19 @@ class AccountMove(models.Model):
         for sale_order in sale_orders:
             self._create_commission_for_sale(sale_order)
 
-    def _get_commission_hierarchy(self, base_user):
+    def _get_commission_hierarchy(self, base_user, commission_plan):
         """
         Traverse hierarchy upwards from base user to collect all managers who should receive commission.
 
-        Supports unlimited hierarchy levels by following commission_manager_id chain.
+        NOW USES PLAN-SPECIFIC ROLES: Each user's role and manager are determined by their
+        assignment in the specific commission plan, not from global res.users fields.
+
+        Supports unlimited hierarchy levels by following manager_id chain in plan assignments.
         Includes cycle detection to prevent infinite loops.
 
         Args:
             base_user: res.users record (typically the salesperson who made the sale)
+            commission_plan: sale.commission.plan record (the plan to use for hierarchy)
 
         Returns:
             list of tuples: [(user, role, commission_type), ...] ordered from bottom to top of hierarchy
@@ -67,17 +71,26 @@ class AccountMove(models.Model):
         seen_ids = set()  # Cycle detection
 
         while current_user and current_user.id not in seen_ids:
-            # Only include users with a commission role
-            if current_user.commission_role_id:
+            # Find user's assignment in THIS PLAN
+            plan_user = self.env['sale.commission.plan.user'].search([
+                ('plan_id', '=', commission_plan.id),
+                ('user_id', '=', current_user.id)
+            ], limit=1)
+
+            if plan_user and plan_user.role_id:
                 # Determine commission type
                 is_direct_sale = (current_user.id == base_user.id)  # First person in chain = made the sale
                 commission_type = 'direct' if is_direct_sale else 'override'
 
-                hierarchy.append((current_user, current_user.commission_role_id, commission_type))
+                # Use PLAN-SPECIFIC role
+                hierarchy.append((current_user, plan_user.role_id, commission_type))
                 seen_ids.add(current_user.id)
 
-            # Move up to manager
-            current_user = current_user.commission_manager_id
+                # Move up to manager IN THIS PLAN
+                current_user = plan_user.manager_id
+            else:
+                # User not in this plan, stop traversal
+                break
 
             # Safety check: prevent infinite loops
             if len(seen_ids) > 20:
@@ -113,7 +126,8 @@ class AccountMove(models.Model):
         base_amount = self.amount_total
 
         # Build commission hierarchy dynamically - SUPPORTS ANY NUMBER OF LEVELS
-        users_to_commission = self._get_commission_hierarchy(salesperson)
+        # NOW USES PLAN-SPECIFIC ROLES AND HIERARCHY
+        users_to_commission = self._get_commission_hierarchy(salesperson, commission_plan)
 
         if not users_to_commission:
             return
@@ -123,9 +137,7 @@ class AccountMove(models.Model):
 
         # Create commission records for each user in the hierarchy
         for user, role, commission_type in users_to_commission:
-            # Check if user is in the plan's allowed users list
-            if commission_plan.user_ids and user.id not in commission_plan.user_ids.mapped('user_id').ids:
-                continue
+            # User is already validated by hierarchy traversal (must be in plan)
 
             # Check if commission already exists for this specific user
             existing_commission = self.env['sale.commission'].search([
