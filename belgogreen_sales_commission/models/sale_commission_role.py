@@ -109,12 +109,14 @@ class SaleCommissionRole(models.Model):
 
     @api.depends('user_count')
     def _compute_user_count(self):
-        """Count active users with this role"""
+        """Count active users with this role (plan-based architecture)"""
         for role in self:
-            role.user_count = self.env['res.users'].search_count([
-                ('commission_role_id', '=', role.id),
-                ('active', '=', True)
+            # Count distinct users assigned to this role across all plans
+            plan_assignments = self.env['sale.commission.plan.user'].search([
+                ('role_id', '=', role.id),
+                ('user_id.active', '=', True)
             ])
+            role.user_count = len(plan_assignments.mapped('user_id'))
 
     @api.depends('commission_count')
     def _compute_commission_count(self):
@@ -147,15 +149,15 @@ class SaleCommissionRole(models.Model):
         return super().unlink()
 
     def action_view_users(self):
-        """View users with this role"""
+        """View plan assignments with this role"""
         self.ensure_one()
         return {
-            'name': _('Users - %s') % self.name,
+            'name': _('Plan Assignments - %s') % self.name,
             'type': 'ir.actions.act_window',
-            'res_model': 'res.users',
+            'res_model': 'sale.commission.plan.user',
             'view_mode': 'tree,form',
-            'domain': [('commission_role_id', '=', self.id)],
-            'context': {'default_commission_role_id': self.id}
+            'domain': [('role_id', '=', self.id)],
+            'context': {'default_role_id': self.id}
         }
 
     def action_view_commissions(self):

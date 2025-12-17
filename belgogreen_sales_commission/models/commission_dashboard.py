@@ -25,13 +25,19 @@ class CommissionDashboard(models.TransientModel):
             ('user_id', '=', user.id)
         ])
 
-        # Get team commissions (if user is a manager)
+        # Get team commissions (if user is a manager in any plan)
+        # In plan-based architecture, find users that report to this user in any plan
+        subordinate_assignments = self.env['sale.commission.plan.user'].search([
+            ('manager_id', '=', user.id)
+        ])
+        subordinate_user_ids = subordinate_assignments.mapped('user_id').ids
+
         team_commissions = self.env['sale.commission'].search([
-            ('user_id.commission_manager_id', '=', user.id)
+            ('user_id', 'in', subordinate_user_ids)
         ])
 
         # Check if user manages a team
-        has_team = len(team_commissions.mapped('user_id')) > 0
+        has_team = len(subordinate_user_ids) > 0
 
         # Check if user is in active commission plan
         has_active_plan = self._user_has_active_commission_plan(user)
@@ -52,32 +58,34 @@ class CommissionDashboard(models.TransientModel):
             'decimal_places': company.currency_id.decimal_places,
         }
 
+        # Get user's primary plan assignment (first active one)
+        user_assignment = self.env['sale.commission.plan.user'].search([
+            ('user_id', '=', user.id),
+            ('plan_id.state', '=', 'approved')
+        ], limit=1)
+
         return {
             'kpis': kpis,
             'charts': chart_data,
             'currency': currency_info,
             'user_info': {
                 'name': user.name,
-                'role': user.commission_role_id.name if user.commission_role_id else 'No Role',
-                'manager': user.commission_manager_id.name if user.commission_manager_id else None,
+                'role': user_assignment.role_id.name if user_assignment else 'No Role',
+                'manager': user_assignment.manager_id.name if user_assignment and user_assignment.manager_id else None,
                 'has_team': has_team,
                 'has_active_plan': has_active_plan,
             }
         }
 
     def _user_has_active_commission_plan(self, user):
-        """Check if user is in an active commission plan"""
-        # Check if user has a commission role and is part of an active hierarchical plan
-        if not user.commission_role_id:
-            return False
-
-        # Check if there's an active plan for the user's role
-        active_plans = self.env['sale.commission.plan'].search([
-            ('is_hierarchical', '=', True),
-            ('state', '=', 'approved'),
+        """Check if user is assigned to an active commission plan"""
+        # Check if user has any plan assignments in approved plans
+        user_assignments = self.env['sale.commission.plan.user'].search([
+            ('user_id', '=', user.id),
+            ('plan_id.state', '=', 'approved'),
         ], limit=1)
 
-        return bool(active_plans)
+        return bool(user_assignments)
 
     def _compute_kpis(self, my_commissions, team_commissions, first_day_month, today):
         """Compute KPI metrics"""
@@ -179,36 +187,29 @@ class CommissionDashboard(models.TransientModel):
         """
         user = self.env.user
 
-        # Check if user has commission role
-        if not user.commission_role_id:
-            return {
-                'count': 0,
-                'total_amount': 0,
-                'claimable_amount': 0,
-                'success': False,
-                'message': 'You do not have a commission role assigned'
-            }
-
-        # Find commission plan first
-        commission_plan = self.env['sale.commission.plan'].search([
-            ('is_hierarchical', '=', True),
-            ('state', '=', 'approved'),
-            ('company_id', '=', user.company_id.id)
+        # Check if user has commission plan assignment
+        user_assignment = self.env['sale.commission.plan.user'].search([
+            ('user_id', '=', user.id),
+            ('plan_id.state', '=', 'approved'),
+            ('plan_id.type', '=', 'hierarchical'),
         ], limit=1)
 
-        if not commission_plan:
+        if not user_assignment:
             return {
                 'count': 0,
                 'total_amount': 0,
                 'claimable_amount': 0,
                 'success': False,
-                'message': 'No approved hierarchical commission plan found'
+                'message': 'You are not assigned to any approved hierarchical commission plan'
             }
+
+        commission_plan = user_assignment.plan_id
+        user_role = user_assignment.role_id
 
         # Get role configuration for current user
         role_config = self.env['hr.commission.role.config'].search([
             ('plan_id', '=', commission_plan.id),
-            ('role_id', '=', user.commission_role_id.id),
+            ('role_id', '=', user_role.id),
             ('active', '=', True)
         ], limit=1)
 
@@ -218,7 +219,7 @@ class CommissionDashboard(models.TransientModel):
                 'total_amount': 0,
                 'claimable_amount': 0,
                 'success': False,
-                'message': f'No active configuration found for role {user.commission_role_id.name} in the commission plan'
+                'message': f'No active configuration found for role {user_role.name} in the commission plan'
             }
 
         SaleOrder = self.env['sale.order']
@@ -232,7 +233,7 @@ class CommissionDashboard(models.TransientModel):
         for order in direct_orders:
             created = self._create_commission_for_user(
                 user=user,
-                role=user.commission_role_id,
+                role=user_role,
                 commission_type='direct',
                 order=order,
                 commission_plan=commission_plan,
@@ -240,8 +241,13 @@ class CommissionDashboard(models.TransientModel):
             )
             commissions_created += created
 
-        # 2. OVERRIDE COMMISSIONS: Process subordinates' orders
-        subordinate_ids = user._get_all_subordinate_ids()
+        # 2. OVERRIDE COMMISSIONS: Process subordinates' orders (within this plan)
+        subordinate_assignments = self.env['sale.commission.plan.user'].search([
+            ('manager_id', '=', user.id),
+            ('plan_id', '=', commission_plan.id)
+        ])
+        subordinate_ids = subordinate_assignments.mapped('user_id').ids
+
         if subordinate_ids:
             subordinates = self.env['res.users'].browse(subordinate_ids)
             for subordinate in subordinates:
@@ -249,7 +255,7 @@ class CommissionDashboard(models.TransientModel):
                 for order in subordinate_orders:
                     created = self._create_commission_for_user(
                         user=user,  # Commission for current user, not subordinate
-                        role=user.commission_role_id,
+                        role=user_role,
                         commission_type='override',
                         order=order,
                         commission_plan=commission_plan,
