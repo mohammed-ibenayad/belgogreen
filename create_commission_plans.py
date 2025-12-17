@@ -13,10 +13,12 @@ def create_hierarchical_commission_plans(env):
     Create two hierarchical commission plans:
     1. Plan de Commission Standard - AMSS MANAGEMENT SRL
     2. Plan de Commission Standard - NaturIsol (NATUR'ISOL SRL)
+
+    NEW ARCHITECTURE: Uses plan-based role assignment instead of global roles
     """
 
     print("\n" + "="*80)
-    print("Starting Commission Plan Creation")
+    print("Starting Commission Plan Creation (New Plan-Based Architecture)")
     print("="*80 + "\n")
 
     # ========================================================================
@@ -38,39 +40,41 @@ def create_hierarchical_commission_plans(env):
     print(f"✓ Found {company_naturisol.name} (ID: {company_naturisol.id})")
 
     # ========================================================================
-    # STEP 2: Define user mapping
+    # STEP 2: Define user structure
     # ========================================================================
     print("\nSTEP 2: Defining user structure...")
 
-    # AMSS users
-    amss_users = {
-        'frederic.adam@belgogreen.be': 'Directeur de Sales',
-        'corine.detilleux@belgogreen.be': 'Chef d\'equipe',
-        'alexandre.emond@belgogreen.be': 'Commerciale',
-        'ali.lmoughit@belgogreen.be': 'Commerciale',
-        'ayman.toulfiha@belgogreen.be': 'Commerciale',
-        'chrystel.slongo@belgogreen.be': 'Commerciale',
-        'frederic.jansemme@belgogreen.be': 'Commerciale',
-        'm.bennari@belgogreen.be': 'Commerciale',
-        'selim.belmeddah@belgogreen.be': 'Commerciale',
-        'thierry.grommen@belgogreen.be': 'Commerciale',
-        'veronique.lerho@belgogreen.be': 'Commerciale',
-        'walter.noweta@belgogreen.be': 'Commerciale',
-        'younes.jamali@belgogreen.be': 'Commerciale',
+    # AMSS hierarchy: Frederic → Corine → Commercials
+    amss_structure = {
+        'frederic.adam@belgogreen.be': {'role_name': 'Directeur de Sales', 'manager': None},
+        'corine.detilleux@belgogreen.be': {'role_name': 'Chef d\'equipe', 'manager': 'frederic.adam@belgogreen.be'},
+        # Commercials under Corine
+        'alexandre.emond@belgogreen.be': {'role_name': 'Commerciale', 'manager': 'corine.detilleux@belgogreen.be'},
+        'ali.lmoughit@belgogreen.be': {'role_name': 'Commerciale', 'manager': 'corine.detilleux@belgogreen.be'},
+        'ayman.toulfiha@belgogreen.be': {'role_name': 'Commerciale', 'manager': 'corine.detilleux@belgogreen.be'},
+        'chrystel.slongo@belgogreen.be': {'role_name': 'Commerciale', 'manager': 'corine.detilleux@belgogreen.be'},
+        'frederic.jansemme@belgogreen.be': {'role_name': 'Commerciale', 'manager': 'corine.detilleux@belgogreen.be'},
+        'm.bennari@belgogreen.be': {'role_name': 'Commerciale', 'manager': 'corine.detilleux@belgogreen.be'},
+        'selim.belmeddah@belgogreen.be': {'role_name': 'Commerciale', 'manager': 'corine.detilleux@belgogreen.be'},
+        'thierry.grommen@belgogreen.be': {'role_name': 'Commerciale', 'manager': 'corine.detilleux@belgogreen.be'},
+        'veronique.lerho@belgogreen.be': {'role_name': 'Commerciale', 'manager': 'corine.detilleux@belgogreen.be'},
+        'walter.noweta@belgogreen.be': {'role_name': 'Commerciale', 'manager': 'corine.detilleux@belgogreen.be'},
+        'younes.jamali@belgogreen.be': {'role_name': 'Commerciale', 'manager': 'corine.detilleux@belgogreen.be'},
     }
 
-    # NaturIsol users
-    naturisol_users = {
-        'frederic.adam@belgogreen.be': 'Directeur de Sales',  # Same person, different company plan
-        'contact@naturisol.be': 'Chef d\'equipe',  # Youssef Ouazzani-Chahdi
-        'a.chekroun@naturisol.be': 'Commerciale',
-        'd.isenge@naturisol.be': 'Commerciale',
-        'f.zannou@naturisol.be': 'Commerciale',
-        'm.belmeddah@naturisol.be': 'Commerciale',
+    # NaturIsol hierarchy: Frederic → Youssef → Commercials
+    naturisol_structure = {
+        'frederic.adam@belgogreen.be': {'role_name': 'Directeur de Sales', 'manager': None},
+        'contact@naturisol.be': {'role_name': 'Chef d\'equipe', 'manager': 'frederic.adam@belgogreen.be'},
+        # Commercials under Youssef
+        'a.chekroun@naturisol.be': {'role_name': 'Commerciale', 'manager': 'contact@naturisol.be'},
+        'd.isenge@naturisol.be': {'role_name': 'Commerciale', 'manager': 'contact@naturisol.be'},
+        'f.zannou@naturisol.be': {'role_name': 'Commerciale', 'manager': 'contact@naturisol.be'},
+        'm.belmeddah@naturisol.be': {'role_name': 'Commerciale', 'manager': 'contact@naturisol.be'},
     }
 
-    print(f"✓ AMSS users: {len(amss_users)} users defined")
-    print(f"✓ NaturIsol users: {len(naturisol_users)} users defined")
+    print(f"✓ AMSS structure: {len(amss_structure)} users defined")
+    print(f"✓ NaturIsol structure: {len(naturisol_structure)} users defined")
 
     # ========================================================================
     # STEP 3: Create or find roles for each company
@@ -130,6 +134,19 @@ def create_hierarchical_commission_plans(env):
         company_naturisol, 'Commerciale', 'COM_NAT', 10,
         requires_manager=True, can_manage=False, is_base=True
     )
+
+    # Map role names to role objects
+    amss_roles = {
+        'Directeur de Sales': role_directeur_amss,
+        'Chef d\'equipe': role_chef_amss,
+        'Commerciale': role_commercial_amss,
+    }
+
+    naturisol_roles = {
+        'Directeur de Sales': role_directeur_naturisol,
+        'Chef d\'equipe': role_chef_naturisol,
+        'Commerciale': role_commercial_naturisol,
+    }
 
     # ========================================================================
     # STEP 4: Create Commission Plans
@@ -216,73 +233,65 @@ def create_hierarchical_commission_plans(env):
     create_role_config(plan_naturisol, role_commercial_naturisol, 10.0, 0.0) # Commercial: 10% direct, 0% override
 
     # ========================================================================
-    # STEP 6: Assign Roles and Hierarchy to Users
+    # STEP 6: Assign Users to Plans (NEW ARCHITECTURE)
     # ========================================================================
-    print("\nSTEP 6: Assigning roles and setting up hierarchy...")
+    print("\nSTEP 6: Assigning users to plans with roles and hierarchy...")
 
-    def assign_user_role_and_manager(login, role, manager_login=None, skip_if_has_role=False):
-        """Find user and assign role and manager"""
+    def assign_user_to_plan(plan, login, role, manager_login=None):
+        """Assign user to plan with role and manager (plan-specific assignment)"""
+        # Find user
         user = env['res.users'].search([('login', '=', login)], limit=1)
         if not user:
             print(f"    ⚠ WARNING: User {login} not found!")
             return None
 
-        # Check if user already has a role and we should skip
-        if skip_if_has_role and user.commission_role_id:
-            print(f"    ℹ SKIPPED: {user.name} ({login}) already has role '{user.commission_role_id.name}' - keeping existing role")
-            return user
-
+        # Find manager if specified
         manager = None
         if manager_login:
             manager = env['res.users'].search([('login', '=', manager_login)], limit=1)
             if not manager:
-                print(f"    ⚠ WARNING: Manager {manager_login} not found for user {login}!")
+                print(f"    ⚠ WARNING: Manager {manager_login} not found!")
 
-        # Update user - use sudo to bypass access rights and avoid message_post issues
-        update_vals = {'commission_role_id': role.id}
-        if manager:
-            update_vals['commission_manager_id'] = manager.id
-        else:
-            # Clear manager if this is a top-level role
-            update_vals['commission_manager_id'] = False
+        # Check if assignment already exists
+        existing = env['sale.commission.plan.user'].search([
+            ('plan_id', '=', plan.id),
+            ('user_id', '=', user.id)
+        ], limit=1)
 
-        try:
-            # Use sudo and context to bypass checks
-            user.sudo().with_context(skip_role_change_warning=True).write(update_vals)
+        if existing:
+            # Update existing assignment
+            existing.write({
+                'role_id': role.id,
+                'manager_id': manager.id if manager else False,
+            })
             manager_name = manager.name if manager else "None (Top Level)"
-            print(f"    ✓ {user.name} ({login}) -> Role: {role.name}, Manager: {manager_name}")
-        except Exception as e:
-            print(f"    ✗ ERROR assigning role to {user.name} ({login}): {str(e)}")
-            return None
+            print(f"    ✓ Updated {user.name} -> Role: {role.name}, Manager: {manager_name}")
+        else:
+            # Create new assignment
+            env['sale.commission.plan.user'].create({
+                'plan_id': plan.id,
+                'user_id': user.id,
+                'role_id': role.id,
+                'manager_id': manager.id if manager else False,
+            })
+            manager_name = manager.name if manager else "None (Top Level)"
+            print(f"    ✓ Assigned {user.name} -> Role: {role.name}, Manager: {manager_name}")
 
         return user
 
-    # AMSS hierarchy
-    print("\n  Setting up AMSS hierarchy:")
-    print("    Directeur de Sales:")
-    frederic_amss = assign_user_role_and_manager('frederic.adam@belgogreen.be', role_directeur_amss)
+    # Assign AMSS users
+    print("\n  Assigning AMSS users to plan:")
+    for login, info in amss_structure.items():
+        role = amss_roles[info['role_name']]
+        manager_login = info['manager']
+        assign_user_to_plan(plan_amss, login, role, manager_login)
 
-    print("\n    Chef d'equipe (reporting to Directeur):")
-    corine = assign_user_role_and_manager('corine.detilleux@belgogreen.be', role_chef_amss, 'frederic.adam@belgogreen.be')
-
-    print("\n    Commerciales (reporting to Chef d'equipe):")
-    for login in amss_users:
-        if login not in ['frederic.adam@belgogreen.be', 'corine.detilleux@belgogreen.be']:
-            assign_user_role_and_manager(login, role_commercial_amss, 'corine.detilleux@belgogreen.be')
-
-    # NaturIsol hierarchy
-    print("\n  Setting up NaturIsol hierarchy:")
-    print("    Directeur de Sales:")
-    # Note: Frederic already has AMSS role, so we skip reassignment
-    frederic_nat = assign_user_role_and_manager('frederic.adam@belgogreen.be', role_directeur_naturisol, skip_if_has_role=True)
-
-    print("\n    Chef d'equipe (reporting to Directeur):")
-    youssef = assign_user_role_and_manager('contact@naturisol.be', role_chef_naturisol, 'frederic.adam@belgogreen.be')
-
-    print("\n    Commerciales (reporting to Chef d'equipe):")
-    for login in naturisol_users:
-        if login not in ['frederic.adam@belgogreen.be', 'contact@naturisol.be']:
-            assign_user_role_and_manager(login, role_commercial_naturisol, 'contact@naturisol.be')
+    # Assign NaturIsol users
+    print("\n  Assigning NaturIsol users to plan:")
+    for login, info in naturisol_structure.items():
+        role = naturisol_roles[info['role_name']]
+        manager_login = info['manager']
+        assign_user_to_plan(plan_naturisol, login, role, manager_login)
 
     # ========================================================================
     # STEP 7: Commit and Summary
@@ -291,8 +300,8 @@ def create_hierarchical_commission_plans(env):
     print("SUMMARY")
     print("="*80)
     print(f"\n✓ Created/Updated 2 commission plans:")
-    print(f"  - AMSS MANAGEMENT SRL: {plan_amss.name} (ID: {plan_amss.id})")
-    print(f"  - NATUR'ISOL SRL: {plan_naturisol.name} (ID: {plan_naturisol.id})")
+    print(f"  - AMSS MANAGEMENT SRL: {plan_amss.name} (ID: {plan_amss.id}) - {len(plan_amss.user_ids)} users")
+    print(f"  - NATUR'ISOL SRL: {plan_naturisol.name} (ID: {plan_naturisol.id}) - {len(plan_naturisol.user_ids)} users")
 
     print(f"\n✓ Created/Updated 6 roles (3 per company):")
     print(f"  AMSS: Directeur de Sales, Chef d'equipe, Commerciale")
@@ -307,11 +316,14 @@ def create_hierarchical_commission_plans(env):
     print(f"  - Chef d'equipe: 10% direct sales, 2% override")
     print(f"  - Commerciale: 10% direct sales, 0% override")
 
-    print(f"\n⚠ IMPORTANT NOTES:")
-    print(f"  1. Plans are in DRAFT state - Review and APPROVE them in Odoo UI")
-    print(f"  2. Frederic Adam is assigned to AMSS hierarchy only (users can only have one role)")
-    print(f"     He will still receive commissions from both companies' sales via the plans")
-    print(f"  3. All users are commission users only (not commission managers)")
+    print(f"\n✅ NEW ARCHITECTURE BENEFITS:")
+    print(f"  1. Frederic Adam can now be Directeur in BOTH plans!")
+    print(f"  2. Each plan has its own independent hierarchy")
+    print(f"  3. Users can have different roles in different plans")
+    print(f"  4. More flexible and scalable for multi-company setups")
+
+    print(f"\n⚠ IMPORTANT: Plans are in DRAFT state.")
+    print(f"   Please review and APPROVE them in Odoo UI before they take effect.")
 
     print("\n" + "="*80)
     print("Script completed successfully!")

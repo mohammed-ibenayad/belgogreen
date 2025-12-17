@@ -32,6 +32,19 @@ class SaleCommissionPlan(models.Model):
         help='Define commission percentages for each role in the hierarchy'
     )
 
+    user_ids = fields.One2many(
+        'sale.commission.plan.user',
+        'plan_id',
+        string='Assigned Users',
+        help='Users who participate in this commission plan with their roles and hierarchy'
+    )
+
+    user_count = fields.Integer(
+        string='User Count',
+        compute='_compute_user_count',
+        help='Number of users assigned to this plan'
+    )
+
     require_invoice_paid = fields.Boolean(
         string='Require Paid Invoice',
         default=True,
@@ -48,6 +61,12 @@ class SaleCommissionPlan(models.Model):
         """Compute is_hierarchical based on type"""
         for plan in self:
             plan.is_hierarchical = (plan.type == 'hierarchical')
+
+    @api.depends('user_ids')
+    def _compute_user_count(self):
+        """Count users in this plan"""
+        for plan in self:
+            plan.user_count = len(plan.user_ids)
 
     @api.depends('role_config_ids')
     def _compute_commission_count(self):
@@ -101,11 +120,24 @@ class SaleCommissionPlan(models.Model):
     def action_approve(self):
         """Approve commission plan"""
         for plan in self:
-            if plan.type == 'hierarchical' and not plan.role_config_ids:
-                raise ValidationError(_(
-                    'Cannot approve hierarchical plan without role configurations. '
-                    'Please add role percentages in the "Role Percentages" tab.'
-                ))
+            if plan.type == 'hierarchical':
+                if not plan.role_config_ids:
+                    raise ValidationError(_(
+                        'Cannot approve hierarchical plan without role configurations. '
+                        'Please add role percentages in the "Role Percentages" tab.'
+                    ))
+                if not plan.user_ids:
+                    raise ValidationError(_(
+                        'Cannot approve hierarchical plan without users. '
+                        'Please add users in the "Users & Hierarchy" tab.'
+                    ))
+                # Check that there's at least one top-level user
+                top_level_users = plan.user_ids.filtered(lambda u: not u.manager_id)
+                if not top_level_users:
+                    raise ValidationError(_(
+                        'Hierarchical plan must have at least one top-level user '
+                        '(user without a manager). Please review the hierarchy.'
+                    ))
             plan.state = 'approved'
         return True
 
