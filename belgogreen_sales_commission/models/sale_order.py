@@ -84,9 +84,25 @@ class SaleOrder(models.Model):
             result['message'] = _("No salesperson assigned to order %s") % self.name
             return result
 
-        # Check if salesperson has commission role
-        if not self.user_id.commission_role_id:
-            result['message'] = _("Salesperson %s has no commission role set") % self.user_id.name
+        # Find applicable commission plan first
+        commission_plan = self.env['sale.commission.plan'].search([
+            ('type', '=', 'hierarchical'),
+            ('state', '=', 'approved'),
+            ('company_id', '=', self.company_id.id)
+        ], limit=1)
+
+        if not commission_plan:
+            result['message'] = _("No approved hierarchical commission plan found")
+            return result
+
+        # Check if salesperson has assignment in this plan
+        user_assignment = self.env['sale.commission.plan.user'].search([
+            ('plan_id', '=', commission_plan.id),
+            ('user_id', '=', self.user_id.id)
+        ], limit=1)
+
+        if not user_assignment:
+            result['message'] = _("Salesperson %s is not assigned to commission plan %s") % (self.user_id.name, commission_plan.name)
             return result
 
         # Get paid invoices for this sale order
@@ -98,17 +114,6 @@ class SaleOrder(models.Model):
 
         if not paid_invoices:
             result['message'] = _("No paid invoices found for order %s") % self.name
-            return result
-
-        # Find applicable commission plan
-        commission_plan = self.env['sale.commission.plan'].search([
-            ('is_hierarchical', '=', True),
-            ('state', '=', 'approved'),
-            ('company_id', '=', self.company_id.id)
-        ], limit=1)
-
-        if not commission_plan:
-            result['message'] = _("No approved hierarchical commission plan found")
             return result
 
         # Check if plan requires paid invoice
