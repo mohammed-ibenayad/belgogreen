@@ -5,39 +5,22 @@ from odoo.exceptions import ValidationError
 
 
 class SaleCommissionPlanUser(models.Model):
-    _name = 'sale.commission.plan.user'
-    _description = 'Commission Plan User Assignment'
+    _inherit = 'sale.commission.plan.user'
+    _description = 'Commission Plan User Assignment (Extended for Hierarchy)'
     _order = 'plan_id, role_sequence desc, user_id'
 
-    # Core fields
-    plan_id = fields.Many2one(
-        'sale.commission.plan',
-        string='Commission Plan',
-        required=True,
-        ondelete='cascade',
-        index=True
-    )
-
-    user_id = fields.Many2one(
-        'res.users',
-        string='User',
-        required=True,
-        ondelete='cascade',
-        index=True
-    )
-
+    # NEW FIELDS for hierarchical plans (added to base model)
     role_id = fields.Many2one(
         'sale.commission.role',
         string='Role',
-        required=True,
         domain="[('company_id', '=', company_id)]",
-        help='The role of this user in this commission plan'
+        help='The role of this user in this commission plan (for hierarchical plans only)'
     )
 
     manager_id = fields.Many2one(
         'res.users',
         string='Manager (in this plan)',
-        help='Direct manager in THIS commission plan\'s hierarchy'
+        help='Direct manager in THIS commission plan\'s hierarchy (for hierarchical plans only)'
     )
 
     # Related/Computed fields
@@ -61,11 +44,7 @@ class SaleCommissionPlanUser(models.Model):
         readonly=True
     )
 
-    # SQL constraints
-    _sql_constraints = [
-        ('unique_user_plan', 'unique(plan_id, user_id)',
-         'A user can only be assigned once per commission plan!')
-    ]
+    # Note: unique(plan_id, user_id) constraint already exists in base model
 
     @api.constrains('manager_id', 'user_id')
     def _check_no_self_management(self):
