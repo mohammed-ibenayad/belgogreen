@@ -46,6 +46,27 @@ class SaleCommissionPlanUser(models.Model):
 
     # Note: unique(plan_id, user_id) constraint already exists in base model
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        """
+        Auto-populate smart defaults when creating user assignments
+        If adding via commerciaux tab (has dates but no role), record still appears in hierarchy tab
+        """
+        records = super().create(vals_list)
+
+        # For hierarchical plans, show notification if role not set
+        for record in records:
+            if record.plan_id.type == 'hierarchical' and not record.role_id:
+                # Record was added without role (probably from commerciaux tab)
+                # It will appear in hierarchy tab automatically (same user_ids field)
+                record.plan_id.message_post(
+                    body=_('User %s added to plan. Please set their role and manager in "Users & Hierarchy" tab.') % record.user_id.name,
+                    subject=_('Complete Hierarchy Setup'),
+                    message_type='notification'
+                )
+
+        return records
+
     @api.constrains('manager_id', 'user_id')
     def _check_no_self_management(self):
         """User cannot be their own manager"""

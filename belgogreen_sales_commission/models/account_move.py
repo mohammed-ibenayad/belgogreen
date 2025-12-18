@@ -59,6 +59,8 @@ class AccountMove(models.Model):
         Supports unlimited hierarchy levels by following manager_id chain in plan assignments.
         Includes cycle detection to prevent infinite loops.
 
+        NEW: Validates date_from and date_to to ensure user assignment is active on invoice date.
+
         Args:
             base_user: res.users record (typically the salesperson who made the sale)
             commission_plan: sale.commission.plan record (the plan to use for hierarchy)
@@ -69,12 +71,16 @@ class AccountMove(models.Model):
         hierarchy = []
         current_user = base_user
         seen_ids = set()  # Cycle detection
+        invoice_date = self.invoice_date or fields.Date.today()
 
         while current_user and current_user.id not in seen_ids:
-            # Find user's assignment in THIS PLAN
+            # Find user's assignment in THIS PLAN (with date validation)
             plan_user = self.env['sale.commission.plan.user'].search([
                 ('plan_id', '=', commission_plan.id),
-                ('user_id', '=', current_user.id)
+                ('user_id', '=', current_user.id),
+                # Date validation: assignment must be active on invoice date
+                '|', ('date_from', '=', False), ('date_from', '<=', invoice_date),
+                '|', ('date_to', '=', False), ('date_to', '>=', invoice_date)
             ], limit=1)
 
             if plan_user and plan_user.role_id:

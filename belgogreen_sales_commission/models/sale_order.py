@@ -95,10 +95,14 @@ class SaleOrder(models.Model):
             result['message'] = _("No approved hierarchical commission plan found")
             return result
 
-        # Check if salesperson has assignment in this plan
+        # Check if salesperson has assignment in this plan (with date validation)
+        invoice_date = fields.Date.today()  # Use today for initial check
         user_assignment = self.env['sale.commission.plan.user'].search([
             ('plan_id', '=', commission_plan.id),
-            ('user_id', '=', self.user_id.id)
+            ('user_id', '=', self.user_id.id),
+            # Date validation: assignment must be active
+            '|', ('date_from', '=', False), ('date_from', '<=', invoice_date),
+            '|', ('date_to', '=', False), ('date_to', '>=', invoice_date)
         ], limit=1)
 
         if not user_assignment:
@@ -147,6 +151,8 @@ class SaleOrder(models.Model):
         Supports unlimited hierarchy levels by following manager_id chain in plan assignments.
         Includes cycle detection to prevent infinite loops.
 
+        NEW: Validates date_from and date_to to ensure user assignment is active on invoice date.
+
         Args:
             base_user: res.users record (typically the salesperson who made the sale)
             commission_plan: sale.commission.plan record (the plan to use for hierarchy)
@@ -157,12 +163,23 @@ class SaleOrder(models.Model):
         hierarchy = []
         current_user = base_user
         seen_ids = set()  # Cycle detection
+        # Use invoice date from the first paid invoice for this order
+        invoice_date = fields.Date.today()
+        if self.invoice_ids:
+            paid_invoice = self.invoice_ids.filtered(
+                lambda inv: inv.move_type == 'out_invoice' and inv.payment_state in ['paid', 'in_payment']
+            )[:1]
+            if paid_invoice and paid_invoice.invoice_date:
+                invoice_date = paid_invoice.invoice_date
 
         while current_user and current_user.id not in seen_ids:
-            # Find user's assignment in THIS PLAN
+            # Find user's assignment in THIS PLAN (with date validation)
             plan_user = self.env['sale.commission.plan.user'].search([
                 ('plan_id', '=', commission_plan.id),
-                ('user_id', '=', current_user.id)
+                ('user_id', '=', current_user.id),
+                # Date validation: assignment must be active on invoice date
+                '|', ('date_from', '=', False), ('date_from', '<=', invoice_date),
+                '|', ('date_to', '=', False), ('date_to', '>=', invoice_date)
             ], limit=1)
 
             if plan_user and plan_user.role_id:
