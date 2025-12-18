@@ -143,6 +143,8 @@
                                 <field name="role_id" domain="[('company_id', '=', parent.company_id)]"/>
                                 <field name="role_sequence" string="Level" readonly="1"/>
                                 <field name="manager_id"/>
+                                <field name="date_from" optional="show"/>
+                                <field name="date_to" optional="show"/>
                                 <field name="company_id" column_invisible="1"/>
                             </list>
                         </field>
@@ -154,14 +156,18 @@
                                     <li>Set their manager within this plan's hierarchy</li>
                                     <li>Users can have different roles in different plans</li>
                                     <li>Top-level users (Directeur) should have NO manager</li>
+                                    <li><strong>Date From/To:</strong> Optional validity period for this assignment (leave empty for permanent assignment)</li>
                                 </ul>
                                 <br/>
                                 <strong>Example Hierarchy:</strong>
                                 <ul>
-                                    <li>Frederic Adam: Directeur de Sales, Manager: (none)</li>
-                                    <li>Corine Detilleux: Chef d'équipe, Manager: Frederic Adam</li>
-                                    <li>John Doe: Commerciale, Manager: Corine Detilleux</li>
+                                    <li>Frederic Adam: Directeur de Sales, Manager: (none), Dates: (permanent)</li>
+                                    <li>Corine Detilleux: Chef d'équipe, Manager: Frederic Adam, Dates: (permanent)</li>
+                                    <li>John Doe: Commerciale, Manager: Corine Detilleux, Dates: 2025-01-01 to 2025-12-31 (seasonal)</li>
                                 </ul>
+                                <br/>
+                                <strong>💡 Tip:</strong> Users added via "Données commerciaux" tab will automatically appear here.
+                                Complete their role and manager information to enable commission calculations.
                             </div>
                         </group>
                     </page>
