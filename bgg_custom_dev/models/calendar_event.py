@@ -47,7 +47,7 @@ class CalendarEvent(models.Model):
 
         for record in records:
             # Set organizer to the user who created the event (if not already set and not public user)
-            self._set_initial_organizer(record)
+            # self._set_initial_organizer(record)
 
             # Process other automation rules
             self._process_calendar_event(record)
