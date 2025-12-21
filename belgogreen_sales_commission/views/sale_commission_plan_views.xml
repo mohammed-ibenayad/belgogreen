@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Inherit and extend the base commission plan form view -->
+        <record id="view_sale_commission_plan_form_hierarchical" model="ir.ui.view">
+            <field name="name">sale.commission.plan.form.hierarchical</field>
+            <field name="model">sale.commission.plan</field>
+            <field name="inherit_id" ref="sale_commission.sale_commission_plan_view_form"/>
+            <field name="arch" type="xml">
+
+                <!-- Add is_hierarchical computed field (hidden) -->
+                <xpath expr="//field[@name='name']" position="after">
+                    <field name="is_hierarchical" invisible="1"/>
+                </xpath>
+
+                <!-- Add smart button for hierarchical commissions -->
+                <xpath expr="//div[@name='button_box']" position="inside">
+                    <button name="action_view_commissions"
+                            type="object"
+                            class="oe_stat_button"
+                            icon="fa-sitemap"
+                            invisible="type != 'hierarchical'"
+                            groups="belgogreen_sales_commission.group_commission_user">
+                        <field name="commission_count" widget="statinfo" string="Commissions"/>
+                    </button>
+                </xpath>
+
+                <!-- Hide base commission button (dollar icon) for hierarchical plans to avoid duplication -->
+                <xpath expr="//button[@name='action_open_commission']" position="attributes">
+                    <attribute name="invisible">state in ['draft', 'cancel'] or type == 'hierarchical'</attribute>
+                </xpath>
+
+                <!-- Make periodicity readonly for hierarchical plans -->
+                <xpath expr="//field[@name='periodicity']" position="attributes">
+                    <attribute name="readonly">type == 'hierarchical'</attribute>
+                </xpath>
+
+                <!-- Hide the "per" text and user_type field for hierarchical plans -->
+                <xpath expr="//label[@for='type']/following-sibling::div[1]" position="replace">
+                    <div>
+                        <field name="type" class="oe_inline" readonly="state != 'draft'"/>
+                        <span invisible="type == 'hierarchical'">
+                            per <field name="user_type" class="oe_inline" readonly="state != 'draft'"/>
+                        </span>
+                    </div>
+                </xpath>
+
+                <!-- Hide team_id field for hierarchical plans -->
+                <xpath expr="//field[@name='team_id']" position="attributes">
+                    <attribute name="invisible">user_type == 'person' or type == 'hierarchical'</attribute>
+                </xpath>
+
+                <!-- Hide commission_amount field for hierarchical plans -->
+                <xpath expr="//field[@name='commission_amount']" position="attributes">
+                    <attribute name="invisible">type == 'achieve' or type == 'hierarchical'</attribute>
+                </xpath>
+
+                <!-- Hide base tabs for hierarchical type by modifying existing invisible conditions -->
+                <!-- Page 1: Commissions (already has invisible="type == 'achieve'") -->
+                <xpath expr="//notebook[@name='main_book']/page[1]" position="attributes">
+                    <attribute name="invisible">type == 'achieve' or type == 'hierarchical'</attribute>
+                </xpath>
+
+                <!-- Page 2: Targets (already has invisible="type == 'achieve'") -->
+                <xpath expr="//notebook[@name='main_book']/page[2]" position="attributes">
+                    <attribute name="invisible">type == 'achieve' or type == 'hierarchical'</attribute>
+                </xpath>
+
+                <!-- Page 3: Achievements (always visible, now hide for hierarchical) -->
+                <xpath expr="//notebook[@name='main_book']/page[3]" position="attributes">
+                    <attribute name="invisible">type == 'hierarchical'</attribute>
+                </xpath>
+
+                <!-- Page 4: Periods (already has invisible="type == 'target'") -->
+                <xpath expr="//notebook[@name='main_book']/page[4]" position="attributes">
+                    <attribute name="invisible">type == 'target' or type == 'hierarchical'</attribute>
+                </xpath>
+
+                <!-- Add custom hierarchical tabs -->
+                <xpath expr="//notebook" position="inside">
+
+                    <!-- Hierarchical Configuration Tab -->
+                    <page string="Hierarchical Configuration"
+                          name="hierarchical_config"
+                          invisible="type != 'hierarchical'">
+                        <group>
+                            <group string="Payment Requirements">
+                                <field name="require_invoice_paid"/>
+                                <div class="text-muted" style="margin-left: 20px;">
+                                    If enabled, commissions will only be generated when the customer invoice is fully paid.
+                                    If disabled, commissions will be created as soon as the invoice is posted/confirmed,
+                                    regardless of payment status.
+                                </div>
+                            </group>
+                        </group>
+                        <group>
+                            <div class="alert alert-info" role="alert">
+                                <strong>Note:</strong> Hierarchical commissions are event-based (triggered by paid invoices),
+                                not period-based. The periodicity field is set to "Month" automatically but is not used
+                                for commission calculations. You can safely ignore the Periods tab.
+                            </div>
+                        </group>
+                    </page>
+
+                    <!-- Role Percentages Tab -->
+                    <page string="Role Percentages"
+                          name="role_config"
+                          invisible="type != 'hierarchical'">
+                        <field name="role_config_ids">
+                            <list editable="bottom">
+                                <field name="role_id"/>
+                                <field name="direct_sale_percentage"/>
+                                <field name="override_percentage"/>
+                                <field name="active"/>
+                            </list>
+                        </field>
+                        <group>
+                            <div class="alert alert-info" role="alert">
+                                <strong>Note:</strong> Define TWO commission percentages for each role:
+                                <ul>
+                                    <li><strong>Direct Sale %:</strong> When the user makes their own sale</li>
+                                    <li><strong>Override %:</strong> When the user receives commission on subordinate's sale</li>
+                                </ul>
+                                <br/>
+                                <strong>Example setup:</strong>
+                                <ul>
+                                    <li>Salesperson: Direct: 5%, Override: 0% (base role, no team)</li>
+                                    <li>Team Leader: Direct: 5%, Override: 2% (makes own sales + team override)</li>
+                                    <li>Sales Director: Direct: 5%, Override: 1% (makes own sales + all team override)</li>
+                                </ul>
+                            </div>
+                        </group>
+                    </page>
+
+                    <!-- Users & Hierarchy Tab (NEW for plan-based architecture) -->
+                    <page string="Users &amp; Hierarchy"
+                          name="users_hierarchy"
+                          invisible="type != 'hierarchical'">
+                        <field name="user_ids">
+                            <list editable="bottom">
+                                <field name="user_id" domain="[('company_id', '=', parent.company_id)]"/>
+                                <field name="role_id" domain="[('company_id', '=', parent.company_id)]"/>
+                                <field name="role_sequence" string="Level" readonly="1"/>
+                                <field name="manager_id"/>
+                                <field name="date_from" optional="show"/>
+                                <field name="date_to" optional="show"/>
+                                <field name="company_id" column_invisible="1"/>
+                            </list>
+                        </field>
+                        <group>
+                            <div class="alert alert-info" role="alert">
+                                <strong>Plan-Based Role Assignment:</strong>
+                                <ul>
+                                    <li>Assign each user to this plan with their role</li>
+                                    <li>Set their manager within this plan's hierarchy</li>
+                                    <li>Users can have different roles in different plans</li>
+                                    <li>Top-level users (Directeur) should have NO manager</li>
+                                    <li><strong>Date From/To:</strong> Optional validity period for this assignment (leave empty for permanent assignment)</li>
+                                </ul>
+                                <br/>
+                                <strong>Example Hierarchy:</strong>
+                                <ul>
+                                    <li>Frederic Adam: Directeur de Sales, Manager: (none), Dates: (permanent)</li>
+                                    <li>Corine Detilleux: Chef d'équipe, Manager: Frederic Adam, Dates: (permanent)</li>
+                                    <li>John Doe: Commerciale, Manager: Corine Detilleux, Dates: 2025-01-01 to 2025-12-31 (seasonal)</li>
+                                </ul>
+                                <br/>
+                                <strong>💡 Tip:</strong> Users added via "Données commerciaux" tab will automatically appear here.
+                                Complete their role and manager information to enable commission calculations.
+                            </div>
+                        </group>
+                    </page>
+                </xpath>
+
+            </field>
+        </record>
+
+        <!-- Tree view - Standalone with low priority (base module view takes precedence if exists) -->
+        <record id="view_sale_commission_plan_tree_hierarchical" model="ir.ui.view">
+            <field name="name">sale.commission.plan.tree.hierarchical</field>
+            <field name="model">sale.commission.plan</field>
+            <field name="priority">20</field>
+            <field name="arch" type="xml">
+                <list string="Commission Plans">
+                    <field name="name" string="Name" width="200px"/>
+                    <field name="type" string="Type"
+                           widget="badge"
+                           decoration-info="type == 'target'"
+                           decoration-success="type == 'achievement'"
+                           decoration-warning="type == 'hierarchical'"
+                           optional="show" width="120px"/>
+                    <field name="periodicity" string="Period"
+                           optional="show" width="100px"/>
+                    <field name="state" string="State"
+                           widget="badge"
+                           decoration-success="state == 'approved'"
+                           decoration-info="state == 'draft'" width="100px"/>
+                    <field name="company_id" string="Company" groups="base.group_multi_company" optional="hide" width="150px"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- Search view - Standalone with low priority -->
+        <record id="view_sale_commission_plan_search_hierarchical" model="ir.ui.view">
+            <field name="name">sale.commission.plan.search.hierarchical</field>
+            <field name="model">sale.commission.plan</field>
+            <field name="priority">20</field>
+            <field name="arch" type="xml">
+                <search string="Commission Plans">
+                    <field name="name"/>
+                    <field name="type"/>
+                    <field name="periodicity"/>
+
+                    <filter string="Draft" name="draft" domain="[('state', '=', 'draft')]"/>
+                    <filter string="Approved" name="approved" domain="[('state', '=', 'approved')]"/>
+
+                    <separator/>
+                    <filter string="Target Plans" name="filter_target" domain="[('type', '=', 'target')]"/>
+                    <filter string="Achievement Plans" name="filter_achievement" domain="[('type', '=', 'achievement')]"/>
+                    <filter string="Hierarchical Plans" name="filter_hierarchical" domain="[('type', '=', 'hierarchical')]"/>
+
+                    <group>
+                        <filter string="Type" name="group_by_type" context="{'group_by': 'type'}"/>
+                        <filter string="Periodicity" name="group_by_periodicity" context="{'group_by': 'periodicity'}"/>
+                        <filter string="State" name="group_by_state" context="{'group_by': 'state'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- Action for Commission Plans -->
+        <record id="action_sale_commission_plan" model="ir.actions.act_window">
+            <field name="name">Commission Plans</field>
+            <field name="res_model">sale.commission.plan</field>
+            <field name="view_mode">list,form</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Create a commission plan
+                </p>
+                <p>
+                    Define commission plans with different calculation methods:
+                </p>
+                <ul>
+                    <li><strong>Target:</strong> Based on sales targets with progressive rates</li>
+                    <li><strong>Achievement:</strong> Based on performance metrics</li>
+                    <li><strong>Hierarchical:</strong> Fixed percentages across sales hierarchy</li>
+                </ul>
+            </field>
+        </record>
+
+    </data>
+</odoo>

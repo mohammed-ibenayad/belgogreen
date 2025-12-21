@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Team Hierarchy Tree View (Hierarchical with parent-child) -->
+        <record id="view_team_hierarchy_tree" model="ir.ui.view">
+            <field name="name">team.hierarchy.tree</field>
+            <field name="model">res.users</field>
+            <field name="arch" type="xml">
+                <list string="Team Structure"
+                      decoration-info="commission_role_sequence &gt;= 30"
+                      decoration-success="commission_role_sequence == 20"
+                      decoration-muted="commission_role_sequence &lt;= 10 or not commission_role_id"
+                      create="false"
+                      default_order="commission_role_sequence desc, name">
+                    <field name="commission_role_sequence" column_invisible="1"/>
+                    <field name="name" string="Name"/>
+                    <field name="commission_role_id" string="Role"/>
+                    <field name="subordinate_count" string="Direct Reports"/>
+                    <field name="active_commission_count" string="Active Comm."/>
+                    <field name="commission_unpaid_total" string="Unpaid"/>
+                    <field name="team_unpaid_total" string="Team Unpaid"/>
+                    <field name="commission_manager_id" column_invisible="1"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- Team Hierarchy Form View -->
+        <record id="view_team_hierarchy_form" model="ir.ui.view">
+            <field name="name">team.hierarchy.form</field>
+            <field name="model">res.users</field>
+            <field name="arch" type="xml">
+                <form string="Team Member">
+                    <sheet>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="name"/>
+                            </h1>
+                            <field name="commission_role_id"/>
+                        </div>
+                        <group>
+                            <group string="Hierarchy">
+                                <field name="commission_manager_id"/>
+                                <field name="subordinate_count"/>
+                            </group>
+                            <group string="Commission Stats">
+                                <field name="commission_count"/>
+                                <field name="commission_unpaid_total"/>
+                                <field name="team_unpaid_total"/>
+                            </group>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- Team Hierarchy Kanban View -->
+        <record id="view_team_hierarchy_kanban" model="ir.ui.view">
+            <field name="name">team.hierarchy.kanban</field>
+            <field name="model">res.users</field>
+            <field name="arch" type="xml">
+                <kanban class="o_kanban_mobile" create="false">
+                    <field name="name"/>
+                    <field name="commission_role_id"/>
+                    <field name="commission_manager_id"/>
+                    <field name="subordinate_count"/>
+                    <field name="active_commission_count"/>
+                    <field name="commission_unpaid_total"/>
+                    <field name="team_unpaid_total"/>
+                    <templates>
+                        <t t-name="card">
+                            <div class="oe_kanban_global_click">
+                                <div class="o_kanban_record_top">
+                                    <div class="o_kanban_record_headings">
+                                        <strong class="o_kanban_record_title"><field name="name"/></strong>
+                                        <br/>
+                                        <span class="badge badge-info" t-if="record.commission_role_id.value">
+                                            <field name="commission_role_id"/>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="o_kanban_record_body">
+                                    <div t-if="record.commission_manager_id.value">
+                                        <strong>Manager:</strong> <field name="commission_manager_id"/>
+                                    </div>
+                                    <div t-if="record.subordinate_count.value > 0">
+                                        <strong>Subordinates:</strong> <field name="subordinate_count"/>
+                                    </div>
+                                    <div>
+                                        <strong>Active Comm.:</strong> <field name="active_commission_count"/>
+                                    </div>
+                                    <div>
+                                        <strong>Unpaid:</strong> <field name="commission_unpaid_total"/>
+                                    </div>
+                                    <div t-if="record.team_unpaid_total.value > 0">
+                                        <strong>Team Unpaid:</strong> <field name="team_unpaid_total"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </templates>
+                </kanban>
+            </field>
+        </record>
+
+        <!-- Team Hierarchy Search View -->
+        <record id="view_team_hierarchy_search" model="ir.ui.view">
+            <field name="name">team.hierarchy.search</field>
+            <field name="model">res.users</field>
+            <field name="arch" type="xml">
+                <search string="Team Structure">
+                    <field name="name"/>
+                    <field name="commission_role_id"/>
+                    <field name="commission_manager_id"/>
+                    <separator/>
+                    <filter string="With Commission Role" name="has_role" domain="[('commission_role_id', '!=', False)]"/>
+                    <filter string="With Manager" name="has_manager" domain="[('commission_manager_id', '!=', False)]"/>
+                    <separator/>
+                    <group>
+                        <filter string="Role Level" name="group_role_level" context="{'group_by': 'commission_role_sequence:desc'}"/>
+                        <filter string="Commission Role" name="group_role" context="{'group_by': 'commission_role_id'}"/>
+                        <filter string="Manager" name="group_manager" context="{'group_by': 'commission_manager_id'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- Team Hierarchy Action (Simple List) -->
+        <record id="action_team_hierarchy" model="ir.actions.act_window">
+            <field name="name">Team Structure</field>
+            <field name="res_model">res.users</field>
+            <field name="view_mode">list,form,kanban</field>
+            <field name="domain">[('commission_role_id', '!=', False)]</field>
+            <field name="context">{
+                'create': False,
+                'search_default_group_role_level': 1
+            }</field>
+            <field name="search_view_id" ref="view_team_hierarchy_search"/>
+            <field name="view_ids" eval="[(5, 0, 0),
+                (0, 0, {'view_mode': 'list', 'view_id': ref('view_team_hierarchy_tree')}),
+                (0, 0, {'view_mode': 'form', 'view_id': ref('view_team_hierarchy_form')}),
+                (0, 0, {'view_mode': 'kanban', 'view_id': ref('view_team_hierarchy_kanban')})]"/>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    No commission hierarchy defined
+                </p>
+                <p>
+                    Set up your sales team hierarchy by assigning commission roles to users.
+                </p>
+                <p>
+                    The view is grouped by role level (Directors → Team Leaders → Salespeople).
+                </p>
+            </field>
+        </record>
+
+        <!-- Hierarchy Anomalies List View -->
+        <record id="view_hierarchy_anomalies_tree" model="ir.ui.view">
+            <field name="name">hierarchy.anomalies.tree</field>
+            <field name="model">res.users</field>
+            <field name="arch" type="xml">
+                <list string="Hierarchy Anomalies"
+                      decoration-warning="anomaly_type == 'manager_lower_level'"
+                      decoration-danger="anomaly_type in ['missing_manager', 'top_role_has_manager', 'circular_hierarchy']"
+                      decoration-muted="anomaly_type == 'no_role_with_manager'"
+                      create="false"
+                      edit="false">
+                    <field name="name" string="Name"/>
+                    <field name="commission_role_id" string="Role"/>
+                    <field name="anomaly_type" string="Anomaly Type"/>
+                    <field name="anomaly_description" string="Description" widget="text"/>
+                    <field name="commission_manager_id" string="Manager"/>
+                    <field name="subordinate_count" string="Subordinates"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- Hierarchy Anomalies Search View -->
+        <record id="view_hierarchy_anomalies_search" model="ir.ui.view">
+            <field name="name">hierarchy.anomalies.search</field>
+            <field name="model">res.users</field>
+            <field name="arch" type="xml">
+                <search string="Hierarchy Anomalies">
+                    <field name="name"/>
+                    <field name="commission_role_id"/>
+                    <field name="anomaly_type"/>
+                    <separator/>
+                    <filter string="Missing Manager" name="missing_manager"
+                            domain="[('anomaly_type', '=', 'missing_manager')]"/>
+                    <filter string="Top Role with Manager" name="top_role_has_manager"
+                            domain="[('anomaly_type', '=', 'top_role_has_manager')]"/>
+                    <filter string="No Role with Manager" name="no_role_with_manager"
+                            domain="[('anomaly_type', '=', 'no_role_with_manager')]"/>
+                    <filter string="Lower Level Manager" name="manager_lower_level"
+                            domain="[('anomaly_type', '=', 'manager_lower_level')]"/>
+                    <filter string="Circular Hierarchy" name="circular_hierarchy"
+                            domain="[('anomaly_type', '=', 'circular_hierarchy')]"/>
+                    <separator/>
+                    <group>
+                        <filter string="Anomaly Type" name="group_anomaly_type" context="{'group_by': 'anomaly_type'}"/>
+                        <filter string="Commission Role" name="group_role" context="{'group_by': 'commission_role_id'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- Hierarchy Anomalies Action -->
+        <record id="action_hierarchy_anomalies" model="ir.actions.act_window">
+            <field name="name">Hierarchy Anomalies</field>
+            <field name="res_model">res.users</field>
+            <field name="view_mode">list,form</field>
+            <field name="domain">[('has_hierarchy_anomaly', '=', True)]</field>
+            <field name="context">{'search_default_group_anomaly_type': 1, 'create': False, 'edit': False}</field>
+            <field name="search_view_id" ref="view_hierarchy_anomalies_search"/>
+            <field name="view_ids" eval="[(5, 0, 0),
+                (0, 0, {'view_mode': 'list', 'view_id': ref('view_hierarchy_anomalies_tree')})]"/>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    No hierarchy anomalies detected
+                </p>
+                <p>
+                    Users with hierarchy assignment issues will appear here.
+                </p>
+                <p>
+                    <strong>Detected anomaly types:</strong><br/>
+                    • Missing Manager: Role requires a manager but none assigned<br/>
+                    • Top Role with Manager: Top-level role should not have a manager<br/>
+                    • No Role with Manager: Manager assigned without commission role<br/>
+                    • Lower Level Manager: Manager has a lower hierarchy level<br/>
+                    • Circular Hierarchy: User is in their own management chain
+                </p>
+            </field>
+        </record>
+
+    </data>
+</odoo>

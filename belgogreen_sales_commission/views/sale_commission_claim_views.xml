@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Tree View -->
+        <record id="view_sale_commission_claim_tree" model="ir.ui.view">
+            <field name="name">sale.commission.claim.tree</field>
+            <field name="model">sale.commission.claim</field>
+            <field name="arch" type="xml">
+                <list string="Commission Claims" decoration-success="state == 'paid'" decoration-warning="state == 'pending'" decoration-danger="state == 'rejected'" decoration-info="state == 'po_confirmed'">
+                    <field name="name" string="Reference" width="130px"/>
+                    <field name="user_id" string="User" width="150px"/>
+                    <field name="claim_date" string="Date" width="100px"/>
+                    <field name="commission_count" string="# Comm." width="80px"/>
+                    <field name="total_amount" string="Gross" sum="Total" width="100px"/>
+                    <field name="total_deductions" string="Deductions" sum="Total" width="100px" optional="show" decoration-danger="total_deductions &gt; 0"/>
+                    <field name="net_amount" string="Net" sum="Total" width="110px"/>
+                    <field name="state" string="State" width="90px"/>
+                    <field name="vendor_bill_state" string="Bill Status" width="90px" optional="show"/>
+                    <field name="processed_by" string="Processed By" width="130px" optional="hide"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- Form View -->
+        <record id="view_sale_commission_claim_form" model="ir.ui.view">
+            <field name="name">sale.commission.claim.form</field>
+            <field name="model">sale.commission.claim</field>
+            <field name="arch" type="xml">
+                <form string="Commission Claim">
+                    <header>
+                        <button name="action_submit" string="Submit Claim" type="object" class="oe_highlight"
+                                invisible="state != 'draft'"/>
+                        <button name="action_approve" string="Approve &amp; Create PO" type="object" class="oe_highlight"
+                                invisible="state != 'pending'"
+                                groups="belgogreen_sales_commission.group_commission_manager"/>
+                        <button name="action_view_purchase_order" string="View Purchase Order" type="object"
+                                invisible="not purchase_order_id"
+                                class="btn-primary"/>
+                        <button name="action_view_vendor_bill" string="View Vendor Bill" type="object"
+                                invisible="not vendor_bill_id"
+                                class="btn-info"/>
+                        <button name="action_view_payments" string="View Payments" type="object"
+                                invisible="payment_count == 0"
+                                class="btn-success"/>
+                        <button name="action_reject" string="Reject" type="object"
+                                invisible="state != 'pending'"
+                                groups="belgogreen_sales_commission.group_commission_manager"
+                                confirm="Are you sure you want to reject this claim?"/>
+                        <button name="unlink" string="Delete" type="object"
+                                invisible="state != 'draft'"
+                                confirm="Are you sure you want to delete this draft claim?"/>
+                        <field name="state" widget="statusbar" statusbar_visible="draft,pending,approved,po_confirmed,paid"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_button_box" name="button_box">
+                            <button name="action_view_commissions"
+                                    type="object"
+                                    class="oe_stat_button"
+                                    icon="fa-list">
+                                <field name="commission_count" widget="statinfo" string="Commissions"/>
+                            </button>
+                            <button name="action_view_vendor_bill"
+                                    type="object"
+                                    class="oe_stat_button"
+                                    icon="fa-file-text-o"
+                                    invisible="not vendor_bill_id">
+                                <div class="o_field_widget o_stat_info">
+                                    <span class="o_stat_text">Vendor Bill</span>
+                                </div>
+                            </button>
+                            <button name="action_view_payments"
+                                    type="object"
+                                    class="oe_stat_button"
+                                    icon="fa-money"
+                                    invisible="payment_count == 0">
+                                <field name="payment_count" widget="statinfo" string="Payments"/>
+                            </button>
+                        </div>
+
+                        <!-- PO Status Alert -->
+                        <div class="alert alert-info" role="alert" invisible="not purchase_order_id">
+                            <strong>📄 Purchase Order:</strong> <field name="purchase_order_id" readonly="1"/>
+                            <span> - Status: <field name="purchase_order_state" readonly="1"/></span>
+                        </div>
+
+                        <!-- Vendor Bill Status Alert -->
+                        <div class="alert alert-warning" role="alert" invisible="not vendor_bill_id">
+                            <strong>📋 Vendor Bill:</strong> <field name="vendor_bill_id" readonly="1"/>
+                            <span> - Status: <field name="vendor_bill_state" readonly="1"/></span>
+                        </div>
+
+                        <!-- Payment Status Alert -->
+                        <div class="alert alert-success" role="alert" invisible="payment_count == 0">
+                            <strong>💰 Payments:</strong> <field name="payment_count" readonly="1"/> payment(s) recorded
+                        </div>
+
+                        <div class="oe_title">
+                            <h1>
+                                <field name="name" readonly="1"/>
+                            </h1>
+                        </div>
+
+                        <group>
+                            <group string="Claim Information">
+                                <field name="user_id" readonly="1"/>
+                                <field name="claim_date" readonly="1"/>
+                                <field name="total_amount" readonly="1"/>
+                                <field name="currency_id" invisible="1"/>
+                            </group>
+                            <group string="Financial Summary">
+                                <field name="total_deductions" readonly="1"/>
+                                <field name="net_amount" readonly="1" class="oe_subtotal_footer_separator"
+                                       widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                <field name="processed_by" readonly="1"/>
+                                <field name="processed_date" readonly="1"/>
+                                <field name="company_id" groups="base.group_multi_company" invisible="1"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="Commissions" name="commissions">
+                                <field name="commission_ids"
+                                       readonly="state != 'draft'"
+                                       domain="[('user_id', '=', user_id), ('payment_status', '=', 'unpaid'), ('state', '=', 'confirmed'), ('can_be_paid', '=', True)]">
+                                    <list decoration-success="payment_status == 'paid'"
+                                          create="false"
+                                          delete="1">
+                                        <field name="name" string="Reference" width="130px"/>
+                                        <field name="date" string="Date" width="90px"/>
+                                        <field name="role_id" string="Role" width="110px"/>
+                                        <field name="commission_type" string="Type" width="80px"/>
+                                        <field name="sale_order_id" string="Order" width="120px"/>
+                                        <field name="base_amount" string="Base" sum="Total base" width="100px"/>
+                                        <field name="commission_amount" string="Amount" sum="Total commissions" width="110px"/>
+                                        <field name="payment_status" string="Status" width="90px"/>
+                                    </list>
+                                </field>
+                            </page>
+                            <page string="Deductions" name="deductions">
+                                <!-- All Deductions in one list -->
+                                <field name="all_deduction_ids" nolabel="1" readonly="1">
+                                    <list create="false" delete="false" edit="false">
+                                        <field name="name" string="Reference" width="120px"/>
+                                        <field name="deduction_type" string="Type" width="140px"/>
+                                        <field name="deduction_category" string="Category" width="100px"
+                                               widget="badge"
+                                               decoration-danger="deduction_category == 'mandatory'"
+                                               decoration-info="deduction_category == 'optional'"/>
+                                        <field name="amount" string="Amount" sum="Total Deductions" width="100px"/>
+                                        <field name="description" string="Description"/>
+                                    </list>
+                                </field>
+
+                                <!-- Financial Summary -->
+                                <group>
+                                    <group>
+                                        <field name="total_mandatory_deductions" readonly="1" string="Mandatory Deductions"/>
+                                        <field name="total_optional_deductions" readonly="1" string="Optional Deductions"/>
+                                    </group>
+                                    <group>
+                                        <field name="total_deductions" readonly="1" class="oe_subtotal_footer_separator" string="Total Deductions"/>
+                                    </group>
+                                </group>
+
+                                <div class="alert alert-info" role="alert" invisible="not all_deduction_ids or state != 'draft'">
+                                    <strong>ℹ️ Note:</strong> Mandatory deductions are automatically applied and cannot be removed.
+                                    You can select optional deductions using the "Optional Deductions" field above in draft state.
+                                </div>
+
+                                <!-- Optional Deductions Selection (only visible in draft) -->
+                                <group string="Select Optional Deductions" invisible="state != 'draft'">
+                                    <field name="optional_deduction_ids" nolabel="1"
+                                           widget="many2many_tags"
+                                           domain="[('user_id', '=', user_id), ('deduction_category', '=', 'optional'), ('state', '=', 'pending')]"
+                                           options="{'color_field': 'deduction_type', 'no_create': True}"/>
+                                </group>
+                            </page>
+                        </notebook>
+                    </sheet>
+                    <!-- Chatter -->
+                    <chatter/>
+                </form>
+            </field>
+        </record>
+
+        <!-- Search View -->
+        <record id="view_sale_commission_claim_search" model="ir.ui.view">
+            <field name="name">sale.commission.claim.search</field>
+            <field name="model">sale.commission.claim</field>
+            <field name="arch" type="xml">
+                <search string="Commission Claims">
+                    <field name="name"/>
+                    <field name="user_id"/>
+                    <separator/>
+                    <filter string="My Claims" name="my_claims" domain="[('user_id', '=', uid)]"/>
+                    <separator/>
+                    <filter string="Pending" name="pending" domain="[('state', '=', 'pending')]"/>
+                    <filter string="Approved" name="approved" domain="[('state', '=', 'approved')]"/>
+                    <filter string="Rejected" name="rejected" domain="[('state', '=', 'rejected')]"/>
+                    <group>
+                        <filter string="User" name="group_user" context="{'group_by': 'user_id'}"/>
+                        <filter string="State" name="group_state" context="{'group_by': 'state'}"/>
+                        <filter string="Processed By" name="group_processed" context="{'group_by': 'processed_by'}"/>
+                        <filter string="Claim Date" name="group_date" context="{'group_by': 'claim_date:month'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- Kanban View -->
+        <record id="view_sale_commission_claim_kanban" model="ir.ui.view">
+            <field name="name">sale.commission.claim.kanban</field>
+            <field name="model">sale.commission.claim</field>
+            <field name="arch" type="xml">
+                <kanban class="o_kanban_mobile" default_group_by="state">
+                    <field name="name"/>
+                    <field name="user_id"/>
+                    <field name="total_amount"/>
+                    <field name="claim_date"/>
+                    <field name="state"/>
+                    <field name="commission_count"/>
+                    <templates>
+                        <t t-name="card">
+                            <div class="oe_kanban_global_click">
+                                <div class="o_kanban_record_top">
+                                    <div class="o_kanban_record_headings">
+                                        <strong class="o_kanban_record_title"><field name="name"/></strong>
+                                    </div>
+                                </div>
+                                <div class="o_kanban_record_body">
+                                    <field name="user_id"/>
+                                    <br/>
+                                    <strong><field name="total_amount"/></strong> (<field name="commission_count"/> commissions)
+                                </div>
+                                <div class="o_kanban_record_bottom">
+                                    <div class="oe_kanban_bottom_left">
+                                        <field name="claim_date" widget="date"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </templates>
+                </kanban>
+            </field>
+        </record>
+
+        <!-- Actions -->
+
+        <!-- All Claims (Manager) -->
+        <record id="action_sale_commission_claim_all" model="ir.actions.act_window">
+            <field name="name">Commission Claims</field>
+            <field name="res_model">sale.commission.claim</field>
+            <field name="view_mode">list,form,kanban</field>
+            <field name="context">{'search_default_pending': 1}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    No claims found
+                </p>
+                <p>
+                    Users can claim their commissions for payment here.
+                </p>
+            </field>
+        </record>
+
+        <!-- My Claims (User) -->
+        <record id="action_sale_commission_claim_my" model="ir.actions.act_window">
+            <field name="name">My Claims</field>
+            <field name="res_model">sale.commission.claim</field>
+            <field name="view_mode">list,form,kanban</field>
+            <field name="context">{'search_default_my_claims': 1}</field>
+            <field name="domain">[('user_id', '=', uid)]</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    You haven't submitted any claims yet
+                </p>
+                <p>
+                    You can claim your unpaid commissions for payment.
+                </p>
+            </field>
+        </record>
+
+    </data>
+</odoo>
