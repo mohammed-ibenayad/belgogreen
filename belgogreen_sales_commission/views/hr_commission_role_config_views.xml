@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- List View -->
+        <record id="view_hr_commission_role_config_list" model="ir.ui.view">
+            <field name="name">hr.commission.role.config.list</field>
+            <field name="model">hr.commission.role.config</field>
+            <field name="arch" type="xml">
+                <list string="Role Configurations" editable="bottom">
+                    <field name="plan_id" string="Plan" width="200px"/>
+                    <field name="role_id" string="Role" width="150px"
+                           options="{'no_create': True}"/>
+                    <field name="direct_sale_percentage" string="Direct Sale %" width="100px"/>
+                    <field name="override_percentage" string="Override %" width="100px"/>
+                    <field name="company_id" string="Company" groups="base.group_multi_company" width="150px"/>
+                    <field name="active" string="Active" width="80px" widget="boolean_toggle"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- Form View -->
+        <record id="view_hr_commission_role_config_form" model="ir.ui.view">
+            <field name="name">hr.commission.role.config.form</field>
+            <field name="model">hr.commission.role.config</field>
+            <field name="arch" type="xml">
+                <form string="Role Configuration">
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="plan_id"/>
+                                <field name="role_id" options="{'no_create': True}"/>
+                            </group>
+                            <group>
+                                <field name="direct_sale_percentage"
+                                       help="Percentage when this role makes their own sale"/>
+                                <field name="override_percentage"
+                                       help="Percentage when this role gets commission on subordinate's sale"/>
+                                <field name="active"/>
+                                <field name="company_id" groups="base.group_multi_company"/>
+                            </group>
+                        </group>
+
+                        <group string="Explanation">
+                            <div class="alert alert-info" role="alert">
+                                <strong>Direct Sale %:</strong> Applied when a user with this role makes their own sale.
+                                <br/>
+                                <strong>Override %:</strong> Applied when a user receives commission on a subordinate's sale.
+                                <br/><br/>
+                                <strong>Example:</strong> If Team Leader has Direct=5% and Override=2%:
+                                <ul>
+                                    <li>Team Leader makes $1000 sale → Gets $50 (5%)</li>
+                                    <li>Salesperson makes $1000 sale → Team Leader gets $20 (2%)</li>
+                                </ul>
+                            </div>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- Search View -->
+        <record id="view_hr_commission_role_config_search" model="ir.ui.view">
+            <field name="name">hr.commission.role.config.search</field>
+            <field name="model">hr.commission.role.config</field>
+            <field name="arch" type="xml">
+                <search string="Role Configuration">
+                    <field name="plan_id"/>
+                    <field name="role_id"/>
+                    <filter string="Active" name="active" domain="[('active', '=', True)]"/>
+                    <filter string="Inactive" name="inactive" domain="[('active', '=', False)]"/>
+                    <group>
+                        <filter string="Plan" name="group_plan" context="{'group_by': 'plan_id'}"/>
+                        <filter string="Role" name="group_role" context="{'group_by': 'role_id'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- Action -->
+        <record id="action_hr_commission_role_config" model="ir.actions.act_window">
+            <field name="name">Commission Role Configuration</field>
+            <field name="res_model">hr.commission.role.config</field>
+            <field name="view_mode">list,form</field>
+            <field name="context">{'search_default_active': 1}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Create a commission role configuration
+                </p>
+                <p>
+                    Define commission percentages for each role within a commission plan.
+                    Each role has two percentages:
+                    <ul>
+                        <li><strong>Direct Sale %</strong>: When the user makes their own sale</li>
+                        <li><strong>Override %</strong>: When they receive commission on subordinate's sale</li>
+                    </ul>
+                </p>
+            </field>
+        </record>
+
+    </data>
+</odoo>

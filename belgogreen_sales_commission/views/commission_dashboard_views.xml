@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Dashboard Action -->
+        <record id="action_commission_dashboard" model="ir.actions.client">
+            <field name="name">Dashboard</field>
+            <field name="tag">commission_dashboard</field>
+            <field name="target">current</field>
+        </record>
+    </data>
+</odoo>

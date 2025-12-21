@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Main Menu -->
+        <menuitem id="menu_commission_root"
+                  name="Commissions"
+                  web_icon="fa-wallet"
+                  sequence="75"/>
+
+        <!-- Dashboard Menu (first item) -->
+        <menuitem id="menu_commission_dashboard"
+                  name="Dashboard"
+                  parent="menu_commission_root"
+                  action="action_commission_dashboard"
+                  sequence="1"
+                  groups="belgogreen_sales_commission.group_commission_user"/>
+
+        <!-- My Commission Menu (for users) -->
+        <menuitem id="menu_my_commission"
+                  name="Mes commissions"
+                  parent="menu_commission_root"
+                  sequence="10"
+                  groups="belgogreen_sales_commission.group_commission_user"/>
+
+        <menuitem id="menu_my_commission_overview"
+                  name="Aperçu"
+                  parent="menu_my_commission"
+                  action="action_sale_commission_my"
+                  sequence="10"/>
+
+        <menuitem id="menu_my_commission_claims"
+                  name="Mes réclamations"
+                  parent="menu_my_commission"
+                  action="action_sale_commission_claim_my"
+                  sequence="20"/>
+
+        <menuitem id="menu_team_commissions"
+                  name="Commissions d'équipe"
+                  parent="menu_my_commission"
+                  action="action_sale_commission_team"
+                  sequence="30"/>
+
+        <!-- Commission Management (for managers) -->
+        <menuitem id="menu_commission_management"
+                  name="Management"
+                  parent="menu_commission_root"
+                  sequence="20"
+                  groups="belgogreen_sales_commission.group_commission_manager"/>
+
+        <!-- Stats Submenu -->
+        <menuitem id="menu_commission_stats"
+                  name="Statistics"
+                  parent="menu_commission_management"
+                  sequence="10"/>
+
+        <menuitem id="menu_commission_all"
+                  name="All Commissions"
+                  parent="menu_commission_stats"
+                  action="action_sale_commission_all"
+                  sequence="10"/>
+
+        <menuitem id="menu_commission_unpaid"
+                  name="Unpaid Commissions"
+                  parent="menu_commission_stats"
+                  action="action_sale_commission_unpaid"
+                  sequence="20"/>
+
+        <!-- Tracking Submenu (Suivi) -->
+        <menuitem id="menu_commission_tracking"
+                  name="Tracking"
+                  parent="menu_commission_management"
+                  sequence="20"/>
+
+        <menuitem id="menu_commission_deductions_management"
+                  name="Deductions"
+                  parent="menu_commission_tracking"
+                  action="action_commission_deduction"
+                  sequence="10"/>
+
+        <!-- DISABLED: Custom payment model removed, use standard account.payment
+        <menuitem id="menu_commission_payments"
+                  name="Payments"
+                  parent="menu_commission_tracking"
+                  action="action_sale_commission_payment"
+                  sequence="20"/>
+        -->
+
+        <menuitem id="menu_commission_claims"
+                  name="Claims"
+                  parent="menu_commission_tracking"
+                  action="action_sale_commission_claim_all"
+                  sequence="30"/>
+
+        <!-- Configuration Menu -->
+        <menuitem id="menu_commission_configuration"
+                  name="Configuration"
+                  parent="menu_commission_root"
+                  sequence="100"
+                  groups="belgogreen_sales_commission.group_commission_manager"/>
+
+        <!-- Plans Submenu -->
+        <menuitem id="menu_plans_management"
+                  name="Plans"
+                  parent="menu_commission_configuration"
+                  sequence="10"/>
+
+        <menuitem id="menu_commission_plans"
+                  name="Commission Plans"
+                  parent="menu_plans_management"
+                  action="action_sale_commission_plan"
+                  sequence="10"/>
+
+        <menuitem id="menu_commission_role_config"
+                  name="Tiers Configuration"
+                  parent="menu_plans_management"
+                  action="action_hr_commission_role_config"
+                  sequence="20"/>
+
+        <menuitem id="menu_sale_commission_role"
+                  name="Role Management"
+                  parent="menu_plans_management"
+                  action="action_sale_commission_role"
+                  sequence="30"
+                  groups="belgogreen_sales_commission.group_commission_manager"/>
+
+        <!-- Hierarchy Management Submenu - DISABLED (incompatible with plan-based architecture) -->
+        <!--
+        <menuitem id="menu_hierarchy_management"
+                  name="Hierarchy"
+                  parent="menu_commission_configuration"
+                  sequence="20"/>
+
+        <menuitem id="menu_team_hierarchy"
+                  name="Team Structure"
+                  parent="menu_hierarchy_management"
+                  action="action_team_hierarchy"
+                  sequence="10"/>
+
+        <menuitem id="menu_hierarchy_anomalies"
+                  name="Anomalies"
+                  parent="menu_hierarchy_management"
+                  action="belgogreen_sales_commission.action_hierarchy_anomalies"
+                  sequence="30"/>
+        -->
+
+    </data>
+</odoo>

@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Form View -->
+    <record id="view_sale_commission_role_form" model="ir.ui.view">
+        <field name="name">sale.commission.role.form</field>
+        <field name="model">sale.commission.role</field>
+        <field name="arch" type="xml">
+            <form string="Commission Role">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_users"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-users"
+                                invisible="user_count == 0">
+                            <field name="user_count" widget="statinfo" string="Users"/>
+                        </button>
+                        <button name="action_view_commissions"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-money"
+                                invisible="commission_count == 0">
+                            <field name="commission_count" widget="statinfo" string="Commissions"/>
+                        </button>
+                    </div>
+
+                    <widget name="web_ribbon" title="Archived" bg_color="bg-danger"
+                            invisible="active"/>
+
+                    <group>
+                        <group>
+                            <field name="name" placeholder="e.g., Salesperson, Team Leader"/>
+                            <field name="code" placeholder="e.g., SP, TL, SD"/>
+                            <field name="sequence"
+                                   help="Lower numbers = bottom of hierarchy (e.g., 10=Salesperson, 20=Team Leader, 30=Director)"/>
+                            <field name="color" widget="color_picker"/>
+                        </group>
+                        <group>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="active" widget="boolean_toggle"/>
+                            <field name="is_base_role"
+                                   help="Check if this is the base role that creates commissions from sales"/>
+                            <field name="requires_manager"
+                                   help="Users with this role must have a manager assigned"/>
+                            <field name="can_manage_subordinates"
+                                   help="Users with this role can have team members"/>
+                        </group>
+                    </group>
+
+                    <group>
+                        <field name="description" placeholder="Describe this role's responsibilities and position in the hierarchy..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Tree View -->
+    <record id="view_sale_commission_role_tree" model="ir.ui.view">
+        <field name="name">sale.commission.role.tree</field>
+        <field name="model">sale.commission.role</field>
+        <field name="arch" type="xml">
+            <list string="Commission Roles"
+                  decoration-muted="not active">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="is_base_role"/>
+                <field name="requires_manager"/>
+                <field name="can_manage_subordinates"/>
+                <field name="user_count"/>
+                <field name="commission_count"/>
+                <field name="active" widget="boolean_toggle"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Kanban View -->
+    <record id="view_sale_commission_role_kanban" model="ir.ui.view">
+        <field name="name">sale.commission.role.kanban</field>
+        <field name="model">sale.commission.role</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_mobile">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="sequence"/>
+                <field name="user_count"/>
+                <field name="commission_count"/>
+                <field name="color"/>
+                <templates>
+                    <t t-name="card">
+                        <div t-attf-class="oe_kanban_color_#{kanban_getcolor(record.color.raw_value)} oe_kanban_card oe_kanban_global_click">
+                            <div class="o_kanban_record_top">
+                                <div class="o_kanban_record_headings">
+                                    <strong class="o_kanban_record_title"><field name="name"/></strong>
+                                    <span class="o_kanban_record_subtitle">
+                                        <field name="code"/> (Level <field name="sequence"/>)
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="o_kanban_record_body">
+                                <field name="description"/>
+                            </div>
+                            <div class="o_kanban_record_bottom">
+                                <div class="oe_kanban_bottom_left">
+                                    <span class="badge badge-pill">
+                                        <i class="fa fa-users" title="Users"/> <field name="user_count"/> users
+                                    </span>
+                                </div>
+                                <div class="oe_kanban_bottom_right">
+                                    <span class="badge badge-pill badge-success">
+                                        <i class="fa fa-money" title="Commissions"/> <field name="commission_count"/>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_sale_commission_role_search" model="ir.ui.view">
+        <field name="name">sale.commission.role.search</field>
+        <field name="model">sale.commission.role</field>
+        <field name="arch" type="xml">
+            <search string="Commission Roles">
+                <field name="name"/>
+                <field name="code"/>
+
+                <filter name="active_roles" string="Active" domain="[('active', '=', True)]"/>
+                <filter name="inactive_roles" string="Archived" domain="[('active', '=', False)]"/>
+
+                <separator/>
+                <filter name="base_roles" string="Base Roles" domain="[('is_base_role', '=', True)]"/>
+                <filter name="management_roles" string="Management Roles" domain="[('can_manage_subordinates', '=', True)]"/>
+                <filter name="top_level" string="Top Level" domain="[('requires_manager', '=', False)]"/>
+
+                <group>
+                    <filter name="group_by_company" string="Company" context="{'group_by': 'company_id'}"/>
+                    <filter name="group_by_hierarchy" string="Hierarchy Level" context="{'group_by': 'sequence'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_sale_commission_role" model="ir.actions.act_window">
+        <field name="name">Commission Roles</field>
+        <field name="res_model">sale.commission.role</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="context">{'search_default_active_roles': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first commission role!
+            </p>
+            <p>
+                Define roles in your sales commission hierarchy (e.g., Salesperson, Team Leader, Sales Director).
+                Set the hierarchy level (sequence) to determine who reports to whom.
+            </p>
+            <p>
+                Lower sequence numbers represent lower positions in the hierarchy:
+                <ul>
+                    <li>10 = Salesperson (bottom)</li>
+                    <li>20 = Team Leader (middle)</li>
+                    <li>30 = Sales Director (top)</li>
+                </ul>
+            </p>
+        </field>
+    </record>
+
+</odoo>

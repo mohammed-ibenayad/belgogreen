@@ -1,0 +1,17 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_sale_commission_role_user,sale.commission.role.user,model_sale_commission_role,group_commission_user,1,0,0,0
+access_sale_commission_role_manager,sale.commission.role.manager,model_sale_commission_role,group_commission_manager,1,1,1,1
+access_sale_commission_user,sale.commission.user,model_sale_commission,group_commission_user,1,1,0,0
+access_sale_commission_manager,sale.commission.manager,model_sale_commission,group_commission_manager,1,1,1,1
+access_sale_commission_claim_user,sale.commission.claim.user,model_sale_commission_claim,group_commission_user,1,1,1,0
+access_sale_commission_claim_manager,sale.commission.claim.manager,model_sale_commission_claim,group_commission_manager,1,1,1,1
+access_hr_commission_role_config_user,hr.commission.role.config.user,model_hr_commission_role_config,group_commission_user,1,0,0,0
+access_hr_commission_role_config_manager,hr.commission.role.config.manager,model_hr_commission_role_config,group_commission_manager,1,1,1,1
+access_commission_claim_wizard_user,commission.claim.wizard.user,model_commission_claim_wizard,group_commission_user,1,1,1,1
+access_commission_claim_wizard_manager,commission.claim.wizard.manager,model_commission_claim_wizard,group_commission_manager,1,1,1,1
+access_commission_deduction_user,commission.deduction.user,model_commission_deduction,group_commission_user,1,0,0,0
+access_commission_deduction_manager,commission.deduction.manager,model_commission_deduction,group_commission_manager,1,1,1,1
+access_commission_dashboard_user,commission.dashboard.user,model_commission_dashboard,group_commission_user,1,1,1,1
+access_commission_dashboard_manager,commission.dashboard.manager,model_commission_dashboard,group_commission_manager,1,1,1,1
+access_sale_commission_plan_user_user,sale.commission.plan.user.user,model_sale_commission_plan_user,group_commission_user,1,0,0,0
+access_sale_commission_plan_user_manager,sale.commission.plan.user.manager,model_sale_commission_plan_user,group_commission_manager,1,1,1,1

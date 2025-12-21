@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Base Salesperson Role -->
+        <record id="role_salesperson" model="sale.commission.role">
+            <field name="name">Salesperson</field>
+            <field name="code">SP</field>
+            <field name="sequence">10</field>
+            <field name="is_base_role" eval="True"/>
+            <field name="requires_manager" eval="True"/>
+            <field name="can_manage_subordinates" eval="False"/>
+            <field name="description">Front-line sales representatives who close deals and generate commissions. This is the base role in the hierarchy.</field>
+            <field name="color">1</field>
+        </record>
+
+        <!-- Team Leader Role -->
+        <record id="role_team_leader" model="sale.commission.role">
+            <field name="name">Team Leader</field>
+            <field name="code">TL</field>
+            <field name="sequence">20</field>
+            <field name="is_base_role" eval="False"/>
+            <field name="requires_manager" eval="True"/>
+            <field name="can_manage_subordinates" eval="True"/>
+            <field name="description">Manages a team of salespeople and receives override commissions on team sales. Can also make direct sales.</field>
+            <field name="color">3</field>
+        </record>
+
+        <!-- Sales Director Role -->
+        <record id="role_sales_director" model="sale.commission.role">
+            <field name="name">Sales Director</field>
+            <field name="code">SD</field>
+            <field name="sequence">30</field>
+            <field name="is_base_role" eval="False"/>
+            <field name="requires_manager" eval="False"/>
+            <field name="can_manage_subordinates" eval="True"/>
+            <field name="description">Top-level sales management overseeing multiple teams. Receives override commissions on all subordinate sales. This is a top-level role that does not require a manager.</field>
+            <field name="color">2</field>
+        </record>
+    </data>
+</odoo>
