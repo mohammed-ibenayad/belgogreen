@@ -129,9 +129,10 @@ class SaleCommission(models.Model):
     )
 
     payment_id = fields.Many2one(
-        'sale.commission.payment',
+        'account.payment',
         string='Payment Record',
-        help='The payment batch this commission belongs to'
+        readonly=True,
+        help='The payment that paid this commission'
     )
 
     can_be_paid = fields.Boolean(
@@ -296,21 +297,35 @@ class SaleCommission(models.Model):
             }
 
     def action_create_payment(self):
-        """Create a payment record for this commission"""
+        """Create payment via claim (redirect to claim wizard)"""
         self.ensure_one()
         if not self.can_be_paid:
             raise UserError(_('This commission cannot be paid yet.'))
 
-        # Create a payment record with this commission
-        payment = self.env['sale.commission.payment'].create({
-            'user_id': self.user_id.id,
-            'commission_ids': [(6, 0, [self.id])],
-        })
+        # Redirect to claim wizard
+        return {
+            'name': _('Claim Commission'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'commission.claim.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_commission_ids': [(6, 0, self.ids)],
+            }
+        }
+
+    def action_view_payment(self):
+        """View the payment that paid this commission"""
+        self.ensure_one()
+
+        if not self.payment_id:
+            raise UserError(_('No payment found for this commission.'))
 
         return {
+            'name': _('Payment'),
             'type': 'ir.actions.act_window',
-            'res_model': 'sale.commission.payment',
-            'res_id': payment.id,
+            'res_model': 'account.payment',
+            'res_id': self.payment_id.id,
             'view_mode': 'form',
             'target': 'current',
         }

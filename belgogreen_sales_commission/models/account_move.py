@@ -185,7 +185,7 @@ class AccountMove(models.Model):
             })
 
     def write(self, vals):
-        """Override write to trigger commission creation on payment and auto-confirm commission payments"""
+        """Override write to trigger commission creation on payment and mark commissions paid"""
         result = super(AccountMove, self).write(vals)
 
         for move in self:
@@ -195,19 +195,14 @@ class AccountMove(models.Model):
                 if move.move_type == 'out_invoice':
                     move._create_hierarchical_commissions()
 
-                # Auto-confirm commission payments for vendor bills
+                # Mark commissions paid for vendor bills
                 elif move.move_type == 'in_invoice':
-                    move._auto_confirm_commission_payment()
-
-            # Also check if bill is already paid (for cases where payment_state updated outside write)
-            elif move.move_type == 'in_invoice' and move.payment_state in ['paid', 'in_payment']:
-                # Check if payment needs auto-confirmation
-                move._check_and_confirm_commission_payment()
+                    move._mark_commissions_paid()
 
         return result
 
-    def _check_and_confirm_commission_payment(self):
-        """Check if commission payment needs confirmation (silent check, no duplicate action)"""
+    def _mark_commissions_paid(self):
+        """Mark commissions as paid when vendor bill is paid"""
         self.ensure_one()
 
         if not self.invoice_origin:
@@ -219,72 +214,59 @@ class AccountMove(models.Model):
         ], limit=1)
 
         if not po or not po.claim_ids:
-            return
+            return  # Not a commission payment
 
-        # Find the related payment
-        payment = self.env['sale.commission.payment'].search([
-            ('purchase_order_id', '=', po.id)
-        ], limit=1)
-
-        if not payment or payment.state not in ['draft', 'confirmed']:
-            return  # Already processed or doesn't exist
-
-        # Silently auto-complete without logging (to avoid duplicate messages)
-        try:
-            if payment.state == 'draft':
-                payment.action_confirm()
-
-            if payment.state == 'confirmed':
-                payment.action_mark_paid()
-        except Exception:
-            pass  # Silent fail
-
-    def _auto_confirm_commission_payment(self):
-        """Auto-confirm and mark commission payment as paid when vendor bill is paid"""
-        self.ensure_one()
-
-        # Check if this bill is from a commission PO
-        if not self.invoice_origin:
-            return
-
-        # Find the PO
-        po = self.env['purchase.order'].search([
-            ('name', '=', self.invoice_origin)
-        ], limit=1)
-
-        if not po or not po.claim_ids:
-            return
-
-        # Find the related payment
-        payment = self.env['sale.commission.payment'].search([
-            ('purchase_order_id', '=', po.id)
-        ], limit=1)
-
-        if not payment:
-            return
-
-        # Auto-confirm and mark as paid
-        try:
-            if payment.state == 'draft':
-                payment.action_confirm()
-
-            if payment.state == 'confirmed':
-                payment.action_mark_paid()
-
-                # Log in the invoice that payment was auto-completed
-                self.message_post(
-                    body=_('Commission payment %s was automatically confirmed and marked as paid.') % payment.name,
-                    subject=_('Commission Payment Completed'),
-                )
-        except Exception as e:
-            # Log error but don't fail the invoice payment
+        # Validate bill amount matches PO (within tolerance)
+        if abs(self.amount_total - po.amount_total) > 1.0:
+            # Log warning but don't block
             self.message_post(
-                body=_('Failed to auto-complete commission payment %s: %s') % (payment.name, str(e)),
-                subject=_('Commission Payment Error'),
+                body=_(
+                    'Warning: Bill amount (%(bill)s) does not match PO amount (%(po)s).\n'
+                    'Difference: %(diff)s'
+                ) % {
+                    'bill': self.amount_total,
+                    'po': po.amount_total,
+                    'diff': abs(self.amount_total - po.amount_total),
+                },
+                subject=_('Amount Mismatch Warning'),
+                message_type='notification'
             )
 
-    def action_confirm_commission_payment(self):
-        """Manual action to confirm commission payment for this vendor bill"""
+        # Find the account.payment that paid this bill
+        payments = self.env['account.payment'].search([
+            ('reconciled_bill_ids', 'in', self.id)
+        ])
+
+        # Update commissions to paid
+        commissions = po.claim_ids.mapped('commission_ids')
+        commissions.write({
+            'payment_status': 'paid',
+            'payment_date': self.invoice_date or fields.Date.today(),
+            'payment_id': payments[0].id if payments else False,  # Link to first payment
+        })
+
+        # Update claims to paid
+        po.claim_ids.write({
+            'state': 'paid',
+        })
+
+        # Log success
+        self.message_post(
+            body=_(
+                'Commission payment completed!\n\n'
+                'Commissions paid: %(count)s\n'
+                'Total amount: %(amount)s\n'
+                'Payment: %(payment)s'
+            ) % {
+                'count': len(commissions),
+                'amount': self.amount_total,
+                'payment': payments[0].name if payments else 'N/A',
+            },
+            subject=_('Commissions Paid'),
+        )
+
+    def action_mark_commissions_paid_manually(self):
+        """Manual action to mark commissions paid for this vendor bill"""
         self.ensure_one()
 
         if self.move_type != 'in_invoice':
@@ -301,36 +283,15 @@ class AccountMove(models.Model):
         if not po or not po.claim_ids:
             raise UserError(_('This bill is not linked to a commission purchase order.'))
 
-        # Find the related payment
-        payment = self.env['sale.commission.payment'].search([
-            ('purchase_order_id', '=', po.id)
-        ], limit=1)
-
-        if not payment:
-            raise UserError(_('No commission payment found for this purchase order.'))
-
-        if payment.state == 'paid':
-            raise UserError(_('Payment %s is already marked as paid.') % payment.name)
-
-        # Confirm and mark as paid
-        if payment.state == 'draft':
-            payment.action_confirm()
-
-        if payment.state == 'confirmed':
-            payment.action_mark_paid()
-
-        # Log success
-        self.message_post(
-            body=_('Commission payment %s was manually confirmed and marked as paid.') % payment.name,
-            subject=_('Commission Payment Completed'),
-        )
+        # Mark commissions paid manually
+        self._mark_commissions_paid()
 
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
                 'title': _('Success'),
-                'message': _('Payment %s has been confirmed and marked as paid.') % payment.name,
+                'message': _('Commissions have been marked as paid.'),
                 'type': 'success',
                 'sticky': False,
             }

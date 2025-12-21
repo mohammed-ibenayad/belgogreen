@@ -54,6 +54,7 @@ Main Features:
         'data/sequence_data.xml',
         'data/product_data.xml',
         'data/sale_commission_role_data.xml',
+        'data/email_template_data.xml',  # Email template for contractor invoice requests
         'data/cron_data.xml',
         'wizard/commission_claim_wizard_views.xml',
         'views/sale_commission_role_views.xml',
@@ -63,7 +64,7 @@ Main Features:
         # 'views/team_management_views.xml',  # Disabled - incompatible with plan-based architecture
         'views/commission_deduction_views.xml',
         'views/sale_order_views.xml',
-        'views/sale_commission_payment_views.xml',  # Must load BEFORE sale_commission_views
+        # 'views/sale_commission_payment_views.xml',  # REMOVED: Using standard account.payment instead
         'views/sale_commission_claim_views.xml',
         'views/sale_commission_views.xml',
         'views/account_move_views.xml',

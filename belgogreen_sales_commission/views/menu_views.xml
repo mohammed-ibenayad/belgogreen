@@ -78,11 +78,13 @@
                   action="action_commission_deduction"
                   sequence="10"/>
 
+        <!-- DISABLED: Custom payment model removed, use standard account.payment
         <menuitem id="menu_commission_payments"
                   name="Payments"
                   parent="menu_commission_tracking"
                   action="action_sale_commission_payment"
                   sequence="20"/>
+        -->
 
         <menuitem id="menu_commission_claims"
                   name="Claims"

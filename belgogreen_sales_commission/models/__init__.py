@@ -7,7 +7,7 @@ from . import sale_commission_plan
 from . import sale_commission_plan_user  # NEW: Plan-based role assignment
 from . import res_users
 from . import sale_commission
-from . import sale_commission_payment
+# from . import sale_commission_payment  # REMOVED: Using standard account.payment instead
 from . import sale_commission_claim
 from . import commission_deduction
 from . import purchase_order
