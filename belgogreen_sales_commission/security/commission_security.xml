@@ -41,7 +41,7 @@
             <field name="perm_unlink" eval="True"/>
         </record>
 
-        <!-- Payment: Users see only their own payments -->
+        <!-- REMOVED: Payment security rules (custom payment model removed)
         <record id="sale_commission_payment_user_rule" model="ir.rule">
             <field name="name">User can see own payments</field>
             <field name="model_id" ref="model_sale_commission_payment"/>
@@ -53,7 +53,6 @@
             <field name="perm_unlink" eval="False"/>
         </record>
 
-        <!-- Payment: Managers see all payments -->
         <record id="sale_commission_payment_manager_rule" model="ir.rule">
             <field name="name">Manager can see all payments</field>
             <field name="model_id" ref="model_sale_commission_payment"/>
@@ -64,6 +63,7 @@
             <field name="perm_create" eval="True"/>
             <field name="perm_unlink" eval="True"/>
         </record>
+        -->
 
         <!-- Claim: Users see only their own claims -->
         <record id="sale_commission_claim_user_rule" model="ir.rule">
