@@ -31,6 +31,8 @@ export class CommissionDashboard extends Component {
             chartLoaded: false,
             error: null,
             currency: null,
+            accessDenied: false,
+            accessDeniedMessage: '',
         });
 
         onWillStart(async () => {
@@ -103,6 +105,14 @@ export class CommissionDashboard extends Component {
             console.log("Dashboard data received:", data);
             this.state.data = data;
 
+            // Check for access denied
+            if (data && data.access_denied) {
+                this.state.accessDenied = true;
+                this.state.accessDeniedMessage = data.message || 'Accès refusé au tableau de bord';
+                console.log("Access denied to dashboard:", this.state.accessDeniedMessage);
+                return;
+            }
+
             // Store currency info
             if (data && data.currency) {
                 this.state.currency = data.currency;
@@ -153,6 +163,14 @@ export class CommissionDashboard extends Component {
         try {
             const data = await this.rpc('/commission/dashboard/data', {});
             this.state.data = data;
+
+            // Check for access denied
+            if (data && data.access_denied) {
+                this.state.accessDenied = true;
+                this.state.accessDeniedMessage = data.message || 'Accès refusé au tableau de bord';
+                console.log("Access denied to dashboard:", this.state.accessDeniedMessage);
+                return;
+            }
 
             // Store currency info
             if (data && data.currency) {

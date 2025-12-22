@@ -7,7 +7,27 @@
                 <strong>Error:</strong> <t t-esc="state.error"/>
             </div>
 
-            <div class="o_dashboard_header">
+            <!-- Access Denied Display -->
+            <div t-if="state.accessDenied" class="o_content">
+                <div class="alert alert-warning" role="alert" style="margin: 50px auto; max-width: 800px; text-align: center; padding: 30px;">
+                    <h3 style="margin-bottom: 20px;">
+                        <i class="fa fa-lock fa-3x" style="display: block; margin-bottom: 20px; color: #856404;"/>
+                        Accès au tableau de bord restreint
+                    </h3>
+                    <p style="font-size: 16px; margin-bottom: 20px;">
+                        <t t-esc="state.accessDeniedMessage"/>
+                    </p>
+                    <hr style="margin: 20px 0;"/>
+                    <p style="font-size: 14px; color: #666;">
+                        <strong>Menus disponibles :</strong><br/>
+                        • <strong>Mes commissions → Aperçu</strong> : Consultez vos commissions personnelles<br/>
+                        • <strong>Mes commissions → Commissions d'équipe</strong> : Consultez les commissions de votre équipe<br/>
+                        • <strong>Management</strong> : Accédez aux fonctions de gestion (si vous êtes gestionnaire)
+                    </p>
+                </div>
+            </div>
+
+            <div t-if="!state.accessDenied" class="o_dashboard_header">
                 <h1>Tableau de bord des commissions</h1>
                 <button class="btn btn-primary dashboard_refresh">
                     <i class="fa fa-refresh"/> Actualiser
@@ -15,7 +35,7 @@
             </div>
 
             <!-- KPI Cards Section -->
-            <div class="dashboard_kpi_section">
+            <div t-if="!state.accessDenied" class="dashboard_kpi_section">
                 <div class="row">
                     <!-- My Commissions Card -->
                     <div class="col-md-3 col-sm-6">
@@ -104,7 +124,7 @@
             </div>
 
             <!-- Charts Section -->
-            <div class="dashboard_charts_section">
+            <div t-if="!state.accessDenied" class="dashboard_charts_section">
                 <div class="row">
                     <!-- Monthly Trend Chart -->
                     <div class="col-md-8">
