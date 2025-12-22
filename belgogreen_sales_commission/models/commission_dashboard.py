@@ -178,6 +178,44 @@ class CommissionDashboard(models.TransientModel):
             'state_distribution': state_distribution,
         }
 
+    def _get_all_subordinates(self, user, commission_plan):
+        """
+        Recursively get ALL subordinates in the hierarchy tree for a user within a plan.
+
+        This traverses the entire tree downward, not just direct reports.
+
+        Args:
+            user: res.users record (the manager)
+            commission_plan: sale.commission.plan record
+
+        Returns:
+            recordset of res.users (all subordinates at any level)
+        """
+        all_subordinate_ids = set()
+        users_to_process = [user.id]
+        seen_ids = set()  # Prevent circular references
+
+        while users_to_process:
+            current_user_id = users_to_process.pop(0)
+
+            if current_user_id in seen_ids:
+                continue  # Skip if already processed
+            seen_ids.add(current_user_id)
+
+            # Find direct subordinates of current user in this plan
+            subordinate_assignments = self.env['sale.commission.plan.user'].search([
+                ('manager_id', '=', current_user_id),
+                ('plan_id', '=', commission_plan.id)
+            ])
+
+            for assignment in subordinate_assignments:
+                subordinate_id = assignment.user_id.id
+                if subordinate_id not in all_subordinate_ids and subordinate_id != user.id:
+                    all_subordinate_ids.add(subordinate_id)
+                    users_to_process.append(subordinate_id)  # Add to queue for recursive processing
+
+        return self.env['res.users'].browse(list(all_subordinate_ids))
+
     @api.model
     def generate_my_commissions(self):
         """Generate commissions for the current user from unprocessed sales orders
@@ -250,15 +288,11 @@ class CommissionDashboard(models.TransientModel):
                 commissions_created += created
 
             # 2. OVERRIDE COMMISSIONS: Process subordinates' orders (within this plan)
-            subordinate_assignments = self.env['sale.commission.plan.user'].search([
-                ('manager_id', '=', user.id),
-                ('plan_id', '=', commission_plan.id)
-            ])
-            subordinate_ids = subordinate_assignments.mapped('user_id').ids
+            # Get ALL subordinates in the hierarchy tree (not just direct reports)
+            all_subordinates = self._get_all_subordinates(user, commission_plan)
 
-            if subordinate_ids:
-                subordinates = self.env['res.users'].browse(subordinate_ids)
-                for subordinate in subordinates:
+            if all_subordinates:
+                for subordinate in all_subordinates:
                     subordinate_orders = self._get_eligible_orders_for_user(subordinate, Invoice, SaleOrder)
                     for order in subordinate_orders:
                         created = self._create_commission_for_user(
