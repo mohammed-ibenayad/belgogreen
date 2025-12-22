@@ -161,47 +161,16 @@ class SaleCommissionClaim(models.Model):
         store=True
     )
 
-    # Vendor Bill and Payment fields
-    vendor_bill_id = fields.Many2one(
-        'account.move',
-        string='Vendor Bill',
-        compute='_compute_vendor_bill',
-        store=True,
-        help='Vendor bill created from PO'
-    )
-
-    vendor_bill_state = fields.Selection(
-        related='vendor_bill_id.payment_state',
-        string='Bill Status',
-        store=True
-    )
-
-    payment_ids = fields.Many2many(
-        'account.payment',
-        compute='_compute_payments',
-        string='Payments',
-        help='Payments that paid the vendor bill'
-    )
-
-    payment_count = fields.Integer(
-        compute='_compute_payments',
-        string='Payment Count'
-    )
-
-    # Enhanced state to track PO confirmation and payment
+    # Simplified state - no payment tracking at claim level
     state = fields.Selection([
         ('draft', 'Draft'),
         ('pending', 'Pending Approval'),
         ('approved', 'Approved'),
-        ('po_sent', 'PO Sent to Employee'),
-        ('po_confirmed', 'Employee Confirmed'),
-        ('paid', 'Paid'),
         ('rejected', 'Rejected'),
         ('cancelled', 'Cancelled')
     ], string='State', default='draft', required=True, tracking=True,
-       help='Draft: Being prepared | Pending: Awaiting manager | Approved: Manager approved | '
-            'PO Sent: Waiting employee confirmation | PO Confirmed: Ready for payment | '
-            'Paid: Payment completed | Rejected: Denied | Cancelled: Cancelled')
+       help='Draft: Being prepared | Pending: Awaiting manager approval | '
+            'Approved: Manager approved and PO created | Rejected: Denied | Cancelled: Cancelled')
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -282,32 +251,6 @@ class SaleCommissionClaim(models.Model):
             # Net amount
             claim.net_amount = claim.total_amount - claim.total_deductions
 
-    @api.depends('purchase_order_id')
-    def _compute_vendor_bill(self):
-        """Find vendor bill created from PO"""
-        for claim in self:
-            if claim.purchase_order_id:
-                bill = self.env['account.move'].search([
-                    ('invoice_origin', '=', claim.purchase_order_id.name),
-                    ('move_type', '=', 'in_invoice')
-                ], limit=1)
-                claim.vendor_bill_id = bill
-            else:
-                claim.vendor_bill_id = False
-
-    @api.depends('vendor_bill_id')
-    def _compute_payments(self):
-        """Find payments that paid the bill"""
-        for claim in self:
-            if claim.vendor_bill_id:
-                payments = self.env['account.payment'].search([
-                    ('reconciled_bill_ids', 'in', claim.vendor_bill_id.id)
-                ])
-                claim.payment_ids = payments
-                claim.payment_count = len(payments)
-            else:
-                claim.payment_ids = False
-                claim.payment_count = 0
 
     @api.constrains('net_amount', 'state')
     def _check_net_amount_positive(self):
@@ -638,49 +581,3 @@ class SaleCommissionClaim(models.Model):
 
         return '\n'.join(lines)
 
-    def action_view_vendor_bill(self):
-        """View vendor bill"""
-        self.ensure_one()
-
-        if not self.vendor_bill_id:
-            raise UserError(_(
-                'No vendor bill found.\n\n'
-                'The contractor needs to send their invoice first.\n'
-                'Once received, accounting will create the bill from PO: %s'
-            ) % self.purchase_order_id.name if self.purchase_order_id else 'N/A')
-
-        return {
-            'name': _('Vendor Bill'),
-            'type': 'ir.actions.act_window',
-            'res_model': 'account.move',
-            'res_id': self.vendor_bill_id.id,
-            'view_mode': 'form',
-            'target': 'current',
-        }
-
-    def action_view_payments(self):
-        """View payments"""
-        self.ensure_one()
-
-        if not self.payment_ids:
-            raise UserError(_('No payments found for this claim.'))
-
-        if len(self.payment_ids) == 1:
-            # Open single payment
-            return {
-                'name': _('Payment'),
-                'type': 'ir.actions.act_window',
-                'res_model': 'account.payment',
-                'res_id': self.payment_ids[0].id,
-                'view_mode': 'form',
-                'target': 'current',
-            }
-        else:
-            # Open list of payments
-            return {
-                'name': _('Payments'),
-                'type': 'ir.actions.act_window',
-                'res_model': 'account.payment',
-                'view_mode': 'tree,form',
-                'domain': [('id', 'in', self.payment_ids.ids)],
-            }
