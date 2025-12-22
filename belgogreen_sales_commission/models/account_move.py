@@ -245,22 +245,19 @@ class AccountMove(models.Model):
             'payment_id': payments[0].id if payments else False,  # Link to first payment
         })
 
-        # Update claims to paid
-        po.claim_ids.write({
-            'state': 'paid',
-        })
-
         # Log success
         self.message_post(
             body=_(
                 'Commission payment completed!\n\n'
                 'Commissions paid: %(count)s\n'
                 'Total amount: %(amount)s\n'
-                'Payment: %(payment)s'
+                'Payment: %(payment)s\n'
+                'Claims: %(claims)s'
             ) % {
                 'count': len(commissions),
                 'amount': self.amount_total,
                 'payment': payments[0].name if payments else 'N/A',
+                'claims': ', '.join(po.claim_ids.mapped('name')),
             },
             subject=_('Commissions Paid'),
         )
