@@ -152,7 +152,7 @@ class SaleOrder(models.Model):
             )
             result['commissions_created'] = total_commissions_created
         else:
-            result['message'] = _("No new commissions created for order %s (may already exist or salesperson not assigned to any plan)") % self.name
+            result['message'] = _("No new commissions to generate - your data is up to date")
 
         return result
 
@@ -224,9 +224,22 @@ class SaleOrder(models.Model):
         Create commission records for a specific invoice.
         Now supports dynamic N-level hierarchies with dual percentage (direct vs override).
 
+        LEGACY SUPPORT: If ANY legacy commission flag is true on the sale order,
+        commission generation is completely blocked for that order:
+        - x_studio_payee_commercial
+        - x_studio_payee_responsable_commercial
+        - x_studio_payee_directeur_commercial
+
         Returns: number of commissions created
         """
         self.ensure_one()
+
+        # LEGACY CHECK: Block commission generation if ANY legacy flag is true
+        if (self.x_studio_payee_commercial or
+            self.x_studio_payee_directeur_commercial or
+            self.x_studio_payee_responsable_commercial):
+            _logger.info("Legacy commission flags detected on order %s - commission generation blocked", self.name)
+            return 0
 
         salesperson = self.user_id
         base_amount = invoice.amount_total

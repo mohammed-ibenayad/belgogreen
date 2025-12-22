@@ -675,8 +675,14 @@ msgstr "%s commission(s) créée(s) avec succès pour la commande %s"
 #. module: belgogreen_sales_commission
 #: code:addons/belgogreen_sales_commission/models/sale_order.py:0
 #, python-format
-msgid "No new commissions created for order %s (may already exist)"
-msgstr "Aucune nouvelle commission créée pour la commande %s (peut déjà exister)"
+msgid "Successfully created %s commission(s) across %s plan(s) (%s) for order %s"
+msgstr "%s commission(s) créée(s) avec succès pour %s plan(s) (%s) pour la commande %s"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_order.py:0
+#, python-format
+msgid "No new commissions to generate - your data is up to date"
+msgstr "Aucune nouvelle commission à générer - vos données sont à jour"
 
 #. module: belgogreen_sales_commission
 #: code:addons/belgogreen_sales_commission/models/sale_order.py:0

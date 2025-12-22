@@ -327,8 +327,24 @@ class CommissionDashboard(models.TransientModel):
     def _create_commission_for_user(self, user, role, commission_type, order, commission_plan, role_config):
         """Create a single commission record for a user on a specific order
 
+        LEGACY SUPPORT: If ANY legacy commission flag is true on the sale order,
+        commission generation is completely blocked for that order:
+        - x_studio_payee_commercial
+        - x_studio_payee_responsable_commercial
+        - x_studio_payee_directeur_commercial
+
         Returns: 1 if commission created, 0 if already exists or error
         """
+        import logging
+        _logger = logging.getLogger(__name__)
+
+        # LEGACY CHECK: Block commission generation if ANY legacy flag is true
+        if (order.x_studio_payee_commercial or
+            order.x_studio_payee_directeur_commercial or
+            order.x_studio_payee_responsable_commercial):
+            _logger.info("Legacy commission flags detected on order %s - commission generation blocked", order.name)
+            return 0
+
         # Get paid invoices for this order
         paid_invoices = order.invoice_ids.filtered(
             lambda inv: inv.move_type == 'out_invoice'
