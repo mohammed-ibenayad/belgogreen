@@ -12,49 +12,30 @@ class CommissionDashboard(models.TransientModel):
     def get_dashboard_data(self):
         """Get all dashboard data for the current user
 
-        IMPORTANT: Dashboard access is restricted to managers with subordinates:
-        - Users assigned to ANY commission plan should NOT see the dashboard
-        - Users who don't manage anyone should NOT see the dashboard
-        - Dashboard is only for managers who are NOT assigned to plans AND have subordinates
+        IMPORTANT: Dashboard access is restricted to plan participants:
+        - Users assigned to a commission plan CAN see the dashboard
+        - Users NOT assigned to any plan CANNOT see the dashboard
         """
         user = self.env.user
 
         # Check if user is assigned to any commission plan
-        # If yes, they should NOT see the dashboard (they're participants, not managers)
         user_assignments = self.env['sale.commission.plan.user'].search([
             ('user_id', '=', user.id),
         ], limit=1)
 
-        if user_assignments:
-            # User is assigned to a plan - deny dashboard access
+        if not user_assignments:
+            # User is NOT assigned to any plan - deny dashboard access
             return {
                 'access_denied': True,
-                'message': 'Le tableau de bord est réservé aux gestionnaires non assignés à un plan de commission. '
-                          'Veuillez utiliser les autres menus pour consulter vos commissions.',
-                'user_info': {
-                    'name': user.name,
-                    'has_active_plan': True,
-                }
-            }
-
-        # Check if user manages anyone (has subordinates)
-        subordinate_assignments = self.env['sale.commission.plan.user'].search([
-            ('manager_id', '=', user.id)
-        ], limit=1)
-
-        if not subordinate_assignments:
-            # User doesn't manage anyone - deny dashboard access
-            return {
-                'access_denied': True,
-                'message': 'Le tableau de bord est réservé aux gestionnaires avec des équipes. '
-                          'Vous n\'avez actuellement aucun collaborateur assigné dans les plans de commission.',
+                'message': 'Le tableau de bord est réservé aux utilisateurs assignés à un plan de commission. '
+                          'Vous n\'êtes actuellement assigné à aucun plan.',
                 'user_info': {
                     'name': user.name,
                     'has_active_plan': False,
-                    'has_team': False,
                 }
             }
 
+        # User is assigned to a plan - allow access
         # Get date ranges
         today = fields.Date.today()
         first_day_month = today.replace(day=1)
