@@ -10,8 +10,31 @@ class CommissionDashboard(models.TransientModel):
 
     @api.model
     def get_dashboard_data(self):
-        """Get all dashboard data for the current user"""
+        """Get all dashboard data for the current user
+
+        IMPORTANT: Dashboard access is restricted:
+        - Users assigned to ANY commission plan should NOT see the dashboard
+        - Dashboard is only for managers who are NOT assigned to plans
+        """
         user = self.env.user
+
+        # Check if user is assigned to any commission plan
+        # If yes, they should NOT see the dashboard (even if they're managers)
+        user_assignments = self.env['sale.commission.plan.user'].search([
+            ('user_id', '=', user.id),
+        ], limit=1)
+
+        if user_assignments:
+            # User is assigned to a plan - deny dashboard access
+            return {
+                'access_denied': True,
+                'message': 'Le tableau de bord est réservé aux gestionnaires non assignés à un plan de commission. '
+                          'Veuillez utiliser les autres menus pour consulter vos commissions.',
+                'user_info': {
+                    'name': user.name,
+                    'has_active_plan': True,
+                }
+            }
 
         # Get date ranges
         today = fields.Date.today()
@@ -65,6 +88,7 @@ class CommissionDashboard(models.TransientModel):
         ], limit=1)
 
         return {
+            'access_denied': False,
             'kpis': kpis,
             'charts': chart_data,
             'currency': currency_info,
