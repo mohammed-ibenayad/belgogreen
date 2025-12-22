@@ -152,7 +152,7 @@ class SaleOrder(models.Model):
             )
             result['commissions_created'] = total_commissions_created
         else:
-            result['message'] = _("No new commissions created for order %s (may already exist or salesperson not assigned to any plan)") % self.name
+            result['message'] = _("No new commissions to generate - your data is up to date")
 
         return result
 
