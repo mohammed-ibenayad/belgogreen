@@ -273,8 +273,9 @@ class SaleOrder(models.Model):
                 continue
 
             # Create commission record with role_id and commission_type
+            # Use sudo() because this creates commissions for entire hierarchy (including managers)
             try:
-                self.env['sale.commission'].create({
+                self.env['sale.commission'].sudo().create({
                     'user_id': user.id,
                     'role_id': role.id,
                     'commission_type': commission_type,  # NEW: direct or override
