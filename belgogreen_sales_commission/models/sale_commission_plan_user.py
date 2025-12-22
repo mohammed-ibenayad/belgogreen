@@ -61,6 +61,21 @@ class SaleCommissionPlanUser(models.Model):
         help='Commission percentage when this user receives commission on subordinate\'s sale'
     )
 
+    # Formatted percentage fields for display (show as "12%" instead of "12.00")
+    direct_sale_percentage_display = fields.Char(
+        string='Vente Directe %',
+        compute='_compute_percentage_display',
+        store=False,
+        help='Commission percentage when this user makes their own sale'
+    )
+
+    override_percentage_display = fields.Char(
+        string='Override %',
+        compute='_compute_percentage_display',
+        store=False,
+        help='Commission percentage when this user receives commission on subordinate\'s sale'
+    )
+
     # Note: unique(plan_id, user_id) constraint already exists in base model
 
     @api.depends('role_id', 'plan_id')
@@ -85,6 +100,23 @@ class SaleCommissionPlanUser(models.Model):
             else:
                 rec.direct_sale_percentage = 0.0
                 rec.override_percentage = 0.0
+
+    @api.depends('direct_sale_percentage', 'override_percentage')
+    def _compute_percentage_display(self):
+        """
+        Format percentages for display as integer with % sign (e.g., "12%" instead of "12.00")
+        """
+        for rec in self:
+            # Format as integer if it's a whole number, otherwise show one decimal
+            if rec.direct_sale_percentage % 1 == 0:
+                rec.direct_sale_percentage_display = f"{int(rec.direct_sale_percentage)}%"
+            else:
+                rec.direct_sale_percentage_display = f"{rec.direct_sale_percentage:.1f}%"
+
+            if rec.override_percentage % 1 == 0:
+                rec.override_percentage_display = f"{int(rec.override_percentage)}%"
+            else:
+                rec.override_percentage_display = f"{rec.override_percentage:.1f}%"
 
     @api.model_create_multi
     def create(self, vals_list):
