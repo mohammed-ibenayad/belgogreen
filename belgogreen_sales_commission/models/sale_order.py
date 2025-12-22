@@ -224,12 +224,30 @@ class SaleOrder(models.Model):
         Create commission records for a specific invoice.
         Now supports dynamic N-level hierarchies with dual percentage (direct vs override).
 
+        LEGACY SUPPORT: Respects legacy commission flags on sale order:
+        - x_studio_payee_commercial: If true, allow commercial/salesperson commission
+        - x_studio_payee_responsable_commercial: If true, allow team leader/manager commission
+        - x_studio_payee_directeur_commercial: If true, allow director commission
+
+        If ANY legacy flag is set, ONLY create commissions for roles with their flag set to true.
+        If NO legacy flags are set, use normal hierarchy-based logic.
+
         Returns: number of commissions created
         """
         self.ensure_one()
 
         salesperson = self.user_id
         base_amount = invoice.amount_total
+
+        # Check for legacy commission flags
+        has_legacy_flags = (
+            self.x_studio_payee_commercial or
+            self.x_studio_payee_directeur_commercial or
+            self.x_studio_payee_responsable_commercial
+        )
+
+        if has_legacy_flags:
+            _logger.info("Legacy commission flags detected on order %s - filtering by legacy rules", self.name)
 
         # Build commission hierarchy dynamically - SUPPORTS ANY NUMBER OF LEVELS
         # NOW USES PLAN-SPECIFIC ROLES AND HIERARCHY
@@ -245,6 +263,27 @@ class SaleOrder(models.Model):
         # Create commission records
         commissions_created = 0
         for user, role, commission_type in users_to_commission:
+            # LEGACY MODE: Filter by legacy commission flags if any are set
+            if has_legacy_flags:
+                role_name_lower = role.name.lower() if role.name else ''
+                should_skip = True  # Default to skip unless legacy flag allows
+
+                # Map role to legacy flag
+                if commission_type == 'direct' or 'commercial' in role_name_lower or 'salesperson' in role_name_lower:
+                    # Direct salesperson - check x_studio_payee_commercial
+                    should_skip = not self.x_studio_payee_commercial
+                elif 'responsable' in role_name_lower or 'team leader' in role_name_lower or 'manager' in role_name_lower:
+                    # Team leader/Manager - check x_studio_payee_responsable_commercial
+                    should_skip = not self.x_studio_payee_responsable_commercial
+                elif 'directeur' in role_name_lower or 'director' in role_name_lower:
+                    # Director - check x_studio_payee_directeur_commercial
+                    should_skip = not self.x_studio_payee_directeur_commercial
+
+                if should_skip:
+                    _logger.info("Skipping commission for %s (%s) - legacy flag not set on order %s",
+                               user.name, role.name, self.name)
+                    continue
+
             # User is already validated by hierarchy traversal (must be in plan)
 
             # Check if commission already exists for this specific user

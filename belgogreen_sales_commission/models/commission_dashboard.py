@@ -327,8 +327,46 @@ class CommissionDashboard(models.TransientModel):
     def _create_commission_for_user(self, user, role, commission_type, order, commission_plan, role_config):
         """Create a single commission record for a user on a specific order
 
+        LEGACY SUPPORT: Respects legacy commission flags on sale order:
+        - x_studio_payee_commercial: If true, allow commercial/salesperson commission
+        - x_studio_payee_responsable_commercial: If true, allow team leader/manager commission
+        - x_studio_payee_directeur_commercial: If true, allow director commission
+
+        If ANY legacy flag is set, ONLY create commissions for roles with their flag set to true.
+
         Returns: 1 if commission created, 0 if already exists or error
         """
+        import logging
+        _logger = logging.getLogger(__name__)
+
+        # Check for legacy commission flags on the order
+        has_legacy_flags = (
+            order.x_studio_payee_commercial or
+            order.x_studio_payee_directeur_commercial or
+            order.x_studio_payee_responsable_commercial
+        )
+
+        # LEGACY MODE: Filter by legacy commission flags if any are set
+        if has_legacy_flags:
+            role_name_lower = role.name.lower() if role.name else ''
+            should_skip = True  # Default to skip unless legacy flag allows
+
+            # Map role to legacy flag
+            if commission_type == 'direct' or 'commercial' in role_name_lower or 'salesperson' in role_name_lower:
+                # Direct salesperson - check x_studio_payee_commercial
+                should_skip = not order.x_studio_payee_commercial
+            elif 'responsable' in role_name_lower or 'team leader' in role_name_lower or 'manager' in role_name_lower:
+                # Team leader/Manager - check x_studio_payee_responsable_commercial
+                should_skip = not order.x_studio_payee_responsable_commercial
+            elif 'directeur' in role_name_lower or 'director' in role_name_lower:
+                # Director - check x_studio_payee_directeur_commercial
+                should_skip = not order.x_studio_payee_directeur_commercial
+
+            if should_skip:
+                _logger.info("Skipping commission for %s (%s) - legacy flag not set on order %s",
+                           user.name, role.name, order.name)
+                return 0
+
         # Get paid invoices for this order
         paid_invoices = order.invoice_ids.filtered(
             lambda inv: inv.move_type == 'out_invoice'
