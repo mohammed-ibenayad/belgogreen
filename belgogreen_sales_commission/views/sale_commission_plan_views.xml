@@ -77,6 +77,11 @@
                     <attribute name="invisible">type == 'target' or type == 'hierarchical'</attribute>
                 </xpath>
 
+                <!-- Hide Commerciaux/Users tab from base module for hierarchical plans -->
+                <xpath expr="//page[@name='commerciaux']" position="attributes">
+                    <attribute name="invisible">type == 'hierarchical'</attribute>
+                </xpath>
+
                 <!-- Add custom hierarchical tabs -->
                 <xpath expr="//notebook" position="inside">
 
@@ -119,9 +124,9 @@
                                 <field name="user_id" string="Utilisateur" domain="[('company_id', '=', parent.company_id)]"/>
                                 <field name="role_id" string="Rôle" domain="[('company_id', '=', parent.company_id)]"/>
                                 <field name="role_sequence" string="Niveau" readonly="1"/>
-                                <field name="direct_sale_percentage" string="Vente Directe %" readonly="1" optional="show"/>
-                                <field name="override_percentage" string="Override %" readonly="1" optional="show"/>
                                 <field name="manager_id" string="Manager"/>
+                                <field name="direct_sale_percentage_display" string="Vente Directe %" readonly="1" optional="show"/>
+                                <field name="override_percentage_display" string="Override %" readonly="1" optional="show"/>
                                 <field name="date_from" string="Date Début" optional="show"/>
                                 <field name="date_to" string="Date Fin" optional="show"/>
                                 <field name="company_id" column_invisible="1"/>
