@@ -329,7 +329,31 @@ export class CommissionDashboard extends Component {
         }
     }
 
+    showGenerationResultNotification(result) {
+        // Show notification similar to sale order style
+        if (!this.notification) {
+            return; // Service not available
+        }
+
+        if (result.success) {
+            // Success notification
+            this.notification.add(result.message, {
+                title: 'Commissions générées',
+                type: 'success',
+                sticky: false,
+            });
+        } else {
+            // Info notification when no new commissions
+            this.notification.add(result.message, {
+                title: 'Génération de commissions',
+                type: 'info',
+                sticky: false,
+            });
+        }
+    }
+
     showGenerationNotification(result) {
+        // Legacy method - kept for backward compatibility
         // Show notification for commission generation with claimable amount
         const message = `${result.count} commission(s) créée(s) - Montant total: ${this.formatCurrency(result.total_amount)}\nMontant réclamable: ${this.formatCurrency(result.claimable_amount || result.total_amount)}`;
 
@@ -383,6 +407,14 @@ export class CommissionDashboard extends Component {
 
     async onRefreshClick() {
         // Call refresh endpoint which also generates commissions
+        const refreshBtn = this.root.el?.querySelector('.dashboard_refresh');
+
+        // Add loading state to button
+        if (refreshBtn) {
+            refreshBtn.disabled = true;
+            refreshBtn.innerHTML = '<i class="fa fa-spinner fa-spin"/> Chargement...';
+        }
+
         this.state.loading = true;
         try {
             let data;
@@ -423,9 +455,9 @@ export class CommissionDashboard extends Component {
                 this.updateCardStyles(data.user_info);
             }
 
-            // Show notification if commissions were generated
-            if (data.generation_result && data.generation_result.count > 0) {
-                this.showGenerationNotification(data.generation_result);
+            // Show notification for commission generation result
+            if (data.generation_result) {
+                this.showGenerationResultNotification(data.generation_result);
             }
         } catch (error) {
             console.error('Error refreshing dashboard:', error);
@@ -436,6 +468,11 @@ export class CommissionDashboard extends Component {
             }
         } finally {
             this.state.loading = false;
+            // Restore button state
+            if (refreshBtn) {
+                refreshBtn.disabled = false;
+                refreshBtn.innerHTML = '<i class="fa fa-refresh"/> Actualiser';
+            }
         }
     }
 
