@@ -59,7 +59,7 @@ class PurchaseOrder(models.Model):
                 all_commissions = po.claim_ids.mapped('commission_ids')
 
                 # Update commission status to processing
-                all_commissions.write({'payment_status': 'processing'})
+                all_commissions.write({'status': 'processing'})
 
         return res
 

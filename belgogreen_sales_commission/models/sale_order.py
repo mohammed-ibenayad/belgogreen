@@ -298,8 +298,7 @@ class SaleOrder(models.Model):
                     'date': invoice.invoice_date or fields.Date.today(),
                     'period': period,
                     'base_amount': base_amount,
-                    'payment_status': 'unpaid',
-                    'state': 'confirmed',
+                    'status': 'unpaid',
                     'company_id': self.company_id.id,
                     'currency_id': self.currency_id.id,
                 })

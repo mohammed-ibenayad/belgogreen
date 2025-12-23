@@ -114,14 +114,17 @@ class SaleCommission(models.Model):
         default=lambda self: self.env.company.currency_id
     )
 
-    # Payment Status
-    payment_status = fields.Selection([
+    # Status
+    status = fields.Selection([
         ('unpaid', 'Unpaid'),
         ('claimed', 'Claimed'),
+        ('approved', 'Approved'),
         ('processing', 'Processing'),
         ('paid', 'Paid'),
         ('cancelled', 'Cancelled')
-    ], string='Payment Status', default='unpaid', required=True, tracking=True)
+    ], string='Status', default='unpaid', required=True, tracking=True,
+       help='Unpaid: Ready to claim | Claimed: In claim | Approved: Claim approved | '
+            'Processing: Awaiting payment | Paid: Payment received')
 
     payment_date = fields.Date(
         string='Payment Date',
@@ -170,11 +173,6 @@ class SaleCommission(models.Model):
         default=lambda self: self.env.company
     )
 
-    state = fields.Selection([
-        ('draft', 'Draft'),
-        ('confirmed', 'Confirmed'),
-        ('cancelled', 'Cancelled')
-    ], string='State', default='draft', tracking=True)
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -217,7 +215,7 @@ class SaleCommission(models.Model):
         for commission in self:
             commission.commission_amount = (commission.base_amount * commission.commission_percentage) / 100.0
 
-    @api.depends('invoice_id.payment_state', 'payment_status', 'state')
+    @api.depends('invoice_id.payment_state', 'status')
     def _compute_can_be_paid(self):
         """Check if commission can be paid"""
         for commission in self:
@@ -225,13 +223,11 @@ class SaleCommission(models.Model):
                 commission.can_be_paid = (
                     commission.invoice_id and
                     commission.invoice_id.payment_state in ['paid', 'in_payment'] and
-                    commission.payment_status in ['unpaid', 'claimed', 'processing'] and
-                    commission.state == 'confirmed'
+                    commission.status in ['unpaid', 'claimed', 'processing']
                 )
             else:
                 commission.can_be_paid = (
-                    commission.payment_status in ['unpaid', 'claimed', 'processing'] and
-                    commission.state == 'confirmed'
+                    commission.status in ['unpaid', 'claimed', 'processing']
                 )
 
     def _compute_claim_ids(self):
@@ -243,21 +239,14 @@ class SaleCommission(models.Model):
             commission.claim_ids = claims
             commission.claim_count = len(claims)
 
-    def action_confirm(self):
-        """Confirm commission"""
-        self.write({'state': 'confirmed'})
-
     def action_cancel(self):
         """Cancel commission"""
-        self.write({
-            'state': 'cancelled',
-            'payment_status': 'cancelled'
-        })
+        self.write({'status': 'cancelled'})
 
     def action_claim_payment(self):
         """Allow user to claim their commission"""
         self.ensure_one()
-        if self.payment_status == 'unpaid':
+        if self.status == 'unpaid':
             # Create a claim record in draft state
             # Commission will be marked as 'claimed' when claim is submitted
             claim = self.env['sale.commission.claim'].create({

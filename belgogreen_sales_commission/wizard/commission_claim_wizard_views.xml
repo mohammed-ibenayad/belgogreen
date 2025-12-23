@@ -20,15 +20,15 @@
                 <group string="Selected Commissions">
                     <field name="commission_ids" nolabel="1">
                         <list create="false" delete="false" edit="false"
-                              decoration-success="payment_status == 'paid'"
-                              decoration-warning="payment_status == 'claimed'"
-                              decoration-muted="payment_status == 'cancelled'">
+                              decoration-success="status == 'paid'"
+                              decoration-warning="status == 'claimed'"
+                              decoration-muted="status == 'cancelled'">
                             <field name="name"/>
                             <field name="date"/>
                             <field name="sale_order_id"/>
                             <field name="commission_percentage"/>
                             <field name="commission_amount" sum="Total" widget="monetary"/>
-                            <field name="payment_status" invisible="1"/>
+                            <field name="status" invisible="1"/>
                         </list>
                     </field>
                 </group>
