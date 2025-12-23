@@ -178,8 +178,7 @@ class AccountMove(models.Model):
                 'date': self.invoice_date or fields.Date.today(),
                 'period': period,
                 'base_amount': base_amount,
-                'payment_status': 'unpaid',
-                'state': 'confirmed',
+                'status': 'unpaid',
                 'company_id': self.company_id.id,
                 'currency_id': self.currency_id.id,
             })
@@ -240,7 +239,7 @@ class AccountMove(models.Model):
         # Update commissions to paid
         commissions = po.claim_ids.mapped('commission_ids')
         commissions.write({
-            'payment_status': 'paid',
+            'status': 'paid',
             'payment_date': self.invoice_date or fields.Date.today(),
             'payment_id': payments[0].id if payments else False,  # Link to first payment
         })
