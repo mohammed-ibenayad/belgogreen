@@ -81,8 +81,8 @@
                             <page string="Commissions" name="commissions">
                                 <field name="commission_ids"
                                        readonly="state != 'draft'"
-                                       domain="[('user_id', '=', user_id), ('payment_status', '=', 'unpaid'), ('state', '=', 'confirmed'), ('can_be_paid', '=', True)]">
-                                    <list decoration-success="payment_status == 'paid'"
+                                       domain="[('user_id', '=', user_id), ('status', '=', 'unpaid'), ('can_be_paid', '=', True)]">
+                                    <list decoration-success="status == 'paid'"
                                           create="false"
                                           delete="1">
                                         <field name="name" string="Reference" width="130px"/>
@@ -92,7 +92,7 @@
                                         <field name="sale_order_id" string="Order" width="120px"/>
                                         <field name="base_amount" string="Base" sum="Total base" width="100px"/>
                                         <field name="commission_amount" string="Amount" sum="Total commissions" width="110px"/>
-                                        <field name="payment_status" string="Status" width="90px"/>
+                                        <field name="status" string="Status" width="90px"/>
                                     </list>
                                 </field>
                             </page>

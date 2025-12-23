@@ -281,7 +281,7 @@ class SaleCommissionClaim(models.Model):
             raise UserError(_('Net claim amount must be positive.'))
 
         # Update commission status to claimed
-        self.commission_ids.write({'payment_status': 'claimed'})
+        self.commission_ids.write({'status': 'claimed'})
 
         self.write({'state': 'pending'})
         self._notify_admins()
@@ -355,7 +355,7 @@ class SaleCommissionClaim(models.Model):
                 'processed_by': self.env.user.id,
                 'processed_date': fields.Datetime.now()
             })
-            claim.commission_ids.write({'payment_status': 'unpaid'})
+            claim.commission_ids.write({'status': 'unpaid'})
 
             # Send notification to claimant
             claim._notify_claimant('rejected')

@@ -95,8 +95,8 @@ class CommissionDashboard(models.TransientModel):
         """Compute KPI metrics"""
         # My Commissions
         my_total = sum(my_commissions.mapped('commission_amount'))
-        my_pending = sum(my_commissions.filtered(lambda c: c.payment_status == 'unpaid').mapped('commission_amount'))
-        my_paid = sum(my_commissions.filtered(lambda c: c.payment_status == 'paid').mapped('commission_amount'))
+        my_pending = sum(my_commissions.filtered(lambda c: c.status == 'unpaid').mapped('commission_amount'))
+        my_paid = sum(my_commissions.filtered(lambda c: c.status == 'paid').mapped('commission_amount'))
 
         # This Month
         my_month_comms = my_commissions.filtered(lambda c: c.date >= first_day_month)
@@ -112,7 +112,7 @@ class CommissionDashboard(models.TransientModel):
 
         # Team metrics
         team_total = sum(team_commissions.mapped('commission_amount'))
-        team_pending = sum(team_commissions.filtered(lambda c: c.payment_status == 'unpaid').mapped('commission_amount'))
+        team_pending = sum(team_commissions.filtered(lambda c: c.status == 'unpaid').mapped('commission_amount'))
         team_members_count = len(set(team_commissions.mapped('user_id')))
 
         # Pending actions (claims to approve from subordinates in any plan)
@@ -171,10 +171,10 @@ class CommissionDashboard(models.TransientModel):
         ])
 
         state_distribution = {
-            'pending': sum(my_commissions.filtered(lambda c: c.payment_status == 'unpaid').mapped('commission_amount')),
-            'approved': sum(my_commissions.filtered(lambda c: c.payment_status == 'claimed').mapped('commission_amount')),
-            'paid': sum(my_commissions.filtered(lambda c: c.payment_status == 'paid').mapped('commission_amount')),
-            'cancelled': sum(my_commissions.filtered(lambda c: c.payment_status == 'cancelled').mapped('commission_amount')),
+            'pending': sum(my_commissions.filtered(lambda c: c.status == 'unpaid').mapped('commission_amount')),
+            'approved': sum(my_commissions.filtered(lambda c: c.status == 'claimed').mapped('commission_amount')),
+            'paid': sum(my_commissions.filtered(lambda c: c.status == 'paid').mapped('commission_amount')),
+            'cancelled': sum(my_commissions.filtered(lambda c: c.status == 'cancelled').mapped('commission_amount')),
         }
 
         return {
@@ -324,7 +324,7 @@ class CommissionDashboard(models.TransientModel):
             ], order='create_date desc', limit=total_commissions_created)
 
             total_amount = sum(recent_commissions.mapped('commission_amount'))
-            unpaid_commissions = recent_commissions.filtered(lambda c: c.payment_status == 'unpaid')
+            unpaid_commissions = recent_commissions.filtered(lambda c: c.status == 'unpaid')
             claimable_amount = sum(unpaid_commissions.mapped('commission_amount'))
 
         message = f'{total_commissions_created} commission(s) created for {user.name}'
@@ -423,8 +423,7 @@ class CommissionDashboard(models.TransientModel):
                     'date': invoice.invoice_date or fields.Date.today(),
                     'period': period,
                     'base_amount': base_amount,
-                    'payment_status': 'unpaid',
-                    'state': 'confirmed',
+                    'status': 'unpaid',
                     'company_id': order.company_id.id,
                     'currency_id': order.currency_id.id,
                 })

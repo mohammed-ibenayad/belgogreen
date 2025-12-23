@@ -52,12 +52,12 @@ class CommissionClaimWizard(models.TransientModel):
 
         # Validate commissions
         invalid_commissions = commissions.filtered(
-            lambda c: c.payment_status != 'unpaid' or c.state != 'confirmed'
+            lambda c: c.status != 'unpaid'
         )
 
         if invalid_commissions:
             raise UserError(_(
-                'Only unpaid and confirmed commissions can be claimed.\n'
+                'Only unpaid commissions can be claimed.\n'
                 'Please remove the following commissions:\n%s'
             ) % '\n'.join(invalid_commissions.mapped('name')))
 
