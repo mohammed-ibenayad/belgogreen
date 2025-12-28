@@ -871,8 +871,8 @@ msgstr "Réclamer le paiement"
 
 #. module: belgogreen_sales_commission
 #: model_terms:ir.ui.view,arch_db:belgogreen_sales_commission.view_sale_commission_form
-msgid "Create Payment"
-msgstr "Créer un paiement"
+msgid "Create Purchase Order"
+msgstr "Créer bon de commande"
 
 #. module: belgogreen_sales_commission
 #: model_terms:ir.ui.view,arch_db:belgogreen_sales_commission.view_sale_commission_claim_form

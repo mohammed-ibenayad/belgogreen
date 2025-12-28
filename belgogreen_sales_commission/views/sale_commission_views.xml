@@ -42,10 +42,12 @@
                         <button name="action_view_claim" string="View Claim" type="object" class="oe_highlight"
                                 invisible="status != 'claimed' or claim_count == 0 or user_id != uid"
                                 groups="belgogreen_sales_commission.group_commission_user"/>
-                        <button name="action_create_payment" string="Create Payment" type="object" class="oe_highlight"
-                                invisible="not can_be_paid"
+                        <button name="action_create_po_from_commissions" string="Create Purchase Order" type="object" class="oe_highlight"
+                                invisible="status != 'unpaid'"
                                 groups="belgogreen_sales_commission.group_commission_manager"/>
-                        <button name="action_cancel" string="Cancel" type="object" invisible="status == 'cancelled'" groups="belgogreen_sales_commission.group_commission_manager"/>
+                        <button name="action_cancel" string="Cancel" type="object"
+                                invisible="status not in ['unpaid', 'claimed', 'approved']"
+                                groups="belgogreen_sales_commission.group_commission_manager"/>
                         <field name="status" widget="statusbar" statusbar_visible="unpaid,claimed,approved,processing,paid"/>
                     </header>
                     <sheet>
