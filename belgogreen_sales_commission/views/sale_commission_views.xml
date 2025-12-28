@@ -59,7 +59,7 @@
                                     icon="fa-files-o"
                                     invisible="claim_count == 0">
                                 <field name="claim_count" widget="statinfo"
-                                       string="Demande"/>
+                                       string="Réclamation"/>
                             </button>
                             <button name="action_view_sale_order"
                                     type="object"
@@ -67,8 +67,7 @@
                                     icon="fa-usd"
                                     invisible="not sale_order_id">
                                 <div class="o_field_widget o_stat_info">
-                                    <span class="o_stat_text">Commande</span>
-                                    <span class="o_stat_text">de vente</span>
+                                    <span class="o_stat_text">Vente</span>
                                 </div>
                             </button>
                             <button name="action_view_purchase_order"
