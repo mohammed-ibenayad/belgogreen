@@ -362,8 +362,9 @@ class SaleCommission(models.Model):
 
     def action_create_po_from_commissions(self):
         """
-        Create Purchase Order from selected commissions (Manager action)
-        This action is called from the commission list view when manager selects multiple commissions
+        Create Purchase Order directly from selected commissions (Manager action)
+        This bypasses the claim workflow - managers can pay commissions proactively
+        without requiring users to claim first.
         """
         # Check if user has commission manager rights
         if not self.env.user.has_group('belgogreen_sales_commission.group_commission_manager'):
@@ -382,18 +383,7 @@ class SaleCommission(models.Model):
         if not users:
             raise UserError(_('Please select at least one commission.'))
 
-        # Check if any commissions already have claims
-        commissions_with_claims = self.filtered(lambda c: c.claim_count > 0)
-        if commissions_with_claims:
-            raise UserError(_(
-                'Some selected commissions already have claims.\n'
-                'Please remove them from the selection or process their existing claims.\n\n'
-                'Commissions with existing claims:\n%s'
-            ) % '\n'.join([f'- {c.name}: {c.claim_count} claim(s)'
-                           for c in commissions_with_claims]))
-
-        # Validate all commissions are in 'unpaid' status only
-        # (claimed commissions should already have claims)
+        # Validate all commissions are in 'unpaid' status
         invalid_commissions = self.filtered(lambda c: c.status != 'unpaid')
         if invalid_commissions:
             raise UserError(_(
@@ -412,19 +402,109 @@ class SaleCommission(models.Model):
                            f'({dict(c.invoice_id._fields["payment_state"].selection).get(c.invoice_id.payment_state) if c.invoice_id else "No invoice"})'
                            for c in unpayable_commissions]))
 
-        # Create claim(s) for these commissions
-        # Group commissions by user (already validated to be same user)
+        # Get the user and ensure they are set up as vendor
         user = users[0]
+        vendor = self._ensure_commission_user_as_vendor(user)
 
-        # Create a single claim for all commissions
-        claim = self.env['sale.commission.claim'].create({
-            'user_id': user.id,
-            'commission_ids': [(6, 0, self.ids)],
+        # Create PO directly (no claim, no deductions)
+        po = self._create_po_for_commissions(vendor)
+
+        # Update commission status to processing
+        self.write({'status': 'processing'})
+
+        # Open the created PO
+        return {
+            'name': _('Commission Purchase Order'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'purchase.order',
+            'res_id': po.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
+
+    def _ensure_commission_user_as_vendor(self, user):
+        """Ensure commission user has a vendor/partner record"""
+        partner = user.partner_id
+        if not partner:
+            raise UserError(_('User %s does not have a linked partner record.') % user.name)
+
+        # Ensure partner is set as supplier
+        if not partner.supplier_rank:
+            partner.write({'supplier_rank': 1})
+
+        return partner
+
+    def _create_po_for_commissions(self, vendor):
+        """
+        Create draft purchase order for commission payment (without claim)
+        This is used when managers create POs directly without requiring user claims.
+        No deductions are applied since there's no claim.
+        """
+        # Get commission service product
+        product = self.env.ref('belgogreen_sales_commission.product_commission_service', raise_if_not_found=False)
+        if not product:
+            raise UserError(_(
+                'Commission service product not found. '
+                'Please contact your administrator to configure the commission service product.'
+            ))
+
+        # Calculate total commission amount
+        total_amount = sum(self.mapped('commission_amount'))
+
+        # Create PO
+        po_vals = {
+            'partner_id': vendor.id,
+            'origin': ', '.join(self.mapped('name')),
+            'state': 'draft',
+            'company_id': self[0].company_id.id,
+            'currency_id': self[0].currency_id.id,
+            'note': self._generate_po_notes_for_commissions(),
+        }
+
+        po = self.env['purchase.order'].create(po_vals)
+
+        # Link commissions to PO
+        po.write({'commission_ids': [(6, 0, self.ids)]})
+
+        # Create main PO line with total commission amount
+        line_name = _('Commission Payment - %s') % vendor.name
+
+        self.env['purchase.order.line'].create({
+            'order_id': po.id,
+            'product_id': product.id,
+            'name': line_name,
+            'product_qty': 1,
+            'price_unit': total_amount,
+            'date_planned': fields.Date.today(),
         })
 
-        # Submit the claim (changes state from draft to pending)
-        claim.action_submit()
+        return po
 
-        # Approve the claim and create PO
-        # This will call the existing action_approve method which creates the PO
-        return claim.action_approve()
+    def _generate_po_notes_for_commissions(self):
+        """Generate notes for PO with commission list (no deductions - direct payment)"""
+        lines = []
+        lines.append('Direct Commission Payment (Manager Initiated)')
+        lines.append('=' * 50)
+        lines.append('')
+        lines.append('Note: This payment was created directly by a manager.')
+        lines.append('No claim or deductions are associated with this payment.')
+        lines.append('')
+        lines.append('Commissions Paid:')
+        lines.append('-' * 50)
+
+        for commission in self:
+            lines.append('  • %s: %s %s' % (
+                commission.name,
+                commission.commission_amount,
+                self[0].currency_id.symbol
+            ))
+            if commission.sale_order_id:
+                lines.append('    Order: %s' % commission.sale_order_id.name)
+            if commission.customer_id:
+                lines.append('    Customer: %s' % commission.customer_id.name)
+
+        lines.append('-' * 50)
+        total_amount = sum(self.mapped('commission_amount'))
+        lines.append('TOTAL AMOUNT: %s %s' % (total_amount, self[0].currency_id.symbol))
+
+        return '\n'.join(lines)

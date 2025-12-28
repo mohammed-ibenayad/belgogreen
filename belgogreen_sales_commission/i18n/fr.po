@@ -2951,22 +2951,6 @@ msgstr "Veuillez sélectionner au moins une commission."
 #: code:addons/belgogreen_sales_commission/models/sale_commission.py:0
 #, python-format
 msgid ""
-"Some selected commissions already have claims.\n"
-"Please remove them from the selection or process their existing claims.\n"
-"\n"
-"Commissions with existing claims:\n"
-"%s"
-msgstr ""
-"Certaines commissions sélectionnées ont déjà des demandes.\n"
-"Veuillez les retirer de la sélection ou traiter leurs demandes existantes.\n"
-"\n"
-"Commissions avec demandes existantes :\n"
-"%s"
-
-#. module: belgogreen_sales_commission
-#: code:addons/belgogreen_sales_commission/models/sale_commission.py:0
-#, python-format
-msgid ""
 "Cannot create purchase order for commissions that are not in \"Unpaid\" status.\n"
 "\n"
 "Invalid commissions:\n"
@@ -2976,6 +2960,68 @@ msgstr ""
 "\n"
 "Commissions invalides :\n"
 "%s"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_commission.py:0
+#, python-format
+msgid "Commission Purchase Order"
+msgstr "Bon de commande de commission"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_commission.py:0
+#, python-format
+msgid "Commission Payment - %s"
+msgstr "Paiement de commission - %s"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/purchase_order.py:0
+#, python-format
+msgid "Purchase Order %s was cancelled. %s commission(s) reset to unpaid."
+msgstr "Le bon de commande %s a été annulé. %s commission(s) remise(s) à non payé."
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/purchase_order.py:0
+#, python-format
+msgid "PO Cancelled - Commissions Reset"
+msgstr "BC annulé - Commissions réinitialisées"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/account_move.py:0
+#, python-format
+msgid ""
+"Direct commission payment completed!\n"
+"\n"
+"Commissions paid: %(count)s\n"
+"Total amount: %(amount)s\n"
+"Payment: %(payment)s\n"
+"Commissions: %(commissions)s\n"
+"\n"
+"Note: This was a direct payment initiated by a manager (no claim)."
+msgstr ""
+"Paiement direct de commission terminé !\n"
+"\n"
+"Commissions payées : %(count)s\n"
+"Montant total : %(amount)s\n"
+"Paiement : %(payment)s\n"
+"Commissions : %(commissions)s\n"
+"\n"
+"Note : Il s'agit d'un paiement direct initié par un gestionnaire (sans demande)."
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/account_move.py:0
+#, python-format
+msgid "Direct Commissions Paid"
+msgstr "Commissions directes payées"
+
+#. module: belgogreen_sales_commission
+#: model:ir.model.fields,field_description:belgogreen_sales_commission.field_purchase_order__commission_ids
+msgid "Direct Commissions"
+msgstr "Commissions directes"
+
+#. module: belgogreen_sales_commission
+#: model:ir.model.fields,help:belgogreen_sales_commission.field_purchase_order__commission_ids
+msgid "Commissions paid directly via this PO (without claims)"
+msgstr "Commissions payées directement via ce BC (sans demandes)"
 
 #. module: belgogreen_sales_commission
 #: code:addons/belgogreen_sales_commission/models/sale_commission.py:0

@@ -212,7 +212,11 @@ class AccountMove(models.Model):
             ('name', '=', self.invoice_origin)
         ], limit=1)
 
-        if not po or not po.claim_ids:
+        if not po:
+            return  # Not a commission payment
+
+        # Check if this is a commission PO (either claim-based or direct)
+        if not po.claim_ids and not po.commission_ids:
             return  # Not a commission payment
 
         # Validate bill amount matches PO (within tolerance)
@@ -236,8 +240,20 @@ class AccountMove(models.Model):
             ('reconciled_bill_ids', 'in', self.id)
         ])
 
+        # Get commissions (either from claims or direct)
+        commissions = self.env['sale.commission']
+        if po.claim_ids:
+            # Claim-based commissions
+            commissions = po.claim_ids.mapped('commission_ids')
+            payment_type = 'claim-based'
+            reference = ', '.join(po.claim_ids.mapped('name'))
+        elif po.commission_ids:
+            # Direct commissions (manager-initiated)
+            commissions = po.commission_ids
+            payment_type = 'direct'
+            reference = ', '.join(commissions.mapped('name'))
+
         # Update commissions to paid
-        commissions = po.claim_ids.mapped('commission_ids')
         commissions.write({
             'status': 'paid',
             'payment_date': self.invoice_date or fields.Date.today(),
@@ -245,21 +261,39 @@ class AccountMove(models.Model):
         })
 
         # Log success
-        self.message_post(
-            body=_(
-                'Commission payment completed!\n\n'
-                'Commissions paid: %(count)s\n'
-                'Total amount: %(amount)s\n'
-                'Payment: %(payment)s\n'
-                'Claims: %(claims)s'
-            ) % {
-                'count': len(commissions),
-                'amount': self.amount_total,
-                'payment': payments[0].name if payments else 'N/A',
-                'claims': ', '.join(po.claim_ids.mapped('name')),
-            },
-            subject=_('Commissions Paid'),
-        )
+        if payment_type == 'claim-based':
+            self.message_post(
+                body=_(
+                    'Commission payment completed!\n\n'
+                    'Commissions paid: %(count)s\n'
+                    'Total amount: %(amount)s\n'
+                    'Payment: %(payment)s\n'
+                    'Claims: %(claims)s'
+                ) % {
+                    'count': len(commissions),
+                    'amount': self.amount_total,
+                    'payment': payments[0].name if payments else 'N/A',
+                    'claims': reference,
+                },
+                subject=_('Commissions Paid'),
+            )
+        else:  # direct
+            self.message_post(
+                body=_(
+                    'Direct commission payment completed!\n\n'
+                    'Commissions paid: %(count)s\n'
+                    'Total amount: %(amount)s\n'
+                    'Payment: %(payment)s\n'
+                    'Commissions: %(commissions)s\n\n'
+                    'Note: This was a direct payment initiated by a manager (no claim).'
+                ) % {
+                    'count': len(commissions),
+                    'amount': self.amount_total,
+                    'payment': payments[0].name if payments else 'N/A',
+                    'commissions': reference,
+                },
+                subject=_('Direct Commissions Paid'),
+            )
 
     def action_mark_commissions_paid_manually(self):
         """Manual action to mark commissions paid for this vendor bill"""
