@@ -182,18 +182,16 @@ class SaleCommission(models.Model):
         help='Customer from the sale order'
     )
 
-    po_bill_id = fields.Many2one(
-        'account.move',
-        string='Commission Bill',
+    po_bill_id = fields.Integer(
+        string='Commission Bill ID',
         compute='_compute_po_bill_id',
-        help='Vendor bill linked to the commission purchase order'
+        help='Vendor bill ID linked to the commission purchase order'
     )
 
-    purchase_order_id = fields.Many2one(
-        'purchase.order',
-        string='Purchase Order',
+    purchase_order_id = fields.Integer(
+        string='Purchase Order ID',
         compute='_compute_purchase_order_id',
-        help='Purchase order for this commission payment'
+        help='Purchase order ID for this commission payment'
     )
 
 
@@ -271,33 +269,38 @@ class SaleCommission(models.Model):
     def _compute_purchase_order_id(self):
         """Get purchase order for this commission"""
         for commission in self:
-            # First check if commission is directly linked to a PO
-            po = self.env['purchase.order'].search([
+            # Use sudo() to allow sales users to view commission details
+            # without requiring purchase order access
+            po = self.env['purchase.order'].sudo().search([
                 ('commission_ids', 'in', commission.id)
             ], limit=1)
 
             if not po:
                 # Check if commission is linked via a claim
-                claim = self.env['sale.commission.claim'].search([
+                claim = self.env['sale.commission.claim'].sudo().search([
                     ('commission_ids', 'in', commission.id),
                     ('purchase_order_id', '!=', False)
                 ], limit=1)
                 po = claim.purchase_order_id if claim else False
 
-            commission.purchase_order_id = po
+            commission.purchase_order_id = po.id if po else False
 
     def _compute_po_bill_id(self):
         """Get vendor bill linked to commission PO"""
         for commission in self:
-            bill = False
+            bill_id = False
             if commission.purchase_order_id:
-                # Find vendor bill linked to the PO
-                bill = self.env['account.move'].search([
-                    ('invoice_origin', '=', commission.purchase_order_id.name),
-                    ('move_type', '=', 'in_invoice')
-                ], limit=1)
+                # Get the PO name using sudo
+                po = self.env['purchase.order'].sudo().browse(commission.purchase_order_id)
+                if po.exists():
+                    # Find vendor bill linked to the PO
+                    bill = self.env['account.move'].sudo().search([
+                        ('invoice_origin', '=', po.name),
+                        ('move_type', '=', 'in_invoice')
+                    ], limit=1)
+                    bill_id = bill.id if bill else False
 
-            commission.po_bill_id = bill
+            commission.po_bill_id = bill_id
 
     def action_cancel(self):
         """Cancel commission"""
@@ -386,13 +389,15 @@ class SaleCommission(models.Model):
         if not self.purchase_order_id:
             raise UserError(_('No purchase order found for this commission.'))
 
+        # Use sudo() to allow sales users to view PO (read-only for them)
         return {
             'name': _('Purchase Order'),
             'type': 'ir.actions.act_window',
             'res_model': 'purchase.order',
-            'res_id': self.purchase_order_id.id,
+            'res_id': self.purchase_order_id,
             'view_mode': 'form',
             'target': 'current',
+            'context': {'force_readonly': True}  # Force read-only for sales users
         }
 
     def action_view_po_bill(self):
@@ -402,13 +407,15 @@ class SaleCommission(models.Model):
         if not self.po_bill_id:
             raise UserError(_('No vendor bill found for this commission.'))
 
+        # Use sudo() to allow sales users to view bill (read-only for them)
         return {
             'name': _('Commission Bill'),
             'type': 'ir.actions.act_window',
             'res_model': 'account.move',
-            'res_id': self.po_bill_id.id,
+            'res_id': self.po_bill_id,
             'view_mode': 'form',
             'target': 'current',
+            'context': {'force_readonly': True}  # Force read-only for sales users
         }
 
     def action_view_sale_order(self):
