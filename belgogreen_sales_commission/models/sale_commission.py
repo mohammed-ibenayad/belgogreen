@@ -382,11 +382,22 @@ class SaleCommission(models.Model):
         if not users:
             raise UserError(_('Please select at least one commission.'))
 
-        # Validate all commissions are in 'unpaid' or 'claimed' status
-        invalid_commissions = self.filtered(lambda c: c.status not in ['unpaid', 'claimed'])
+        # Check if any commissions already have claims
+        commissions_with_claims = self.filtered(lambda c: c.claim_count > 0)
+        if commissions_with_claims:
+            raise UserError(_(
+                'Some selected commissions already have claims.\n'
+                'Please remove them from the selection or process their existing claims.\n\n'
+                'Commissions with existing claims:\n%s'
+            ) % '\n'.join([f'- {c.name}: {c.claim_count} claim(s)'
+                           for c in commissions_with_claims]))
+
+        # Validate all commissions are in 'unpaid' status only
+        # (claimed commissions should already have claims)
+        invalid_commissions = self.filtered(lambda c: c.status != 'unpaid')
         if invalid_commissions:
             raise UserError(_(
-                'Cannot create purchase order for commissions that are not in "Unpaid" or "Claimed" status.\n\n'
+                'Cannot create purchase order for commissions that are not in "Unpaid" status.\n\n'
                 'Invalid commissions:\n%s'
             ) % '\n'.join([f'- {c.name}: {dict(c._fields["status"].selection).get(c.status)}'
                            for c in invalid_commissions]))
@@ -411,9 +422,9 @@ class SaleCommission(models.Model):
             'commission_ids': [(6, 0, self.ids)],
         })
 
-        # Update commission status to claimed
-        self.write({'status': 'claimed'})
+        # Submit the claim (changes state from draft to pending)
+        claim.action_submit()
 
-        # Automatically approve the claim and create PO
-        # This will call the existing action_approve method
+        # Approve the claim and create PO
+        # This will call the existing action_approve method which creates the PO
         return claim.action_approve()
