@@ -550,26 +550,12 @@ class SaleCommission(models.Model):
     def _generate_po_notes_for_commissions(self):
         """Generate notes for PO with commission list (no deductions - direct payment)"""
         lines = []
-        lines.append('Direct Commission Payment (Manager Initiated)')
-        lines.append('=' * 50)
-        lines.append('')
-        lines.append('Note: This payment was created directly by a manager.')
-        lines.append('No claim or deductions are associated with this payment.')
-        lines.append('')
-        lines.append('Commissions Paid:')
-        lines.append('-' * 50)
-
         for commission in self:
             customer_name = commission.customer_id.name if commission.customer_id else 'N/A'
-            lines.append('  • %s: %s %s - %s' % (
+            lines.append('%s: %s %s - %s' % (
                 commission.name,
                 commission.commission_amount,
                 self[0].currency_id.symbol,
                 customer_name
             ))
-
-        lines.append('-' * 50)
-        total_amount = sum(self.mapped('commission_amount'))
-        lines.append('TOTAL AMOUNT: %s %s' % (total_amount, self[0].currency_id.symbol))
-
         return '\n'.join(lines)
