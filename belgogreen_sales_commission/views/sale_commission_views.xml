@@ -118,7 +118,7 @@
                                 <field name="payment_date" readonly="1"/>
                                 <field name="payment_id" readonly="1"/>
                             </group>
-                            <group string="References" name="references" groups="belgogreen_sales_commission.group_commission_manager">
+                            <group string="References" name="references">
                                 <field name="customer_id" readonly="1"/>
                             </group>
                         </group>

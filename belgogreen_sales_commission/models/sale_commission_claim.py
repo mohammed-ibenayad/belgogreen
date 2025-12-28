@@ -537,47 +537,17 @@ class SaleCommissionClaim(models.Model):
     def _generate_batch_po_notes(self):
         """Generate notes for PO with commission list and deduction breakdown"""
         lines = []
-        lines.append('Commission Payment Details')
-        lines.append('=' * 50)
-        lines.append('')
 
-        # List all commissions
+        # List all commissions - simple format: COM/00004: 373.94 € - Customer Name
         all_commissions = self.mapped('commission_ids')
-        lines.append('Commissions Paid:')
-        lines.append('-' * 50)
-
         for commission in all_commissions:
-            lines.append('  • %s: %s %s' % (
+            customer_name = commission.customer_id.name if commission.customer_id else 'N/A'
+            lines.append('%s: %s %s - %s' % (
                 commission.name,
                 commission.commission_amount,
-                self[0].currency_id.symbol
+                self[0].currency_id.symbol,
+                customer_name
             ))
-
-        lines.append('-' * 50)
-        total_gross = sum(self.mapped('total_amount'))
-        lines.append('Total Commissions: %s %s' % (total_gross, self[0].currency_id.symbol))
-
-        # List all deductions
-        all_deductions = self.mapped('all_deduction_ids')
-        if all_deductions:
-            lines.append('')
-            lines.append('Deductions:')
-            lines.append('-' * 50)
-            for deduction in all_deductions:
-                lines.append('  • %s (%s): -%s %s' % (
-                    deduction.deduction_type.replace('_', ' ').title(),
-                    deduction.name,
-                    deduction.amount,
-                    self[0].currency_id.symbol
-                ))
-            lines.append('-' * 50)
-            total_deductions = sum(self.mapped('total_deductions'))
-            lines.append('Total Deductions: -%s %s' % (total_deductions, self[0].currency_id.symbol))
-
-        lines.append('')
-        lines.append('=' * 50)
-        total_net = sum(self.mapped('net_amount'))
-        lines.append('NET AMOUNT: %s %s' % (total_net, self[0].currency_id.symbol))
 
         return '\n'.join(lines)
 
