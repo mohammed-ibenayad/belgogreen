@@ -25,6 +25,16 @@ class PurchaseOrder(models.Model):
         help='Commission claims associated with this purchase order'
     )
 
+    commission_ids = fields.Many2many(
+        'sale.commission',
+        'purchase_order_commission_rel',
+        'purchase_order_id',
+        'commission_id',
+        string='Direct Commissions',
+        readonly=True,
+        help='Commissions paid directly via this PO (without claims)'
+    )
+
     @api.depends('claim_ids')
     def _compute_commission_claim_id(self):
         """Compute single claim for backwards compatibility"""
@@ -54,20 +64,29 @@ class PurchaseOrder(models.Model):
         res = super(PurchaseOrder, self).button_confirm()
 
         for po in self:
+            # Handle claim-based commissions
             if po.claim_ids:
                 # Get all commissions from all claims
                 all_commissions = po.claim_ids.mapped('commission_ids')
-
                 # Update commission status to processing
                 all_commissions.write({'status': 'processing'})
+
+            # Handle direct commissions (no claims)
+            if po.commission_ids:
+                # Already in processing status from action_create_po_from_commissions
+                # Just ensure consistency
+                po.commission_ids.filtered(lambda c: c.status != 'processing').write({'status': 'processing'})
 
         return res
 
     def button_cancel(self):
         """Override to handle claim cancellation and reset deductions"""
-        # Store claims before cancellation
+        # Store claims and direct commissions before cancellation
         claims_to_reset = {}
+        direct_commissions_to_reset = {}
+
         for po in self:
+            # Handle claim-based commissions
             if po.claim_ids:
                 # Store claims and their deductions
                 claims_to_reset[po.id] = {
@@ -76,6 +95,10 @@ class PurchaseOrder(models.Model):
                         lambda d: d.state == 'applied' and d.purchase_order_id == po
                     )
                 }
+
+            # Handle direct commissions (no claims)
+            if po.commission_ids:
+                direct_commissions_to_reset[po.id] = po.commission_ids
 
         res = super(PurchaseOrder, self).button_cancel()
 
@@ -105,6 +128,18 @@ class PurchaseOrder(models.Model):
                     claim.message_post(
                         body=_('Purchase Order %s was cancelled. Claim and deductions have been reset to pending.') % po.name,
                         subject=_('PO Cancelled - Claim Reset'),
+                    )
+
+            # Reset direct commissions to unpaid
+            if po.id in direct_commissions_to_reset:
+                commissions = direct_commissions_to_reset[po.id]
+                commissions.write({'status': 'unpaid'})
+
+                # Log message on first commission
+                if commissions:
+                    commissions[0].message_post(
+                        body=_('Purchase Order %s was cancelled. %s commission(s) reset to unpaid.') % (po.name, len(commissions)),
+                        subject=_('PO Cancelled - Commissions Reset'),
                     )
 
         return res
