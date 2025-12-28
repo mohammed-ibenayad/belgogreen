@@ -3037,3 +3037,66 @@ msgstr ""
 "Commissions non payables :\n"
 "%s"
 
+#. module: belgogreen_sales_commission
+#: model:ir.model.fields,field_description:belgogreen_sales_commission.field_sale_commission__commission_type
+msgid "Commission Type"
+msgstr "Type de commission"
+
+#. module: belgogreen_sales_commission
+#: model:ir.model.fields.selection,name:belgogreen_sales_commission.selection__sale_commission__commission_type__direct
+msgid "Direct Sale"
+msgstr "Vente directe"
+
+#. module: belgogreen_sales_commission
+#: model:ir.model.fields.selection,name:belgogreen_sales_commission.selection__sale_commission__commission_type__override
+msgid "Override Commission"
+msgstr "Commission de supervision"
+
+#. module: belgogreen_sales_commission
+#: model:ir.model.fields,field_description:belgogreen_sales_commission.field_sale_commission__purchase_order_id
+msgid "Purchase Order"
+msgstr "Bon de commande"
+
+#. module: belgogreen_sales_commission
+#: model:ir.model.fields,help:belgogreen_sales_commission.field_sale_commission__purchase_order_id
+msgid "Purchase order for this commission payment"
+msgstr "Bon de commande pour ce paiement de commission"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_commission.py:0
+#, python-format
+msgid "No purchase order found for this commission."
+msgstr "Aucun bon de commande trouvé pour cette commission."
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_commission.py:0
+#, python-format
+msgid "No vendor bill found for this commission."
+msgstr "Aucune facture fournisseur trouvée pour cette commission."
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_commission.py:0
+#, python-format
+msgid "No sale order found for this commission."
+msgstr "Aucune commande de vente trouvée pour cette commission."
+
+#. module: belgogreen_sales_commission
+#: model_terms:ir.ui.view,arch_db:belgogreen_sales_commission.view_sale_commission_form
+msgid "Sale"
+msgstr "Vente"
+
+#. module: belgogreen_sales_commission
+#: model_terms:ir.ui.view,arch_db:belgogreen_sales_commission.view_sale_commission_form
+msgid "Order"
+msgstr "Commande"
+
+#. module: belgogreen_sales_commission
+#: model_terms:ir.ui.view,arch_db:belgogreen_sales_commission.view_sale_commission_form
+msgid "Purchase"
+msgstr "Achat"
+
+#. module: belgogreen_sales_commission
+#: model_terms:ir.ui.view,arch_db:belgogreen_sales_commission.view_sale_commission_form
+msgid "Bill"
+msgstr "Facture"
+
