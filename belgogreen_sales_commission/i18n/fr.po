@@ -3053,6 +3053,41 @@ msgid "Override Commission"
 msgstr "Commission de supervision"
 
 #. module: belgogreen_sales_commission
+#: model:ir.model.fields,field_description:belgogreen_sales_commission.field_sale_commission__status
+msgid "Status"
+msgstr "Statut"
+
+#. module: belgogreen_sales_commission
+#: model:ir.model.fields.selection,name:belgogreen_sales_commission.selection__sale_commission__status__unpaid
+msgid "Unpaid"
+msgstr "Non payé"
+
+#. module: belgogreen_sales_commission
+#: model:ir.model.fields.selection,name:belgogreen_sales_commission.selection__sale_commission__status__claimed
+msgid "Claimed"
+msgstr "Réclamé"
+
+#. module: belgogreen_sales_commission
+#: model:ir.model.fields.selection,name:belgogreen_sales_commission.selection__sale_commission__status__approved
+msgid "Approved"
+msgstr "Approuvé"
+
+#. module: belgogreen_sales_commission
+#: model:ir.model.fields.selection,name:belgogreen_sales_commission.selection__sale_commission__status__processing
+msgid "Processing"
+msgstr "En traitement"
+
+#. module: belgogreen_sales_commission
+#: model:ir.model.fields.selection,name:belgogreen_sales_commission.selection__sale_commission__status__paid
+msgid "Paid"
+msgstr "Payé"
+
+#. module: belgogreen_sales_commission
+#: model:ir.model.fields.selection,name:belgogreen_sales_commission.selection__sale_commission__status__cancelled
+msgid "Cancelled"
+msgstr "Annulé"
+
+#. module: belgogreen_sales_commission
 #: model:ir.model.fields,field_description:belgogreen_sales_commission.field_sale_commission__purchase_order_id
 msgid "Purchase Order"
 msgstr "Bon de commande"

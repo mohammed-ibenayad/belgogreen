@@ -15,16 +15,16 @@
                       edit="false"
                       delete="false">
                     <field name="currency_id" column_invisible="1"/>
-                    <field name="name" string="Reference" width="130px"/>
+                    <field name="name" string="Référence" width="130px"/>
                     <field name="date" string="Date" width="90px"/>
-                    <field name="user_id" string="User" width="140px"/>
-                    <field name="role_id" string="Role" width="110px"/>
+                    <field name="user_id" string="Utilisateur" width="140px"/>
+                    <field name="role_id" string="Rôle" width="110px"/>
                     <field name="commission_type" string="Type" width="80px"/>
-                    <field name="sale_order_id" string="Order" width="120px"/>
+                    <field name="sale_order_id" string="Commande" width="120px"/>
                     <field name="base_amount" string="Base" sum="Total base" width="100px"/>
                     <field name="commission_percentage" string="%" width="60px"/>
                     <field name="commission_amount" string="Commission" sum="Total commissions" width="110px"/>
-                    <field name="status" string="Status" width="90px"/>
+                    <field name="status" string="Statut" width="90px"/>
                 </list>
             </field>
         </record>
@@ -59,26 +59,26 @@
                                     icon="fa-files-o"
                                     invisible="claim_count == 0">
                                 <field name="claim_count" widget="statinfo"
-                                       string="Claim"/>
+                                       string="Demande"/>
                             </button>
                             <button name="action_view_sale_order"
                                     type="object"
                                     class="oe_stat_button"
-                                    icon="fa-shopping-cart"
+                                    icon="fa-usd"
                                     invisible="not sale_order_id">
                                 <div class="o_field_widget o_stat_info">
-                                    <span class="o_stat_text">Sale</span>
-                                    <span class="o_stat_text">Order</span>
+                                    <span class="o_stat_text">Commande</span>
+                                    <span class="o_stat_text">de vente</span>
                                 </div>
                             </button>
                             <button name="action_view_purchase_order"
                                     type="object"
                                     class="oe_stat_button"
-                                    icon="fa-shopping-bag"
+                                    icon="fa-credit-card"
                                     invisible="not purchase_order_id">
                                 <div class="o_field_widget o_stat_info">
-                                    <span class="o_stat_text">Purchase</span>
-                                    <span class="o_stat_text">Order</span>
+                                    <span class="o_stat_text">Bon de</span>
+                                    <span class="o_stat_text">commande</span>
                                 </div>
                             </button>
                             <button name="action_view_po_bill"
@@ -87,8 +87,8 @@
                                     icon="fa-file-text-o"
                                     invisible="not po_bill_id">
                                 <div class="o_field_widget o_stat_info">
-                                    <span class="o_stat_text">Commission</span>
-                                    <span class="o_stat_text">Bill</span>
+                                    <span class="o_stat_text">Facture</span>
+                                    <span class="o_stat_text">commission</span>
                                 </div>
                             </button>
                         </div>
