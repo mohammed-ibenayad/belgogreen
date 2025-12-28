@@ -2889,3 +2889,89 @@ msgstr "Manager de niveau inférieur : Le manager a un niveau hiérarchique inf�
 msgid "Circular Hierarchy: User is in their own management chain"
 msgstr "Hiérarchie circulaire : L'utilisateur est dans sa propre chaîne de gestion"
 
+#. module: belgogreen_sales_commission
+#: model:ir.model.fields,field_description:belgogreen_sales_commission.field_sale_commission__customer_id
+msgid "Customer"
+msgstr "Client"
+
+#. module: belgogreen_sales_commission
+#: model:ir.model.fields,help:belgogreen_sales_commission.field_sale_commission__customer_id
+msgid "Customer from the sale order"
+msgstr "Client de la commande de vente"
+
+#. module: belgogreen_sales_commission
+#: model:ir.model.fields,field_description:belgogreen_sales_commission.field_sale_commission__po_bill_id
+msgid "Commission Bill"
+msgstr "Facture de commission"
+
+#. module: belgogreen_sales_commission
+#: model:ir.model.fields,help:belgogreen_sales_commission.field_sale_commission__po_bill_id
+msgid "Vendor bill linked to the commission purchase order"
+msgstr "Facture fournisseur liée au bon de commande de commission"
+
+#. module: belgogreen_sales_commission
+#: model_terms:ir.ui.view,arch_db:belgogreen_sales_commission.view_sale_commission_form
+msgid "Sales Invoice"
+msgstr "Facture de vente"
+
+#. module: belgogreen_sales_commission
+#: model:ir.actions.server,name:belgogreen_sales_commission.action_server_create_po_from_commissions
+msgid "Create Purchase Order"
+msgstr "Créer un bon de commande"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_commission.py:0
+#, python-format
+msgid ""
+"Cannot create purchase order for commissions from different beneficiaries.\n"
+"All selected commissions must belong to the same employee.\n"
+"\n"
+"Selected commissions by employee:\n"
+"%s"
+msgstr ""
+"Impossible de créer un bon de commande pour des commissions de différents bénéficiaires.\n"
+"Toutes les commissions sélectionnées doivent appartenir au même employé.\n"
+"\n"
+"Commissions sélectionnées par employé :\n"
+"%s"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_commission.py:0
+#, python-format
+msgid "Only Commission Managers can create purchase orders from commissions."
+msgstr "Seuls les gestionnaires de commissions peuvent créer des bons de commande à partir des commissions."
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_commission.py:0
+#, python-format
+msgid "Please select at least one commission."
+msgstr "Veuillez sélectionner au moins une commission."
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_commission.py:0
+#, python-format
+msgid ""
+"Cannot create purchase order for commissions that are not in \"Unpaid\" or \"Claimed\" status.\n"
+"\n"
+"Invalid commissions:\n"
+"%s"
+msgstr ""
+"Impossible de créer un bon de commande pour des commissions qui ne sont pas dans le statut \"Non payé\" ou \"Réclamé\".\n"
+"\n"
+"Commissions invalides :\n"
+"%s"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_commission.py:0
+#, python-format
+msgid ""
+"Some selected commissions cannot be paid yet (invoice not paid).\n"
+"\n"
+"Unpayable commissions:\n"
+"%s"
+msgstr ""
+"Certaines commissions sélectionnées ne peuvent pas encore être payées (facture non payée).\n"
+"\n"
+"Commissions non payables :\n"
+"%s"
+

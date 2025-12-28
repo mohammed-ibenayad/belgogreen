@@ -65,14 +65,14 @@
                             </h1>
                         </div>
                         <group>
-                            <group string="Commission Information">
-                                <field name="user_id" readonly="1"/>
-                                <field name="role_id" readonly="1"/>
+                            <group string="Commission Information" name="commission_info">
+                                <field name="user_id" readonly="1" options="{'no_open': True}"/>
+                                <field name="role_id" readonly="1" options="{'no_open': True}"/>
                                 <field name="commission_type" readonly="1"/>
                                 <field name="date" readonly="1"/>
                                 <field name="period" readonly="1"/>
                             </group>
-                            <group string="Calculation">
+                            <group string="Calculation" name="calculation">
                                 <field name="plan_id" readonly="1"/>
                                 <field name="base_amount" readonly="1"/>
                                 <field name="percentage_override" groups="belgogreen_sales_commission.group_commission_manager" readonly="status in ['processing', 'paid']"/>
@@ -81,15 +81,16 @@
                             </group>
                         </group>
                         <group>
-                            <group string="Status">
+                            <group string="Status" name="status_info">
                                 <field name="status" readonly="1"/>
                                 <field name="payment_date" readonly="1"/>
                                 <field name="payment_id" readonly="1"/>
                             </group>
-                            <group string="References" groups="belgogreen_sales_commission.group_commission_manager">
+                            <group string="References" name="references" groups="belgogreen_sales_commission.group_commission_manager">
                                 <field name="sale_order_id" readonly="1"/>
-                                <field name="invoice_id" readonly="1"/>
-                                <field name="company_id" groups="base.group_multi_company" readonly="1"/>
+                                <field name="customer_id" readonly="1"/>
+                                <field name="invoice_id" readonly="1" string="Sales Invoice"/>
+                                <field name="po_bill_id" readonly="1" string="Commission Bill"/>
                             </group>
                         </group>
                     </sheet>
@@ -280,6 +281,21 @@
                 </p>
             </field>
         </record>
+
+        <!-- Server Action: Create PO from Selected Commissions (Manager Only) -->
+        <record id="action_server_create_po_from_commissions" model="ir.actions.server">
+            <field name="name">Create Purchase Order</field>
+            <field name="model_id" ref="model_sale_commission"/>
+            <field name="binding_model_id" ref="model_sale_commission"/>
+            <field name="binding_view_types">list</field>
+            <field name="state">code</field>
+            <field name="code">
+action = records.action_create_po_from_commissions()
+            </field>
+        </record>
+
+        <!-- Add security via ir.model.access or checking in the method -->
+        <!-- The method itself will check user permissions -->
 
     </data>
 </odoo>

@@ -173,6 +173,22 @@ class SaleCommission(models.Model):
         default=lambda self: self.env.company
     )
 
+    # Computed fields for references
+    customer_id = fields.Many2one(
+        'res.partner',
+        string='Customer',
+        compute='_compute_customer_id',
+        store=True,
+        help='Customer from the sale order'
+    )
+
+    po_bill_id = fields.Many2one(
+        'account.move',
+        string='Commission Bill',
+        compute='_compute_po_bill_id',
+        help='Vendor bill linked to the commission purchase order'
+    )
+
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -238,6 +254,31 @@ class SaleCommission(models.Model):
             ])
             commission.claim_ids = claims
             commission.claim_count = len(claims)
+
+    @api.depends('sale_order_id', 'sale_order_id.partner_id')
+    def _compute_customer_id(self):
+        """Get customer from sale order"""
+        for commission in self:
+            commission.customer_id = commission.sale_order_id.partner_id if commission.sale_order_id else False
+
+    def _compute_po_bill_id(self):
+        """Get vendor bill linked to commission PO"""
+        for commission in self:
+            # Find the claim that includes this commission
+            claim = self.env['sale.commission.claim'].search([
+                ('commission_ids', 'in', commission.id),
+                ('purchase_order_id', '!=', False)
+            ], limit=1)
+
+            if claim and claim.purchase_order_id:
+                # Find vendor bill linked to the PO
+                bill = self.env['account.move'].search([
+                    ('invoice_origin', '=', claim.purchase_order_id.name),
+                    ('move_type', '=', 'in_invoice')
+                ], limit=1)
+                commission.po_bill_id = bill
+            else:
+                commission.po_bill_id = False
 
     def action_cancel(self):
         """Cancel commission"""
@@ -318,3 +359,61 @@ class SaleCommission(models.Model):
             'view_mode': 'form',
             'target': 'current',
         }
+
+    def action_create_po_from_commissions(self):
+        """
+        Create Purchase Order from selected commissions (Manager action)
+        This action is called from the commission list view when manager selects multiple commissions
+        """
+        # Check if user has commission manager rights
+        if not self.env.user.has_group('belgogreen_sales_commission.group_commission_manager'):
+            raise UserError(_('Only Commission Managers can create purchase orders from commissions.'))
+
+        # Validate all commissions belong to the same user (beneficiary)
+        users = self.mapped('user_id')
+        if len(users) > 1:
+            raise UserError(_(
+                'Cannot create purchase order for commissions from different beneficiaries.\n'
+                'All selected commissions must belong to the same employee.\n\n'
+                'Selected commissions by employee:\n%s'
+            ) % '\n'.join([f'- {u.name}: {len(self.filtered(lambda c: c.user_id == u))} commission(s)'
+                           for u in users]))
+
+        if not users:
+            raise UserError(_('Please select at least one commission.'))
+
+        # Validate all commissions are in 'unpaid' or 'claimed' status
+        invalid_commissions = self.filtered(lambda c: c.status not in ['unpaid', 'claimed'])
+        if invalid_commissions:
+            raise UserError(_(
+                'Cannot create purchase order for commissions that are not in "Unpaid" or "Claimed" status.\n\n'
+                'Invalid commissions:\n%s'
+            ) % '\n'.join([f'- {c.name}: {dict(c._fields["status"].selection).get(c.status)}'
+                           for c in invalid_commissions]))
+
+        # Check if all commissions can be paid (invoice paid requirement)
+        unpayable_commissions = self.filtered(lambda c: not c.can_be_paid)
+        if unpayable_commissions:
+            raise UserError(_(
+                'Some selected commissions cannot be paid yet (invoice not paid).\n\n'
+                'Unpayable commissions:\n%s'
+            ) % '\n'.join([f'- {c.name}: Invoice {c.invoice_id.name if c.invoice_id else "N/A"} '
+                           f'({dict(c.invoice_id._fields["payment_state"].selection).get(c.invoice_id.payment_state) if c.invoice_id else "No invoice"})'
+                           for c in unpayable_commissions]))
+
+        # Create claim(s) for these commissions
+        # Group commissions by user (already validated to be same user)
+        user = users[0]
+
+        # Create a single claim for all commissions
+        claim = self.env['sale.commission.claim'].create({
+            'user_id': user.id,
+            'commission_ids': [(6, 0, self.ids)],
+        })
+
+        # Update commission status to claimed
+        self.write({'status': 'claimed'})
+
+        # Automatically approve the claim and create PO
+        # This will call the existing action_approve method
+        return claim.action_approve()
