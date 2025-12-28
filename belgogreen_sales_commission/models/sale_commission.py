@@ -365,6 +365,10 @@ class SaleCommission(models.Model):
         Create Purchase Order from selected commissions (Manager action)
         This action is called from the commission list view when manager selects multiple commissions
         """
+        # Check if user has commission manager rights
+        if not self.env.user.has_group('belgogreen_sales_commission.group_commission_manager'):
+            raise UserError(_('Only Commission Managers can create purchase orders from commissions.'))
+
         # Validate all commissions belong to the same user (beneficiary)
         users = self.mapped('user_id')
         if len(users) > 1:

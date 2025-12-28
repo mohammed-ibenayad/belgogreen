@@ -288,12 +288,14 @@
             <field name="model_id" ref="model_sale_commission"/>
             <field name="binding_model_id" ref="model_sale_commission"/>
             <field name="binding_view_types">list</field>
-            <field name="groups_id" eval="[(4, ref('belgogreen_sales_commission.group_commission_manager'))]"/>
             <field name="state">code</field>
             <field name="code">
 action = records.action_create_po_from_commissions()
             </field>
         </record>
+
+        <!-- Add security via ir.model.access or checking in the method -->
+        <!-- The method itself will check user permissions -->
 
     </data>
 </odoo>
