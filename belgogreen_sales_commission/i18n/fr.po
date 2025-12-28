@@ -2938,6 +2938,12 @@ msgstr ""
 #. module: belgogreen_sales_commission
 #: code:addons/belgogreen_sales_commission/models/sale_commission.py:0
 #, python-format
+msgid "Only Commission Managers can create purchase orders from commissions."
+msgstr "Seuls les gestionnaires de commissions peuvent créer des bons de commande à partir des commissions."
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_commission.py:0
+#, python-format
 msgid "Please select at least one commission."
 msgstr "Veuillez sélectionner au moins une commission."
 
