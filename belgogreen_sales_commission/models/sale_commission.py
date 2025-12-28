@@ -189,6 +189,13 @@ class SaleCommission(models.Model):
         help='Vendor bill linked to the commission purchase order'
     )
 
+    purchase_order_id = fields.Many2one(
+        'purchase.order',
+        string='Purchase Order',
+        compute='_compute_purchase_order_id',
+        help='Purchase order for this commission payment'
+    )
+
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -261,24 +268,36 @@ class SaleCommission(models.Model):
         for commission in self:
             commission.customer_id = commission.sale_order_id.partner_id if commission.sale_order_id else False
 
+    def _compute_purchase_order_id(self):
+        """Get purchase order for this commission"""
+        for commission in self:
+            # First check if commission is directly linked to a PO
+            po = self.env['purchase.order'].search([
+                ('commission_ids', 'in', commission.id)
+            ], limit=1)
+
+            if not po:
+                # Check if commission is linked via a claim
+                claim = self.env['sale.commission.claim'].search([
+                    ('commission_ids', 'in', commission.id),
+                    ('purchase_order_id', '!=', False)
+                ], limit=1)
+                po = claim.purchase_order_id if claim else False
+
+            commission.purchase_order_id = po
+
     def _compute_po_bill_id(self):
         """Get vendor bill linked to commission PO"""
         for commission in self:
-            # Find the claim that includes this commission
-            claim = self.env['sale.commission.claim'].search([
-                ('commission_ids', 'in', commission.id),
-                ('purchase_order_id', '!=', False)
-            ], limit=1)
-
-            if claim and claim.purchase_order_id:
+            bill = False
+            if commission.purchase_order_id:
                 # Find vendor bill linked to the PO
                 bill = self.env['account.move'].search([
-                    ('invoice_origin', '=', claim.purchase_order_id.name),
+                    ('invoice_origin', '=', commission.purchase_order_id.name),
                     ('move_type', '=', 'in_invoice')
                 ], limit=1)
-                commission.po_bill_id = bill
-            else:
-                commission.po_bill_id = False
+
+            commission.po_bill_id = bill
 
     def action_cancel(self):
         """Cancel commission"""
@@ -356,6 +375,54 @@ class SaleCommission(models.Model):
             'type': 'ir.actions.act_window',
             'res_model': 'account.payment',
             'res_id': self.payment_id.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
+
+    def action_view_purchase_order(self):
+        """View the purchase order for this commission"""
+        self.ensure_one()
+
+        if not self.purchase_order_id:
+            raise UserError(_('No purchase order found for this commission.'))
+
+        return {
+            'name': _('Purchase Order'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'purchase.order',
+            'res_id': self.purchase_order_id.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
+
+    def action_view_po_bill(self):
+        """View the vendor bill for this commission"""
+        self.ensure_one()
+
+        if not self.po_bill_id:
+            raise UserError(_('No vendor bill found for this commission.'))
+
+        return {
+            'name': _('Commission Bill'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'account.move',
+            'res_id': self.po_bill_id.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
+
+    def action_view_sale_order(self):
+        """View the sale order for this commission"""
+        self.ensure_one()
+
+        if not self.sale_order_id:
+            raise UserError(_('No sale order found for this commission.'))
+
+        return {
+            'name': _('Sale Order'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'sale.order',
+            'res_id': self.sale_order_id.id,
             'view_mode': 'form',
             'target': 'current',
         }
@@ -493,15 +560,13 @@ class SaleCommission(models.Model):
         lines.append('-' * 50)
 
         for commission in self:
-            lines.append('  • %s: %s %s' % (
+            customer_name = commission.customer_id.name if commission.customer_id else 'N/A'
+            lines.append('  • %s: %s %s - %s' % (
                 commission.name,
                 commission.commission_amount,
-                self[0].currency_id.symbol
+                self[0].currency_id.symbol,
+                customer_name
             ))
-            if commission.sale_order_id:
-                lines.append('    Order: %s' % commission.sale_order_id.name)
-            if commission.customer_id:
-                lines.append('    Customer: %s' % commission.customer_id.name)
 
         lines.append('-' * 50)
         total_amount = sum(self.mapped('commission_amount'))

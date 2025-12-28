@@ -49,6 +49,9 @@
                         <field name="status" widget="statusbar" statusbar_visible="unpaid,claimed,approved,processing,paid"/>
                     </header>
                     <sheet>
+                        <field name="sale_order_id" invisible="1"/>
+                        <field name="purchase_order_id" invisible="1"/>
+                        <field name="po_bill_id" invisible="1"/>
                         <div class="oe_button_box" name="button_box">
                             <button name="action_view_claim"
                                     type="object"
@@ -57,6 +60,36 @@
                                     invisible="claim_count == 0">
                                 <field name="claim_count" widget="statinfo"
                                        string="Claim"/>
+                            </button>
+                            <button name="action_view_sale_order"
+                                    type="object"
+                                    class="oe_stat_button"
+                                    icon="fa-shopping-cart"
+                                    invisible="not sale_order_id">
+                                <div class="o_field_widget o_stat_info">
+                                    <span class="o_stat_text">Sale</span>
+                                    <span class="o_stat_text">Order</span>
+                                </div>
+                            </button>
+                            <button name="action_view_purchase_order"
+                                    type="object"
+                                    class="oe_stat_button"
+                                    icon="fa-shopping-bag"
+                                    invisible="not purchase_order_id">
+                                <div class="o_field_widget o_stat_info">
+                                    <span class="o_stat_text">Purchase</span>
+                                    <span class="o_stat_text">Order</span>
+                                </div>
+                            </button>
+                            <button name="action_view_po_bill"
+                                    type="object"
+                                    class="oe_stat_button"
+                                    icon="fa-file-text-o"
+                                    invisible="not po_bill_id">
+                                <div class="o_field_widget o_stat_info">
+                                    <span class="o_stat_text">Commission</span>
+                                    <span class="o_stat_text">Bill</span>
+                                </div>
                             </button>
                         </div>
                         <div class="oe_title">
@@ -87,10 +120,7 @@
                                 <field name="payment_id" readonly="1"/>
                             </group>
                             <group string="References" name="references" groups="belgogreen_sales_commission.group_commission_manager">
-                                <field name="sale_order_id" readonly="1"/>
                                 <field name="customer_id" readonly="1"/>
-                                <field name="invoice_id" readonly="1" string="Sales Invoice"/>
-                                <field name="po_bill_id" readonly="1" string="Commission Bill"/>
                             </group>
                         </group>
                     </sheet>
