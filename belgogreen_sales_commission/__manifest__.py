@@ -60,6 +60,7 @@ Main Features:
         'views/sale_commission_role_views.xml',
         'views/hr_commission_role_config_views.xml',
         'views/sale_commission_plan_views.xml',
+        'views/sale_commission_plan_user_views.xml',
         'views/res_users_views.xml',
         # 'views/team_management_views.xml',  # Disabled - incompatible with plan-based architecture
         'views/commission_deduction_views.xml',
