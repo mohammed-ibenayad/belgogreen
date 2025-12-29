@@ -154,7 +154,7 @@
                     <filter string="Can Be Paid" name="can_be_paid" domain="[('can_be_paid', '=', True)]"/>
                     <separator/>
                     <filter string="Direct Sales" name="direct_sales" domain="[('commission_type', '=', 'direct')]"/>
-                    <filter string="Override Commissions" name="override_commissions" domain="[('commission_type', '=', 'override')]"/>
+                    <filter string="Commissions de Supervision" name="override_commissions" domain="[('commission_type', '=', 'override')]"/>
                     <separator/>
                     <filter string="Current Month" name="current_month"
                             domain="[('date', '&gt;=', (context_today() - relativedelta(day=1)).strftime('%Y-%m-%d')),
