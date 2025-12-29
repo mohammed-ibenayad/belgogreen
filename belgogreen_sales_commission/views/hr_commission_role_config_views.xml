@@ -12,7 +12,7 @@
                     <field name="role_id" string="Role" width="150px"
                            options="{'no_create': True}"/>
                     <field name="direct_sale_percentage" string="Direct Sale %" width="100px"/>
-                    <field name="override_percentage" string="Override %" width="100px"/>
+                    <field name="override_percentage" string="Comm. Supervision %" width="100px"/>
                     <field name="company_id" string="Company" groups="base.group_multi_company" width="150px"/>
                     <field name="active" string="Active" width="80px" widget="boolean_toggle"/>
                 </list>
@@ -35,6 +35,7 @@
                                 <field name="direct_sale_percentage"
                                        help="Percentage when this role makes their own sale"/>
                                 <field name="override_percentage"
+                                       string="Commission de Supervision %"
                                        help="Percentage when this role gets commission on subordinate's sale"/>
                                 <field name="active"/>
                                 <field name="company_id" groups="base.group_multi_company"/>
@@ -45,9 +46,9 @@
                             <div class="alert alert-info" role="alert">
                                 <strong>Direct Sale %:</strong> Applied when a user with this role makes their own sale.
                                 <br/>
-                                <strong>Override %:</strong> Applied when a user receives commission on a subordinate's sale.
+                                <strong>Commission de Supervision %:</strong> Applied when a user receives commission on a subordinate's sale.
                                 <br/><br/>
-                                <strong>Example:</strong> If Team Leader has Direct=5% and Override=2%:
+                                <strong>Example:</strong> If Team Leader has Direct=5% and Supervision=2%:
                                 <ul>
                                     <li>Team Leader makes $1000 sale → Gets $50 (5%)</li>
                                     <li>Salesperson makes $1000 sale → Team Leader gets $20 (2%)</li>
@@ -92,7 +93,7 @@
                     Each role has two percentages:
                     <ul>
                         <li><strong>Direct Sale %</strong>: When the user makes their own sale</li>
-                        <li><strong>Override %</strong>: When they receive commission on subordinate's sale</li>
+                        <li><strong>Comm. Supervision %</strong>: When they receive commission on subordinate's sale</li>
                     </ul>
                 </p>
             </field>

@@ -19,7 +19,7 @@
                     <button name="action_view_commissions"
                             type="object"
                             class="oe_stat_button"
-                            icon="fa-sitemap"
+                            icon="fa-money"
                             invisible="type != 'hierarchical'"
                             groups="belgogreen_sales_commission.group_commission_user">
                         <field name="commission_count" widget="statinfo" string="Commissions"/>
@@ -88,7 +88,7 @@
                             <list editable="bottom">
                                 <field name="role_id" string="Rôle"/>
                                 <field name="direct_sale_percentage" string="Vente Directe %"/>
-                                <field name="override_percentage" string="Override %"/>
+                                <field name="override_percentage" string="Comm. Supervision %"/>
                                 <field name="active" string="Actif"/>
                             </list>
                         </field>
@@ -97,14 +97,14 @@
                                 <strong>Note :</strong> Définissez DEUX pourcentages de commission pour chaque rôle :
                                 <ul>
                                     <li><strong>Vente Directe % :</strong> Lorsque l'utilisateur réalise sa propre vente</li>
-                                    <li><strong>Override % :</strong> Lorsque l'utilisateur reçoit une commission sur la vente d'un subordonné</li>
+                                    <li><strong>Commission de Supervision % :</strong> Lorsque l'utilisateur reçoit une commission sur la vente d'un subordonné</li>
                                 </ul>
                                 <br/>
                                 <strong>Exemple de configuration :</strong>
                                 <ul>
-                                    <li>Commercial : Direct : 5%, Override : 0% (rôle de base, pas d'équipe)</li>
-                                    <li>Chef d'équipe : Direct : 5%, Override : 2% (réalise ses propres ventes + override équipe)</li>
-                                    <li>Directeur Commercial : Direct : 5%, Override : 1% (réalise ses propres ventes + override toute équipe)</li>
+                                    <li>Commercial : Direct : 5%, Supervision : 0% (rôle de base, pas d'équipe)</li>
+                                    <li>Chef d'équipe : Direct : 5%, Supervision : 2% (réalise ses propres ventes + supervision équipe)</li>
+                                    <li>Directeur Commercial : Direct : 5%, Supervision : 1% (réalise ses propres ventes + supervision toute équipe)</li>
                                 </ul>
                             </div>
                         </group>
@@ -121,7 +121,7 @@
                                 <field name="role_sequence" string="Niveau" readonly="1"/>
                                 <field name="manager_id" string="Manager"/>
                                 <field name="direct_sale_percentage_display" string="Vente Directe %" readonly="1" optional="show"/>
-                                <field name="override_percentage_display" string="Override %" readonly="1" optional="show"/>
+                                <field name="override_percentage_display" string="Comm. Supervision %" readonly="1" optional="show"/>
                                 <field name="date_from" string="Date Début" optional="show"/>
                                 <field name="date_to" string="Date Fin" optional="show"/>
                                 <field name="company_id" column_invisible="1"/>
