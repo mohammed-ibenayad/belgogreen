@@ -54,7 +54,7 @@ class SaleCommissionPlanUser(models.Model):
     )
 
     override_percentage = fields.Float(
-        string='Override %',
+        string='Comm. Supervision %',
         compute='_compute_role_percentages',
         store=False,
         digits=(5, 2),
@@ -70,7 +70,7 @@ class SaleCommissionPlanUser(models.Model):
     )
 
     override_percentage_display = fields.Char(
-        string='Override %',
+        string='Comm. Supervision %',
         compute='_compute_percentage_display',
         store=False,
         help='Commission percentage when this user receives commission on subordinate\'s sale'

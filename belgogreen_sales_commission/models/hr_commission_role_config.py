@@ -36,7 +36,7 @@ class HrCommissionRoleConfig(models.Model):
     )
 
     override_percentage = fields.Float(
-        string='Override %',
+        string='Comm. Supervision %',
         required=True,
         digits=(5, 2),
         default=0.0,
@@ -79,13 +79,13 @@ class HrCommissionRoleConfig(models.Model):
                 )
             if record.override_percentage < 0 or record.override_percentage > 100:
                 raise ValidationError(
-                    _('Override percentage must be between 0 and 100. Got: %s') % record.override_percentage
+                    _('Commission de Supervision percentage must be between 0 and 100. Got: %s') % record.override_percentage
                 )
 
     def _compute_display_name(self):
         """Custom display name for Odoo 18"""
         for record in self:
-            record.display_name = _('%(plan)s - %(role)s (Direct: %(direct)s%% / Override: %(override)s%%)') % {
+            record.display_name = _('%(plan)s - %(role)s (Direct: %(direct)s%% / Supervision: %(override)s%%)') % {
                 'plan': record.plan_id.name,
                 'role': record.role_id.name,
                 'direct': record.direct_sale_percentage,
