@@ -15,13 +15,6 @@
                                 invisible="user_count == 0">
                             <field name="user_count" widget="statinfo" string="Users"/>
                         </button>
-                        <button name="action_view_commissions"
-                                type="object"
-                                class="oe_stat_button"
-                                icon="fa-money"
-                                invisible="commission_count == 0">
-                            <field name="commission_count" widget="statinfo" string="Commissions"/>
-                        </button>
                     </div>
 
                     <widget name="web_ribbon" title="Archived" bg_color="bg-danger"

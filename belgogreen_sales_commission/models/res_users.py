@@ -55,25 +55,25 @@ class ResUsers(models.Model):
         help='Number of unpaid or claimed commissions'
     )
 
-    @api.depends('my_commission_ids', 'my_commission_ids.payment_status', 'my_commission_ids.commission_amount')
+    @api.depends('my_commission_ids', 'my_commission_ids.status', 'my_commission_ids.commission_amount')
     def _compute_commission_stats(self):
         """Compute commission statistics for the user"""
         for user in self:
             commissions = user.my_commission_ids
             user.commission_count = len(commissions)
             user.commission_unpaid_total = sum(
-                commissions.filtered(lambda c: c.payment_status == 'unpaid').mapped('commission_amount')
+                commissions.filtered(lambda c: c.status == 'unpaid').mapped('commission_amount')
             )
             user.commission_paid_total = sum(
-                commissions.filtered(lambda c: c.payment_status == 'paid').mapped('commission_amount')
+                commissions.filtered(lambda c: c.status == 'paid').mapped('commission_amount')
             )
 
-    @api.depends('my_commission_ids', 'my_commission_ids.payment_status')
+    @api.depends('my_commission_ids', 'my_commission_ids.status')
     def _compute_active_commissions(self):
         """Compute count of active (unpaid/claimed) commissions"""
         for user in self:
             active_commissions = user.my_commission_ids.filtered(
-                lambda c: c.payment_status in ['unpaid', 'claimed', 'processing']
+                lambda c: c.status in ['unpaid', 'claimed', 'processing']
             )
             user.active_commission_count = len(active_commissions)
 

@@ -161,47 +161,16 @@ class SaleCommissionClaim(models.Model):
         store=True
     )
 
-    # Vendor Bill and Payment fields
-    vendor_bill_id = fields.Many2one(
-        'account.move',
-        string='Vendor Bill',
-        compute='_compute_vendor_bill',
-        store=True,
-        help='Vendor bill created from PO'
-    )
-
-    vendor_bill_state = fields.Selection(
-        related='vendor_bill_id.payment_state',
-        string='Bill Status',
-        store=True
-    )
-
-    payment_ids = fields.Many2many(
-        'account.payment',
-        compute='_compute_payments',
-        string='Payments',
-        help='Payments that paid the vendor bill'
-    )
-
-    payment_count = fields.Integer(
-        compute='_compute_payments',
-        string='Payment Count'
-    )
-
-    # Enhanced state to track PO confirmation and payment
+    # Simplified state - no payment tracking at claim level
     state = fields.Selection([
         ('draft', 'Draft'),
         ('pending', 'Pending Approval'),
         ('approved', 'Approved'),
-        ('po_sent', 'PO Sent to Employee'),
-        ('po_confirmed', 'Employee Confirmed'),
-        ('paid', 'Paid'),
         ('rejected', 'Rejected'),
         ('cancelled', 'Cancelled')
     ], string='State', default='draft', required=True, tracking=True,
-       help='Draft: Being prepared | Pending: Awaiting manager | Approved: Manager approved | '
-            'PO Sent: Waiting employee confirmation | PO Confirmed: Ready for payment | '
-            'Paid: Payment completed | Rejected: Denied | Cancelled: Cancelled')
+       help='Draft: Being prepared | Pending: Awaiting manager approval | '
+            'Approved: Manager approved and PO created | Rejected: Denied | Cancelled: Cancelled')
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -282,32 +251,6 @@ class SaleCommissionClaim(models.Model):
             # Net amount
             claim.net_amount = claim.total_amount - claim.total_deductions
 
-    @api.depends('purchase_order_id')
-    def _compute_vendor_bill(self):
-        """Find vendor bill created from PO"""
-        for claim in self:
-            if claim.purchase_order_id:
-                bill = self.env['account.move'].search([
-                    ('invoice_origin', '=', claim.purchase_order_id.name),
-                    ('move_type', '=', 'in_invoice')
-                ], limit=1)
-                claim.vendor_bill_id = bill
-            else:
-                claim.vendor_bill_id = False
-
-    @api.depends('vendor_bill_id')
-    def _compute_payments(self):
-        """Find payments that paid the bill"""
-        for claim in self:
-            if claim.vendor_bill_id:
-                payments = self.env['account.payment'].search([
-                    ('reconciled_bill_ids', 'in', claim.vendor_bill_id.id)
-                ])
-                claim.payment_ids = payments
-                claim.payment_count = len(payments)
-            else:
-                claim.payment_ids = False
-                claim.payment_count = 0
 
     @api.constrains('net_amount', 'state')
     def _check_net_amount_positive(self):
@@ -338,7 +281,7 @@ class SaleCommissionClaim(models.Model):
             raise UserError(_('Net claim amount must be positive.'))
 
         # Update commission status to claimed
-        self.commission_ids.write({'payment_status': 'claimed'})
+        self.commission_ids.write({'status': 'claimed'})
 
         self.write({'state': 'pending'})
         self._notify_admins()
@@ -412,7 +355,7 @@ class SaleCommissionClaim(models.Model):
                 'processed_by': self.env.user.id,
                 'processed_date': fields.Datetime.now()
             })
-            claim.commission_ids.write({'payment_status': 'unpaid'})
+            claim.commission_ids.write({'status': 'unpaid'})
 
             # Send notification to claimant
             claim._notify_claimant('rejected')
@@ -594,93 +537,17 @@ class SaleCommissionClaim(models.Model):
     def _generate_batch_po_notes(self):
         """Generate notes for PO with commission list and deduction breakdown"""
         lines = []
-        lines.append('Commission Payment Details')
-        lines.append('=' * 50)
-        lines.append('')
 
-        # List all commissions
+        # List all commissions - simple format: COM/00004: 373.94 € - Customer Name
         all_commissions = self.mapped('commission_ids')
-        lines.append('Commissions Paid:')
-        lines.append('-' * 50)
-
         for commission in all_commissions:
-            lines.append('  • %s: %s %s' % (
+            customer_name = commission.customer_id.name if commission.customer_id else 'N/A'
+            lines.append('%s: %s %s - %s' % (
                 commission.name,
                 commission.commission_amount,
-                self[0].currency_id.symbol
+                self[0].currency_id.symbol,
+                customer_name
             ))
-
-        lines.append('-' * 50)
-        total_gross = sum(self.mapped('total_amount'))
-        lines.append('Total Commissions: %s %s' % (total_gross, self[0].currency_id.symbol))
-
-        # List all deductions
-        all_deductions = self.mapped('all_deduction_ids')
-        if all_deductions:
-            lines.append('')
-            lines.append('Deductions:')
-            lines.append('-' * 50)
-            for deduction in all_deductions:
-                lines.append('  • %s (%s): -%s %s' % (
-                    deduction.deduction_type.replace('_', ' ').title(),
-                    deduction.name,
-                    deduction.amount,
-                    self[0].currency_id.symbol
-                ))
-            lines.append('-' * 50)
-            total_deductions = sum(self.mapped('total_deductions'))
-            lines.append('Total Deductions: -%s %s' % (total_deductions, self[0].currency_id.symbol))
-
-        lines.append('')
-        lines.append('=' * 50)
-        total_net = sum(self.mapped('net_amount'))
-        lines.append('NET AMOUNT: %s %s' % (total_net, self[0].currency_id.symbol))
 
         return '\n'.join(lines)
 
-    def action_view_vendor_bill(self):
-        """View vendor bill"""
-        self.ensure_one()
-
-        if not self.vendor_bill_id:
-            raise UserError(_(
-                'No vendor bill found.\n\n'
-                'The contractor needs to send their invoice first.\n'
-                'Once received, accounting will create the bill from PO: %s'
-            ) % self.purchase_order_id.name if self.purchase_order_id else 'N/A')
-
-        return {
-            'name': _('Vendor Bill'),
-            'type': 'ir.actions.act_window',
-            'res_model': 'account.move',
-            'res_id': self.vendor_bill_id.id,
-            'view_mode': 'form',
-            'target': 'current',
-        }
-
-    def action_view_payments(self):
-        """View payments"""
-        self.ensure_one()
-
-        if not self.payment_ids:
-            raise UserError(_('No payments found for this claim.'))
-
-        if len(self.payment_ids) == 1:
-            # Open single payment
-            return {
-                'name': _('Payment'),
-                'type': 'ir.actions.act_window',
-                'res_model': 'account.payment',
-                'res_id': self.payment_ids[0].id,
-                'view_mode': 'form',
-                'target': 'current',
-            }
-        else:
-            # Open list of payments
-            return {
-                'name': _('Payments'),
-                'type': 'ir.actions.act_window',
-                'res_model': 'account.payment',
-                'view_mode': 'tree,form',
-                'domain': [('id', 'in', self.payment_ids.ids)],
-            }

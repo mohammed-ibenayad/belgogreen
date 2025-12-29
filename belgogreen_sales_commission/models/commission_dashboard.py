@@ -10,7 +10,11 @@ class CommissionDashboard(models.TransientModel):
 
     @api.model
     def get_dashboard_data(self):
-        """Get all dashboard data for the current user"""
+        """Get all dashboard data for the current user
+
+        Note: Menu visibility is controlled by ir.ui.menu override.
+        Users without plan assignments won't see the dashboard menu.
+        """
         user = self.env.user
 
         # Get date ranges
@@ -91,8 +95,8 @@ class CommissionDashboard(models.TransientModel):
         """Compute KPI metrics"""
         # My Commissions
         my_total = sum(my_commissions.mapped('commission_amount'))
-        my_pending = sum(my_commissions.filtered(lambda c: c.payment_status == 'unpaid').mapped('commission_amount'))
-        my_paid = sum(my_commissions.filtered(lambda c: c.payment_status == 'paid').mapped('commission_amount'))
+        my_pending = sum(my_commissions.filtered(lambda c: c.status == 'unpaid').mapped('commission_amount'))
+        my_paid = sum(my_commissions.filtered(lambda c: c.status == 'paid').mapped('commission_amount'))
 
         # This Month
         my_month_comms = my_commissions.filtered(lambda c: c.date >= first_day_month)
@@ -108,7 +112,7 @@ class CommissionDashboard(models.TransientModel):
 
         # Team metrics
         team_total = sum(team_commissions.mapped('commission_amount'))
-        team_pending = sum(team_commissions.filtered(lambda c: c.payment_status == 'unpaid').mapped('commission_amount'))
+        team_pending = sum(team_commissions.filtered(lambda c: c.status == 'unpaid').mapped('commission_amount'))
         team_members_count = len(set(team_commissions.mapped('user_id')))
 
         # Pending actions (claims to approve from subordinates in any plan)
@@ -167,16 +171,54 @@ class CommissionDashboard(models.TransientModel):
         ])
 
         state_distribution = {
-            'pending': sum(my_commissions.filtered(lambda c: c.payment_status == 'unpaid').mapped('commission_amount')),
-            'approved': sum(my_commissions.filtered(lambda c: c.payment_status == 'claimed').mapped('commission_amount')),
-            'paid': sum(my_commissions.filtered(lambda c: c.payment_status == 'paid').mapped('commission_amount')),
-            'cancelled': sum(my_commissions.filtered(lambda c: c.payment_status == 'cancelled').mapped('commission_amount')),
+            'pending': sum(my_commissions.filtered(lambda c: c.status == 'unpaid').mapped('commission_amount')),
+            'approved': sum(my_commissions.filtered(lambda c: c.status == 'claimed').mapped('commission_amount')),
+            'paid': sum(my_commissions.filtered(lambda c: c.status == 'paid').mapped('commission_amount')),
+            'cancelled': sum(my_commissions.filtered(lambda c: c.status == 'cancelled').mapped('commission_amount')),
         }
 
         return {
             'monthly_trend': monthly_data,
             'state_distribution': state_distribution,
         }
+
+    def _get_all_subordinates(self, user, commission_plan):
+        """
+        Recursively get ALL subordinates in the hierarchy tree for a user within a plan.
+
+        This traverses the entire tree downward, not just direct reports.
+
+        Args:
+            user: res.users record (the manager)
+            commission_plan: sale.commission.plan record
+
+        Returns:
+            recordset of res.users (all subordinates at any level)
+        """
+        all_subordinate_ids = set()
+        users_to_process = [user.id]
+        seen_ids = set()  # Prevent circular references
+
+        while users_to_process:
+            current_user_id = users_to_process.pop(0)
+
+            if current_user_id in seen_ids:
+                continue  # Skip if already processed
+            seen_ids.add(current_user_id)
+
+            # Find direct subordinates of current user in this plan
+            subordinate_assignments = self.env['sale.commission.plan.user'].search([
+                ('manager_id', '=', current_user_id),
+                ('plan_id', '=', commission_plan.id)
+            ])
+
+            for assignment in subordinate_assignments:
+                subordinate_id = assignment.user_id.id
+                if subordinate_id not in all_subordinate_ids and subordinate_id != user.id:
+                    all_subordinate_ids.add(subordinate_id)
+                    users_to_process.append(subordinate_id)  # Add to queue for recursive processing
+
+        return self.env['res.users'].browse(list(all_subordinate_ids))
 
     @api.model
     def generate_my_commissions(self):
@@ -193,14 +235,14 @@ class CommissionDashboard(models.TransientModel):
         """
         user = self.env.user
 
-        # Check if user has commission plan assignment
-        user_assignment = self.env['sale.commission.plan.user'].search([
+        # Check if user has commission plan assignments (removed limit=1)
+        user_assignments = self.env['sale.commission.plan.user'].search([
             ('user_id', '=', user.id),
             ('plan_id.state', '=', 'approved'),
             ('plan_id.type', '=', 'hierarchical'),
-        ], limit=1)
+        ])
 
-        if not user_assignment:
+        if not user_assignments:
             return {
                 'count': 0,
                 'total_amount': 0,
@@ -209,83 +251,92 @@ class CommissionDashboard(models.TransientModel):
                 'message': 'You are not assigned to any approved hierarchical commission plan'
             }
 
-        commission_plan = user_assignment.plan_id
-        user_role = user_assignment.role_id
-
-        # Get role configuration for current user
-        role_config = self.env['hr.commission.role.config'].search([
-            ('plan_id', '=', commission_plan.id),
-            ('role_id', '=', user_role.id),
-            ('active', '=', True)
-        ], limit=1)
-
-        if not role_config:
-            return {
-                'count': 0,
-                'total_amount': 0,
-                'claimable_amount': 0,
-                'success': False,
-                'message': f'No active configuration found for role {user_role.name} in the commission plan'
-            }
-
         SaleOrder = self.env['sale.order']
         Invoice = self.env['account.move']
 
-        commissions_created = 0
+        total_commissions_created = 0
         total_amount = 0
+        plans_processed = []
 
-        # 1. DIRECT COMMISSIONS: Process user's own orders
-        direct_orders = self._get_eligible_orders_for_user(user, Invoice, SaleOrder)
-        for order in direct_orders:
-            created = self._create_commission_for_user(
-                user=user,
-                role=user_role,
-                commission_type='direct',
-                order=order,
-                commission_plan=commission_plan,
-                role_config=role_config
-            )
-            commissions_created += created
+        # Process each commission plan the user is assigned to
+        for user_assignment in user_assignments:
+            commission_plan = user_assignment.plan_id
+            user_role = user_assignment.role_id
 
-        # 2. OVERRIDE COMMISSIONS: Process subordinates' orders (within this plan)
-        subordinate_assignments = self.env['sale.commission.plan.user'].search([
-            ('manager_id', '=', user.id),
-            ('plan_id', '=', commission_plan.id)
-        ])
-        subordinate_ids = subordinate_assignments.mapped('user_id').ids
+            # Get role configuration for current user
+            role_config = self.env['hr.commission.role.config'].search([
+                ('plan_id', '=', commission_plan.id),
+                ('role_id', '=', user_role.id),
+                ('active', '=', True)
+            ], limit=1)
 
-        if subordinate_ids:
-            subordinates = self.env['res.users'].browse(subordinate_ids)
-            for subordinate in subordinates:
-                subordinate_orders = self._get_eligible_orders_for_user(subordinate, Invoice, SaleOrder)
-                for order in subordinate_orders:
-                    created = self._create_commission_for_user(
-                        user=user,  # Commission for current user, not subordinate
-                        role=user_role,
-                        commission_type='override',
-                        order=order,
-                        commission_plan=commission_plan,
-                        role_config=role_config
-                    )
-                    commissions_created += created
+            if not role_config:
+                import logging
+                _logger = logging.getLogger(__name__)
+                _logger.warning(f'No active configuration found for role {user_role.name} in plan {commission_plan.name}, skipping')
+                continue
+
+            commissions_created = 0
+
+            # 1. DIRECT COMMISSIONS: Process user's own orders
+            direct_orders = self._get_eligible_orders_for_user(user, Invoice, SaleOrder)
+            for order in direct_orders:
+                created = self._create_commission_for_user(
+                    user=user,
+                    role=user_role,
+                    commission_type='direct',
+                    order=order,
+                    commission_plan=commission_plan,
+                    role_config=role_config
+                )
+                commissions_created += created
+
+            # 2. OVERRIDE COMMISSIONS: Process subordinates' orders (within this plan)
+            # Get ALL subordinates in the hierarchy tree (not just direct reports)
+            all_subordinates = self._get_all_subordinates(user, commission_plan)
+
+            if all_subordinates:
+                for subordinate in all_subordinates:
+                    subordinate_orders = self._get_eligible_orders_for_user(subordinate, Invoice, SaleOrder)
+                    for order in subordinate_orders:
+                        created = self._create_commission_for_user(
+                            user=user,  # Commission for current user, not subordinate
+                            role=user_role,
+                            commission_type='override',
+                            order=order,
+                            commission_plan=commission_plan,
+                            role_config=role_config
+                        )
+                        commissions_created += created
+
+            if commissions_created > 0:
+                total_commissions_created += commissions_created
+                plans_processed.append(commission_plan.name)
+                import logging
+                _logger = logging.getLogger(__name__)
+                _logger.info(f'Created {commissions_created} commission(s) for plan {commission_plan.name}')
 
         # Calculate total and claimable amounts for current user
         claimable_amount = 0
-        if commissions_created > 0:
+        if total_commissions_created > 0:
             recent_commissions = self.env['sale.commission'].search([
                 ('user_id', '=', user.id),
-            ], order='create_date desc', limit=commissions_created)
+            ], order='create_date desc', limit=total_commissions_created)
 
             total_amount = sum(recent_commissions.mapped('commission_amount'))
-            unpaid_commissions = recent_commissions.filtered(lambda c: c.payment_status == 'unpaid')
+            unpaid_commissions = recent_commissions.filtered(lambda c: c.status == 'unpaid')
             claimable_amount = sum(unpaid_commissions.mapped('commission_amount'))
 
+        message = f'{total_commissions_created} commission(s) créée(s) pour {user.name}'
+        if plans_processed:
+            message += f' sur {len(plans_processed)} plan(s) ({", ".join(plans_processed)})'
+
         return {
-            'count': commissions_created,
+            'count': total_commissions_created,
             'total_amount': total_amount,
             'claimable_amount': claimable_amount,
             'success': True,
-            'message': f'{commissions_created} commission(s) created for {user.name}'
+            'message': message
         }
 
     def _get_eligible_orders_for_user(self, user, Invoice, SaleOrder):
@@ -314,8 +365,24 @@ class CommissionDashboard(models.TransientModel):
     def _create_commission_for_user(self, user, role, commission_type, order, commission_plan, role_config):
         """Create a single commission record for a user on a specific order
 
+        LEGACY SUPPORT: If ANY legacy commission flag is true on the sale order,
+        commission generation is completely blocked for that order:
+        - x_studio_payee_commercial
+        - x_studio_payee_responsable_commercial
+        - x_studio_payee_directeur_commercial
+
         Returns: 1 if commission created, 0 if already exists or error
         """
+        import logging
+        _logger = logging.getLogger(__name__)
+
+        # LEGACY CHECK: Block commission generation if ANY legacy flag is true
+        if (order.x_studio_payee_commercial or
+            order.x_studio_payee_directeur_commercial or
+            order.x_studio_payee_responsable_commercial):
+            _logger.info("Legacy commission flags detected on order %s - commission generation blocked", order.name)
+            return 0
+
         # Get paid invoices for this order
         paid_invoices = order.invoice_ids.filtered(
             lambda inv: inv.move_type == 'out_invoice'
@@ -356,8 +423,7 @@ class CommissionDashboard(models.TransientModel):
                     'date': invoice.invoice_date or fields.Date.today(),
                     'period': period,
                     'base_amount': base_amount,
-                    'payment_status': 'unpaid',
-                    'state': 'confirmed',
+                    'status': 'unpaid',
                     'company_id': order.company_id.id,
                     'currency_id': order.currency_id.id,
                 })

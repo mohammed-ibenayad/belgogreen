@@ -44,7 +44,79 @@ class SaleCommissionPlanUser(models.Model):
         readonly=True
     )
 
+    # Computed fields for role percentages (displayed in Users & Hierarchy tab)
+    direct_sale_percentage = fields.Float(
+        string='Direct Sale %',
+        compute='_compute_role_percentages',
+        store=False,
+        digits=(5, 2),
+        help='Commission percentage when this user makes their own sale'
+    )
+
+    override_percentage = fields.Float(
+        string='Comm. Supervision %',
+        compute='_compute_role_percentages',
+        store=False,
+        digits=(5, 2),
+        help='Commission percentage when this user receives commission on subordinate\'s sale'
+    )
+
+    # Formatted percentage fields for display (show as "12%" instead of "12.00")
+    direct_sale_percentage_display = fields.Char(
+        string='Vente Directe %',
+        compute='_compute_percentage_display',
+        store=False,
+        help='Commission percentage when this user makes their own sale'
+    )
+
+    override_percentage_display = fields.Char(
+        string='Comm. Supervision %',
+        compute='_compute_percentage_display',
+        store=False,
+        help='Commission percentage when this user receives commission on subordinate\'s sale'
+    )
+
     # Note: unique(plan_id, user_id) constraint already exists in base model
+
+    @api.depends('role_id', 'plan_id')
+    def _compute_role_percentages(self):
+        """
+        Compute the percentages from the role configuration
+        """
+        for rec in self:
+            if rec.role_id and rec.plan_id:
+                # Find the role config for this plan and role
+                role_config = self.env['hr.commission.role.config'].search([
+                    ('plan_id', '=', rec.plan_id.id),
+                    ('role_id', '=', rec.role_id.id)
+                ], limit=1)
+
+                if role_config:
+                    rec.direct_sale_percentage = role_config.direct_sale_percentage
+                    rec.override_percentage = role_config.override_percentage
+                else:
+                    rec.direct_sale_percentage = 0.0
+                    rec.override_percentage = 0.0
+            else:
+                rec.direct_sale_percentage = 0.0
+                rec.override_percentage = 0.0
+
+    @api.depends('direct_sale_percentage', 'override_percentage')
+    def _compute_percentage_display(self):
+        """
+        Format percentages for display as integer with % sign (e.g., "12%" instead of "12.00")
+        """
+        for rec in self:
+            # Format as integer if it's a whole number, otherwise show one decimal
+            if rec.direct_sale_percentage % 1 == 0:
+                rec.direct_sale_percentage_display = f"{int(rec.direct_sale_percentage)}%"
+            else:
+                rec.direct_sale_percentage_display = f"{rec.direct_sale_percentage:.1f}%"
+
+            if rec.override_percentage % 1 == 0:
+                rec.override_percentage_display = f"{int(rec.override_percentage)}%"
+            else:
+                rec.override_percentage_display = f"{rec.override_percentage:.1f}%"
 
     @api.model_create_multi
     def create(self, vals_list):

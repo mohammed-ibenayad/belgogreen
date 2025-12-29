@@ -31,6 +31,8 @@ export class CommissionDashboard extends Component {
             chartLoaded: false,
             error: null,
             currency: null,
+            accessDenied: false,
+            accessDeniedMessage: '',
         });
 
         onWillStart(async () => {
@@ -103,6 +105,14 @@ export class CommissionDashboard extends Component {
             console.log("Dashboard data received:", data);
             this.state.data = data;
 
+            // Check for access denied
+            if (data && data.access_denied) {
+                this.state.accessDenied = true;
+                this.state.accessDeniedMessage = data.message || 'Accès refusé au tableau de bord';
+                console.log("Access denied to dashboard:", this.state.accessDeniedMessage);
+                return;
+            }
+
             // Store currency info
             if (data && data.currency) {
                 this.state.currency = data.currency;
@@ -153,6 +163,14 @@ export class CommissionDashboard extends Component {
         try {
             const data = await this.rpc('/commission/dashboard/data', {});
             this.state.data = data;
+
+            // Check for access denied
+            if (data && data.access_denied) {
+                this.state.accessDenied = true;
+                this.state.accessDeniedMessage = data.message || 'Accès refusé au tableau de bord';
+                console.log("Access denied to dashboard:", this.state.accessDeniedMessage);
+                return;
+            }
 
             // Store currency info
             if (data && data.currency) {
@@ -329,7 +347,35 @@ export class CommissionDashboard extends Component {
         }
     }
 
+    showGenerationResultNotification(result) {
+        // Show notification similar to sale order style - ALWAYS show a message
+        if (!this.notification) {
+            // Fallback to alert if notification service not available
+            alert(result.message || 'Actualisation terminée');
+            return;
+        }
+
+        // Always show notification, even if no commissions created
+        if (result.success && result.count > 0) {
+            // Success notification with commission details
+            this.notification.add(result.message, {
+                title: '✓ Commissions générées',
+                type: 'success',
+                sticky: false,
+            });
+        } else {
+            // Info notification when no new commissions
+            const message = result.message || 'Aucune nouvelle commission à générer - vos données sont à jour';
+            this.notification.add(message, {
+                title: 'ℹ Génération de commissions',
+                type: 'info',
+                sticky: false,
+            });
+        }
+    }
+
     showGenerationNotification(result) {
+        // Legacy method - kept for backward compatibility
         // Show notification for commission generation with claimable amount
         const message = `${result.count} commission(s) créée(s) - Montant total: ${this.formatCurrency(result.total_amount)}\nMontant réclamable: ${this.formatCurrency(result.claimable_amount || result.total_amount)}`;
 
@@ -383,6 +429,15 @@ export class CommissionDashboard extends Component {
 
     async onRefreshClick() {
         // Call refresh endpoint which also generates commissions
+        const refreshBtn = this.root.el?.querySelector('.dashboard_refresh');
+
+        // Add loading state to button with Odoo-style spinner
+        if (refreshBtn) {
+            refreshBtn.disabled = true;
+            // Use a more visible spinner icon
+            refreshBtn.innerHTML = '<i class="fa fa-circle-o-notch fa-spin"></i> Chargement...';
+        }
+
         this.state.loading = true;
         try {
             let data;
@@ -423,19 +478,37 @@ export class CommissionDashboard extends Component {
                 this.updateCardStyles(data.user_info);
             }
 
-            // Show notification if commissions were generated
-            if (data.generation_result && data.generation_result.count > 0) {
-                this.showGenerationNotification(data.generation_result);
+            // Always show notification for commission generation result
+            if (data.generation_result) {
+                this.showGenerationResultNotification(data.generation_result);
+            } else {
+                // Fallback if no result returned
+                if (this.notification) {
+                    this.notification.add('Tableau de bord actualisé', {
+                        title: 'Actualisation terminée',
+                        type: 'info',
+                        sticky: false,
+                    });
+                }
             }
         } catch (error) {
             console.error('Error refreshing dashboard:', error);
             if (this.notification) {
-                this.notification.add('Error refreshing dashboard: ' + error.message, {
+                this.notification.add('Erreur lors de l\'actualisation: ' + error.message, {
+                    title: 'Erreur',
                     type: 'danger',
+                    sticky: true,
                 });
+            } else {
+                alert('Erreur: ' + error.message);
             }
         } finally {
             this.state.loading = false;
+            // Restore button state
+            if (refreshBtn) {
+                refreshBtn.disabled = false;
+                refreshBtn.innerHTML = '<i class="fa fa-refresh"></i> Actualiser';
+            }
         }
     }
 

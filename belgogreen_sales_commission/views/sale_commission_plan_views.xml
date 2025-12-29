@@ -19,7 +19,7 @@
                     <button name="action_view_commissions"
                             type="object"
                             class="oe_stat_button"
-                            icon="fa-sitemap"
+                            icon="fa-money"
                             invisible="type != 'hierarchical'"
                             groups="belgogreen_sales_commission.group_commission_user">
                         <field name="commission_count" widget="statinfo" string="Commissions"/>
@@ -80,94 +80,95 @@
                 <!-- Add custom hierarchical tabs -->
                 <xpath expr="//notebook" position="inside">
 
-                    <!-- Hierarchical Configuration Tab -->
-                    <page string="Hierarchical Configuration"
-                          name="hierarchical_config"
-                          invisible="type != 'hierarchical'">
-                        <group>
-                            <group string="Payment Requirements">
-                                <field name="require_invoice_paid"/>
-                                <div class="text-muted" style="margin-left: 20px;">
-                                    If enabled, commissions will only be generated when the customer invoice is fully paid.
-                                    If disabled, commissions will be created as soon as the invoice is posted/confirmed,
-                                    regardless of payment status.
-                                </div>
-                            </group>
-                        </group>
-                        <group>
-                            <div class="alert alert-info" role="alert">
-                                <strong>Note:</strong> Hierarchical commissions are event-based (triggered by paid invoices),
-                                not period-based. The periodicity field is set to "Month" automatically but is not used
-                                for commission calculations. You can safely ignore the Periods tab.
-                            </div>
-                        </group>
-                    </page>
-
                     <!-- Role Percentages Tab -->
-                    <page string="Role Percentages"
+                    <page string="Pourcentages par Rôle"
                           name="role_config"
                           invisible="type != 'hierarchical'">
                         <field name="role_config_ids">
                             <list editable="bottom">
-                                <field name="role_id"/>
-                                <field name="direct_sale_percentage"/>
-                                <field name="override_percentage"/>
-                                <field name="active"/>
+                                <field name="role_id" string="Rôle"/>
+                                <field name="direct_sale_percentage" string="Vente Directe %"/>
+                                <field name="override_percentage" string="Comm. Supervision %"/>
+                                <field name="active" string="Actif"/>
                             </list>
                         </field>
                         <group>
                             <div class="alert alert-info" role="alert">
-                                <strong>Note:</strong> Define TWO commission percentages for each role:
+                                <strong>Note :</strong> Définissez DEUX pourcentages de commission pour chaque rôle :
                                 <ul>
-                                    <li><strong>Direct Sale %:</strong> When the user makes their own sale</li>
-                                    <li><strong>Override %:</strong> When the user receives commission on subordinate's sale</li>
+                                    <li><strong>Vente Directe % :</strong> Lorsque l'utilisateur réalise sa propre vente</li>
+                                    <li><strong>Commission de Supervision % :</strong> Lorsque l'utilisateur reçoit une commission sur la vente d'un subordonné</li>
                                 </ul>
                                 <br/>
-                                <strong>Example setup:</strong>
+                                <strong>Exemple de configuration :</strong>
                                 <ul>
-                                    <li>Salesperson: Direct: 5%, Override: 0% (base role, no team)</li>
-                                    <li>Team Leader: Direct: 5%, Override: 2% (makes own sales + team override)</li>
-                                    <li>Sales Director: Direct: 5%, Override: 1% (makes own sales + all team override)</li>
+                                    <li>Commercial : Direct : 5%, Supervision : 0% (rôle de base, pas d'équipe)</li>
+                                    <li>Chef d'équipe : Direct : 5%, Supervision : 2% (réalise ses propres ventes + supervision équipe)</li>
+                                    <li>Directeur Commercial : Direct : 5%, Supervision : 1% (réalise ses propres ventes + supervision toute équipe)</li>
                                 </ul>
                             </div>
                         </group>
                     </page>
 
                     <!-- Users & Hierarchy Tab (NEW for plan-based architecture) -->
-                    <page string="Users &amp; Hierarchy"
+                    <page string="Utilisateurs et Hiérarchie"
                           name="users_hierarchy"
                           invisible="type != 'hierarchical'">
                         <field name="user_ids">
                             <list editable="bottom">
-                                <field name="user_id" domain="[('company_id', '=', parent.company_id)]"/>
-                                <field name="role_id" domain="[('company_id', '=', parent.company_id)]"/>
-                                <field name="role_sequence" string="Level" readonly="1"/>
-                                <field name="manager_id"/>
-                                <field name="date_from" optional="show"/>
-                                <field name="date_to" optional="show"/>
+                                <field name="user_id" string="Utilisateur" domain="[('company_id', '=', parent.company_id)]"/>
+                                <field name="role_id" string="Rôle" domain="[('company_id', '=', parent.company_id)]"/>
+                                <field name="role_sequence" string="Niveau" readonly="1"/>
+                                <field name="manager_id" string="Manager"/>
+                                <field name="direct_sale_percentage_display" string="Vente Directe %" readonly="1" optional="show"/>
+                                <field name="override_percentage_display" string="Comm. Supervision %" readonly="1" optional="show"/>
+                                <field name="date_from" string="Date Début" optional="show"/>
+                                <field name="date_to" string="Date Fin" optional="show"/>
                                 <field name="company_id" column_invisible="1"/>
                             </list>
                         </field>
                         <group>
                             <div class="alert alert-info" role="alert">
-                                <strong>Plan-Based Role Assignment:</strong>
+                                <strong>Attribution de Rôle Basée sur le Plan :</strong>
                                 <ul>
-                                    <li>Assign each user to this plan with their role</li>
-                                    <li>Set their manager within this plan's hierarchy</li>
-                                    <li>Users can have different roles in different plans</li>
-                                    <li>Top-level users (Directeur) should have NO manager</li>
-                                    <li><strong>Date From/To:</strong> Optional validity period for this assignment (leave empty for permanent assignment)</li>
+                                    <li>Assignez chaque utilisateur à ce plan avec son rôle</li>
+                                    <li>Définissez son manager dans la hiérarchie de ce plan</li>
+                                    <li>Les utilisateurs peuvent avoir différents rôles dans différents plans</li>
+                                    <li>Les utilisateurs de niveau supérieur (Directeur) ne doivent PAS avoir de manager</li>
+                                    <li><strong>Date Début/Fin :</strong> Période de validité optionnelle pour cette affectation (laissez vide pour une affectation permanente)</li>
                                 </ul>
                                 <br/>
-                                <strong>Example Hierarchy:</strong>
+                                <strong>Exemple de Hiérarchie :</strong>
                                 <ul>
-                                    <li>Frederic Adam: Directeur de Sales, Manager: (none), Dates: (permanent)</li>
-                                    <li>Corine Detilleux: Chef d'équipe, Manager: Frederic Adam, Dates: (permanent)</li>
-                                    <li>John Doe: Commerciale, Manager: Corine Detilleux, Dates: 2025-01-01 to 2025-12-31 (seasonal)</li>
+                                    <li>Frederic Adam : Directeur de Sales, Manager : (aucun), Dates : (permanent)</li>
+                                    <li>Corine Detilleux : Chef d'équipe, Manager : Frederic Adam, Dates : (permanent)</li>
+                                    <li>John Doe : Commercial, Manager : Corine Detilleux, Dates : 2025-01-01 à 2025-12-31 (saisonnier)</li>
                                 </ul>
                                 <br/>
-                                <strong>💡 Tip:</strong> Users added via "Données commerciaux" tab will automatically appear here.
-                                Complete their role and manager information to enable commission calculations.
+                                <strong>💡 Astuce :</strong> Les pourcentages affichés sont automatiquement récupérés de la configuration du rôle sélectionné.
+                            </div>
+                        </group>
+                    </page>
+
+                    <!-- Hierarchical Configuration Tab (moved to far right) -->
+                    <page string="Configuration"
+                          name="hierarchical_config"
+                          invisible="type != 'hierarchical'">
+                        <group>
+                            <group string="Exigences de Paiement">
+                                <field name="require_invoice_paid" string="Facture Payée Requise"/>
+                                <div class="text-muted" style="margin-left: 20px;">
+                                    Si activé, les commissions ne seront générées que lorsque la facture client est entièrement payée.
+                                    Si désactivé, les commissions seront créées dès que la facture est validée/confirmée,
+                                    quel que soit le statut de paiement.
+                                </div>
+                            </group>
+                        </group>
+                        <group>
+                            <div class="alert alert-info" role="alert">
+                                <strong>Note :</strong> Les commissions hiérarchiques sont basées sur des événements (déclenchées par les factures payées),
+                                et non sur des périodes. Le champ périodicité est automatiquement défini sur "Mois" mais n'est pas utilisé
+                                pour les calculs de commission. Vous pouvez ignorer l'onglet Périodes en toute sécurité.
                             </div>
                         </group>
                     </page>
