@@ -10,7 +10,7 @@
                 <list string="Plan User Assignments" editable="bottom">
                     <field name="plan_id" string="Plan" readonly="1"/>
                     <field name="user_id" string="User"/>
-                    <field name="role_id" string="Role"/>
+                    <field name="role_id" string="Rôle"/>
                     <field name="role_sequence" string="Level" readonly="1"/>
                     <field name="manager_id" string="Manager"/>
                     <field name="direct_sale_percentage_display" string="Direct Sale %" readonly="1"/>
@@ -33,7 +33,7 @@
                             <group>
                                 <field name="plan_id" string="Commission Plan"/>
                                 <field name="user_id" string="User"/>
-                                <field name="role_id" string="Role"/>
+                                <field name="role_id" string="Rôle"/>
                                 <field name="role_sequence" string="Hierarchy Level" readonly="1"/>
                             </group>
                             <group>
