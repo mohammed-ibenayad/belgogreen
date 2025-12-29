@@ -3,57 +3,7 @@
     <data>
 
         <!-- Inherit User Form View -->
-        <record id="view_users_form_inherit_commission" model="ir.ui.view">
-            <field name="name">res.users.form.inherit.commission</field>
-            <field name="model">res.users</field>
-            <field name="inherit_id" ref="base.view_users_form"/>
-            <field name="arch" type="xml">
-                <!-- Add commission fields in Preferences notebook -->
-                <xpath expr="//page[@name='preferences']" position="after">
-                    <page string="Commissions" name="commission_info" groups="belgogreen_sales_commission.group_commission_user">
-                        <group string="Commission Statistics">
-                            <group string="My Commissions">
-                                <field name="commission_count"/>
-                                <field name="active_commission_count" readonly="1"/>
-                                <field name="commission_unpaid_total"/>
-                                <field name="commission_paid_total"/>
-                            </group>
-                        </group>
-                        <group string="Commission Plan Assignments">
-                            <field name="commission_plan_assignments" nolabel="1" readonly="1">
-                                <list>
-                                    <field name="plan_id" string="Plan"/>
-                                    <field name="role_id" string="Role"/>
-                                    <field name="manager_id" string="Manager"/>
-                                </list>
-                            </field>
-                            <div class="alert alert-info" role="alert">
-                                <strong>Note:</strong> Users are assigned to commission plans with specific roles.
-                                Each plan can have its own hierarchy. Manage assignments from the Commission Plan form.
-                            </div>
-                        </group>
-                        <div class="oe_button_box" name="button_box">
-                            <button name="action_view_my_commissions"
-                                    type="object"
-                                    class="oe_stat_button"
-                                    icon="fa-money"
-                                    invisible="commission_count == 0">
-                                <field name="commission_count" widget="statinfo" string="My Commissions"/>
-                            </button>
-                            <button name="action_view_commission_plans"
-                                    type="object"
-                                    class="oe_stat_button"
-                                    icon="fa-sitemap"
-                                    groups="belgogreen_sales_commission.group_commission_manager">
-                                <div class="o_field_widget o_stat_info">
-                                    <span class="o_stat_text">Commission Plans</span>
-                                </div>
-                            </button>
-                        </div>
-                    </page>
-                </xpath>
-            </field>
-        </record>
+        <!-- Commissions tab removed as per user request -->
 
     </data>
 </odoo>
