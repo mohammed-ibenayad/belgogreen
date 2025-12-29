@@ -76,7 +76,8 @@
                                     type="object"
                                     class="oe_stat_button"
                                     icon="fa-credit-card"
-                                    invisible="not purchase_order_id">
+                                    invisible="not purchase_order_id"
+                                    groups="belgogreen_sales_commission.group_commission_manager">
                                 <div class="o_field_widget o_stat_info">
                                     <span class="o_stat_text">Bon de</span>
                                     <span class="o_stat_text">commande</span>
@@ -86,7 +87,8 @@
                                     type="object"
                                     class="oe_stat_button"
                                     icon="fa-file-text-o"
-                                    invisible="not po_bill_id">
+                                    invisible="not po_bill_id"
+                                    groups="belgogreen_sales_commission.group_commission_manager">
                                 <div class="o_field_widget o_stat_info">
                                     <span class="o_stat_text">Facture</span>
                                     <span class="o_stat_text">commission</span>
@@ -107,7 +109,7 @@
                                 <field name="period" readonly="1"/>
                             </group>
                             <group string="Calculation" name="calculation">
-                                <field name="plan_id" readonly="1"/>
+                                <field name="plan_id" readonly="1" groups="belgogreen_sales_commission.group_commission_manager" options="{'no_open': True}"/>
                                 <field name="base_amount" readonly="1"/>
                                 <field name="percentage_override" groups="belgogreen_sales_commission.group_commission_manager" readonly="status in ['processing', 'paid']"/>
                                 <field name="commission_percentage" readonly="1"/>

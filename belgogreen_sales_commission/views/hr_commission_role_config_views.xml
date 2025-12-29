@@ -9,7 +9,7 @@
             <field name="arch" type="xml">
                 <list string="Role Configurations" editable="bottom">
                     <field name="plan_id" string="Plan" width="200px"/>
-                    <field name="role_id" string="Role" width="150px"
+                    <field name="role_id" string="Rôle" width="150px"
                            options="{'no_create': True}"/>
                     <field name="direct_sale_percentage" string="Direct Sale %" width="100px"/>
                     <field name="override_percentage" string="Comm. Supervision %" width="100px"/>

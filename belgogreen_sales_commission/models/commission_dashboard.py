@@ -327,9 +327,9 @@ class CommissionDashboard(models.TransientModel):
             unpaid_commissions = recent_commissions.filtered(lambda c: c.status == 'unpaid')
             claimable_amount = sum(unpaid_commissions.mapped('commission_amount'))
 
-        message = f'{total_commissions_created} commission(s) created for {user.name}'
+        message = f'{total_commissions_created} commission(s) créée(s) pour {user.name}'
         if plans_processed:
-            message += f' across {len(plans_processed)} plan(s) ({", ".join(plans_processed)})'
+            message += f' sur {len(plans_processed)} plan(s) ({", ".join(plans_processed)})'
 
         return {
             'count': total_commissions_created,
