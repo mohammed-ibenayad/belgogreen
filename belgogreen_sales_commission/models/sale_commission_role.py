@@ -155,7 +155,7 @@ class SaleCommissionRole(models.Model):
             'name': _('Plan Assignments - %s') % self.name,
             'type': 'ir.actions.act_window',
             'res_model': 'sale.commission.plan.user',
-            'view_mode': 'tree',
+            'view_mode': 'list,form',
             'domain': [('role_id', '=', self.id)],
             'context': {'default_role_id': self.id}
         }
