@@ -29,7 +29,8 @@
                 <form string="Commission Claim">
                     <header>
                         <button name="action_submit" string="Submit Claim" type="object" class="oe_highlight"
-                                invisible="state != 'draft'"/>
+                                invisible="state != 'draft' or user_id != uid"
+                                groups="belgogreen_sales_commission.group_commission_user_only"/>
                         <button name="action_approve" string="Approve &amp; Create PO" type="object" class="oe_highlight"
                                 invisible="state != 'pending'"
                                 groups="belgogreen_sales_commission.group_commission_manager"/>
@@ -41,7 +42,8 @@
                                 groups="belgogreen_sales_commission.group_commission_manager"
                                 confirm="Are you sure you want to reject this claim?"/>
                         <button name="unlink" string="Delete" type="object"
-                                invisible="state != 'draft'"
+                                invisible="state != 'draft' or user_id != uid"
+                                groups="belgogreen_sales_commission.group_commission_user_only"
                                 confirm="Are you sure you want to delete this draft claim?"/>
                         <field name="state" widget="statusbar" statusbar_visible="draft,pending,approved,rejected"/>
                     </header>
