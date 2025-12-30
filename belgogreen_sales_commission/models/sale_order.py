@@ -328,6 +328,10 @@ class SaleOrder(models.Model):
         Can be called from sale order list view
         Returns detailed feedback about processed orders
         """
+        # Check if user has commission manager rights
+        if not self.env.user.has_group('belgogreen_sales_commission.group_commission_manager'):
+            raise UserError(_('Only Commission Managers can generate commissions.'))
+
         if not self:
             raise UserError(_('Please select at least one sale order.'))
 
