@@ -42,21 +42,40 @@ class PurchaseOrder(models.Model):
             po.commission_claim_id = po.claim_ids[0] if po.claim_ids else False
 
     def write(self, vals):
-        """Prevent editing commission PO lines"""
+        """Warn about editing commission PO lines, but allow deletion of deduction lines"""
         for po in self:
-            if po.claim_ids and po.state == 'draft':
-                # Prevent editing PO lines for commission payments
-                if 'order_line' in vals:
-                    raise UserError(_(
-                        'Cannot modify purchase order lines for commission payments.\n\n'
-                        'This PO is generated from commission claims and contains:\n'
-                        '- Gross commission amounts\n'
-                        '- Deduction lines\n\n'
-                        'If you need to make changes:\n'
-                        '1. Cancel this PO\n'
-                        '2. Adjust the claim deductions\n'
-                        '3. Recreate the claim approval'
-                    ))
+            if po.claim_ids and po.state == 'draft' and 'order_line' in vals:
+                # Check if this is a deletion of lines (which is allowed for deductions)
+                is_deletion = False
+                for line_op in vals.get('order_line', []):
+                    if isinstance(line_op, (list, tuple)) and len(line_op) > 0:
+                        # Check for delete operations (2, id, 0) or (3, id)
+                        if line_op[0] in (2, 3):
+                            is_deletion = True
+                        # Check for create/update operations (0, 0, dict) or (1, id, dict)
+                        elif line_op[0] in (0, 1):
+                            # Get the commission deduction product
+                            deduction_product = self.env.ref('belgogreen_sales_commission.product_commission_deduction', raise_if_not_found=False)
+                            # Allow if this is modifying a deduction line (will be caught by unlink if deleting)
+                            # Otherwise, raise error for other modifications
+                            if line_op[0] == 1:  # Update operation
+                                line = self.env['purchase.order.line'].browse(line_op[1])
+                                if line.product_id != deduction_product:
+                                    raise UserError(_(
+                                        'Cannot modify commission payment lines.\n\n'
+                                        'You can only remove deduction lines. To modify commission amounts:\n'
+                                        '1. Cancel this PO\n'
+                                        '2. Adjust the claim deductions\n'
+                                        '3. Recreate the claim approval'
+                                    ))
+                            elif line_op[0] == 0:  # Create operation
+                                raise UserError(_(
+                                    'Cannot add new lines to commission payment POs.\n\n'
+                                    'To modify:\n'
+                                    '1. Cancel this PO\n'
+                                    '2. Adjust the claim deductions\n'
+                                    '3. Recreate the claim approval'
+                                ))
         return super(PurchaseOrder, self).write(vals)
 
     def button_confirm(self):
@@ -143,3 +162,49 @@ class PurchaseOrder(models.Model):
                     )
 
         return res
+
+
+class PurchaseOrderLine(models.Model):
+    _inherit = 'purchase.order.line'
+
+    def unlink(self):
+        """Override to reset deductions to pending when deduction lines are removed from PO"""
+        # Get the commission deduction product
+        deduction_product = self.env.ref('belgogreen_sales_commission.product_commission_deduction', raise_if_not_found=False)
+
+        if deduction_product:
+            # Find deduction lines being deleted
+            deduction_lines = self.filtered(lambda line: line.product_id == deduction_product)
+
+            for line in deduction_lines:
+                # Find the corresponding deduction by searching for deductions linked to this PO
+                # and matching the amount (negative in PO line)
+                deductions = self.env['commission.deduction'].search([
+                    ('purchase_order_id', '=', line.order_id.id),
+                    ('amount', '=', -line.price_unit),  # Deduction amount is negative in PO
+                    ('state', '=', 'applied')
+                ])
+
+                # If multiple matches, try to match by name in the line description
+                if len(deductions) > 1:
+                    for deduction in deductions:
+                        if deduction.name in line.name:
+                            deductions = deduction
+                            break
+
+                # Reset deduction(s) to pending
+                if deductions:
+                    deductions.write({
+                        'state': 'pending',
+                        'claim_id': False,
+                        'purchase_order_id': False
+                    })
+
+                    # Log message
+                    for deduction in deductions:
+                        deduction.message_post(
+                            body=_('Deduction removed from Purchase Order %s. Status reset to pending.') % line.order_id.name,
+                            subject=_('Deduction Removed from PO'),
+                        )
+
+        return super(PurchaseOrderLine, self).unlink()

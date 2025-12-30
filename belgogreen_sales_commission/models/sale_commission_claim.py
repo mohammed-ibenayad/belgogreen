@@ -291,6 +291,7 @@ class SaleCommissionClaim(models.Model):
         """Approve claim(s) and create draft PO
 
         Supports both single claim and batch claims (multiple claims from same employee)
+        Includes any mandatory deductions added after claim submission.
         """
         # Validate all claims are in pending state
         if any(claim.state != 'pending' for claim in self):
@@ -299,6 +300,30 @@ class SaleCommissionClaim(models.Model):
         # Validate no existing POs
         if any(claim.purchase_order_id for claim in self):
             raise UserError(_('Some claims already have purchase orders.'))
+
+        # Get the user (all claims should be from same user)
+        user = self.mapped('user_id')
+        if len(user) > 1:
+            raise UserError(_('All claims must be from the same user.'))
+        user = user[0]
+
+        # Check for any NEW mandatory deductions added after claim submission
+        # These are pending mandatory deductions not yet linked to any claim
+        new_mandatory_deductions = self.env['commission.deduction'].search([
+            ('user_id', '=', user.id),
+            ('state', '=', 'pending'),
+            ('deduction_category', '=', 'mandatory'),
+            ('claim_id', '=', False)  # Not yet linked to any claim
+        ])
+
+        # Add new mandatory deductions to all claims
+        if new_mandatory_deductions:
+            for claim in self:
+                # Link new deductions to this claim's all_deduction_ids
+                # Note: We modify all_deduction_ids through mandatory_deduction_ids
+                claim.write({
+                    'mandatory_deduction_ids': [(4, deduction.id) for deduction in new_mandatory_deductions]
+                })
 
         # Ensure user is set up as vendor (use first claim's user, already validated same user in _create_purchase_order)
         vendor = self[0]._ensure_user_as_vendor()
