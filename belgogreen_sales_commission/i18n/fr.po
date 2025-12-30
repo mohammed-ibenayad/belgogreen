@@ -3135,3 +3135,74 @@ msgstr "Achat"
 msgid "Bill"
 msgstr "Facture"
 
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_order.py:0
+#, python-format
+msgid "Only Commission Managers can generate commissions."
+msgstr "Seuls les gestionnaires de commissions peuvent générer des commissions."
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_order.py:0
+#, python-format
+msgid "Please select at least one sale order."
+msgstr "Veuillez sélectionner au moins une commande de vente."
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_order.py:0
+#, python-format
+msgid "%s commission(s) created successfully!"
+msgstr "%s commission(s) créée(s) avec succès !"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_order.py:0
+#, python-format
+msgid "No new commissions created."
+msgstr "Aucune nouvelle commission créée."
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_order.py:0
+#, python-format
+msgid "\nOrders selected: %s"
+msgstr "\nCommandes sélectionnées : %s"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_order.py:0
+#, python-format
+msgid "Orders processed: %s"
+msgstr "Commandes traitées : %s"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_order.py:0
+#, python-format
+msgid "Orders skipped: %s"
+msgstr "Commandes ignorées : %s"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_order.py:0
+#, python-format
+msgid "Orders with errors: %s"
+msgstr "Commandes avec erreurs : %s"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_order.py:0
+#, python-format
+msgid "Commission Generation - With Errors"
+msgstr "Génération de Commissions - Avec Erreurs"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_order.py:0
+#, python-format
+msgid "Commission Generation - Success"
+msgstr "Génération de Commissions - Succès"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_order.py:0
+#, python-format
+msgid "Commission Generation - No New Commissions"
+msgstr "Génération de Commissions - Aucune Nouvelle Commission"
+
+#. module: belgogreen_sales_commission
+#: model:ir.actions.server,name:belgogreen_sales_commission.action_server_generate_commissions_bulk
+msgid "Generate Commissions"
+msgstr "Générer les Commissions"
+
