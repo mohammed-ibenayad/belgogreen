@@ -364,36 +364,26 @@ class SaleOrder(models.Model):
                 })
                 _logger.error("Error generating commissions for order %s: %s", order.name, str(e))
 
-        # Build detailed feedback message
+        # Build simple feedback message
         message_parts = []
 
-        if orders_processed:
-            message_parts.append(_('<strong>✓ Successfully processed %s order(s):</strong>') % len(orders_processed))
-            for order_data in orders_processed:
-                message_parts.append(_('  • %s: %s commission(s) created') % (order_data['name'], order_data['commissions']))
+        # Main summary line
+        if total_commissions_created > 0:
+            message_parts.append(_('%s commission(s) created successfully!') % total_commissions_created)
+        else:
+            message_parts.append(_('No new commissions created.'))
+
+        # Brief stats
+        message_parts.append(_('\nOrders selected: %s') % len(self))
+        message_parts.append(_('Orders processed: %s') % len(orders_processed))
 
         if orders_skipped:
-            message_parts.append(_('<br/><strong>⊘ Skipped %s order(s):</strong>') % len(orders_skipped))
-            for order_data in orders_skipped[:5]:  # Limit to first 5 to avoid too long message
-                message_parts.append(_('  • %s: %s') % (order_data['name'], order_data['reason']))
-            if len(orders_skipped) > 5:
-                message_parts.append(_('  • ... and %s more') % (len(orders_skipped) - 5))
+            message_parts.append(_('Orders skipped: %s') % len(orders_skipped))
 
         if orders_with_errors:
-            message_parts.append(_('<br/><strong>✗ Errors in %s order(s):</strong>') % len(orders_with_errors))
-            for order_data in orders_with_errors:
-                message_parts.append(_('  • %s: %s') % (order_data['name'], order_data['error']))
+            message_parts.append(_('Orders with errors: %s') % len(orders_with_errors))
 
-        # Summary
-        summary = _('<h4>Commission Generation Summary</h4>')
-        summary += _('<p><strong>Total commissions created:</strong> %s</p>') % total_commissions_created
-        summary += _('<p><strong>Orders selected:</strong> %s</p>') % len(self)
-        summary += _('<p><strong>Orders processed:</strong> %s</p>') % len(orders_processed)
-        summary += _('<p><strong>Orders skipped:</strong> %s</p>') % len(orders_skipped)
-        if orders_with_errors:
-            summary += _('<p><strong>Orders with errors:</strong> %s</p>') % len(orders_with_errors)
-
-        message = summary + '<br/>' + '<br/>'.join(message_parts)
+        message = '\n'.join(message_parts)
 
         # Determine notification type
         if orders_with_errors:
@@ -413,7 +403,7 @@ class SaleOrder(models.Model):
                 'title': title,
                 'message': message,
                 'type': message_type,
-                'sticky': True,  # Keep visible so user can read the details
+                'sticky': False,
             }
         }
 
