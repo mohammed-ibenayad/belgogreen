@@ -42,15 +42,6 @@ class CommissionClaimWizard(models.TransientModel):
     def default_get(self, fields_list):
         res = super(CommissionClaimWizard, self).default_get(fields_list)
 
-        # Prevent commission managers from using the wizard
-        # Managers should use "Create Purchase Order" directly, not create claims
-        if self.env.user.has_group('belgogreen_sales_commission.group_commission_manager'):
-            raise UserError(_(
-                'Commission Managers cannot create claims.\n\n'
-                'As a manager, please use the "Create Purchase Order" action to pay commissions directly.\n'
-                'The claim process is only for commission users to request payment.'
-            ))
-
         # Get selected commission IDs from context
         commission_ids = self.env.context.get('active_ids', [])
 
@@ -70,7 +61,7 @@ class CommissionClaimWizard(models.TransientModel):
                 'Please remove the following commissions:\n%s'
             ) % '\n'.join(invalid_commissions.mapped('name')))
 
-        # Check if user is claiming their own commissions (managers are blocked earlier)
+        # Check if user is claiming their own commissions
         user_commissions = commissions.filtered(lambda c: c.user_id.id != self.env.uid)
         if user_commissions:
             raise UserError(_('You can only claim your own commissions.'))
