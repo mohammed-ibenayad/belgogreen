@@ -512,7 +512,7 @@ class SaleCommission(models.Model):
         """
         Create draft purchase order for commission payment (without claim)
         This is used when managers create POs directly without requiring user claims.
-        No deductions are applied since there's no claim.
+        Includes mandatory deductions for the user.
         """
         # Get commission service product
         product = self.env.ref('belgogreen_sales_commission.product_commission_service', raise_if_not_found=False)
@@ -522,8 +522,27 @@ class SaleCommission(models.Model):
                 'Please contact your administrator to configure the commission service product.'
             ))
 
+        # Get commission deduction product (with 0% VAT)
+        deduction_product = self.env.ref('belgogreen_sales_commission.product_commission_deduction', raise_if_not_found=False)
+        if not deduction_product:
+            raise UserError(_(
+                'Commission deduction product not found. '
+                'Please contact your administrator to configure the commission deduction product.'
+            ))
+
+        # Get the user (all commissions belong to same user, validated earlier)
+        user = self.mapped('user_id')[0]
+
+        # Fetch all pending mandatory deductions for this user
+        mandatory_deductions = self.env['commission.deduction'].search([
+            ('user_id', '=', user.id),
+            ('state', '=', 'pending'),
+            ('deduction_category', '=', 'mandatory')
+        ])
+
         # Calculate total commission amount
         total_amount = sum(self.mapped('commission_amount'))
+        total_deductions = sum(mandatory_deductions.mapped('amount'))
 
         # Create PO
         po_vals = {
@@ -550,6 +569,33 @@ class SaleCommission(models.Model):
             'product_qty': 1,
             'price_unit': total_amount,
             'date_planned': fields.Date.today(),
+        })
+
+        # Create negative PO lines for each mandatory deduction
+        for deduction in mandatory_deductions:
+            # Get human-readable deduction type name
+            deduction_type_name = dict(deduction._fields['deduction_type'].selection).get(
+                deduction.deduction_type,
+                deduction.deduction_type
+            )
+
+            deduction_line_name = _('Deduction: %s - %s') % (deduction_type_name, deduction.name)
+
+            self.env['purchase.order.line'].create({
+                'order_id': po.id,
+                'product_id': deduction_product.id,  # Use deduction product with 0% VAT
+                'name': deduction_line_name,
+                'product_qty': 1,
+                'price_unit': -deduction.amount,
+                'date_planned': fields.Date.today(),
+            })
+
+        # Mark deductions as applied and link to PO
+        # Note: claim_id is False since this is direct PO creation without claim
+        mandatory_deductions.write({
+            'state': 'applied',
+            'purchase_order_id': po.id,
+            'claim_id': False,
         })
 
         return po
