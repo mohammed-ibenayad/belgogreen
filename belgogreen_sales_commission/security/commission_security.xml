@@ -10,8 +10,7 @@
 
         <record id="group_commission_user_only" model="res.groups">
             <field name="name">Commission User (Claim Creator)</field>
-            <field name="implied_ids" eval="[(4, ref('group_commission_user'))]"/>
-            <field name="comment">Commission users who can create claims (excludes managers)</field>
+            <field name="comment">Commission users who can create claims (excludes managers) - standalone group</field>
         </record>
 
         <record id="group_commission_manager" model="res.groups">
