@@ -10,7 +10,7 @@
                 <list string="Commission Deductions"
                       decoration-success="state == 'applied'"
                       decoration-warning="state == 'pending'"
-                      decoration-muted="state in ['waived', 'cancelled']">
+                      decoration-muted="state == 'cancelled'">
                     <field name="name" string="Reference" width="120px"/>
                     <field name="user_id" string="Salesperson" width="150px"/>
                     <field name="deduction_type" string="Type" width="140px"/>
@@ -38,19 +38,8 @@
             <field name="arch" type="xml">
                 <form string="Commission Deduction">
                     <header>
-                        <button name="action_waive"
-                                string="Annuler"
-                                type="object"
-                                invisible="state != 'pending'"
-                                groups="belgogreen_sales_commission.group_commission_manager"
-                                confirm="Are you sure you want to waive this deduction?"/>
-                        <button name="action_set_to_pending"
-                                string="Reset to Pending"
-                                type="object"
-                                invisible="state != 'waived'"
-                                groups="belgogreen_sales_commission.group_commission_manager"/>
                         <button name="action_cancel"
-                                string="Cancel"
+                                string="Annuler"
                                 type="object"
                                 invisible="state in ['applied', 'cancelled']"
                                 groups="belgogreen_sales_commission.group_commission_manager"
@@ -82,13 +71,6 @@
                             <field name="description" nolabel="1" placeholder="Enter deduction details..." widget="text" options="{'rows': 4}"/>
                         </group>
 
-                        <!-- Waiver Information -->
-                        <group string="Waiver Information" invisible="state != 'waived'">
-                            <field name="waived_by" readonly="1"/>
-                            <field name="waive_date" readonly="1"/>
-                            <field name="waive_reason" readonly="1" nolabel="1"/>
-                        </group>
-
                         <!-- Application Information -->
                         <group string="Application" invisible="state != 'applied'">
                             <field name="claim_id" readonly="1"/>
@@ -116,7 +98,7 @@
                     <separator/>
                     <filter string="Pending" name="pending" domain="[('state', '=', 'pending')]"/>
                     <filter string="Applied" name="applied" domain="[('state', '=', 'applied')]"/>
-                    <filter string="Waived" name="waived" domain="[('state', '=', 'waived')]"/>
+                    <filter string="Cancelled" name="cancelled" domain="[('state', '=', 'cancelled')]"/>
                     <separator/>
                     <filter string="Mandatory" name="mandatory" domain="[('deduction_category', '=', 'mandatory')]"/>
                     <filter string="Optional" name="optional" domain="[('deduction_category', '=', 'optional')]"/>
