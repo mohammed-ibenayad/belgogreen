@@ -67,9 +67,8 @@
                             </group>
                         </group>
 
-                        <group string="Description">
-                            <field name="description" nolabel="1" placeholder="Enter deduction details..." widget="text" options="{'rows': 8}"/>
-                        </group>
+                        <separator string="Description"/>
+                        <field name="description" nolabel="1" placeholder="Enter deduction details..." widget="text" options="{'rows': 8}"/>
 
                         <!-- Application Information -->
                         <group string="Application" invisible="state != 'applied'">
