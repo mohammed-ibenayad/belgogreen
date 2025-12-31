@@ -14,7 +14,7 @@
                     <field name="role_sequence" string="Level" readonly="1"/>
                     <field name="manager_id" string="Manager"/>
                     <field name="direct_sale_percentage_display" string="Direct Sale %" readonly="1"/>
-                    <field name="override_percentage_display" string="Comm. Supervision %" readonly="1"/>
+                    <field name="override_percentage_display" string="Supervision %" readonly="1"/>
                     <field name="date_from" string="From Date" optional="show"/>
                     <field name="date_to" string="To Date" optional="show"/>
                     <field name="company_id" invisible="1"/>
@@ -46,7 +46,7 @@
                         <group string="Commission Percentages (from role configuration)">
                             <group>
                                 <field name="direct_sale_percentage_display" string="Direct Sale %" readonly="1"/>
-                                <field name="override_percentage_display" string="Comm. Supervision %" readonly="1"/>
+                                <field name="override_percentage_display" string="Supervision %" readonly="1"/>
                             </group>
                         </group>
                     </sheet>

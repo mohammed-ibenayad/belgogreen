@@ -70,7 +70,7 @@ class SaleCommissionPlanUser(models.Model):
     )
 
     override_percentage_display = fields.Char(
-        string='Comm. Supervision %',
+        string='Supervision %',
         compute='_compute_percentage_display',
         store=False,
         help='Commission percentage when this user receives commission on subordinate\'s sale'
