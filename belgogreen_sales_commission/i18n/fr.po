@@ -2265,7 +2265,7 @@ msgstr "Montant après toutes les déductions"
 #. module: belgogreen_sales_commission
 #: model_terms:ir.ui.view,arch_db:belgogreen_sales_commission.view_commission_deduction_form
 msgid "Waive"
-msgstr "Exonérer"
+msgstr "Annuler"
 
 #. module: belgogreen_sales_commission
 #: model_terms:ir.ui.view,arch_db:belgogreen_sales_commission.view_commission_deduction_form
