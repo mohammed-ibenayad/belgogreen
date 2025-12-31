@@ -121,7 +121,7 @@
                                 <field name="role_sequence" string="Niveau" readonly="1"/>
                                 <field name="manager_id" string="Manager"/>
                                 <field name="direct_sale_percentage_display" string="Vente Directe %" readonly="1" optional="show"/>
-                                <field name="override_percentage_display" string="Comm. Supervision %" readonly="1" optional="show"/>
+                                <field name="override_percentage_display" string="Supervision %" readonly="1" optional="show"/>
                                 <field name="date_from" string="Date Début" optional="show"/>
                                 <field name="date_to" string="Date Fin" optional="show"/>
                                 <field name="company_id" column_invisible="1"/>

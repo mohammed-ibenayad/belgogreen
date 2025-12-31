@@ -63,7 +63,7 @@ class CommissionClaimWizard(models.TransientModel):
 
         # Check if user is claiming their own commissions
         user_commissions = commissions.filtered(lambda c: c.user_id.id != self.env.uid)
-        if user_commissions and not self.env.user.has_group('belgogreen_sales_commission.group_commission_manager'):
+        if user_commissions:
             raise UserError(_('You can only claim your own commissions.'))
 
         res['commission_ids'] = [(6, 0, commission_ids)]

@@ -322,6 +322,91 @@ class SaleOrder(models.Model):
             'context': {'default_sale_order_id': self.id}
         }
 
+    def action_generate_commissions_bulk(self):
+        """
+        Bulk action to generate commissions for multiple selected sale orders
+        Can be called from sale order list view
+        Returns detailed feedback about processed orders
+        """
+        # Check if user has commission manager rights
+        if not self.env.user.has_group('belgogreen_sales_commission.group_commission_manager'):
+            raise UserError(_('Only Commission Managers can generate commissions.'))
+
+        if not self:
+            raise UserError(_('Please select at least one sale order.'))
+
+        # Track results
+        total_commissions_created = 0
+        orders_processed = []
+        orders_skipped = []
+        orders_with_errors = []
+
+        for order in self:
+            try:
+                result = order._generate_commissions()
+
+                if result['success']:
+                    orders_processed.append({
+                        'name': order.name,
+                        'commissions': result['commissions_created']
+                    })
+                    total_commissions_created += result['commissions_created']
+                else:
+                    orders_skipped.append({
+                        'name': order.name,
+                        'reason': result['message']
+                    })
+
+            except Exception as e:
+                orders_with_errors.append({
+                    'name': order.name,
+                    'error': str(e)
+                })
+                _logger.error("Error generating commissions for order %s: %s", order.name, str(e))
+
+        # Build simple feedback message
+        message_parts = []
+
+        # Main summary line
+        if total_commissions_created > 0:
+            message_parts.append(_('%s commission(s) created successfully!') % total_commissions_created)
+        else:
+            message_parts.append(_('No new commissions created.'))
+
+        # Brief stats
+        message_parts.append(_('\nOrders selected: %s') % len(self))
+        message_parts.append(_('Orders processed: %s') % len(orders_processed))
+
+        if orders_skipped:
+            message_parts.append(_('Orders skipped: %s') % len(orders_skipped))
+
+        if orders_with_errors:
+            message_parts.append(_('Orders with errors: %s') % len(orders_with_errors))
+
+        message = '\n'.join(message_parts)
+
+        # Determine notification type
+        if orders_with_errors:
+            message_type = 'warning'
+            title = _('Commission Generation - With Errors')
+        elif total_commissions_created > 0:
+            message_type = 'success'
+            title = _('Commission Generation - Success')
+        else:
+            message_type = 'info'
+            title = _('Commission Generation - No New Commissions')
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': title,
+                'message': message,
+                'type': message_type,
+                'sticky': False,
+            }
+        }
+
     @api.model
     def cron_generate_commissions(self):
         """

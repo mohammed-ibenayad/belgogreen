@@ -59,6 +59,7 @@
         <field name="target">new</field>
         <field name="binding_model_id" ref="model_sale_commission"/>
         <field name="binding_view_types">list</field>
+        <field name="group_ids" eval="[(4, ref('belgogreen_sales_commission.group_commission_user_only'))]"/>
     </record>
 
 </odoo>
