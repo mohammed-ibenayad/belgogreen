@@ -39,7 +39,7 @@
                 <form string="Commission Deduction">
                     <header>
                         <button name="action_waive"
-                                string="Waive"
+                                string="Annuler"
                                 type="object"
                                 invisible="state != 'pending'"
                                 groups="belgogreen_sales_commission.group_commission_manager"
@@ -79,7 +79,7 @@
                         </group>
 
                         <group string="Description">
-                            <field name="description" nolabel="1" placeholder="Enter deduction details..."/>
+                            <field name="description" nolabel="1" placeholder="Enter deduction details..." widget="text" options="{'rows': 4}"/>
                         </group>
 
                         <!-- Waiver Information -->
