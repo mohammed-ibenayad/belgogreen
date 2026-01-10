@@ -28,10 +28,8 @@ class CommissionManualWizard(models.TransientModel):
     role_id = fields.Many2one(
         'sale.commission.role',
         string='Role',
-        compute='_compute_role_id',
-        store=True,
-        readonly=True,
-        help='Auto-detected role of the commission beneficiary'
+        required=True,
+        help='The commission role for this user (Salesperson, Team Leader, Director, etc.)'
     )
 
     commission_type = fields.Selection([
@@ -83,16 +81,6 @@ class CommissionManualWizard(models.TransientModel):
         for wizard in self:
             wizard.sale_order_count = len(wizard.sale_order_ids)
 
-    @api.depends('user_id')
-    def _compute_role_id(self):
-        """Auto-detect role from user's commission role"""
-        for wizard in self:
-            if wizard.user_id:
-                # Find user's commission role (from res.users extension)
-                wizard.role_id = wizard.user_id.commission_role_id
-            else:
-                wizard.role_id = False
-
     @api.constrains('manual_amount')
     def _check_manual_amount(self):
         """Ensure manual amount is positive"""
@@ -119,13 +107,6 @@ class CommissionManualWizard(models.TransientModel):
                 'All sale orders must be confirmed (Sale or Done status).\n\n'
                 'Invalid orders:\n%s'
             ) % '\n'.join([f'- {o.name}: {o.state}' for o in invalid_orders]))
-
-        # Validate role was detected
-        if not self.role_id:
-            raise UserError(_(
-                'Cannot determine commission role for user %s.\n'
-                'Please ensure the user has a commission role assigned in their user settings.'
-            ) % self.user_id.name)
 
         # Prepare commission values
         commission_vals = {

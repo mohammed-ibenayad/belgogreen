@@ -11,6 +11,7 @@
                     <group>
                         <group string="Bénéficiaire">
                             <field name="user_id" string="Utilisateur" options="{'no_create': True, 'no_open': True}"/>
+                            <field name="role_id" string="Rôle" options="{'no_create': True, 'no_open': True}"/>
                         </group>
                         <group string="Montant">
                             <field name="currency_id" invisible="1"/>
@@ -19,16 +20,16 @@
                         </group>
                     </group>
 
-                    <group string="Commandes de Vente Liées">
+                    <group string="Commandes de Vente Liées" col="1">
                         <field name="sale_order_count" invisible="1"/>
-                        <field name="sale_order_ids" string="Commandes de Vente" nolabel="1" widget="many2many" options="{'no_create': True}"/>
                         <div class="text-muted" invisible="sale_order_count == 0">
                             <field name="sale_order_count"/> commande(s) sélectionnée(s)
                         </div>
+                        <field name="sale_order_ids" string="Commandes de Vente" nolabel="1" widget="many2many" options="{'no_create': True}"/>
                     </group>
 
-                    <group string="Raison / Notes">
-                        <field name="description" string="Description" nolabel="1" placeholder="Entrez la raison de la création de cette commission..." rows="6"/>
+                    <group string="Raison / Notes" col="1">
+                        <field name="description" string="Description" nolabel="1" placeholder="Entrez la raison de la création de cette commission..." rows="8"/>
                     </group>
 
                     <group>
