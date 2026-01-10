@@ -124,6 +124,13 @@
                             </group>
                             <group string="References" name="references">
                                 <field name="customer_id" readonly="1"/>
+                                <field name="linked_sale_order_ids" invisible="1"/>
+                                <field name="sale_order_id" string="Sale Order" readonly="1"
+                                       invisible="linked_sale_order_ids"
+                                       options="{'no_open': True}"/>
+                                <field name="linked_sale_order_ids" string="Linked Sale Orders" readonly="1"
+                                       invisible="not linked_sale_order_ids"
+                                       widget="many2many_tags"/>
                             </group>
                         </group>
                     </sheet>
