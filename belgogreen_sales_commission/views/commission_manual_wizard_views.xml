@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Manual Commission Wizard Form View -->
+        <record id="view_commission_manual_wizard_form" model="ir.ui.view">
+            <field name="name">commission.manual.wizard.form</field>
+            <field name="model">commission.manual.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Create Manual Commission">
+                    <group>
+                        <group string="Commission Beneficiary">
+                            <field name="user_id" options="{'no_create': True, 'no_open': True}"/>
+                            <field name="role_id" options="{'no_create': True, 'no_open': True}"/>
+                            <field name="commission_type"/>
+                        </group>
+                        <group string="Amount">
+                            <field name="currency_id" invisible="1"/>
+                            <field name="manual_amount" widget="monetary"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+
+                    <group string="Linked Sale Orders">
+                        <field name="sale_order_count" invisible="1"/>
+                        <field name="sale_order_ids" nolabel="1" widget="many2many_tags">
+                            <tree>
+                                <field name="name"/>
+                                <field name="partner_id"/>
+                                <field name="date_order"/>
+                                <field name="amount_total"/>
+                                <field name="state"/>
+                            </tree>
+                        </field>
+                        <div class="text-muted" invisible="sale_order_count == 0">
+                            <field name="sale_order_count"/> sale order(s) selected
+                        </div>
+                    </group>
+
+                    <group string="Reason">
+                        <field name="description" nolabel="1" placeholder="Enter the reason for creating this manual commission..."/>
+                    </group>
+
+                    <group>
+                        <field name="create_po_immediately"
+                               string="Create Purchase Order Immediately"
+                               help="If checked, a purchase order will be created right after the commission is saved"/>
+                    </group>
+
+                    <footer>
+                        <button string="Create Commission" name="action_create_commission" type="object" class="btn-primary"/>
+                        <button string="Cancel" name="action_cancel" type="object" class="btn-secondary"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <!-- Action to open the wizard -->
+        <record id="action_commission_manual_wizard" model="ir.actions.act_window">
+            <field name="name">Create Manual Commission</field>
+            <field name="res_model">commission.manual.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+            <field name="binding_model_id" ref="model_sale_commission"/>
+            <field name="binding_view_types">form,list</field>
+        </record>
+
+        <!-- Menu item for Manual Commission Creation (Manager only) -->
+        <menuitem
+            id="menu_commission_manual_create"
+            name="Create Manual Commission"
+            parent="belgogreen_sales_commission.menu_commission_root"
+            action="action_commission_manual_wizard"
+            sequence="15"
+            groups="belgogreen_sales_commission.group_commission_manager"/>
+
+    </data>
+</odoo>
