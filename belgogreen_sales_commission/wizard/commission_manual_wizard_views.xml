@@ -21,15 +21,7 @@
 
                     <group string="Commandes de Vente Liées">
                         <field name="sale_order_count" invisible="1"/>
-                        <field name="sale_order_ids" string="Commandes de Vente" nolabel="1" widget="many2many" options="{'no_create': True}">
-                            <tree>
-                                <field name="name"/>
-                                <field name="partner_id"/>
-                                <field name="date_order"/>
-                                <field name="amount_total"/>
-                                <field name="state"/>
-                            </tree>
-                        </field>
+                        <field name="sale_order_ids" string="Commandes de Vente" nolabel="1" widget="many2many" options="{'no_create': True}"/>
                         <div class="text-muted" invisible="sale_order_count == 0">
                             <field name="sale_order_count"/> commande(s) sélectionnée(s)
                         </div>
