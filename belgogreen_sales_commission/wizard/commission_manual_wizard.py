@@ -28,8 +28,10 @@ class CommissionManualWizard(models.TransientModel):
     role_id = fields.Many2one(
         'sale.commission.role',
         string='Role',
-        required=True,
-        help='The role of the commission beneficiary'
+        compute='_compute_role_id',
+        store=True,
+        readonly=True,
+        help='Auto-detected role of the commission beneficiary'
     )
 
     commission_type = fields.Selection([
@@ -81,6 +83,16 @@ class CommissionManualWizard(models.TransientModel):
         for wizard in self:
             wizard.sale_order_count = len(wizard.sale_order_ids)
 
+    @api.depends('user_id')
+    def _compute_role_id(self):
+        """Auto-detect role from user's commission role"""
+        for wizard in self:
+            if wizard.user_id:
+                # Find user's commission role (from res.users extension)
+                wizard.role_id = wizard.user_id.commission_role_id
+            else:
+                wizard.role_id = False
+
     @api.constrains('manual_amount')
     def _check_manual_amount(self):
         """Ensure manual amount is positive"""
@@ -108,20 +120,19 @@ class CommissionManualWizard(models.TransientModel):
                 'Invalid orders:\n%s'
             ) % '\n'.join([f'- {o.name}: {o.state}' for o in invalid_orders]))
 
-        # Get manual commission plan
-        manual_plan = self.env.ref('belgogreen_sales_commission.plan_manual_commission', raise_if_not_found=False)
-        if not manual_plan:
+        # Validate role was detected
+        if not self.role_id:
             raise UserError(_(
-                'Manual Commission Plan not found. '
-                'Please contact your administrator to configure the manual commission plan.'
-            ))
+                'Cannot determine commission role for user %s.\n'
+                'Please ensure the user has a commission role assigned in their user settings.'
+            ) % self.user_id.name)
 
         # Prepare commission values
         commission_vals = {
             'user_id': self.user_id.id,
             'role_id': self.role_id.id,
             'commission_type': self.commission_type,
-            'plan_id': manual_plan.id,
+            # No plan_id - manual commissions don't need a plan
             'date': fields.Date.context_today(self),
             'base_amount': 0.0,  # Not used for manual commissions
             'commission_amount': self.manual_amount,  # Store directly

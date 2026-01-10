@@ -60,7 +60,8 @@ class SaleCommission(models.Model):
     plan_id = fields.Many2one(
         'sale.commission.plan',
         string='Commission Plan',
-        required=True
+        required=False,
+        help='Commission plan used for automatic commissions. Not required for manual commissions.'
     )
 
     # Dates
@@ -211,18 +212,32 @@ class SaleCommission(models.Model):
                 vals['name'] = self.env['ir.sequence'].next_by_code('sale.commission') or _('New')
         return super(SaleCommission, self).create(vals_list)
 
-    @api.depends('percentage_override', 'plan_id', 'role_id', 'commission_type')
+    @api.constrains('plan_id', 'is_adjustment')
+    def _check_plan_required(self):
+        """Ensure plan_id is set for automatic commissions (non-manual)"""
+        for commission in self:
+            if not commission.is_adjustment and not commission.plan_id:
+                raise UserError(_(
+                    'Commission Plan is required for automatic commissions.\n'
+                    'Only manual commissions (created by managers) can have no plan.'
+                ))
+
+    @api.depends('percentage_override', 'plan_id', 'role_id', 'commission_type', 'is_adjustment')
     def _compute_commission_percentage(self):
         """
         Compute the effective commission percentage based on:
         - Manual override (if set)
         - Commission type (direct vs override)
         - Role configuration
+        - For manual commissions: percentage is 0 (amount is set directly)
         """
         for commission in self:
             if commission.percentage_override:
                 commission.commission_percentage = commission.percentage_override
-            else:
+            elif commission.is_adjustment:
+                # Manual commissions: percentage is 0 (amount is set directly)
+                commission.commission_percentage = 0.0
+            elif commission.plan_id:
                 # Get role configuration for this plan and role
                 config = self.env['hr.commission.role.config'].search([
                     ('plan_id', '=', commission.plan_id.id),
@@ -237,6 +252,8 @@ class SaleCommission(models.Model):
                         commission.commission_percentage = config.override_percentage
                 else:
                     commission.commission_percentage = 0.0
+            else:
+                commission.commission_percentage = 0.0
 
     @api.depends('base_amount', 'commission_percentage', 'is_adjustment')
     def _compute_commission_amount(self):
