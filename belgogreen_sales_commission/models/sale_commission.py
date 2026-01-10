@@ -290,11 +290,18 @@ class SaleCommission(models.Model):
             commission.claim_ids = claims
             commission.claim_count = len(claims)
 
-    @api.depends('sale_order_id', 'sale_order_id.partner_id')
+    @api.depends('sale_order_id', 'sale_order_id.partner_id', 'is_adjustment', 'linked_sale_order_ids')
     def _compute_customer_id(self):
-        """Get customer from sale order"""
+        """Get customer from sale order
+        For manual commissions with multiple sale orders, don't set a customer
+        """
         for commission in self:
-            commission.customer_id = commission.sale_order_id.partner_id if commission.sale_order_id else False
+            # Manual commission with multiple sale orders - no specific customer
+            if commission.is_adjustment and commission.linked_sale_order_ids:
+                commission.customer_id = False
+            # Regular commission or manual with single sale order
+            else:
+                commission.customer_id = commission.sale_order_id.partner_id if commission.sale_order_id else False
 
     def _compute_purchase_order_id(self):
         """Get purchase order for this commission"""
