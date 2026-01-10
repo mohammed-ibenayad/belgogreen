@@ -7,41 +7,47 @@
             <field name="name">commission.manual.wizard.form</field>
             <field name="model">commission.manual.wizard</field>
             <field name="arch" type="xml">
-                <form string="Create Manual Commission">
+                <form string="Créer une Commission">
                     <group>
-                        <group string="Commission Beneficiary">
-                            <field name="user_id" options="{'no_create': True, 'no_open': True}"/>
-                            <field name="role_id" options="{'no_create': True, 'no_open': True}"/>
-                            <field name="commission_type"/>
+                        <group string="Bénéficiaire">
+                            <field name="user_id" string="Utilisateur" options="{'no_create': True, 'no_open': True}"/>
                         </group>
-                        <group string="Amount">
+                        <group string="Montant">
                             <field name="currency_id" invisible="1"/>
-                            <field name="manual_amount" widget="monetary"/>
+                            <field name="manual_amount" string="Montant de la Commission" widget="monetary"/>
                             <field name="company_id" groups="base.group_multi_company"/>
                         </group>
                     </group>
 
-                    <group string="Linked Sale Orders">
+                    <group string="Commandes de Vente Liées">
                         <field name="sale_order_count" invisible="1"/>
-                        <field name="sale_order_ids" nolabel="1" widget="many2many_tags"/>
+                        <field name="sale_order_ids" string="Commandes de Vente" nolabel="1" widget="many2many" options="{'no_create': True}">
+                            <tree>
+                                <field name="name"/>
+                                <field name="partner_id"/>
+                                <field name="date_order"/>
+                                <field name="amount_total"/>
+                                <field name="state"/>
+                            </tree>
+                        </field>
                         <div class="text-muted" invisible="sale_order_count == 0">
-                            <field name="sale_order_count"/> sale order(s) selected
+                            <field name="sale_order_count"/> commande(s) sélectionnée(s)
                         </div>
                     </group>
 
-                    <group string="Reason">
-                        <field name="description" nolabel="1" placeholder="Enter the reason for creating this manual commission..."/>
+                    <group string="Raison / Notes">
+                        <field name="description" string="Description" nolabel="1" placeholder="Entrez la raison de la création de cette commission..." rows="6"/>
                     </group>
 
                     <group>
                         <field name="create_po_immediately"
-                               string="Create Purchase Order Immediately"
-                               help="If checked, a purchase order will be created right after the commission is saved"/>
+                               string="Créer le Bon de Commande Immédiatement"
+                               help="Si coché, un bon de commande sera créé immédiatement après la sauvegarde de la commission"/>
                     </group>
 
                     <footer>
-                        <button string="Create Commission" name="action_create_commission" type="object" class="btn-primary"/>
-                        <button string="Cancel" name="action_cancel" type="object" class="btn-secondary"/>
+                        <button string="Créer la Commission" name="action_create_commission" type="object" class="btn-primary"/>
+                        <button string="Annuler" name="action_cancel" type="object" class="btn-secondary"/>
                     </footer>
                 </form>
             </field>
@@ -49,19 +55,17 @@
 
         <!-- Action to open the wizard -->
         <record id="action_commission_manual_wizard" model="ir.actions.act_window">
-            <field name="name">Create Manual Commission</field>
+            <field name="name">Créer une Commission</field>
             <field name="res_model">commission.manual.wizard</field>
             <field name="view_mode">form</field>
             <field name="target">new</field>
-            <field name="binding_model_id" ref="model_sale_commission"/>
-            <field name="binding_view_types">form,list</field>
         </record>
 
         <!-- Menu item for Manual Commission Creation (Manager only) -->
         <menuitem
             id="menu_commission_manual_create"
-            name="Create Manual Commission"
-            parent="belgogreen_sales_commission.menu_commission_management"
+            name="Créer une Commission"
+            parent="belgogreen_sales_commission.menu_commission_tracking"
             action="action_commission_manual_wizard"
             sequence="5"
             groups="belgogreen_sales_commission.group_commission_manager"/>
