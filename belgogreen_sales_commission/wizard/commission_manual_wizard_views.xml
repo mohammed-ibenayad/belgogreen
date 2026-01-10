@@ -11,7 +11,6 @@
                     <group>
                         <group string="Bénéficiaire">
                             <field name="user_id" string="Utilisateur" options="{'no_create': True, 'no_open': True}"/>
-                            <field name="role_id" string="Rôle" options="{'no_create': True, 'no_open': True}"/>
                         </group>
                         <group string="Montant">
                             <field name="currency_id" invisible="1"/>
@@ -19,6 +18,7 @@
                             <field name="company_id" groups="base.group_multi_company"/>
                         </group>
                     </group>
+                    <field name="role_id" invisible="1"/>
 
                     <group string="Commandes de Vente Liées" col="1">
                         <field name="sale_order_count" invisible="1"/>

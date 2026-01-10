@@ -28,8 +28,8 @@ class CommissionManualWizard(models.TransientModel):
     role_id = fields.Many2one(
         'sale.commission.role',
         string='Role',
-        required=True,
-        help='The commission role for this user (Salesperson, Team Leader, Director, etc.)'
+        required=False,
+        help='Auto-set to default role for manual commissions'
     )
 
     commission_type = fields.Selection([
@@ -108,10 +108,21 @@ class CommissionManualWizard(models.TransientModel):
                 'Invalid orders:\n%s'
             ) % '\n'.join([f'- {o.name}: {o.state}' for o in invalid_orders]))
 
+        # Get or set default role for manual commissions
+        role_id = self.role_id
+        if not role_id:
+            # Use default "Salesperson" role for manual commissions
+            role_id = self.env.ref('belgogreen_sales_commission.role_salesperson', raise_if_not_found=False)
+            if not role_id:
+                raise UserError(_(
+                    'Default commission role not found. '
+                    'Please contact your administrator.'
+                ))
+
         # Prepare commission values
         commission_vals = {
             'user_id': self.user_id.id,
-            'role_id': self.role_id.id,
+            'role_id': role_id.id,
             'commission_type': self.commission_type,
             # No plan_id - manual commissions don't need a plan
             'date': fields.Date.context_today(self),
