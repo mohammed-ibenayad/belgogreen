@@ -191,6 +191,12 @@ class SaleCommission(models.Model):
         help='Customer from the sale order'
     )
 
+    sale_order_display = fields.Char(
+        string='Sale Order(s)',
+        compute='_compute_sale_order_display',
+        help='Display single sale order or count of multiple orders'
+    )
+
     po_bill_id = fields.Integer(
         string='Commission Bill ID',
         compute='_compute_po_bill_id',
@@ -302,6 +308,22 @@ class SaleCommission(models.Model):
             # Regular commission or manual with single sale order
             else:
                 commission.customer_id = commission.sale_order_id.partner_id if commission.sale_order_id else False
+
+    @api.depends('sale_order_id', 'linked_sale_order_ids')
+    def _compute_sale_order_display(self):
+        """Display sale order info for list view
+        Shows single order name or count of multiple orders
+        """
+        for commission in self:
+            if commission.linked_sale_order_ids:
+                # Multiple sale orders
+                count = len(commission.linked_sale_order_ids)
+                commission.sale_order_display = _('%s Orders') % count
+            elif commission.sale_order_id:
+                # Single sale order
+                commission.sale_order_display = commission.sale_order_id.name
+            else:
+                commission.sale_order_display = ''
 
     def _compute_purchase_order_id(self):
         """Get purchase order for this commission"""
