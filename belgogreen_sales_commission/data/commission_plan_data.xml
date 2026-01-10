@@ -4,10 +4,8 @@
         <!-- Manual Commission Plan -->
         <record id="plan_manual_commission" model="sale.commission.plan">
             <field name="name">Manual Commission Plan</field>
-            <field name="plan_type">hierarchical</field>
+            <field name="type">hierarchical</field>
             <field name="require_invoice_paid" eval="False"/>
-            <field name="is_default" eval="False"/>
-            <field name="state">approved</field>
             <field name="description">
 Special plan for manually created commissions.
 Commission amounts are specified directly by managers, not calculated from percentages.
