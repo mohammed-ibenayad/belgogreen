@@ -23,15 +23,7 @@
 
                     <group string="Linked Sale Orders">
                         <field name="sale_order_count" invisible="1"/>
-                        <field name="sale_order_ids" nolabel="1" widget="many2many_tags">
-                            <tree>
-                                <field name="name"/>
-                                <field name="partner_id"/>
-                                <field name="date_order"/>
-                                <field name="amount_total"/>
-                                <field name="state"/>
-                            </tree>
-                        </field>
+                        <field name="sale_order_ids" nolabel="1" widget="many2many_tags"/>
                         <div class="text-muted" invisible="sale_order_count == 0">
                             <field name="sale_order_count"/> sale order(s) selected
                         </div>
