@@ -166,6 +166,14 @@ class SaleCommission(models.Model):
         help='True if this is a manual adjustment commission'
     )
 
+    linked_sale_order_ids = fields.Many2many(
+        'sale.order',
+        'commission_sale_order_rel',
+        'commission_id', 'order_id',
+        string='Linked Sale Orders',
+        help='For manual commissions with multiple sale orders'
+    )
+
     company_id = fields.Many2one(
         'res.company',
         string='Company',
@@ -230,10 +238,15 @@ class SaleCommission(models.Model):
                 else:
                     commission.commission_percentage = 0.0
 
-    @api.depends('base_amount', 'commission_percentage')
+    @api.depends('base_amount', 'commission_percentage', 'is_adjustment')
     def _compute_commission_amount(self):
-        """Compute commission amount based on base amount and percentage"""
+        """Compute commission amount based on base amount and percentage
+        For manual commissions (is_adjustment=True), preserve the stored amount"""
         for commission in self:
+            # Skip computation for manual commissions - keep stored amount
+            if commission.is_adjustment and commission.commission_amount:
+                continue
+            # Normal commission: calculate from base amount and percentage
             commission.commission_amount = (commission.base_amount * commission.commission_percentage) / 100.0
 
     @api.depends('invoice_id.payment_state', 'status')
