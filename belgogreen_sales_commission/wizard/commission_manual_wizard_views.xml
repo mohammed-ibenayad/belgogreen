@@ -61,9 +61,9 @@
         <menuitem
             id="menu_commission_manual_create"
             name="Create Manual Commission"
-            parent="belgogreen_sales_commission.menu_commission_root"
+            parent="belgogreen_sales_commission.menu_commission_management"
             action="action_commission_manual_wizard"
-            sequence="15"
+            sequence="5"
             groups="belgogreen_sales_commission.group_commission_manager"/>
 
     </data>
