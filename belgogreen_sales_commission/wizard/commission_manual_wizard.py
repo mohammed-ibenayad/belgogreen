@@ -108,20 +108,12 @@ class CommissionManualWizard(models.TransientModel):
                 'Invalid orders:\n%s'
             ) % '\n'.join([f'- {o.name}: {o.state}' for o in invalid_orders]))
 
-        # Get manual commission plan
-        manual_plan = self.env.ref('belgogreen_sales_commission.plan_manual_commission', raise_if_not_found=False)
-        if not manual_plan:
-            raise UserError(_(
-                'Manual Commission Plan not found. '
-                'Please contact your administrator to configure the manual commission plan.'
-            ))
-
         # Prepare commission values
         commission_vals = {
             'user_id': self.user_id.id,
             'role_id': self.role_id.id,
             'commission_type': self.commission_type,
-            'plan_id': manual_plan.id,
+            # No plan_id - manual commissions don't need a plan
             'date': fields.Date.context_today(self),
             'base_amount': 0.0,  # Not used for manual commissions
             'commission_amount': self.manual_amount,  # Store directly
