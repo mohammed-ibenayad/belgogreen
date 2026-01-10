@@ -54,7 +54,6 @@ Main Features:
         'data/sequence_data.xml',
         'data/product_data.xml',
         'data/sale_commission_role_data.xml',
-        'data/commission_plan_data.xml',
         'data/email_template_data.xml',  # Email template for contractor invoice requests
         'data/cron_data.xml',
         'wizard/commission_claim_wizard_views.xml',
