@@ -563,16 +563,22 @@ class SaleCommissionClaim(models.Model):
         """Generate notes for PO with commission list and deduction breakdown"""
         lines = []
 
-        # List all commissions - simple format: COM/00004: 373.94 € - Customer Name
+        # List all commissions - format: COM/00004: 373.94 € - Customer Name (only if customer exists)
         all_commissions = self.mapped('commission_ids')
         for commission in all_commissions:
-            customer_name = commission.customer_id.name if commission.customer_id else 'N/A'
-            lines.append('%s: %s %s - %s' % (
-                commission.name,
-                commission.commission_amount,
-                self[0].currency_id.symbol,
-                customer_name
-            ))
+            if commission.customer_id:
+                lines.append('%s: %s %s - %s' % (
+                    commission.name,
+                    commission.commission_amount,
+                    self[0].currency_id.symbol,
+                    commission.customer_id.name
+                ))
+            else:
+                lines.append('%s: %s %s' % (
+                    commission.name,
+                    commission.commission_amount,
+                    self[0].currency_id.symbol
+                ))
 
         return '\n'.join(lines)
 
