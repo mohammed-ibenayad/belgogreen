@@ -28,23 +28,23 @@
             <field name="arch" type="xml">
                 <form string="Commission Claim">
                     <header>
-                        <button name="action_submit" string="Submit Claim" type="object" class="oe_highlight"
+                        <button name="action_submit" string="Soumettre la demande" type="object" class="oe_highlight"
                                 invisible="state != 'draft' or user_id != uid"
                                 groups="belgogreen_sales_commission.group_commission_user"/>
-                        <button name="action_approve" string="Approve &amp; Create PO" type="object" class="oe_highlight"
+                        <button name="action_approve" string="Approuver et créer le BC" type="object" class="oe_highlight"
                                 invisible="state != 'pending'"
                                 groups="belgogreen_sales_commission.group_commission_manager"/>
-                        <button name="action_view_purchase_order" string="View Purchase Order" type="object"
+                        <button name="action_view_purchase_order" string="Voir le bon de commande" type="object"
                                 invisible="not purchase_order_id"
                                 class="btn-primary"/>
-                        <button name="action_reject" string="Reject" type="object"
+                        <button name="action_reject" string="Rejeter" type="object"
                                 invisible="state != 'pending'"
                                 groups="belgogreen_sales_commission.group_commission_manager"
-                                confirm="Are you sure you want to reject this claim?"/>
-                        <button name="unlink" string="Delete" type="object"
+                                confirm="Êtes-vous sûr de vouloir rejeter cette demande ?"/>
+                        <button name="unlink" string="Supprimer" type="object"
                                 invisible="state != 'draft' or user_id != uid"
                                 groups="belgogreen_sales_commission.group_commission_user"
-                                confirm="Are you sure you want to delete this draft claim?"/>
+                                confirm="Êtes-vous sûr de vouloir supprimer ce brouillon ?"/>
                         <field name="state" widget="statusbar" statusbar_visible="draft,pending,approved,rejected"/>
                     </header>
                     <sheet>
