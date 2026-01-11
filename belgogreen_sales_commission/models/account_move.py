@@ -185,11 +185,24 @@ class AccountMove(models.Model):
 
     def write(self, vals):
         """Override write to trigger commission creation on payment and mark commissions paid"""
+        # Store previous payment states before write
+        previous_states = {}
+        if 'line_ids' in vals or 'payment_state' in vals:
+            for move in self:
+                previous_states[move.id] = move.payment_state
+
         result = super(AccountMove, self).write(vals)
 
         for move in self:
-            # If payment_state changed to paid
-            if 'payment_state' in vals and move.payment_state in ['paid', 'in_payment']:
+            # Check if payment_state changed to paid (either directly or via reconciliation)
+            payment_state_changed = (
+                ('payment_state' in vals and move.payment_state in ['paid', 'in_payment']) or
+                (move.id in previous_states and
+                 previous_states[move.id] not in ['paid', 'in_payment'] and
+                 move.payment_state in ['paid', 'in_payment'])
+            )
+
+            if payment_state_changed:
                 # Create commissions for customer invoices
                 if move.move_type == 'out_invoice':
                     move._create_hierarchical_commissions()
