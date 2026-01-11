@@ -12,6 +12,7 @@
                         <group>
                             <group string="Bénéficiaire">
                                 <field name="user_id" string="Vendeur" options="{'no_create': True, 'no_open': True}"/>
+                                <field name="commission_type"/>
                             </group>
                             <group string="Montant">
                                 <field name="currency_id" invisible="1"/>
