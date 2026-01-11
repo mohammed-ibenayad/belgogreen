@@ -148,15 +148,8 @@ class CommissionManualWizard(models.TransientModel):
 
         # Post message with reason
         commission.message_post(
-            body=_('<strong>Manual Commission Created</strong><br/>'
-                   'Created by: %s<br/>'
-                   'Reason: %s<br/>'
-                   'Linked Sale Orders: %s') % (
-                self.env.user.name,
-                self.description,
-                ', '.join(self.sale_order_ids.mapped('name'))
-            ),
-            subject=_('Manual Commission Created'),
+            body=self.description,
+            subject=_('Commission Créée Manuellement'),
             message_type='comment'
         )
 
