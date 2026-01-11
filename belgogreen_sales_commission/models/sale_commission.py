@@ -30,9 +30,9 @@ class SaleCommission(models.Model):
     role_id = fields.Many2one(
         'sale.commission.role',
         string='Role',
-        required=True,
+        required=False,
         tracking=True,
-        help='The role of the user in this commission'
+        help='The role of the user in this commission. Not required for manual commissions.'
     )
 
     commission_type = fields.Selection([
@@ -226,6 +226,16 @@ class SaleCommission(models.Model):
                 raise UserError(_(
                     'Commission Plan is required for automatic commissions.\n'
                     'Only manual commissions (created by managers) can have no plan.'
+                ))
+
+    @api.constrains('role_id', 'is_adjustment')
+    def _check_role_required(self):
+        """Ensure role_id is set for automatic commissions (non-manual)"""
+        for commission in self:
+            if not commission.is_adjustment and not commission.role_id:
+                raise UserError(_(
+                    'Role is required for automatic commissions.\n'
+                    'Only manual commissions (created by managers) can have no role.'
                 ))
 
     @api.depends('percentage_override', 'plan_id', 'role_id', 'commission_type', 'is_adjustment')
