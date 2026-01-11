@@ -114,7 +114,7 @@
                                 <field name="base_amount" readonly="1"/>
                                 <field name="percentage_override" groups="belgogreen_sales_commission.group_commission_manager" readonly="status in ['processing', 'paid']"/>
                                 <field name="commission_percentage" readonly="1"/>
-                                <field name="commission_amount" class="oe_subtotal_footer_separator" readonly="1"/>
+                                <field name="commission_amount" class="oe_subtotal_footer_separator" readonly="not is_adjustment or status in ['processing', 'paid']"/>
                             </group>
                         </group>
                         <group>
@@ -124,12 +124,12 @@
                                 <field name="payment_id" readonly="1"/>
                             </group>
                             <group string="References" name="references">
-                                <field name="customer_id" readonly="1"/>
+                                <field name="customer_id" readonly="1" invisible="1"/>
                                 <field name="linked_sale_order_ids" invisible="1"/>
                                 <field name="sale_order_id" string="Sale Order" readonly="1"
                                        invisible="linked_sale_order_ids"
                                        options="{'no_open': True}"/>
-                                <field name="linked_sale_order_ids" string="Linked Sale Orders" readonly="1"
+                                <field name="linked_sale_order_ids" string="Commandes de Vente" readonly="1"
                                        invisible="not linked_sale_order_ids"
                                        widget="many2many_tags"/>
                             </group>
