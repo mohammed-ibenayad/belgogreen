@@ -6,7 +6,7 @@
         <menuitem id="menu_commission_root"
                   name="Commissions"
                   web_icon="fa-wallet"
-                  action="action_commission_dashboard"
+                  action="action_sale_commission_unpaid"
                   sequence="75"/>
 
         <!-- Dashboard Menu (first item) -->
