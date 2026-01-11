@@ -184,18 +184,15 @@ class AccountMove(models.Model):
             })
 
     def write(self, vals):
-        """Override write to trigger commission creation on payment and mark commissions paid"""
+        """Override write to mark commissions paid when vendor bill is paid"""
         result = super(AccountMove, self).write(vals)
 
         for move in self:
             # If payment_state changed to paid
             if 'payment_state' in vals and move.payment_state in ['paid', 'in_payment']:
-                # Create commissions for customer invoices
-                if move.move_type == 'out_invoice':
-                    move._create_hierarchical_commissions()
-
                 # Mark commissions paid for vendor bills
-                elif move.move_type == 'in_invoice':
+                # This works for both hierarchical and manually created commissions
+                if move.move_type == 'in_invoice':
                     move._mark_commissions_paid()
 
         return result
