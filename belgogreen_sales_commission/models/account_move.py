@@ -106,28 +106,22 @@ class AccountMove(models.Model):
                 ('move_id', 'in', payment_moves.ids)
             ])
 
-        # Get commissions (either from claims or direct)
-        commissions = self.env['sale.commission']
-        if po.claim_ids:
-            # Claim-based commissions
-            commissions = po.claim_ids.mapped('commission_ids')
-            payment_type = 'claim-based'
-            reference = ', '.join(po.claim_ids.mapped('name'))
-        elif po.commission_ids:
-            # Direct commissions (manager-initiated)
-            commissions = po.commission_ids
-            payment_type = 'direct'
-            reference = ', '.join(commissions.mapped('name'))
+        # Get ALL commissions (from claims or direct) - unified approach
+        commissions = po.claim_ids.mapped('commission_ids') | po.commission_ids
 
-        # Update commissions to paid
+        if not commissions:
+            return  # No commissions to mark as paid
+
+        # Update ALL commissions to paid (works for both claim-based and direct)
         commissions.write({
             'status': 'paid',
             'payment_date': self.invoice_date or fields.Date.today(),
             'payment_id': payments[0].id if payments else False,  # Link to first payment
         })
 
-        # Log success
-        if payment_type == 'claim-based':
+        # Log success with appropriate message
+        if po.claim_ids:
+            # Claim-based payment
             self.message_post(
                 body=_(
                     'Commission payment completed!\n\n'
@@ -139,11 +133,12 @@ class AccountMove(models.Model):
                     'count': len(commissions),
                     'amount': self.amount_total,
                     'payment': payments[0].name if payments else 'N/A',
-                    'claims': reference,
+                    'claims': ', '.join(po.claim_ids.mapped('name')),
                 },
                 subject=_('Commissions Paid'),
             )
-        else:  # direct
+        else:
+            # Direct payment (no claims)
             self.message_post(
                 body=_(
                     'Direct commission payment completed!\n\n'
@@ -156,7 +151,7 @@ class AccountMove(models.Model):
                     'count': len(commissions),
                     'amount': self.amount_total,
                     'payment': payments[0].name if payments else 'N/A',
-                    'commissions': reference,
+                    'commissions': ', '.join(commissions.mapped('name')),
                 },
                 subject=_('Direct Commissions Paid'),
             )
