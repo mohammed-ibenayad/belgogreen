@@ -236,9 +236,23 @@ class AccountMove(models.Model):
             )
 
         # Find the account.payment that paid this bill
-        payments = self.env['account.payment'].search([
-            ('reconciled_bill_ids', 'in', self.id)
-        ])
+        # Get the payable line (the line that gets reconciled when bill is paid)
+        payable_line = self.line_ids.filtered(
+            lambda line: line.account_id.account_type in ('liability_payable', 'asset_receivable')
+        )
+
+        # Get payments from reconciled lines
+        payments = self.env['account.payment']
+        if payable_line:
+            # Get all matched debits/credits (reconciliation records)
+            matched_lines = payable_line.mapped('matched_debit_ids.debit_move_id') | \
+                           payable_line.mapped('matched_credit_ids.credit_move_id')
+
+            # Get payment records from those move lines
+            payment_moves = matched_lines.mapped('move_id')
+            payments = self.env['account.payment'].search([
+                ('move_id', 'in', payment_moves.ids)
+            ])
 
         # Get commissions (either from claims or direct)
         commissions = self.env['sale.commission']
