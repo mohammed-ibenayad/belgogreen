@@ -33,10 +33,10 @@ class CommissionManualWizard(models.TransientModel):
     )
 
     commission_type = fields.Selection([
-        ('direct', 'Direct Sale'),
-        ('override', 'Override Commission')
-    ], string='Commission Type', required=True, default='direct',
-       help='Type of commission being created')
+        ('direct', 'Vente Directe'),
+        ('override', 'Commission de Supervision')
+    ], string='Type de Commission', required=True, default='direct',
+       help='Type de commission pour cette vente manuelle')
 
     manual_amount = fields.Monetary(
         string='Commission Amount',
@@ -108,21 +108,11 @@ class CommissionManualWizard(models.TransientModel):
                 'Invalid orders:\n%s'
             ) % '\n'.join([f'- {o.name}: {o.state}' for o in invalid_orders]))
 
-        # Get or set default role for manual commissions
-        role_id = self.role_id
-        if not role_id:
-            # Use default "Salesperson" role for manual commissions
-            role_id = self.env.ref('belgogreen_sales_commission.role_salesperson', raise_if_not_found=False)
-            if not role_id:
-                raise UserError(_(
-                    'Default commission role not found. '
-                    'Please contact your administrator.'
-                ))
-
+        # Manual commissions don't need a role (no hierarchical calculation)
         # Prepare commission values
         commission_vals = {
             'user_id': self.user_id.id,
-            'role_id': role_id.id,
+            'role_id': False,  # No role for manual commissions
             'commission_type': self.commission_type,
             # No plan_id - manual commissions don't need a plan
             'date': fields.Date.context_today(self),

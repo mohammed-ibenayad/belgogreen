@@ -54,6 +54,7 @@
                         <field name="sale_order_id" invisible="1"/>
                         <field name="purchase_order_id" invisible="1"/>
                         <field name="po_bill_id" invisible="1"/>
+                        <field name="is_adjustment" invisible="1"/>
                         <div class="oe_button_box" name="button_box">
                             <button name="action_view_claim"
                                     type="object"
@@ -103,7 +104,7 @@
                         <group>
                             <group string="Commission Information" name="commission_info">
                                 <field name="user_id" readonly="1" options="{'no_open': True}"/>
-                                <field name="role_id" readonly="1" options="{'no_open': True}"/>
+                                <field name="role_id" readonly="1" options="{'no_open': True}" invisible="is_adjustment"/>
                                 <field name="commission_type" readonly="1"/>
                                 <field name="date" readonly="1"/>
                                 <field name="period" readonly="1"/>
