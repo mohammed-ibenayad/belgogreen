@@ -24,168 +24,10 @@ class AccountMove(models.Model):
         for move in self:
             move.commission_count = len(move.commission_ids)
 
-    def _create_hierarchical_commissions(self):
-        """
-        Create commissions for salesperson, team leader, and sales director
-        when invoice is paid
-        """
-        self.ensure_one()
-
-        # Only process customer invoices
-        if self.move_type != 'out_invoice':
-            return
-
-        # Only process if invoice is paid (or in payment)
-        if self.payment_state not in ['paid', 'in_payment']:
-            return
-
-        # Get the sale order(s) linked to this invoice
-        sale_orders = self.invoice_line_ids.mapped('sale_line_ids.order_id')
-
-        if not sale_orders:
-            return
-
-        # Process each sale order
-        for sale_order in sale_orders:
-            self._create_commission_for_sale(sale_order)
-
-    def _get_commission_hierarchy(self, base_user, commission_plan):
-        """
-        Traverse hierarchy upwards from base user to collect all managers who should receive commission.
-
-        NOW USES PLAN-SPECIFIC ROLES: Each user's role and manager are determined by their
-        assignment in the specific commission plan, not from global res.users fields.
-
-        Supports unlimited hierarchy levels by following manager_id chain in plan assignments.
-        Includes cycle detection to prevent infinite loops.
-
-        NEW: Validates date_from and date_to to ensure user assignment is active on invoice date.
-
-        Args:
-            base_user: res.users record (typically the salesperson who made the sale)
-            commission_plan: sale.commission.plan record (the plan to use for hierarchy)
-
-        Returns:
-            list of tuples: [(user, role, commission_type), ...] ordered from bottom to top of hierarchy
-        """
-        hierarchy = []
-        current_user = base_user
-        seen_ids = set()  # Cycle detection
-        invoice_date = self.invoice_date or fields.Date.today()
-
-        while current_user and current_user.id not in seen_ids:
-            # Find user's assignment in THIS PLAN (with date validation)
-            plan_user = self.env['sale.commission.plan.user'].search([
-                ('plan_id', '=', commission_plan.id),
-                ('user_id', '=', current_user.id),
-                # Date validation: assignment must be active on invoice date
-                '|', ('date_from', '=', False), ('date_from', '<=', invoice_date),
-                '|', ('date_to', '=', False), ('date_to', '>=', invoice_date)
-            ], limit=1)
-
-            if plan_user and plan_user.role_id:
-                # Determine commission type
-                is_direct_sale = (current_user.id == base_user.id)  # First person in chain = made the sale
-                commission_type = 'direct' if is_direct_sale else 'override'
-
-                # Use PLAN-SPECIFIC role
-                hierarchy.append((current_user, plan_user.role_id, commission_type))
-                seen_ids.add(current_user.id)
-
-                # Move up to manager IN THIS PLAN
-                current_user = plan_user.manager_id
-            else:
-                # User not in this plan, stop traversal
-                break
-
-            # Safety check: prevent infinite loops
-            if len(seen_ids) > 20:
-                break
-
-        return hierarchy
-
-    def _create_commission_for_sale(self, sale_order):
-        """
-        Create commissions for a specific sale order.
-        Now supports dynamic N-level hierarchies with dual percentage (direct vs override).
-        """
-        # Get the salesperson
-        salesperson = sale_order.user_id
-        if not salesperson:
-            return
-
-        # Find applicable commission plan
-        commission_plan = self.env['sale.commission.plan'].search([
-            ('is_hierarchical', '=', True),
-            ('state', '=', 'approved'),
-            ('company_id', '=', self.company_id.id)
-        ], limit=1)
-
-        if not commission_plan:
-            return
-
-        # Check if plan requires paid invoice
-        if commission_plan.require_invoice_paid and self.payment_state not in ['paid', 'in_payment']:
-            return
-
-        # Calculate base amount for commissions
-        base_amount = self.amount_total
-
-        # Build commission hierarchy dynamically - SUPPORTS ANY NUMBER OF LEVELS
-        # NOW USES PLAN-SPECIFIC ROLES AND HIERARCHY
-        users_to_commission = self._get_commission_hierarchy(salesperson, commission_plan)
-
-        if not users_to_commission:
-            return
-
-        # Calculate period (YYYY-MM format)
-        period = self.invoice_date.strftime('%Y-%m') if self.invoice_date else fields.Date.today().strftime('%Y-%m')
-
-        # Create commission records for each user in the hierarchy
-        for user, role, commission_type in users_to_commission:
-            # User is already validated by hierarchy traversal (must be in plan)
-
-            # Check if commission already exists for this specific user
-            existing_commission = self.env['sale.commission'].search([
-                ('invoice_id', '=', self.id),
-                ('sale_order_id', '=', sale_order.id),
-                ('user_id', '=', user.id),
-                ('role_id', '=', role.id),
-                ('commission_type', '=', commission_type)
-            ], limit=1)
-
-            if existing_commission:
-                continue
-
-            # Check if there's a role configuration
-            role_config = self.env['hr.commission.role.config'].search([
-                ('plan_id', '=', commission_plan.id),
-                ('role_id', '=', role.id),
-                ('active', '=', True)
-            ], limit=1)
-
-            if not role_config:
-                continue
-
-            # Create commission record with role_id and commission_type
-            self.env['sale.commission'].create({
-                'user_id': user.id,
-                'role_id': role.id,
-                'commission_type': commission_type,  # NEW: direct or override
-                'sale_order_id': sale_order.id,
-                'invoice_id': self.id,
-                'plan_id': commission_plan.id,
-                'date': self.invoice_date or fields.Date.today(),
-                'period': period,
-                'base_amount': base_amount,
-                'status': 'unpaid',
-                'company_id': self.company_id.id,
-                'currency_id': self.currency_id.id,
-            })
-
     def write(self, vals):
-        """Override write to trigger commission creation on payment and mark commissions paid"""
+        """Override write to mark commissions paid when vendor bill is paid"""
         # Store previous payment states before write
+        # This is needed to detect payment state changes that happen via reconciliation
         previous_states = {}
         if 'line_ids' in vals or 'payment_state' in vals:
             for move in self:
@@ -203,12 +45,9 @@ class AccountMove(models.Model):
             )
 
             if payment_state_changed:
-                # Create commissions for customer invoices
-                if move.move_type == 'out_invoice':
-                    move._create_hierarchical_commissions()
-
                 # Mark commissions paid for vendor bills
-                elif move.move_type == 'in_invoice':
+                # This works for both hierarchical and manually created commissions
+                if move.move_type == 'in_invoice':
                     move._mark_commissions_paid()
 
         return result
@@ -267,28 +106,22 @@ class AccountMove(models.Model):
                 ('move_id', 'in', payment_moves.ids)
             ])
 
-        # Get commissions (either from claims or direct)
-        commissions = self.env['sale.commission']
-        if po.claim_ids:
-            # Claim-based commissions
-            commissions = po.claim_ids.mapped('commission_ids')
-            payment_type = 'claim-based'
-            reference = ', '.join(po.claim_ids.mapped('name'))
-        elif po.commission_ids:
-            # Direct commissions (manager-initiated)
-            commissions = po.commission_ids
-            payment_type = 'direct'
-            reference = ', '.join(commissions.mapped('name'))
+        # Get ALL commissions (from claims or direct) - unified approach
+        commissions = po.claim_ids.mapped('commission_ids') | po.commission_ids
 
-        # Update commissions to paid
+        if not commissions:
+            return  # No commissions to mark as paid
+
+        # Update ALL commissions to paid (works for both claim-based and direct)
         commissions.write({
             'status': 'paid',
             'payment_date': self.invoice_date or fields.Date.today(),
             'payment_id': payments[0].id if payments else False,  # Link to first payment
         })
 
-        # Log success
-        if payment_type == 'claim-based':
+        # Log success with appropriate message
+        if po.claim_ids:
+            # Claim-based payment
             self.message_post(
                 body=_(
                     'Commission payment completed!\n\n'
@@ -300,11 +133,12 @@ class AccountMove(models.Model):
                     'count': len(commissions),
                     'amount': self.amount_total,
                     'payment': payments[0].name if payments else 'N/A',
-                    'claims': reference,
+                    'claims': ', '.join(po.claim_ids.mapped('name')),
                 },
                 subject=_('Commissions Paid'),
             )
-        else:  # direct
+        else:
+            # Direct payment (no claims)
             self.message_post(
                 body=_(
                     'Direct commission payment completed!\n\n'
@@ -317,7 +151,7 @@ class AccountMove(models.Model):
                     'count': len(commissions),
                     'amount': self.amount_total,
                     'payment': payments[0].name if payments else 'N/A',
-                    'commissions': reference,
+                    'commissions': ', '.join(commissions.mapped('name')),
                 },
                 subject=_('Direct Commissions Paid'),
             )
