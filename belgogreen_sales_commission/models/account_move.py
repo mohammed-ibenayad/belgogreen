@@ -26,11 +26,25 @@ class AccountMove(models.Model):
 
     def write(self, vals):
         """Override write to mark commissions paid when vendor bill is paid"""
+        # Store previous payment states before write
+        # This is needed to detect payment state changes that happen via reconciliation
+        previous_states = {}
+        if 'line_ids' in vals or 'payment_state' in vals:
+            for move in self:
+                previous_states[move.id] = move.payment_state
+
         result = super(AccountMove, self).write(vals)
 
         for move in self:
-            # If payment_state changed to paid
-            if 'payment_state' in vals and move.payment_state in ['paid', 'in_payment']:
+            # Check if payment_state changed to paid (either directly or via reconciliation)
+            payment_state_changed = (
+                ('payment_state' in vals and move.payment_state in ['paid', 'in_payment']) or
+                (move.id in previous_states and
+                 previous_states[move.id] not in ['paid', 'in_payment'] and
+                 move.payment_state in ['paid', 'in_payment'])
+            )
+
+            if payment_state_changed:
                 # Mark commissions paid for vendor bills
                 # This works for both hierarchical and manually created commissions
                 if move.move_type == 'in_invoice':
