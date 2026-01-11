@@ -673,11 +673,17 @@ class SaleCommission(models.Model):
         """Generate notes for PO with commission list (no deductions - direct payment)"""
         lines = []
         for commission in self:
-            customer_name = commission.customer_id.name if commission.customer_id else 'N/A'
-            lines.append('%s: %s %s - %s' % (
-                commission.name,
-                commission.commission_amount,
-                self[0].currency_id.symbol,
-                customer_name
-            ))
+            if commission.customer_id:
+                lines.append('%s: %s %s - %s' % (
+                    commission.name,
+                    commission.commission_amount,
+                    self[0].currency_id.symbol,
+                    commission.customer_id.name
+                ))
+            else:
+                lines.append('%s: %s %s' % (
+                    commission.name,
+                    commission.commission_amount,
+                    self[0].currency_id.symbol
+                ))
         return '\n'.join(lines)
