@@ -488,14 +488,31 @@ class SaleCommission(models.Model):
         }
 
     def action_view_sale_order(self):
-        """View the sale order for this commission"""
+        """View the sale order(s) for this commission
+
+        For regular commissions: Opens the single sale order in form view
+        For manual commissions: Opens a list view of all linked sale orders
+        """
         self.ensure_one()
 
+        # Manual commissions with multiple linked sale orders
+        if self.linked_sale_order_ids:
+            return {
+                'name': _('Commandes de Vente'),
+                'type': 'ir.actions.act_window',
+                'res_model': 'sale.order',
+                'view_mode': 'list,form',
+                'domain': [('id', 'in', self.linked_sale_order_ids.ids)],
+                'target': 'current',
+                'context': {'create': False},
+            }
+
+        # Regular commission with single sale order
         if not self.sale_order_id:
             raise UserError(_('No sale order found for this commission.'))
 
         return {
-            'name': _('Sale Order'),
+            'name': _('Commande de Vente'),
             'type': 'ir.actions.act_window',
             'res_model': 'sale.order',
             'res_id': self.sale_order_id.id,
