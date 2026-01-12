@@ -242,16 +242,16 @@ class SaleCommission(models.Model):
     def _compute_commission_percentage(self):
         """
         Compute the effective commission percentage based on:
-        - Manual override (if set)
-        - Commission type (direct vs override)
-        - Role configuration
-        - For manual commissions: percentage is 0 (amount is set directly)
+        - Manual override (if set) - takes priority for all commissions
+        - For manual commissions: uses percentage_override (required)
+        - For automatic commissions: Commission type and role configuration
         """
         for commission in self:
             if commission.percentage_override:
+                # Use manual override for both automatic and manual commissions
                 commission.commission_percentage = commission.percentage_override
             elif commission.is_adjustment:
-                # Manual commissions: percentage is 0 (amount is set directly)
+                # Manual commissions without percentage_override (legacy) - keep as 0
                 commission.commission_percentage = 0.0
             elif commission.plan_id:
                 # Get role configuration for this plan and role
@@ -271,15 +271,11 @@ class SaleCommission(models.Model):
             else:
                 commission.commission_percentage = 0.0
 
-    @api.depends('base_amount', 'commission_percentage', 'is_adjustment')
+    @api.depends('base_amount', 'commission_percentage')
     def _compute_commission_amount(self):
         """Compute commission amount based on base amount and percentage
-        For manual commissions (is_adjustment=True), preserve the stored amount"""
+        For both automatic and manual commissions, amount is always calculated"""
         for commission in self:
-            # Skip computation for manual commissions - keep stored amount
-            if commission.is_adjustment and commission.commission_amount:
-                continue
-            # Normal commission: calculate from base amount and percentage
             commission.commission_amount = (commission.base_amount * commission.commission_percentage) / 100.0
 
     @api.depends('invoice_id.payment_state', 'status')
