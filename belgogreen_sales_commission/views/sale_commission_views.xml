@@ -111,8 +111,8 @@
                             </group>
                             <group string="Calculation" name="calculation">
                                 <field name="plan_id" readonly="1" groups="belgogreen_sales_commission.group_commission_manager" options="{'no_open': True}"/>
-                                <field name="base_amount" readonly="1"/>
-                                <field name="percentage_override" string="Commission %" groups="belgogreen_sales_commission.group_commission_manager" readonly="1" invisible="not is_adjustment"/>
+                                <field name="base_amount" readonly="not is_adjustment or status in ['processing', 'paid', 'cancelled']" groups="belgogreen_sales_commission.group_commission_manager"/>
+                                <field name="percentage_override" string="Commission %" groups="belgogreen_sales_commission.group_commission_manager" readonly="not is_adjustment or status in ['processing', 'paid', 'cancelled']" invisible="not is_adjustment"/>
                                 <field name="commission_percentage" readonly="1" invisible="is_adjustment"/>
                                 <field name="commission_amount" class="oe_subtotal_footer_separator" readonly="1"/>
                             </group>
