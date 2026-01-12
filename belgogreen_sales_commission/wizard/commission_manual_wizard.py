@@ -38,11 +38,27 @@ class CommissionManualWizard(models.TransientModel):
     ], string='Type de Commission', required=True, default='direct',
        help='Type de commission pour cette vente manuelle')
 
-    manual_amount = fields.Monetary(
-        string='Commission Amount',
+    base_amount = fields.Monetary(
+        string='Base Amount',
         required=True,
         currency_field='currency_id',
-        help='The commission amount (specified manually, not calculated)'
+        help='The base amount on which the commission is calculated'
+    )
+
+    commission_percentage = fields.Float(
+        string='Commission Percentage',
+        required=True,
+        digits=(5, 2),
+        help='The commission percentage to apply'
+    )
+
+    manual_amount = fields.Monetary(
+        string='Commission Amount',
+        compute='_compute_manual_amount',
+        store=True,
+        readonly=True,
+        currency_field='currency_id',
+        help='The commission amount (automatically calculated from base amount and percentage)'
     )
 
     currency_id = fields.Many2one(
@@ -81,12 +97,25 @@ class CommissionManualWizard(models.TransientModel):
         for wizard in self:
             wizard.sale_order_count = len(wizard.sale_order_ids)
 
-    @api.constrains('manual_amount')
-    def _check_manual_amount(self):
-        """Ensure manual amount is positive"""
+    @api.depends('base_amount', 'commission_percentage')
+    def _compute_manual_amount(self):
+        """Calculate commission amount from base amount and percentage"""
         for wizard in self:
-            if wizard.manual_amount <= 0:
-                raise UserError(_('Commission amount must be greater than zero.'))
+            wizard.manual_amount = (wizard.base_amount * wizard.commission_percentage) / 100.0
+
+    @api.constrains('base_amount')
+    def _check_base_amount(self):
+        """Ensure base amount is positive"""
+        for wizard in self:
+            if wizard.base_amount <= 0:
+                raise UserError(_('Base amount must be greater than zero.'))
+
+    @api.constrains('commission_percentage')
+    def _check_commission_percentage(self):
+        """Ensure commission percentage is positive"""
+        for wizard in self:
+            if wizard.commission_percentage <= 0:
+                raise UserError(_('Commission percentage must be greater than zero.'))
 
     def action_create_commission(self):
         """Create manual commission record"""
@@ -116,8 +145,9 @@ class CommissionManualWizard(models.TransientModel):
             'commission_type': self.commission_type,
             # No plan_id - manual commissions don't need a plan
             'date': fields.Date.context_today(self),
-            'base_amount': 0.0,  # Not used for manual commissions
-            'commission_amount': self.manual_amount,  # Store directly
+            'base_amount': self.base_amount,  # Store the base amount for manual commissions
+            'percentage_override': self.commission_percentage,  # Store the percentage
+            'commission_amount': self.manual_amount,  # Store calculated commission
             'is_adjustment': True,  # Mark as manual/adjustment
             'status': 'unpaid',
             'company_id': self.company_id.id,

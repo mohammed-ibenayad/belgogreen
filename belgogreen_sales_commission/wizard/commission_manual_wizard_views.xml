@@ -16,7 +16,9 @@
                             </group>
                             <group string="Montant">
                                 <field name="currency_id" invisible="1"/>
-                                <field name="manual_amount" string="Montant de la Commission" widget="monetary"/>
+                                <field name="base_amount" string="Montant de Base" widget="monetary"/>
+                                <field name="commission_percentage" string="Pourcentage de Commission (%)"/>
+                                <field name="manual_amount" string="Montant de la Commission" widget="monetary" readonly="1" class="oe_subtotal_footer_separator"/>
                                 <field name="company_id" invisible="1"/>
                             </group>
                         </group>
@@ -55,6 +57,8 @@
             <field name="res_model">commission.manual.wizard</field>
             <field name="view_mode">form</field>
             <field name="target">new</field>
+            <field name="binding_model_id" eval="False"/>
+            <field name="binding_view_types" eval="False"/>
         </record>
 
         <!-- Menu item for Manual Commission Creation (Manager only) -->
