@@ -51,7 +51,7 @@
         </field>
     </record>
 
-    <!-- Commission Claim Wizard Action -->
+    <!-- Commission Claim Wizard Action (Users Only) -->
     <record id="action_commission_claim_wizard" model="ir.actions.act_window">
         <field name="name">Claim Commission Payment</field>
         <field name="res_model">commission.claim.wizard</field>
