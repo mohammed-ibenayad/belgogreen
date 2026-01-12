@@ -55,6 +55,8 @@
             <field name="res_model">commission.manual.wizard</field>
             <field name="view_mode">form</field>
             <field name="target">new</field>
+            <field name="binding_model_id" eval="False"/>
+            <field name="binding_view_types" eval="False"/>
         </record>
 
         <!-- Menu item for Manual Commission Creation (Manager only) -->
