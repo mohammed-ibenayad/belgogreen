@@ -68,9 +68,9 @@
                                     type="object"
                                     class="oe_stat_button"
                                     icon="fa-usd"
-                                    invisible="not sale_order_id">
+                                    invisible="not sale_order_id and not linked_sale_order_ids">
                                 <div class="o_field_widget o_stat_info">
-                                    <span class="o_stat_text">Vente</span>
+                                    <span class="o_stat_text">Commande(s)</span>
                                 </div>
                             </button>
                             <button name="action_view_purchase_order"
@@ -112,7 +112,7 @@
                             <group string="Calculation" name="calculation">
                                 <field name="plan_id" readonly="1" groups="belgogreen_sales_commission.group_commission_manager" options="{'no_open': True}"/>
                                 <field name="base_amount" readonly="1"/>
-                                <field name="percentage_override" groups="belgogreen_sales_commission.group_commission_manager" readonly="status in ['processing', 'paid']"/>
+                                <field name="percentage_override" groups="belgogreen_sales_commission.group_commission_manager" readonly="is_adjustment or status in ['processing', 'paid']"/>
                                 <field name="commission_percentage" readonly="1"/>
                                 <field name="commission_amount" class="oe_subtotal_footer_separator" readonly="not is_adjustment or status in ['processing', 'paid']"/>
                             </group>
