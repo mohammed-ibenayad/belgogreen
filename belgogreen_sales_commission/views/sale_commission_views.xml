@@ -39,9 +39,6 @@
                         <button name="action_claim_payment" string="Claim Payment" type="object" class="oe_highlight"
                                 invisible="status != 'unpaid' or user_id != uid"
                                 groups="belgogreen_sales_commission.group_commission_user"/>
-                        <button name="action_view_claim" string="View Claim" type="object" class="oe_highlight"
-                                invisible="status != 'claimed' or claim_count == 0 or user_id != uid"
-                                groups="belgogreen_sales_commission.group_commission_user"/>
                         <button name="action_create_po_from_commissions" string="Create Purchase Order" type="object" class="oe_highlight"
                                 invisible="status != 'unpaid'"
                                 groups="belgogreen_sales_commission.group_commission_manager"/>

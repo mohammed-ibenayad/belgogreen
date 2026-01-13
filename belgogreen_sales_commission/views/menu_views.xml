@@ -2,17 +2,26 @@
 <odoo>
     <data>
 
-        <!-- Main Menu -->
+        <!-- Main Menu (Manager Entry Point) -->
         <menuitem id="menu_commission_root"
                   name="Commissions"
                   web_icon="fa-wallet"
                   action="action_sale_commission_unpaid"
-                  sequence="75"/>
+                  sequence="75"
+                  groups="belgogreen_sales_commission.group_commission_manager"/>
 
-        <!-- Dashboard Menu (first item) -->
+        <!-- Main Menu (User Entry Point - Dashboard) -->
+        <menuitem id="menu_commission_root_user"
+                  name="Commissions"
+                  web_icon="fa-wallet"
+                  action="action_commission_dashboard"
+                  sequence="75"
+                  groups="belgogreen_sales_commission.group_commission_user_only"/>
+
+        <!-- Dashboard Menu (for users) -->
         <menuitem id="menu_commission_dashboard"
                   name="Dashboard"
-                  parent="menu_commission_root"
+                  parent="menu_commission_root_user"
                   action="action_commission_dashboard"
                   sequence="1"
                   groups="belgogreen_sales_commission.group_commission_user"/>
@@ -20,7 +29,7 @@
         <!-- My Commission Menu (for users) -->
         <menuitem id="menu_my_commission"
                   name="Mes commissions"
-                  parent="menu_commission_root"
+                  parent="menu_commission_root_user"
                   sequence="10"
                   groups="belgogreen_sales_commission.group_commission_user"/>
 
