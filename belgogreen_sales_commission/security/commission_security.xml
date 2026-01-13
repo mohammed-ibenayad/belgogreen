@@ -21,12 +21,12 @@
 
         <!-- Record Rules -->
 
-        <!-- Commission: Users see only their own commissions -->
-        <!-- Note: With plan-based hierarchy, subordinates are plan-specific, not global -->
+        <!-- Commission: Users see their own commissions and subordinates' commissions -->
+        <!-- Uses visible_to_user_ids computed field that includes user + all their managers -->
         <record id="sale_commission_user_rule" model="ir.rule">
-            <field name="name">User can see own commissions</field>
+            <field name="name">User can see own and subordinate commissions</field>
             <field name="model_id" ref="model_sale_commission"/>
-            <field name="domain_force">[('user_id', '=', user.id)]</field>
+            <field name="domain_force">[('visible_to_user_ids', 'in', [user.id])]</field>
             <field name="groups" eval="[(4, ref('group_commission_user'))]"/>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
