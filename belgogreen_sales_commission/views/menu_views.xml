@@ -101,6 +101,13 @@ else:
                   parent="menu_commission_management"
                   sequence="20"/>
 
+        <menuitem id="menu_commission_manual_create"
+                  name="Créer une Commission"
+                  parent="menu_commission_tracking"
+                  action="action_commission_manual_wizard"
+                  sequence="5"
+                  groups="belgogreen_sales_commission.group_commission_manager"/>
+
         <menuitem id="menu_commission_deductions_management"
                   name="Deductions"
                   parent="menu_commission_tracking"
