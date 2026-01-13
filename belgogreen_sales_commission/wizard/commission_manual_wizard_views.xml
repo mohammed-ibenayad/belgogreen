@@ -61,14 +61,5 @@
             <field name="binding_view_types" eval="False"/>
         </record>
 
-        <!-- Menu item for Manual Commission Creation (Manager only) -->
-        <menuitem
-            id="menu_commission_manual_create"
-            name="Créer une Commission"
-            parent="belgogreen_sales_commission.menu_commission_tracking"
-            action="action_commission_manual_wizard"
-            sequence="5"
-            groups="belgogreen_sales_commission.group_commission_manager"/>
-
     </data>
 </odoo>
