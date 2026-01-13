@@ -226,7 +226,7 @@
 
         <!-- My Claims (User) -->
         <record id="action_sale_commission_claim_my" model="ir.actions.act_window">
-            <field name="name">My Claims</field>
+            <field name="name">Mes réclamations</field>
             <field name="res_model">sale.commission.claim</field>
             <field name="view_mode">list,form,kanban</field>
             <field name="context">{'search_default_my_claims': 1}</field>
