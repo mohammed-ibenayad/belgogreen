@@ -2,26 +2,45 @@
 <odoo>
     <data>
 
-        <!-- Main Menu (Manager Entry Point) -->
+        <!-- Smart Entry Point Action - Redirects based on user role -->
+        <record id="action_commission_smart_entry" model="ir.actions.server">
+            <field name="name">Commission Entry Point</field>
+            <field name="model_id" ref="model_sale_commission"/>
+            <field name="state">code</field>
+            <field name="code">
+# Smart redirect based on user role
+if env.user.has_group('belgogreen_sales_commission.group_commission_manager'):
+    # Manager: Show unpaid commissions
+    action = {
+        'type': 'ir.actions.act_window',
+        'res_model': 'sale.commission',
+        'view_mode': 'list,form',
+        'name': 'Unpaid Commissions',
+        'context': {'search_default_can_be_paid': 1, 'search_default_group_user': 1},
+        'domain': [],
+    }
+else:
+    # Regular user: Show dashboard
+    action = {
+        'type': 'ir.actions.client',
+        'tag': 'commission_dashboard',
+        'name': 'Dashboard',
+    }
+            </field>
+        </record>
+
+        <!-- Main Menu (Single entry point for all users) -->
         <menuitem id="menu_commission_root"
                   name="Commissions"
                   web_icon="fa-wallet"
-                  action="action_sale_commission_unpaid"
+                  action="action_commission_smart_entry"
                   sequence="75"
-                  groups="belgogreen_sales_commission.group_commission_manager"/>
-
-        <!-- Main Menu (User Entry Point - Dashboard) -->
-        <menuitem id="menu_commission_root_user"
-                  name="Commissions"
-                  web_icon="fa-wallet"
-                  action="action_commission_dashboard"
-                  sequence="75"
-                  groups="belgogreen_sales_commission.group_commission_user_only"/>
+                  groups="belgogreen_sales_commission.group_commission_user"/>
 
         <!-- Dashboard Menu (for users) -->
         <menuitem id="menu_commission_dashboard"
                   name="Dashboard"
-                  parent="menu_commission_root_user"
+                  parent="menu_commission_root"
                   action="action_commission_dashboard"
                   sequence="1"
                   groups="belgogreen_sales_commission.group_commission_user"/>
@@ -29,7 +48,7 @@
         <!-- My Commission Menu (for users) -->
         <menuitem id="menu_my_commission"
                   name="Mes commissions"
-                  parent="menu_commission_root_user"
+                  parent="menu_commission_root"
                   sequence="10"
                   groups="belgogreen_sales_commission.group_commission_user"/>
 
