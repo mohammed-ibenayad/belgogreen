@@ -209,6 +209,17 @@ class SaleCommission(models.Model):
         help='Purchase order ID for this commission payment'
     )
 
+    # Visibility control for hierarchy-based viewing
+    visible_to_user_ids = fields.Many2many(
+        'res.users',
+        'sale_commission_visibility_rel',
+        'commission_id', 'user_id',
+        string='Visible To Users',
+        compute='_compute_visible_to_user_ids',
+        store=True,
+        help='Users who can view this commission (owner + their managers in all plans)'
+    )
+
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -366,6 +377,33 @@ class SaleCommission(models.Model):
                     bill_id = bill.id if bill else False
 
             commission.po_bill_id = bill_id
+
+    @api.depends('user_id', 'plan_id')
+    def _compute_visible_to_user_ids(self):
+        """
+        Compute which users can view this commission based on hierarchy
+        Includes: the commission owner + all their managers (direct and indirect) in all plans
+        """
+        for commission in self:
+            visible_users = self.env['res.users'].browse()
+
+            # Always include the commission owner
+            visible_users |= commission.user_id
+
+            # Get all plan assignments for this user across all plans
+            plan_users = self.env['sale.commission.plan.user'].search([
+                ('user_id', '=', commission.user_id.id)
+            ])
+
+            # For each plan, get all managers up the hierarchy
+            for plan_user in plan_users:
+                # Get the management chain for this user in this plan
+                chain = plan_user._get_hierarchy_chain()
+                # Add all managers in the chain (excluding the user themselves)
+                for chain_user in chain[1:]:  # Skip first (the user themselves)
+                    visible_users |= chain_user.user_id
+
+            commission.visible_to_user_ids = visible_users
 
     def action_cancel(self):
         """Cancel commission"""
