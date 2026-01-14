@@ -102,7 +102,7 @@
                                 <br/>
                                 <strong>Exemple de configuration :</strong>
                                 <ul>
-                                    <li>Commercial : Direct : 5%, Supervision : 0% (rôle de base, pas d'équipe)</li>
+                                    <li>Vendeur : Direct : 5%, Supervision : 0% (rôle de base, pas d'équipe)</li>
                                     <li>Chef d'équipe : Direct : 5%, Supervision : 2% (réalise ses propres ventes + supervision équipe)</li>
                                     <li>Directeur Commercial : Direct : 5%, Supervision : 1% (réalise ses propres ventes + supervision toute équipe)</li>
                                 </ul>
@@ -111,12 +111,12 @@
                     </page>
 
                     <!-- Users & Hierarchy Tab (NEW for plan-based architecture) -->
-                    <page string="Utilisateurs et Hiérarchie"
+                    <page string="Vendeurs et Hiérarchie"
                           name="users_hierarchy"
                           invisible="type != 'hierarchical'">
                         <field name="user_ids">
                             <list editable="bottom">
-                                <field name="user_id" string="Utilisateur" domain="[('company_id', '=', parent.company_id)]"/>
+                                <field name="user_id" string="Vendeur" domain="[('company_id', '=', parent.company_id)]"/>
                                 <field name="role_id" string="Rôle" domain="[('company_id', '=', parent.company_id)]"/>
                                 <field name="role_sequence" string="Niveau" readonly="1"/>
                                 <field name="manager_id" string="Manager"/>
@@ -142,7 +142,7 @@
                                 <ul>
                                     <li>Frederic Adam : Directeur de Sales, Manager : (aucun), Dates : (permanent)</li>
                                     <li>Corine Detilleux : Chef d'équipe, Manager : Frederic Adam, Dates : (permanent)</li>
-                                    <li>John Doe : Commercial, Manager : Corine Detilleux, Dates : 2025-01-01 à 2025-12-31 (saisonnier)</li>
+                                    <li>John Doe : Vendeur, Manager : Corine Detilleux, Dates : 2025-01-01 à 2025-12-31 (saisonnier)</li>
                                 </ul>
                                 <br/>
                                 <strong>💡 Astuce :</strong> Les pourcentages affichés sont automatiquement récupérés de la configuration du rôle sélectionné.

@@ -17,7 +17,7 @@
                     <field name="currency_id" column_invisible="1"/>
                     <field name="name" string="Référence" width="130px"/>
                     <field name="date" string="Date" width="90px"/>
-                    <field name="user_id" string="Utilisateur" width="140px"/>
+                    <field name="user_id" string="Vendeur" width="140px"/>
                     <field name="role_id" string="Rôle" width="110px"/>
                     <field name="commission_type" string="Type" width="80px"/>
                     <field name="sale_order_display" string="Commande(s)" width="120px"/>
