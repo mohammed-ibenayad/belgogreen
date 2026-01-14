@@ -35,48 +35,45 @@ class AccountMove(models.Model):
         # that can change due to reconciliation without being in vals!
         previous_states = {}
         for move in self:
-            # Track all vendor bills (in_invoice) to catch reconciliation-triggered changes
+            # Track ALL vendor bills (in_invoice) regardless of what's being written
             if move.move_type == 'in_invoice':
                 previous_states[move.id] = move.payment_state
                 _logger.info(
-                    "Commission Payment: Tracking vendor bill %s (Type: %s, Previous state: %s)",
-                    move.name, move.move_type, move.payment_state
+                    "Commission Payment: [BEFORE] Tracking vendor bill %s (ID: %s, Previous state: %s, vals keys: %s)",
+                    move.name, move.id, move.payment_state, list(vals.keys())
                 )
 
         result = super(AccountMove, self).write(vals)
 
         for move in self:
-            # Check if payment_state changed to paid (either directly or via reconciliation)
+            # Only process vendor bills that we tracked
+            if move.id not in previous_states:
+                continue
+
+            previous_payment_state = previous_states[move.id]
+            current_payment_state = move.payment_state
+
+            # Check if payment_state changed to paid
             payment_state_changed = (
-                ('payment_state' in vals and move.payment_state in ['paid', 'in_payment']) or
-                (move.id in previous_states and
-                 previous_states[move.id] not in ['paid', 'in_payment'] and
-                 move.payment_state in ['paid', 'in_payment'])
+                previous_payment_state not in ['paid', 'in_payment'] and
+                current_payment_state in ['paid', 'in_payment']
             )
 
             _logger.info(
-                "Commission Payment: Move %s - Type: %s, Previous: %s, Current: %s, Changed: %s, Invoice Origin: %s",
-                move.name, move.move_type,
-                previous_states.get(move.id, 'N/A'),
-                move.payment_state,
+                "Commission Payment: [AFTER] Move %s (ID: %s) - Previous: %s, Current: %s, Changed: %s, Origin: %s",
+                move.name, move.id,
+                previous_payment_state,
+                current_payment_state,
                 payment_state_changed,
                 move.invoice_origin or 'N/A'
             )
 
             if payment_state_changed:
-                # Mark commissions paid for vendor bills
-                # This works for both hierarchical and manually created commissions
-                if move.move_type == 'in_invoice':
-                    _logger.info(
-                        "Commission Payment: Triggering _mark_commissions_paid for vendor bill %s (Origin: %s)",
-                        move.name, move.invoice_origin
-                    )
-                    move._mark_commissions_paid()
-                else:
-                    _logger.debug(
-                        "Commission Payment: Skipping move %s - not a vendor bill (Type: %s)",
-                        move.name, move.move_type
-                    )
+                _logger.info(
+                    "Commission Payment: ✅ Payment state changed! Triggering _mark_commissions_paid for %s",
+                    move.name
+                )
+                move._mark_commissions_paid()
 
         return result
 
