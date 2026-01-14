@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 
+import logging
 from odoo import models, fields, api, _
+from odoo.exceptions import UserError
+
+_logger = logging.getLogger(__name__)
 
 
 class AccountMove(models.Model):
@@ -32,6 +36,10 @@ class AccountMove(models.Model):
         if 'line_ids' in vals or 'payment_state' in vals:
             for move in self:
                 previous_states[move.id] = move.payment_state
+                _logger.info(
+                    "Commission Payment: Tracking move %s (Type: %s, Previous state: %s)",
+                    move.name, move.move_type, move.payment_state
+                )
 
         result = super(AccountMove, self).write(vals)
 
@@ -44,11 +52,29 @@ class AccountMove(models.Model):
                  move.payment_state in ['paid', 'in_payment'])
             )
 
+            _logger.info(
+                "Commission Payment: Move %s - Type: %s, Previous: %s, Current: %s, Changed: %s, Invoice Origin: %s",
+                move.name, move.move_type,
+                previous_states.get(move.id, 'N/A'),
+                move.payment_state,
+                payment_state_changed,
+                move.invoice_origin or 'N/A'
+            )
+
             if payment_state_changed:
                 # Mark commissions paid for vendor bills
                 # This works for both hierarchical and manually created commissions
                 if move.move_type == 'in_invoice':
+                    _logger.info(
+                        "Commission Payment: Triggering _mark_commissions_paid for vendor bill %s (Origin: %s)",
+                        move.name, move.invoice_origin
+                    )
                     move._mark_commissions_paid()
+                else:
+                    _logger.debug(
+                        "Commission Payment: Skipping move %s - not a vendor bill (Type: %s)",
+                        move.name, move.move_type
+                    )
 
         return result
 
@@ -56,8 +82,22 @@ class AccountMove(models.Model):
         """Mark commissions as paid when vendor bill is paid"""
         self.ensure_one()
 
+        _logger.info(
+            "Commission Payment: _mark_commissions_paid called for bill %s (ID: %s)",
+            self.name, self.id
+        )
+
         if not self.invoice_origin:
+            _logger.warning(
+                "Commission Payment: Bill %s has no invoice_origin, skipping",
+                self.name
+            )
             return
+
+        _logger.info(
+            "Commission Payment: Searching for PO with name '%s'",
+            self.invoice_origin
+        )
 
         # Find the PO
         po = self.env['purchase.order'].search([
@@ -65,10 +105,23 @@ class AccountMove(models.Model):
         ], limit=1)
 
         if not po:
+            _logger.warning(
+                "Commission Payment: No PO found with name '%s', skipping",
+                self.invoice_origin
+            )
             return  # Not a commission payment
+
+        _logger.info(
+            "Commission Payment: Found PO %s (ID: %s), Claims: %s, Direct Commissions: %s",
+            po.name, po.id, len(po.claim_ids), len(po.commission_ids)
+        )
 
         # Check if this is a commission PO (either claim-based or direct)
         if not po.claim_ids and not po.commission_ids:
+            _logger.info(
+                "Commission Payment: PO %s has no claims or commissions, skipping",
+                po.name
+            )
             return  # Not a commission payment
 
         # Validate bill amount matches PO (within tolerance)
@@ -93,6 +146,11 @@ class AccountMove(models.Model):
             lambda line: line.account_id.account_type in ('liability_payable', 'asset_receivable')
         )
 
+        _logger.info(
+            "Commission Payment: Found %s payable/receivable line(s) for bill %s",
+            len(payable_line), self.name
+        )
+
         # Get payments from reconciled lines
         payments = self.env['account.payment']
         if payable_line:
@@ -100,24 +158,71 @@ class AccountMove(models.Model):
             matched_lines = payable_line.mapped('matched_debit_ids.debit_move_id') | \
                            payable_line.mapped('matched_credit_ids.credit_move_id')
 
+            _logger.info(
+                "Commission Payment: Found %s matched line(s) from reconciliation",
+                len(matched_lines)
+            )
+
             # Get payment records from those move lines
             payment_moves = matched_lines.mapped('move_id')
             payments = self.env['account.payment'].search([
                 ('move_id', 'in', payment_moves.ids)
             ])
 
+            _logger.info(
+                "Commission Payment: Found %s payment(s): %s (States: %s)",
+                len(payments),
+                ', '.join(payments.mapped('name')),
+                ', '.join(payments.mapped('state'))
+            )
+        else:
+            _logger.warning(
+                "Commission Payment: No payable line found for bill %s",
+                self.name
+            )
+
         # Get ALL commissions (from claims or direct) - unified approach
         commissions = po.claim_ids.mapped('commission_ids') | po.commission_ids
 
+        _logger.info(
+            "Commission Payment: Found %s commission(s) to mark as paid: %s",
+            len(commissions),
+            ', '.join(commissions.mapped('name'))
+        )
+
         if not commissions:
+            _logger.warning(
+                "Commission Payment: No commissions found for PO %s, skipping",
+                po.name
+            )
             return  # No commissions to mark as paid
 
+        # Log commission details before update
+        for comm in commissions:
+            _logger.info(
+                "Commission Payment: Commission %s (ID: %s) - Current status: %s, Amount: %s, User: %s",
+                comm.name, comm.id, comm.status, comm.commission_amount, comm.user_id.name
+            )
+
         # Update ALL commissions to paid (works for both claim-based and direct)
+        payment_id_to_set = payments[0].id if payments else False
+        payment_date_to_set = self.invoice_date or fields.Date.today()
+
+        _logger.info(
+            "Commission Payment: Updating commissions to paid - Payment ID: %s, Payment Date: %s",
+            payment_id_to_set, payment_date_to_set
+        )
+
         commissions.write({
             'status': 'paid',
-            'payment_date': self.invoice_date or fields.Date.today(),
-            'payment_id': payments[0].id if payments else False,  # Link to first payment
+            'payment_date': payment_date_to_set,
+            'payment_id': payment_id_to_set,  # Link to first payment
         })
+
+        _logger.info(
+            "Commission Payment: Successfully updated %s commission(s) to paid status",
+            len(commissions)
+        )
 
         # Log success with appropriate message
         if po.claim_ids:
@@ -160,6 +265,11 @@ class AccountMove(models.Model):
         """Manual action to mark commissions paid for this vendor bill"""
         self.ensure_one()
 
+        _logger.info(
+            "Commission Payment: Manual action triggered for bill %s by user",
+            self.name
+        )
+
         if self.move_type != 'in_invoice':
             raise UserError(_('This action is only for vendor bills.'))
 
@@ -171,7 +281,7 @@ class AccountMove(models.Model):
             ('name', '=', self.invoice_origin)
         ], limit=1)
 
-        if not po or not po.claim_ids:
+        if not po or (not po.claim_ids and not po.commission_ids):
             raise UserError(_('This bill is not linked to a commission purchase order.'))
 
         # Mark commissions paid manually
@@ -185,6 +295,73 @@ class AccountMove(models.Model):
                 'message': _('Commissions have been marked as paid.'),
                 'type': 'success',
                 'sticky': False,
+            }
+        }
+
+    def action_debug_commission_payment(self):
+        """Debug action to analyze commission payment status"""
+        self.ensure_one()
+
+        _logger.info("=" * 80)
+        _logger.info("COMMISSION PAYMENT DEBUG for Bill: %s (ID: %s)", self.name, self.id)
+        _logger.info("=" * 80)
+
+        _logger.info("Bill Details:")
+        _logger.info("  - Type: %s", self.move_type)
+        _logger.info("  - State: %s", self.state)
+        _logger.info("  - Payment State: %s", self.payment_state)
+        _logger.info("  - Invoice Origin: %s", self.invoice_origin)
+        _logger.info("  - Amount Total: %s", self.amount_total)
+        _logger.info("  - Invoice Date: %s", self.invoice_date)
+        _logger.info("  - Has Reconciled Entries: %s", self.has_reconciled_entries)
+
+        if self.invoice_origin:
+            po = self.env['purchase.order'].search([('name', '=', self.invoice_origin)], limit=1)
+            if po:
+                _logger.info("Purchase Order Found:")
+                _logger.info("  - PO: %s (ID: %s)", po.name, po.id)
+                _logger.info("  - Claims: %s", len(po.claim_ids))
+                _logger.info("  - Direct Commissions: %s", len(po.commission_ids))
+
+                commissions = po.claim_ids.mapped('commission_ids') | po.commission_ids
+                _logger.info("  - Total Commissions: %s", len(commissions))
+
+                for comm in commissions:
+                    _logger.info("  - Commission %s: Status=%s, Amount=%s, Payment ID=%s, Payment Date=%s",
+                                comm.name, comm.status, comm.commission_amount,
+                                comm.payment_id.id if comm.payment_id else None, comm.payment_date)
+            else:
+                _logger.warning("  - NO Purchase Order found with name: %s", self.invoice_origin)
+
+        # Check payments
+        payable_line = self.line_ids.filtered(
+            lambda line: line.account_id.account_type in ('liability_payable', 'asset_receivable')
+        )
+        _logger.info("Payable/Receivable Lines: %s", len(payable_line))
+
+        if payable_line:
+            matched_lines = payable_line.mapped('matched_debit_ids.debit_move_id') | \
+                           payable_line.mapped('matched_credit_ids.credit_move_id')
+            _logger.info("Matched Lines from Reconciliation: %s", len(matched_lines))
+
+            payment_moves = matched_lines.mapped('move_id')
+            payments = self.env['account.payment'].search([('move_id', 'in', payment_moves.ids)])
+
+            _logger.info("Payments Found: %s", len(payments))
+            for payment in payments:
+                _logger.info("  - Payment: %s (ID: %s, State: %s, Is Reconciled: %s)",
+                            payment.name, payment.id, payment.state, payment.is_reconciled)
+
+        _logger.info("=" * 80)
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Debug Complete'),
+                'message': _('Check server logs for detailed commission payment analysis.'),
+                'type': 'info',
+                'sticky': True,
             }
         }
 
