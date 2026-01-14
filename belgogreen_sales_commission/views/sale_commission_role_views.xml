@@ -53,18 +53,18 @@
         <field name="name">sale.commission.role.tree</field>
         <field name="model">sale.commission.role</field>
         <field name="arch" type="xml">
-            <list string="Commission Roles"
+            <list string="Rôles de Commission"
                   decoration-muted="not active">
-                <field name="sequence" widget="handle"/>
-                <field name="name"/>
-                <field name="code"/>
-                <field name="is_base_role"/>
-                <field name="requires_manager"/>
-                <field name="can_manage_subordinates"/>
-                <field name="user_count"/>
-                <field name="commission_count"/>
-                <field name="active" widget="boolean_toggle"/>
-                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="sequence" string="Ordre" widget="handle"/>
+                <field name="name" string="Nom"/>
+                <field name="code" string="Code"/>
+                <field name="is_base_role" string="Rôle de Base"/>
+                <field name="requires_manager" string="Nécessite un Manager"/>
+                <field name="can_manage_subordinates" string="Peut Gérer des Subordonnés"/>
+                <field name="user_count" string="Nb d'Utilisateurs"/>
+                <field name="commission_count" string="Nb de Commissions"/>
+                <field name="active" string="Actif" widget="boolean_toggle"/>
+                <field name="company_id" string="Société" groups="base.group_multi_company"/>
             </list>
         </field>
     </record>
@@ -141,7 +141,7 @@
 
     <!-- Action -->
     <record id="action_sale_commission_role" model="ir.actions.act_window">
-        <field name="name">Commission Roles</field>
+        <field name="name">Rôles de Commission</field>
         <field name="res_model">sale.commission.role</field>
         <field name="view_mode">list,kanban,form</field>
         <field name="context">{'search_default_active_roles': 1}</field>
