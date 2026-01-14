@@ -26,25 +26,42 @@ This document explains the commission payment mechanism and how to debug issues 
 - ✅ Commission is linked to Purchase Order P00004
 - ❌ **BUT** commission is stuck in `status = "processing"`
 
-## Potential Root Causes
+## Root Cause Identified ✅
 
-### 1. **Payment Not Fully Posted**
-The `account.payment` record shows:
-```json
-"state": "in_process"  // Not "posted"
+**THE BUG**: The `payment_state` field on `account.move` is a **computed field** that gets recalculated based on reconciliation. When a payment is registered and reconciled:
+
+1. Odoo calls `write()` with reconciliation data
+2. `payment_state` is **NOT** in the `vals` dict (it's computed, not written)
+3. The original code only tracked moves when `'line_ids' in vals or 'payment_state' in vals`
+4. `previous_states` dict remained empty
+5. Payment state changed from `not_paid` → `paid` **BUT** our hook didn't detect it
+6. `_mark_commissions_paid()` was never triggered ❌
+
+**Evidence from logs**:
+```
+Commission Payment: Move BILL/2026/01/0012 - Previous: N/A, Current: paid, Changed: False
+```
+- `Previous: N/A` = The bill wasn't tracked
+- `Current: paid` = Bill is now paid
+- `Changed: False` = Logic failed to detect the change
+
+### The Fix
+
+Changed the tracking logic to **always monitor vendor bills** regardless of what's in `vals`:
+
+```python
+# OLD (BUGGY):
+if 'line_ids' in vals or 'payment_state' in vals:
+    for move in self:
+        previous_states[move.id] = move.payment_state
+
+# NEW (FIXED):
+for move in self:
+    if move.move_type == 'in_invoice':  # Always track vendor bills
+        previous_states[move.id] = move.payment_state
 ```
 
-**Theory**: The `write()` trigger might have fired before the payment was fully reconciled, or there's a timing issue.
-
-### 2. **Write Hook Not Triggered**
-The `write()` method only triggers when:
-- `'payment_state'` is in `vals`, OR
-- `'line_ids'` is in `vals` (for reconciliation)
-
-If neither was present in the write operation, the hook wouldn't fire.
-
-### 3. **Exception During Processing**
-An error in `_mark_commissions_paid()` could have failed silently.
+This ensures we catch computed field changes during reconciliation.
 
 ## Debugging Tools Added
 

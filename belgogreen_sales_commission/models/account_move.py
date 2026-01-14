@@ -31,13 +31,15 @@ class AccountMove(models.Model):
     def write(self, vals):
         """Override write to mark commissions paid when vendor bill is paid"""
         # Store previous payment states before write
-        # This is needed to detect payment state changes that happen via reconciliation
+        # CRITICAL: Always track vendor bills because payment_state is a computed field
+        # that can change due to reconciliation without being in vals!
         previous_states = {}
-        if 'line_ids' in vals or 'payment_state' in vals:
-            for move in self:
+        for move in self:
+            # Track all vendor bills (in_invoice) to catch reconciliation-triggered changes
+            if move.move_type == 'in_invoice':
                 previous_states[move.id] = move.payment_state
                 _logger.info(
-                    "Commission Payment: Tracking move %s (Type: %s, Previous state: %s)",
+                    "Commission Payment: Tracking vendor bill %s (Type: %s, Previous state: %s)",
                     move.name, move.move_type, move.payment_state
                 )
 
