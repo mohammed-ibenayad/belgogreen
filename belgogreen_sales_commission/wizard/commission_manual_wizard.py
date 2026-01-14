@@ -2,6 +2,7 @@
 
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
+import re
 
 
 class CommissionManualWizard(models.TransientModel):
@@ -74,6 +75,13 @@ class CommissionManualWizard(models.TransientModel):
         help='Explanation for this manual commission creation'
     )
 
+    period = fields.Char(
+        string='Period',
+        required=True,
+        default=lambda self: fields.Date.context_today(self).strftime('%Y-%m'),
+        help='Period this commission belongs to (format: YYYY-MM, e.g., 2025-01)'
+    )
+
     create_po_immediately = fields.Boolean(
         string='Create Purchase Order Immediately',
         default=False,
@@ -117,6 +125,18 @@ class CommissionManualWizard(models.TransientModel):
             if wizard.commission_percentage <= 0:
                 raise UserError(_('Commission percentage must be greater than zero.'))
 
+    @api.constrains('period')
+    def _check_period_format(self):
+        """Ensure period is in YYYY-MM format"""
+        for wizard in self:
+            if wizard.period:
+                if not re.match(r'^\d{4}-\d{2}$', wizard.period):
+                    raise UserError(_('Period must be in YYYY-MM format (e.g., 2025-01).'))
+                # Validate month is between 01 and 12
+                year, month = wizard.period.split('-')
+                if not (1 <= int(month) <= 12):
+                    raise UserError(_('Month must be between 01 and 12.'))
+
     def action_create_commission(self):
         """Create manual commission record"""
         self.ensure_one()
@@ -145,6 +165,7 @@ class CommissionManualWizard(models.TransientModel):
             'commission_type': self.commission_type,
             # No plan_id - manual commissions don't need a plan
             'date': fields.Date.context_today(self),
+            'period': self.period,  # Use the period specified by the manager
             'base_amount': self.base_amount,  # Store the base amount for manual commissions
             'percentage_override': self.commission_percentage,  # Store the percentage
             'commission_amount': self.manual_amount,  # Store calculated commission
