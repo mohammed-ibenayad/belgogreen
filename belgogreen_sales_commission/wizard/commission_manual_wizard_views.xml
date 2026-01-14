@@ -13,6 +13,7 @@
                             <group string="Bénéficiaire">
                                 <field name="user_id" string="Vendeur" options="{'no_create': True, 'no_open': True}"/>
                                 <field name="commission_type"/>
+                                <field name="period" string="Période (AAAA-MM)" placeholder="Ex: 2025-01"/>
                             </group>
                             <group string="Montant">
                                 <field name="currency_id" invisible="1"/>
