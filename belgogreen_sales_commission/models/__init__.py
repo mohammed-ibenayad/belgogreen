@@ -14,4 +14,5 @@ from . import commission_deduction
 from . import purchase_order
 from . import sale_order
 from . import account_move
+from . import account_move_line  # NEW: Hook into reconciliation
 from . import commission_dashboard
