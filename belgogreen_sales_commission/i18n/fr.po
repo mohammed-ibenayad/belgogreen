@@ -1107,6 +1107,18 @@ msgstr "Aucune commission sélectionnée."
 #. module: belgogreen_sales_commission
 #: code:addons/belgogreen_sales_commission/wizard/commission_claim_wizard.py:0
 #, python-format
+msgid "Claim Created"
+msgstr "Réclamation créée"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/wizard/commission_claim_wizard.py:0
+#, python-format
+msgid "Your claim %s with %s commission(s) totaling %s has been created. Review and submit when ready."
+msgstr "Votre réclamation %s avec %s commission(s) d'un montant total de %s a été créée. Examinez et soumettez quand vous êtes prêt."
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/wizard/commission_claim_wizard.py:0
+#, python-format
 msgid "Claim Submitted"
 msgstr "Réclamation soumise"
 
