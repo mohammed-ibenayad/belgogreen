@@ -92,8 +92,8 @@
                                         <field name="role_id" string="Rôle" width="110px"/>
                                         <field name="commission_type" string="Type" width="80px"/>
                                         <field name="sale_order_id" string="Commande" width="120px"/>
-                                        <field name="base_amount" string="Base" sum="Total base" width="100px"/>
-                                        <field name="commission_amount" string="Montant" sum="Total commissions" width="110px"/>
+                                        <field name="base_amount" string="Base" sum="Base totale" width="100px"/>
+                                        <field name="commission_amount" string="Montant" sum="Commissions totales" width="110px"/>
                                         <field name="status" string="Statut" width="90px"/>
                                     </list>
                                 </field>
