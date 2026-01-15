@@ -170,11 +170,27 @@ class CommissionDashboard(models.TransientModel):
             ('user_id', '=', user.id)
         ])
 
+        # Get status field to access translations
+        status_field = self.env['sale.commission']._fields['status']
+
+        # Build state distribution with amounts and translated labels
         state_distribution = {
-            'pending': sum(my_commissions.filtered(lambda c: c.status == 'unpaid').mapped('commission_amount')),
-            'approved': sum(my_commissions.filtered(lambda c: c.status == 'claimed').mapped('commission_amount')),
-            'paid': sum(my_commissions.filtered(lambda c: c.status == 'paid').mapped('commission_amount')),
-            'cancelled': sum(my_commissions.filtered(lambda c: c.status == 'cancelled').mapped('commission_amount')),
+            'pending': {
+                'amount': sum(my_commissions.filtered(lambda c: c.status == 'unpaid').mapped('commission_amount')),
+                'label': dict(status_field.selection).get('unpaid', 'Pending')
+            },
+            'approved': {
+                'amount': sum(my_commissions.filtered(lambda c: c.status == 'claimed').mapped('commission_amount')),
+                'label': dict(status_field.selection).get('claimed', 'Approved')
+            },
+            'paid': {
+                'amount': sum(my_commissions.filtered(lambda c: c.status == 'paid').mapped('commission_amount')),
+                'label': dict(status_field.selection).get('paid', 'Paid')
+            },
+            'cancelled': {
+                'amount': sum(my_commissions.filtered(lambda c: c.status == 'cancelled').mapped('commission_amount')),
+                'label': dict(status_field.selection).get('cancelled', 'Cancelled')
+            },
         }
 
         return {
