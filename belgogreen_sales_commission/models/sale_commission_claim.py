@@ -54,12 +54,12 @@ class SaleCommissionClaim(models.Model):
     )
 
     state = fields.Selection([
-        ('draft', 'Draft'),
-        ('pending', 'Pending'),
-        ('approved', 'Approved'),
-        ('rejected', 'Rejected')
+        ('draft', 'Brouillon'),
+        ('pending', 'En attente'),
+        ('approved', 'Approuvée'),
+        ('rejected', 'Rejetée')
     ], string='State', default='draft', required=True, tracking=True,
-       help='Draft: Being prepared | Pending: Awaiting review | Approved: Ready to pay | Rejected: Denied')
+       help='Brouillon: En préparation | En attente: En attente de révision | Approuvée: Prête à payer | Rejetée: Refusée')
 
     processed_by = fields.Many2one(
         'res.users',
