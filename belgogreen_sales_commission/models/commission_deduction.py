@@ -27,20 +27,20 @@ class CommissionDeduction(models.Model):
     )
 
     deduction_type = fields.Selection([
-        ('down_payment', 'Down Payment / Advance'),
-        ('service_fee', 'Service Fee'),
-        ('appointment', 'Appointment Scheduling'),
-        ('leads', 'Lead Generation'),
-        ('materials', 'Marketing Materials'),
-        ('training', 'Training Course'),
-        ('other', 'Other')
+        ('down_payment', 'Acompte / Avance'),
+        ('service_fee', 'Frais de service'),
+        ('appointment', 'Planification de rendez-vous'),
+        ('leads', 'Génération de prospects'),
+        ('materials', 'Matériel marketing'),
+        ('training', 'Formation'),
+        ('other', 'Autre')
     ], string='Type', required=True, tracking=True)
 
     deduction_category = fields.Selection([
-        ('mandatory', 'Mandatory'),
-        ('optional', 'Optional'),
+        ('mandatory', 'Obligatoire'),
+        ('optional', 'Optionnelle'),
     ], string='Category', default='mandatory', required=True, tracking=True,
-       help="Mandatory: Auto-applied to claims\nOptional: User can choose to include")
+       help="Obligatoire: Appliquée automatiquement aux réclamations\nOptionnelle: Le vendeur peut choisir de l'inclure")
 
     amount = fields.Monetary(
         string='Amount',
@@ -75,10 +75,10 @@ class CommissionDeduction(models.Model):
     )
 
     state = fields.Selection([
-        ('pending', 'Pending'),
-        ('applied', 'Applied to Payment'),
-        ('waived', 'Waived'),
-        ('cancelled', 'Cancelled')
+        ('pending', 'En attente'),
+        ('applied', 'Appliquée au paiement'),
+        ('waived', 'Annulée'),
+        ('cancelled', 'Annulée')
     ], string='Status', default='pending', required=True, tracking=True)
 
     # Relations

@@ -36,10 +36,10 @@ class SaleCommission(models.Model):
     )
 
     commission_type = fields.Selection([
-        ('direct', 'Direct Sale'),
-        ('override', 'Override Commission')
+        ('direct', 'Vente directe'),
+        ('override', 'Commission de supervision')
     ], string='Commission Type', required=True, default='direct', tracking=True,
-       help='Direct = user made the sale, Override = commission on subordinate\'s sale')
+       help='Vente directe = le vendeur a réalisé la vente, Commission de supervision = commission sur la vente d\'un subordonné')
 
     # Related Sale and Invoice
     sale_order_id = fields.Many2one(
@@ -117,15 +117,15 @@ class SaleCommission(models.Model):
 
     # Status
     status = fields.Selection([
-        ('unpaid', 'Unpaid'),
-        ('claimed', 'Claimed'),
-        ('approved', 'Approved'),
-        ('processing', 'Processing'),
-        ('paid', 'Paid'),
-        ('cancelled', 'Cancelled')
+        ('unpaid', 'Non payée'),
+        ('claimed', 'Réclamée'),
+        ('approved', 'Approuvée'),
+        ('processing', 'En traitement'),
+        ('paid', 'Payée'),
+        ('cancelled', 'Annulée')
     ], string='Status', default='unpaid', required=True, tracking=True,
-       help='Unpaid: Ready to claim | Claimed: In claim | Approved: Claim approved | '
-            'Processing: Awaiting payment | Paid: Payment received')
+       help='Non payée: Prête à réclamer | Réclamée: En réclamation | Approuvée: Réclamation approuvée | '
+            'En traitement: En attente de paiement | Payée: Paiement reçu')
 
     payment_date = fields.Date(
         string='Payment Date',
