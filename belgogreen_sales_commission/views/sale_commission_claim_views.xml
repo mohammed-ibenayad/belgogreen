@@ -213,7 +213,7 @@
             <field name="name">Réclamations de Commission</field>
             <field name="res_model">sale.commission.claim</field>
             <field name="view_mode">list,form,kanban</field>
-            <field name="context">{'search_default_pending': 1}</field>
+            <field name="context">{'search_default_pending': 1, 'create': False}</field>
             <field name="help" type="html">
                 <p class="o_view_nocontent_smiling_face">
                     Aucune réclamation trouvée
