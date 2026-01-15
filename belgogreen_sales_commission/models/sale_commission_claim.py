@@ -287,6 +287,32 @@ class SaleCommissionClaim(models.Model):
         self._notify_admins()
         return True
 
+    def action_delete_draft(self):
+        """Delete draft claim and return to list view"""
+        self.ensure_one()
+
+        # Verify claim is in draft state
+        if self.state != 'draft':
+            raise UserError(_('Only draft claims can be deleted.'))
+
+        # Verify user owns the claim
+        if self.user_id.id != self.env.user.id:
+            raise UserError(_('You can only delete your own claims.'))
+
+        # Delete the claim
+        self.unlink()
+
+        # Return to the claims list
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('My Claims'),
+            'res_model': 'sale.commission.claim',
+            'view_mode': 'list,form',
+            'domain': [('user_id', '=', self.env.user.id)],
+            'context': {'search_default_my_claims': 1},
+            'target': 'current',
+        }
+
     def action_approve(self):
         """Approve claim(s) and create draft PO
 
