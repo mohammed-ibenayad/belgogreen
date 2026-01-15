@@ -30,16 +30,16 @@ class SaleCommission(models.Model):
     role_id = fields.Many2one(
         'sale.commission.role',
         string='Role',
-        required=True,
+        required=False,
         tracking=True,
-        help='The role of the user in this commission'
+        help='The role of the user in this commission. Not required for manual commissions.'
     )
 
     commission_type = fields.Selection([
-        ('direct', 'Direct Sale'),
-        ('override', 'Override Commission')
+        ('direct', 'Vente directe'),
+        ('override', 'Commission de supervision')
     ], string='Commission Type', required=True, default='direct', tracking=True,
-       help='Direct = user made the sale, Override = commission on subordinate\'s sale')
+       help='Vente directe = le vendeur a réalisé la vente, Commission de supervision = commission sur la vente d\'un subordonné')
 
     # Related Sale and Invoice
     sale_order_id = fields.Many2one(
@@ -60,7 +60,8 @@ class SaleCommission(models.Model):
     plan_id = fields.Many2one(
         'sale.commission.plan',
         string='Commission Plan',
-        required=True
+        required=False,
+        help='Commission plan used for automatic commissions. Not required for manual commissions.'
     )
 
     # Dates
@@ -116,15 +117,15 @@ class SaleCommission(models.Model):
 
     # Status
     status = fields.Selection([
-        ('unpaid', 'Unpaid'),
-        ('claimed', 'Claimed'),
-        ('approved', 'Approved'),
-        ('processing', 'Processing'),
-        ('paid', 'Paid'),
-        ('cancelled', 'Cancelled')
+        ('unpaid', 'Non payée'),
+        ('claimed', 'Réclamée'),
+        ('approved', 'Approuvée'),
+        ('processing', 'En traitement'),
+        ('paid', 'Payée'),
+        ('cancelled', 'Annulée')
     ], string='Status', default='unpaid', required=True, tracking=True,
-       help='Unpaid: Ready to claim | Claimed: In claim | Approved: Claim approved | '
-            'Processing: Awaiting payment | Paid: Payment received')
+       help='Non payée: Prête à réclamer | Réclamée: En réclamation | Approuvée: Réclamation approuvée | '
+            'En traitement: En attente de paiement | Payée: Paiement reçu')
 
     payment_date = fields.Date(
         string='Payment Date',
@@ -166,6 +167,14 @@ class SaleCommission(models.Model):
         help='True if this is a manual adjustment commission'
     )
 
+    linked_sale_order_ids = fields.Many2many(
+        'sale.order',
+        'commission_sale_order_rel',
+        'commission_id', 'order_id',
+        string='Linked Sale Orders',
+        help='For manual commissions with multiple sale orders'
+    )
+
     company_id = fields.Many2one(
         'res.company',
         string='Company',
@@ -182,6 +191,12 @@ class SaleCommission(models.Model):
         help='Customer from the sale order'
     )
 
+    sale_order_display = fields.Char(
+        string='Sale Order(s)',
+        compute='_compute_sale_order_display',
+        help='Display single sale order or count of multiple orders'
+    )
+
     po_bill_id = fields.Integer(
         string='Commission Bill ID',
         compute='_compute_po_bill_id',
@@ -194,6 +209,17 @@ class SaleCommission(models.Model):
         help='Purchase order ID for this commission payment'
     )
 
+    # Visibility control for hierarchy-based viewing
+    visible_to_user_ids = fields.Many2many(
+        'res.users',
+        'sale_commission_visibility_rel',
+        'commission_id', 'user_id',
+        string='Visible To Users',
+        compute='_compute_visible_to_user_ids',
+        store=True,
+        help='Users who can view this commission (owner + their managers in all plans)'
+    )
+
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -203,18 +229,42 @@ class SaleCommission(models.Model):
                 vals['name'] = self.env['ir.sequence'].next_by_code('sale.commission') or _('New')
         return super(SaleCommission, self).create(vals_list)
 
-    @api.depends('percentage_override', 'plan_id', 'role_id', 'commission_type')
+    @api.constrains('plan_id', 'is_adjustment')
+    def _check_plan_required(self):
+        """Ensure plan_id is set for automatic commissions (non-manual)"""
+        for commission in self:
+            if not commission.is_adjustment and not commission.plan_id:
+                raise UserError(_(
+                    'Commission Plan is required for automatic commissions.\n'
+                    'Only manual commissions (created by managers) can have no plan.'
+                ))
+
+    @api.constrains('role_id', 'is_adjustment')
+    def _check_role_required(self):
+        """Ensure role_id is set for automatic commissions (non-manual)"""
+        for commission in self:
+            if not commission.is_adjustment and not commission.role_id:
+                raise UserError(_(
+                    'Role is required for automatic commissions.\n'
+                    'Only manual commissions (created by managers) can have no role.'
+                ))
+
+    @api.depends('percentage_override', 'plan_id', 'role_id', 'commission_type', 'is_adjustment')
     def _compute_commission_percentage(self):
         """
         Compute the effective commission percentage based on:
-        - Manual override (if set)
-        - Commission type (direct vs override)
-        - Role configuration
+        - Manual override (if set) - takes priority for all commissions
+        - For manual commissions: uses percentage_override (required)
+        - For automatic commissions: Commission type and role configuration
         """
         for commission in self:
             if commission.percentage_override:
+                # Use manual override for both automatic and manual commissions
                 commission.commission_percentage = commission.percentage_override
-            else:
+            elif commission.is_adjustment:
+                # Manual commissions without percentage_override (legacy) - keep as 0
+                commission.commission_percentage = 0.0
+            elif commission.plan_id:
                 # Get role configuration for this plan and role
                 config = self.env['hr.commission.role.config'].search([
                     ('plan_id', '=', commission.plan_id.id),
@@ -229,10 +279,13 @@ class SaleCommission(models.Model):
                         commission.commission_percentage = config.override_percentage
                 else:
                     commission.commission_percentage = 0.0
+            else:
+                commission.commission_percentage = 0.0
 
     @api.depends('base_amount', 'commission_percentage')
     def _compute_commission_amount(self):
-        """Compute commission amount based on base amount and percentage"""
+        """Compute commission amount based on base amount and percentage
+        For both automatic and manual commissions, amount is always calculated"""
         for commission in self:
             commission.commission_amount = (commission.base_amount * commission.commission_percentage) / 100.0
 
@@ -260,11 +313,34 @@ class SaleCommission(models.Model):
             commission.claim_ids = claims
             commission.claim_count = len(claims)
 
-    @api.depends('sale_order_id', 'sale_order_id.partner_id')
+    @api.depends('sale_order_id', 'sale_order_id.partner_id', 'is_adjustment', 'linked_sale_order_ids')
     def _compute_customer_id(self):
-        """Get customer from sale order"""
+        """Get customer from sale order
+        For manual commissions with multiple sale orders, don't set a customer
+        """
         for commission in self:
-            commission.customer_id = commission.sale_order_id.partner_id if commission.sale_order_id else False
+            # Manual commission with multiple sale orders - no specific customer
+            if commission.is_adjustment and commission.linked_sale_order_ids:
+                commission.customer_id = False
+            # Regular commission or manual with single sale order
+            else:
+                commission.customer_id = commission.sale_order_id.partner_id if commission.sale_order_id else False
+
+    @api.depends('sale_order_id', 'linked_sale_order_ids')
+    def _compute_sale_order_display(self):
+        """Display sale order info for list view
+        Shows single order name or count of multiple orders
+        """
+        for commission in self:
+            if commission.linked_sale_order_ids:
+                # Multiple sale orders
+                count = len(commission.linked_sale_order_ids)
+                commission.sale_order_display = _('%s Orders') % count
+            elif commission.sale_order_id:
+                # Single sale order
+                commission.sale_order_display = commission.sale_order_id.name
+            else:
+                commission.sale_order_display = ''
 
     def _compute_purchase_order_id(self):
         """Get purchase order for this commission"""
@@ -301,6 +377,33 @@ class SaleCommission(models.Model):
                     bill_id = bill.id if bill else False
 
             commission.po_bill_id = bill_id
+
+    @api.depends('user_id', 'plan_id')
+    def _compute_visible_to_user_ids(self):
+        """
+        Compute which users can view this commission based on hierarchy
+        Includes: the commission owner + all their managers (direct and indirect) in all plans
+        """
+        for commission in self:
+            visible_users = self.env['res.users'].browse()
+
+            # Always include the commission owner
+            visible_users |= commission.user_id
+
+            # Get all plan assignments for this user across all plans
+            plan_users = self.env['sale.commission.plan.user'].search([
+                ('user_id', '=', commission.user_id.id)
+            ])
+
+            # For each plan, get all managers up the hierarchy
+            for plan_user in plan_users:
+                # Get the management chain for this user in this plan
+                chain = plan_user._get_hierarchy_chain()
+                # Add all managers in the chain (excluding the user themselves)
+                for chain_user in chain[1:]:  # Skip first (the user themselves)
+                    visible_users |= chain_user.user_id
+
+            commission.visible_to_user_ids = visible_users
 
     def action_cancel(self):
         """Cancel commission"""
@@ -419,14 +522,31 @@ class SaleCommission(models.Model):
         }
 
     def action_view_sale_order(self):
-        """View the sale order for this commission"""
+        """View the sale order(s) for this commission
+
+        For regular commissions: Opens the single sale order in form view
+        For manual commissions: Opens a list view of all linked sale orders
+        """
         self.ensure_one()
 
+        # Manual commissions with multiple linked sale orders
+        if self.linked_sale_order_ids:
+            return {
+                'name': _('Commandes de Vente'),
+                'type': 'ir.actions.act_window',
+                'res_model': 'sale.order',
+                'view_mode': 'list,form',
+                'domain': [('id', 'in', self.linked_sale_order_ids.ids)],
+                'target': 'current',
+                'context': {'create': False},
+            }
+
+        # Regular commission with single sale order
         if not self.sale_order_id:
             raise UserError(_('No sale order found for this commission.'))
 
         return {
-            'name': _('Sale Order'),
+            'name': _('Commande de Vente'),
             'type': 'ir.actions.act_window',
             'res_model': 'sale.order',
             'res_id': self.sale_order_id.id,
@@ -604,11 +724,17 @@ class SaleCommission(models.Model):
         """Generate notes for PO with commission list (no deductions - direct payment)"""
         lines = []
         for commission in self:
-            customer_name = commission.customer_id.name if commission.customer_id else 'N/A'
-            lines.append('%s: %s %s - %s' % (
-                commission.name,
-                commission.commission_amount,
-                self[0].currency_id.symbol,
-                customer_name
-            ))
+            if commission.customer_id:
+                lines.append('%s: %s %s - %s' % (
+                    commission.name,
+                    commission.commission_amount,
+                    self[0].currency_id.symbol,
+                    commission.customer_id.name
+                ))
+            else:
+                lines.append('%s: %s %s' % (
+                    commission.name,
+                    commission.commission_amount,
+                    self[0].currency_id.symbol
+                ))
         return '\n'.join(lines)

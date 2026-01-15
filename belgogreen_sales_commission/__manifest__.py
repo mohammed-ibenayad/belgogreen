@@ -57,6 +57,7 @@ Main Features:
         'data/email_template_data.xml',  # Email template for contractor invoice requests
         'data/cron_data.xml',
         'wizard/commission_claim_wizard_views.xml',
+        'wizard/commission_manual_wizard_views.xml',
         'views/sale_commission_role_views.xml',
         'views/hr_commission_role_config_views.xml',
         'views/sale_commission_plan_views.xml',

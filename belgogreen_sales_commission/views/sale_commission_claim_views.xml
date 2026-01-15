@@ -7,16 +7,16 @@
             <field name="name">sale.commission.claim.tree</field>
             <field name="model">sale.commission.claim</field>
             <field name="arch" type="xml">
-                <list string="Commission Claims" decoration-success="state == 'approved'" decoration-warning="state == 'pending'" decoration-danger="state == 'rejected'">
-                    <field name="name" string="Reference" width="130px"/>
-                    <field name="user_id" string="User" width="150px"/>
+                <list string="Réclamations de Commission" decoration-success="state == 'approved'" decoration-warning="state == 'pending'" decoration-danger="state == 'rejected'">
+                    <field name="name" string="Référence" width="130px"/>
+                    <field name="user_id" string="Vendeur" width="150px"/>
                     <field name="claim_date" string="Date" width="100px"/>
-                    <field name="commission_count" string="# Comm." width="80px"/>
-                    <field name="total_amount" string="Gross" sum="Total" width="100px"/>
-                    <field name="total_deductions" string="Deductions" sum="Total" width="100px" optional="show" decoration-danger="total_deductions &gt; 0"/>
+                    <field name="commission_count" string="Nb Comm." width="80px"/>
+                    <field name="total_amount" string="Brut" sum="Total" width="100px"/>
+                    <field name="total_deductions" string="Déductions" sum="Total" width="100px" optional="show" decoration-danger="total_deductions &gt; 0"/>
                     <field name="net_amount" string="Net" sum="Total" width="110px"/>
-                    <field name="state" string="State" width="90px"/>
-                    <field name="processed_by" string="Processed By" width="130px" optional="hide"/>
+                    <field name="state" string="État" width="90px"/>
+                    <field name="processed_by" string="Traité par" width="130px" optional="hide"/>
                 </list>
             </field>
         </record>
@@ -26,25 +26,26 @@
             <field name="name">sale.commission.claim.form</field>
             <field name="model">sale.commission.claim</field>
             <field name="arch" type="xml">
-                <form string="Commission Claim">
+                <form string="Réclamation de Commission">
                     <header>
-                        <button name="action_submit" string="Submit Claim" type="object" class="oe_highlight"
+                        <button name="action_submit" string="Soumettre la demande" type="object" class="oe_highlight"
                                 invisible="state != 'draft' or user_id != uid"
-                                groups="belgogreen_sales_commission.group_commission_user_only"/>
-                        <button name="action_approve" string="Approve &amp; Create PO" type="object" class="oe_highlight"
+                                groups="belgogreen_sales_commission.group_commission_user"/>
+                        <button name="action_approve" string="Approuver et créer le BC" type="object" class="oe_highlight"
                                 invisible="state != 'pending'"
                                 groups="belgogreen_sales_commission.group_commission_manager"/>
-                        <button name="action_view_purchase_order" string="View Purchase Order" type="object"
+                        <button name="action_view_purchase_order" string="Voir le bon de commande" type="object"
                                 invisible="not purchase_order_id"
                                 class="btn-primary"/>
-                        <button name="action_reject" string="Reject" type="object"
+                        <button name="action_reject" string="Rejeter" type="object"
                                 invisible="state != 'pending'"
                                 groups="belgogreen_sales_commission.group_commission_manager"
-                                confirm="Are you sure you want to reject this claim?"/>
-                        <button name="unlink" string="Delete" type="object"
+                                confirm="Êtes-vous sûr de vouloir rejeter cette demande ?"/>
+                        <button name="action_delete_draft" string="Supprimer" type="object"
                                 invisible="state != 'draft' or user_id != uid"
-                                groups="belgogreen_sales_commission.group_commission_user_only"
-                                confirm="Are you sure you want to delete this draft claim?"/>
+                                groups="belgogreen_sales_commission.group_commission_user"
+                                confirm="Êtes-vous sûr de vouloir supprimer ce brouillon ?"
+                                class="btn-secondary"/>
                         <field name="state" widget="statusbar" statusbar_visible="draft,pending,approved,rejected"/>
                     </header>
                     <sheet>
@@ -64,18 +65,18 @@
                         </div>
 
                         <group>
-                            <group string="Claim Information">
-                                <field name="user_id" readonly="1"/>
-                                <field name="claim_date" readonly="1"/>
-                                <field name="total_amount" readonly="1"/>
+                            <group string="Informations de Réclamation">
+                                <field name="user_id" string="Vendeur" readonly="1"/>
+                                <field name="claim_date" string="Date de Réclamation" readonly="1"/>
+                                <field name="total_amount" string="Montant Total" readonly="1"/>
                                 <field name="currency_id" invisible="1"/>
                             </group>
-                            <group string="Financial Summary">
-                                <field name="total_deductions" readonly="1"/>
-                                <field name="net_amount" readonly="1" class="oe_subtotal_footer_separator"
+                            <group string="Résumé Financier">
+                                <field name="total_deductions" string="Total Déductions" readonly="1"/>
+                                <field name="net_amount" string="Montant Net" readonly="1" class="oe_subtotal_footer_separator"
                                        widget="monetary" options="{'currency_field': 'currency_id'}"/>
-                                <field name="processed_by" readonly="1"/>
-                                <field name="processed_date" readonly="1"/>
+                                <field name="processed_by" string="Traité par" readonly="1"/>
+                                <field name="processed_date" string="Date de Traitement" readonly="1"/>
                                 <field name="company_id" groups="base.group_multi_company" invisible="1"/>
                             </group>
                         </group>
@@ -87,28 +88,28 @@
                                     <list decoration-success="status == 'paid'"
                                           create="false"
                                           delete="1">
-                                        <field name="name" string="Reference" width="130px"/>
+                                        <field name="name" string="Référence" width="130px"/>
                                         <field name="date" string="Date" width="90px"/>
-                                        <field name="role_id" string="Role" width="110px"/>
+                                        <field name="role_id" string="Rôle" width="110px"/>
                                         <field name="commission_type" string="Type" width="80px"/>
-                                        <field name="sale_order_id" string="Order" width="120px"/>
-                                        <field name="base_amount" string="Base" sum="Total base" width="100px"/>
-                                        <field name="commission_amount" string="Amount" sum="Total commissions" width="110px"/>
-                                        <field name="status" string="Status" width="90px"/>
+                                        <field name="sale_order_id" string="Commande" width="120px"/>
+                                        <field name="base_amount" string="Base" sum="Base totale" width="100px"/>
+                                        <field name="commission_amount" string="Montant" sum="Commissions totales" width="110px"/>
+                                        <field name="status" string="Statut" width="90px"/>
                                     </list>
                                 </field>
                             </page>
-                            <page string="Deductions" name="deductions">
+                            <page string="Déductions" name="deductions">
                                 <!-- All Deductions in one list -->
                                 <field name="all_deduction_ids" nolabel="1" readonly="1">
                                     <list create="false" delete="false" edit="false">
-                                        <field name="name" string="Reference" width="120px"/>
+                                        <field name="name" string="Référence" width="120px"/>
                                         <field name="deduction_type" string="Type" width="140px"/>
-                                        <field name="deduction_category" string="Category" width="100px"
+                                        <field name="deduction_category" string="Catégorie" width="100px"
                                                widget="badge"
                                                decoration-danger="deduction_category == 'mandatory'"
                                                decoration-info="deduction_category == 'optional'"/>
-                                        <field name="amount" string="Amount" sum="Total Deductions" width="100px"/>
+                                        <field name="amount" string="Montant" sum="Total Déductions" width="100px"/>
                                         <field name="description" string="Description"/>
                                     </list>
                                 </field>
@@ -116,21 +117,21 @@
                                 <!-- Financial Summary -->
                                 <group>
                                     <group>
-                                        <field name="total_mandatory_deductions" readonly="1" string="Mandatory Deductions"/>
-                                        <field name="total_optional_deductions" readonly="1" string="Optional Deductions"/>
+                                        <field name="total_mandatory_deductions" readonly="1" string="Déductions Obligatoires"/>
+                                        <field name="total_optional_deductions" readonly="1" string="Déductions Optionnelles"/>
                                     </group>
                                     <group>
-                                        <field name="total_deductions" readonly="1" class="oe_subtotal_footer_separator" string="Total Deductions"/>
+                                        <field name="total_deductions" readonly="1" class="oe_subtotal_footer_separator" string="Total Déductions"/>
                                     </group>
                                 </group>
 
                                 <div class="alert alert-info" role="alert" invisible="not all_deduction_ids or state != 'draft'">
-                                    <strong>ℹ️ Note:</strong> Mandatory deductions are automatically applied and cannot be removed.
-                                    You can select optional deductions using the "Optional Deductions" field above in draft state.
+                                    <strong>ℹ️ Note :</strong> Les déductions obligatoires sont automatiquement appliquées et ne peuvent pas être supprimées.
+                                    Vous pouvez sélectionner des déductions optionnelles en utilisant le champ "Déductions Optionnelles" ci-dessus à l'état de brouillon.
                                 </div>
 
                                 <!-- Optional Deductions Selection (only visible in draft) -->
-                                <group string="Select Optional Deductions" invisible="state != 'draft'">
+                                <group string="Sélectionner les Déductions Optionnelles" invisible="state != 'draft'">
                                     <field name="optional_deduction_ids" nolabel="1"
                                            widget="many2many_tags"
                                            domain="[('user_id', '=', user_id), ('deduction_category', '=', 'optional'), ('state', '=', 'pending')]"
@@ -150,20 +151,20 @@
             <field name="name">sale.commission.claim.search</field>
             <field name="model">sale.commission.claim</field>
             <field name="arch" type="xml">
-                <search string="Commission Claims">
-                    <field name="name"/>
-                    <field name="user_id"/>
+                <search string="Réclamations de Commission">
+                    <field name="name" string="Référence"/>
+                    <field name="user_id" string="Vendeur"/>
                     <separator/>
-                    <filter string="My Claims" name="my_claims" domain="[('user_id', '=', uid)]"/>
+                    <filter string="Mes Réclamations" name="my_claims" domain="[('user_id', '=', uid)]"/>
                     <separator/>
-                    <filter string="Pending" name="pending" domain="[('state', '=', 'pending')]"/>
-                    <filter string="Approved" name="approved" domain="[('state', '=', 'approved')]"/>
-                    <filter string="Rejected" name="rejected" domain="[('state', '=', 'rejected')]"/>
+                    <filter string="En Attente" name="pending" domain="[('state', '=', 'pending')]"/>
+                    <filter string="Approuvée" name="approved" domain="[('state', '=', 'approved')]"/>
+                    <filter string="Rejetée" name="rejected" domain="[('state', '=', 'rejected')]"/>
                     <group>
-                        <filter string="User" name="group_user" context="{'group_by': 'user_id'}"/>
-                        <filter string="State" name="group_state" context="{'group_by': 'state'}"/>
-                        <filter string="Processed By" name="group_processed" context="{'group_by': 'processed_by'}"/>
-                        <filter string="Claim Date" name="group_date" context="{'group_by': 'claim_date:month'}"/>
+                        <filter string="Vendeur" name="group_user" context="{'group_by': 'user_id'}"/>
+                        <filter string="État" name="group_state" context="{'group_by': 'state'}"/>
+                        <filter string="Traité par" name="group_processed" context="{'group_by': 'processed_by'}"/>
+                        <filter string="Date de Réclamation" name="group_date" context="{'group_by': 'claim_date:month'}"/>
                     </group>
                 </search>
             </field>
@@ -210,33 +211,33 @@
 
         <!-- All Claims (Manager) -->
         <record id="action_sale_commission_claim_all" model="ir.actions.act_window">
-            <field name="name">Commission Claims</field>
+            <field name="name">Réclamations de Commission</field>
             <field name="res_model">sale.commission.claim</field>
             <field name="view_mode">list,form,kanban</field>
-            <field name="context">{'search_default_pending': 1}</field>
+            <field name="context">{'search_default_pending': 1, 'create': False}</field>
             <field name="help" type="html">
                 <p class="o_view_nocontent_smiling_face">
-                    No claims found
+                    Aucune réclamation trouvée
                 </p>
                 <p>
-                    Users can claim their commissions for payment here.
+                    Les vendeurs peuvent réclamer leurs commissions pour paiement ici.
                 </p>
             </field>
         </record>
 
         <!-- My Claims (User) -->
         <record id="action_sale_commission_claim_my" model="ir.actions.act_window">
-            <field name="name">My Claims</field>
+            <field name="name">Mes réclamations</field>
             <field name="res_model">sale.commission.claim</field>
             <field name="view_mode">list,form,kanban</field>
             <field name="context">{'search_default_my_claims': 1}</field>
             <field name="domain">[('user_id', '=', uid)]</field>
             <field name="help" type="html">
                 <p class="o_view_nocontent_smiling_face">
-                    You haven't submitted any claims yet
+                    Vous n'avez pas encore soumis de réclamation
                 </p>
                 <p>
-                    You can claim your unpaid commissions for payment.
+                    Vous pouvez réclamer vos commissions non payées pour paiement.
                 </p>
             </field>
         </record>

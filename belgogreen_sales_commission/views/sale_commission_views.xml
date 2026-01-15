@@ -17,10 +17,10 @@
                     <field name="currency_id" column_invisible="1"/>
                     <field name="name" string="Référence" width="130px"/>
                     <field name="date" string="Date" width="90px"/>
-                    <field name="user_id" string="Utilisateur" width="140px"/>
+                    <field name="user_id" string="Vendeur" width="140px"/>
                     <field name="role_id" string="Rôle" width="110px"/>
                     <field name="commission_type" string="Type" width="80px"/>
-                    <field name="sale_order_id" string="Commande" width="120px"/>
+                    <field name="sale_order_display" string="Commande(s)" width="120px"/>
                     <field name="base_amount" string="Base" sum="Total base" width="100px"/>
                     <field name="commission_percentage" string="%" width="60px"/>
                     <field name="commission_amount" string="Commission" sum="Total commissions" width="110px"/>
@@ -39,9 +39,6 @@
                         <button name="action_claim_payment" string="Claim Payment" type="object" class="oe_highlight"
                                 invisible="status != 'unpaid' or user_id != uid"
                                 groups="belgogreen_sales_commission.group_commission_user"/>
-                        <button name="action_view_claim" string="View Claim" type="object" class="oe_highlight"
-                                invisible="status != 'claimed' or claim_count == 0 or user_id != uid"
-                                groups="belgogreen_sales_commission.group_commission_user"/>
                         <button name="action_create_po_from_commissions" string="Create Purchase Order" type="object" class="oe_highlight"
                                 invisible="status != 'unpaid'"
                                 groups="belgogreen_sales_commission.group_commission_manager"/>
@@ -54,6 +51,7 @@
                         <field name="sale_order_id" invisible="1"/>
                         <field name="purchase_order_id" invisible="1"/>
                         <field name="po_bill_id" invisible="1"/>
+                        <field name="is_adjustment" invisible="1"/>
                         <div class="oe_button_box" name="button_box">
                             <button name="action_view_claim"
                                     type="object"
@@ -67,9 +65,9 @@
                                     type="object"
                                     class="oe_stat_button"
                                     icon="fa-usd"
-                                    invisible="not sale_order_id">
+                                    invisible="not sale_order_id and not linked_sale_order_ids">
                                 <div class="o_field_widget o_stat_info">
-                                    <span class="o_stat_text">Vente</span>
+                                    <span class="o_stat_text">Commande(s)</span>
                                 </div>
                             </button>
                             <button name="action_view_purchase_order"
@@ -103,16 +101,16 @@
                         <group>
                             <group string="Commission Information" name="commission_info">
                                 <field name="user_id" readonly="1" options="{'no_open': True}"/>
-                                <field name="role_id" readonly="1" options="{'no_open': True}"/>
+                                <field name="role_id" readonly="1" options="{'no_open': True}" invisible="is_adjustment"/>
                                 <field name="commission_type" readonly="1"/>
                                 <field name="date" readonly="1"/>
                                 <field name="period" readonly="1"/>
                             </group>
                             <group string="Calculation" name="calculation">
                                 <field name="plan_id" readonly="1" groups="belgogreen_sales_commission.group_commission_manager" options="{'no_open': True}"/>
-                                <field name="base_amount" readonly="1"/>
-                                <field name="percentage_override" groups="belgogreen_sales_commission.group_commission_manager" readonly="status in ['processing', 'paid']"/>
-                                <field name="commission_percentage" readonly="1"/>
+                                <field name="base_amount" readonly="not is_adjustment or status in ['processing', 'paid', 'cancelled']" groups="belgogreen_sales_commission.group_commission_manager"/>
+                                <field name="percentage_override" string="Commission %" groups="belgogreen_sales_commission.group_commission_manager" readonly="not is_adjustment or status in ['processing', 'paid', 'cancelled']" invisible="not is_adjustment"/>
+                                <field name="commission_percentage" readonly="1" invisible="is_adjustment"/>
                                 <field name="commission_amount" class="oe_subtotal_footer_separator" readonly="1"/>
                             </group>
                         </group>
@@ -123,7 +121,13 @@
                                 <field name="payment_id" readonly="1"/>
                             </group>
                             <group string="References" name="references">
-                                <field name="customer_id" readonly="1"/>
+                                <field name="customer_id" readonly="1" invisible="1"/>
+                                <field name="linked_sale_order_ids" invisible="1"/>
+                                <field name="sale_order_id" string="Sale Order" readonly="1"
+                                       invisible="linked_sale_order_ids"
+                                       options="{'no_open': True}"/>
+                                <field name="sale_order_display" string="Commandes de Vente" readonly="1"
+                                       invisible="not linked_sale_order_ids"/>
                             </group>
                         </group>
                     </sheet>

@@ -5,19 +5,19 @@
         <field name="name">commission.claim.wizard.form</field>
         <field name="model">commission.claim.wizard</field>
         <field name="arch" type="xml">
-            <form string="Claim Commission Payment">
+            <form string="Réclamer le paiement de commission">
                 <group>
                     <group>
-                        <field name="commission_count" readonly="1"/>
+                        <field name="commission_count" string="Nombre de commissions" readonly="1"/>
                         <field name="currency_id" invisible="1"/>
                     </group>
                     <group>
-                        <field name="total_amount" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1"
+                        <field name="total_amount" string="Montant total des commissions" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1"
                                class="oe_subtotal_footer_separator"/>
                     </group>
                 </group>
 
-                <group string="Selected Commissions">
+                <group string="Commissions sélectionnées">
                     <field name="commission_ids" nolabel="1">
                         <list create="false" delete="false" edit="false"
                               decoration-success="status == 'paid'"
@@ -34,32 +34,32 @@
                 </group>
 
                 <div class="alert alert-info" role="alert">
-                    <p><strong>Important:</strong></p>
+                    <p><strong>Important :</strong></p>
                     <ul>
-                        <li>You are about to create a claim for <strong><field name="commission_count" readonly="1" nolabel="1" class="oe_inline"/> commission(s)</strong></li>
-                        <li>Total amount to be claimed: <strong><field name="total_amount" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1" nolabel="1" class="oe_inline"/></strong></li>
-                        <li>The claim will be created in draft state - you can review and add more commissions</li>
-                        <li>Submit the claim when ready for management review</li>
+                        <li>Vous êtes sur le point de créer une réclamation pour <strong><field name="commission_count" readonly="1" nolabel="1" class="oe_inline"/> commission(s)</strong></li>
+                        <li>Montant total à réclamer : <strong><field name="total_amount" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1" nolabel="1" class="oe_inline"/></strong></li>
+                        <li>La réclamation sera créée à l'état de brouillon - vous pourrez la réviser et ajouter d'autres commissions</li>
+                        <li>Soumettez la réclamation lorsque vous êtes prêt pour l'examen de la direction</li>
                     </ul>
                 </div>
 
                 <footer>
-                    <button name="action_confirm_claim" string="Create Claim" type="object" class="btn-primary"/>
-                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                    <button name="action_confirm_claim" string="Créer la réclamation" type="object" class="btn-primary"/>
+                    <button string="Annuler" class="btn-secondary" special="cancel"/>
                 </footer>
             </form>
         </field>
     </record>
 
-    <!-- Commission Claim Wizard Action -->
+    <!-- Commission Claim Wizard Action (Users Only) -->
     <record id="action_commission_claim_wizard" model="ir.actions.act_window">
-        <field name="name">Claim Commission Payment</field>
+        <field name="name">Réclamer le paiement de commission</field>
         <field name="res_model">commission.claim.wizard</field>
         <field name="view_mode">form</field>
         <field name="target">new</field>
         <field name="binding_model_id" ref="model_sale_commission"/>
         <field name="binding_view_types">list</field>
-        <field name="group_ids" eval="[(4, ref('belgogreen_sales_commission.group_commission_user_only'))]"/>
+        <field name="group_ids" eval="[(4, ref('belgogreen_sales_commission.group_commission_user'))]"/>
     </record>
 
 </odoo>

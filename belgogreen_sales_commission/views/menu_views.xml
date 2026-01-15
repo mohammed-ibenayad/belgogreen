@@ -2,13 +2,42 @@
 <odoo>
     <data>
 
-        <!-- Main Menu -->
+        <!-- Smart Entry Point Action - Redirects based on user role -->
+        <record id="action_commission_smart_entry" model="ir.actions.server">
+            <field name="name">Commission Entry Point</field>
+            <field name="model_id" ref="model_sale_commission"/>
+            <field name="state">code</field>
+            <field name="code">
+# Smart redirect based on user role
+if env.user.has_group('belgogreen_sales_commission.group_commission_manager'):
+    # Manager: Show unpaid commissions
+    action = {
+        'type': 'ir.actions.act_window',
+        'res_model': 'sale.commission',
+        'view_mode': 'list,form',
+        'name': 'Unpaid Commissions',
+        'context': {'search_default_can_be_paid': 1, 'search_default_group_user': 1},
+        'domain': [],
+    }
+else:
+    # Regular user: Show dashboard
+    action = {
+        'type': 'ir.actions.client',
+        'tag': 'commission_dashboard',
+        'name': 'Dashboard',
+    }
+            </field>
+        </record>
+
+        <!-- Main Menu (Single entry point for all users) -->
         <menuitem id="menu_commission_root"
                   name="Commissions"
                   web_icon="fa-wallet"
-                  sequence="75"/>
+                  action="action_commission_smart_entry"
+                  sequence="75"
+                  groups="belgogreen_sales_commission.group_commission_user"/>
 
-        <!-- Dashboard Menu (first item) -->
+        <!-- Dashboard Menu (for users) -->
         <menuitem id="menu_commission_dashboard"
                   name="Dashboard"
                   parent="menu_commission_root"
@@ -71,6 +100,13 @@
                   name="Tracking"
                   parent="menu_commission_management"
                   sequence="20"/>
+
+        <menuitem id="menu_commission_manual_create"
+                  name="Créer une Commission"
+                  parent="menu_commission_tracking"
+                  action="action_commission_manual_wizard"
+                  sequence="5"
+                  groups="belgogreen_sales_commission.group_commission_manager"/>
 
         <menuitem id="menu_commission_deductions_management"
                   name="Deductions"

@@ -7,21 +7,21 @@
             <field name="name">commission.deduction.tree</field>
             <field name="model">commission.deduction</field>
             <field name="arch" type="xml">
-                <list string="Commission Deductions"
+                <list string="Déductions de Commission"
                       decoration-success="state == 'applied'"
                       decoration-warning="state == 'pending'"
-                      decoration-muted="state in ['waived', 'cancelled']">
-                    <field name="name" string="Reference" width="120px"/>
-                    <field name="user_id" string="Salesperson" width="150px"/>
+                      decoration-muted="state == 'cancelled'">
+                    <field name="name" string="Référence" width="120px"/>
+                    <field name="user_id" string="Vendeur" width="150px"/>
                     <field name="deduction_type" string="Type" width="140px"/>
-                    <field name="deduction_category" string="Category"
+                    <field name="deduction_category" string="Catégorie"
                            widget="badge"
                            decoration-danger="deduction_category == 'mandatory'"
                            decoration-info="deduction_category == 'optional'"
                            width="100px"/>
-                    <field name="amount" string="Amount" sum="Total" width="100px"/>
+                    <field name="amount" string="Montant" sum="Total" width="100px"/>
                     <field name="date" string="Date" width="90px"/>
-                    <field name="state" string="Status"
+                    <field name="state" string="État"
                            widget="badge"
                            decoration-success="state == 'applied'"
                            decoration-warning="state == 'pending'"
@@ -36,25 +36,14 @@
             <field name="name">commission.deduction.form</field>
             <field name="model">commission.deduction</field>
             <field name="arch" type="xml">
-                <form string="Commission Deduction">
+                <form string="Déduction de Commission">
                     <header>
-                        <button name="action_waive"
-                                string="Annuler"
-                                type="object"
-                                invisible="state != 'pending'"
-                                groups="belgogreen_sales_commission.group_commission_manager"
-                                confirm="Are you sure you want to waive this deduction?"/>
-                        <button name="action_set_to_pending"
-                                string="Reset to Pending"
-                                type="object"
-                                invisible="state != 'waived'"
-                                groups="belgogreen_sales_commission.group_commission_manager"/>
                         <button name="action_cancel"
-                                string="Cancel"
+                                string="Annuler"
                                 type="object"
                                 invisible="state in ['applied', 'cancelled']"
                                 groups="belgogreen_sales_commission.group_commission_manager"
-                                confirm="Are you sure you want to cancel this deduction?"/>
+                                confirm="Êtes-vous sûr de vouloir annuler cette déduction ?"/>
                         <field name="state" widget="statusbar" statusbar_visible="pending,applied"/>
                     </header>
                     <sheet>
@@ -65,34 +54,26 @@
                         </div>
 
                         <group>
-                            <group string="Deduction Information">
-                                <field name="user_id" options="{'no_create': True}"/>
-                                <field name="deduction_type"/>
-                                <field name="deduction_category"/>
-                                <field name="date"/>
+                            <group string="Informations de Déduction">
+                                <field name="user_id" string="Vendeur" options="{'no_create': True}"/>
+                                <field name="deduction_type" string="Type"/>
+                                <field name="deduction_category" string="Catégorie"/>
+                                <field name="date" string="Date"/>
                             </group>
-                            <group string="Amount">
-                                <field name="amount" class="oe_subtotal_footer_separator"/>
+                            <group string="Montant">
+                                <field name="amount" string="Montant" class="oe_subtotal_footer_separator"/>
                                 <field name="currency_id" invisible="1"/>
-                                <field name="reference"/>
+                                <field name="reference" string="Référence"/>
                             </group>
                         </group>
 
-                        <group string="Description">
-                            <field name="description" nolabel="1" placeholder="Enter deduction details..." widget="text" options="{'rows': 4}"/>
-                        </group>
-
-                        <!-- Waiver Information -->
-                        <group string="Waiver Information" invisible="state != 'waived'">
-                            <field name="waived_by" readonly="1"/>
-                            <field name="waive_date" readonly="1"/>
-                            <field name="waive_reason" readonly="1" nolabel="1"/>
-                        </group>
+                        <separator string="Description"/>
+                        <field name="description" nolabel="1" placeholder="Saisissez les détails de la déduction..." widget="text" options="{'rows': 8}"/>
 
                         <!-- Application Information -->
                         <group string="Application" invisible="state != 'applied'">
-                            <field name="claim_id" readonly="1"/>
-                            <field name="purchase_order_id" readonly="1"/>
+                            <field name="claim_id" string="Réclamation" readonly="1"/>
+                            <field name="purchase_order_id" string="Bon de Commande" readonly="1"/>
                         </group>
 
                         <field name="company_id" invisible="1"/>
@@ -108,31 +89,31 @@
             <field name="name">commission.deduction.search</field>
             <field name="model">commission.deduction</field>
             <field name="arch" type="xml">
-                <search string="Commission Deductions">
-                    <field name="name"/>
-                    <field name="user_id"/>
-                    <field name="deduction_type"/>
-                    <field name="reference"/>
+                <search string="Déductions de Commission">
+                    <field name="name" string="Référence"/>
+                    <field name="user_id" string="Vendeur"/>
+                    <field name="deduction_type" string="Type"/>
+                    <field name="reference" string="Référence"/>
                     <separator/>
-                    <filter string="Pending" name="pending" domain="[('state', '=', 'pending')]"/>
-                    <filter string="Applied" name="applied" domain="[('state', '=', 'applied')]"/>
-                    <filter string="Waived" name="waived" domain="[('state', '=', 'waived')]"/>
+                    <filter string="En Attente" name="pending" domain="[('state', '=', 'pending')]"/>
+                    <filter string="Appliquée" name="applied" domain="[('state', '=', 'applied')]"/>
+                    <filter string="Annulée" name="cancelled" domain="[('state', '=', 'cancelled')]"/>
                     <separator/>
-                    <filter string="Mandatory" name="mandatory" domain="[('deduction_category', '=', 'mandatory')]"/>
-                    <filter string="Optional" name="optional" domain="[('deduction_category', '=', 'optional')]"/>
+                    <filter string="Obligatoire" name="mandatory" domain="[('deduction_category', '=', 'mandatory')]"/>
+                    <filter string="Optionnelle" name="optional" domain="[('deduction_category', '=', 'optional')]"/>
                     <separator/>
-                    <filter string="Down Payments" name="down_payment" domain="[('deduction_type', '=', 'down_payment')]"/>
-                    <filter string="Service Fees" name="service_fee" domain="[('deduction_type', '=', 'service_fee')]"/>
+                    <filter string="Acomptes" name="down_payment" domain="[('deduction_type', '=', 'down_payment')]"/>
+                    <filter string="Frais de Service" name="service_fee" domain="[('deduction_type', '=', 'service_fee')]"/>
                     <separator/>
-                    <filter string="This Month" name="this_month"
+                    <filter string="Ce Mois" name="this_month"
                             domain="[('date', '&gt;=', (context_today() - relativedelta(day=1)).strftime('%Y-%m-%d')),
                                      ('date', '&lt;=', (context_today() + relativedelta(day=31)).strftime('%Y-%m-%d'))]"/>
                     <separator/>
                     <group>
-                        <filter string="Salesperson" name="group_user" context="{'group_by': 'user_id'}"/>
+                        <filter string="Vendeur" name="group_user" context="{'group_by': 'user_id'}"/>
                         <filter string="Type" name="group_type" context="{'group_by': 'deduction_type'}"/>
-                        <filter string="Category" name="group_category" context="{'group_by': 'deduction_category'}"/>
-                        <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
+                        <filter string="Catégorie" name="group_category" context="{'group_by': 'deduction_category'}"/>
+                        <filter string="État" name="group_state" context="{'group_by': 'state'}"/>
                         <filter string="Date" name="group_date" context="{'group_by': 'date:month'}"/>
                     </group>
                 </search>
@@ -141,27 +122,27 @@
 
         <!-- Actions -->
         <record id="action_commission_deduction" model="ir.actions.act_window">
-            <field name="name">Commission Deductions</field>
+            <field name="name">Déductions</field>
             <field name="res_model">commission.deduction</field>
             <field name="view_mode">list,form</field>
-            <field name="context">{'search_default_pending': 1, 'search_default_group_user': 1}</field>
+            <field name="context">{'search_default_pending': 1}</field>
             <field name="help" type="html">
                 <p class="o_view_nocontent_smiling_face">
-                    No deductions found
+                    Aucune déduction trouvée
                 </p>
                 <p>
-                    Create deductions to track down payments, service fees, and other amounts
-                    to be deducted from commission payments.
+                    Créez des déductions pour suivre les acomptes, les frais de service et autres montants
+                    à déduire des paiements de commissions.
                 </p>
             </field>
         </record>
 
         <record id="action_commission_deduction_pending" model="ir.actions.act_window">
-            <field name="name">Pending Deductions</field>
+            <field name="name">Déductions en Attente</field>
             <field name="res_model">commission.deduction</field>
             <field name="view_mode">list,form</field>
             <field name="domain">[('state', '=', 'pending')]</field>
-            <field name="context">{'search_default_group_user': 1}</field>
+            <field name="context">{}</field>
         </record>
 
     </data>

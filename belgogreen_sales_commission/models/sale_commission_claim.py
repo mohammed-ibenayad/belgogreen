@@ -54,12 +54,12 @@ class SaleCommissionClaim(models.Model):
     )
 
     state = fields.Selection([
-        ('draft', 'Draft'),
-        ('pending', 'Pending'),
-        ('approved', 'Approved'),
-        ('rejected', 'Rejected')
+        ('draft', 'Brouillon'),
+        ('pending', 'En attente'),
+        ('approved', 'Approuvée'),
+        ('rejected', 'Rejetée')
     ], string='State', default='draft', required=True, tracking=True,
-       help='Draft: Being prepared | Pending: Awaiting review | Approved: Ready to pay | Rejected: Denied')
+       help='Brouillon: En préparation | En attente: En attente de révision | Approuvée: Prête à payer | Rejetée: Refusée')
 
     processed_by = fields.Many2one(
         'res.users',
@@ -286,6 +286,32 @@ class SaleCommissionClaim(models.Model):
         self.write({'state': 'pending'})
         self._notify_admins()
         return True
+
+    def action_delete_draft(self):
+        """Delete draft claim and return to list view"""
+        self.ensure_one()
+
+        # Verify claim is in draft state
+        if self.state != 'draft':
+            raise UserError(_('Only draft claims can be deleted.'))
+
+        # Verify user owns the claim
+        if self.user_id.id != self.env.user.id:
+            raise UserError(_('You can only delete your own claims.'))
+
+        # Delete the claim
+        self.unlink()
+
+        # Return to the claims list
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('My Claims'),
+            'res_model': 'sale.commission.claim',
+            'view_mode': 'list,form',
+            'domain': [('user_id', '=', self.env.user.id)],
+            'context': {'search_default_my_claims': 1},
+            'target': 'current',
+        }
 
     def action_approve(self):
         """Approve claim(s) and create draft PO
@@ -563,16 +589,22 @@ class SaleCommissionClaim(models.Model):
         """Generate notes for PO with commission list and deduction breakdown"""
         lines = []
 
-        # List all commissions - simple format: COM/00004: 373.94 € - Customer Name
+        # List all commissions - format: COM/00004: 373.94 € - Customer Name (only if customer exists)
         all_commissions = self.mapped('commission_ids')
         for commission in all_commissions:
-            customer_name = commission.customer_id.name if commission.customer_id else 'N/A'
-            lines.append('%s: %s %s - %s' % (
-                commission.name,
-                commission.commission_amount,
-                self[0].currency_id.symbol,
-                customer_name
-            ))
+            if commission.customer_id:
+                lines.append('%s: %s %s - %s' % (
+                    commission.name,
+                    commission.commission_amount,
+                    self[0].currency_id.symbol,
+                    commission.customer_id.name
+                ))
+            else:
+                lines.append('%s: %s %s' % (
+                    commission.name,
+                    commission.commission_amount,
+                    self[0].currency_id.symbol
+                ))
 
         return '\n'.join(lines)
 

@@ -1107,6 +1107,18 @@ msgstr "Aucune commission sélectionnée."
 #. module: belgogreen_sales_commission
 #: code:addons/belgogreen_sales_commission/wizard/commission_claim_wizard.py:0
 #, python-format
+msgid "Claim Created"
+msgstr "Réclamation créée"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/wizard/commission_claim_wizard.py:0
+#, python-format
+msgid "Your claim %s with %s commission(s) totaling %s has been created. Review and submit when ready."
+msgstr "Votre réclamation %s avec %s commission(s) d'un montant total de %s a été créée. Examinez et soumettez quand vous êtes prêt."
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/wizard/commission_claim_wizard.py:0
+#, python-format
 msgid "Claim Submitted"
 msgstr "Réclamation soumise"
 
@@ -2262,20 +2274,6 @@ msgstr "Montant net"
 msgid "Amount after all deductions"
 msgstr "Montant après toutes les déductions"
 
-#. module: belgogreen_sales_commission
-#: model_terms:ir.ui.view,arch_db:belgogreen_sales_commission.view_commission_deduction_form
-msgid "Waive"
-msgstr "Annuler"
-
-#. module: belgogreen_sales_commission
-#: model_terms:ir.ui.view,arch_db:belgogreen_sales_commission.view_commission_deduction_form
-msgid "Are you sure you want to waive this deduction?"
-msgstr "Êtes-vous sûr de vouloir exonérer cette déduction ?"
-
-#. module: belgogreen_sales_commission
-#: model_terms:ir.ui.view,arch_db:belgogreen_sales_commission.view_commission_deduction_form
-msgid "Reset to Pending"
-msgstr "Réinitialiser en attente"
 
 #. module: belgogreen_sales_commission
 #: model_terms:ir.ui.view,arch_db:belgogreen_sales_commission.view_commission_deduction_form
@@ -2291,11 +2289,6 @@ msgstr "Êtes-vous sûr de vouloir annuler cette déduction ?"
 #: model_terms:ir.ui.view,arch_db:belgogreen_sales_commission.view_commission_deduction_form
 msgid "Deduction Information"
 msgstr "Informations sur la déduction"
-
-#. module: belgogreen_sales_commission
-#: model_terms:ir.ui.view,arch_db:belgogreen_sales_commission.view_commission_deduction_form
-msgid "Waiver Information"
-msgstr "Informations sur l'exonération"
 
 #. module: belgogreen_sales_commission
 #: model_terms:ir.ui.view,arch_db:belgogreen_sales_commission.view_commission_deduction_form
@@ -2371,12 +2364,6 @@ msgstr "Voir le bon de commande"
 #: model_terms:ir.ui.view,arch_db:belgogreen_sales_commission.view_sale_commission_claim_form
 msgid "Financial Summary"
 msgstr "Résumé financier"
-
-#. module: belgogreen_sales_commission
-#: code:addons/belgogreen_sales_commission/models/commission_deduction.py:0
-#, python-format
-msgid "Waive Deduction"
-msgstr "Exonérer la déduction"
 
 #. module: belgogreen_sales_commission
 #: code:addons/belgogreen_sales_commission/models/commission_deduction.py:0
