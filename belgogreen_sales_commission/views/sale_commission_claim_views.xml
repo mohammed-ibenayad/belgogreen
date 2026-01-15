@@ -41,10 +41,11 @@
                                 invisible="state != 'pending'"
                                 groups="belgogreen_sales_commission.group_commission_manager"
                                 confirm="Êtes-vous sûr de vouloir rejeter cette demande ?"/>
-                        <button name="unlink" string="Supprimer" type="object"
+                        <button name="action_delete_draft" string="Supprimer" type="object"
                                 invisible="state != 'draft' or user_id != uid"
                                 groups="belgogreen_sales_commission.group_commission_user"
-                                confirm="Êtes-vous sûr de vouloir supprimer ce brouillon ?"/>
+                                confirm="Êtes-vous sûr de vouloir supprimer ce brouillon ?"
+                                class="btn-secondary"/>
                         <field name="state" widget="statusbar" statusbar_visible="draft,pending,approved,rejected"/>
                     </header>
                     <sheet>
