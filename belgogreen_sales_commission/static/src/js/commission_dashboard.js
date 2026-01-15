@@ -297,14 +297,19 @@ export class CommissionDashboard extends Component {
             cancelled: '#dc3545'
         };
 
+        // Extract labels and amounts from the new data structure
+        const labels = Object.keys(data).map(k => data[k].label || k);
+        const amounts = Object.keys(data).map(k => data[k].amount || 0);
+        const backgroundColors = Object.keys(data).map(k => colors[k]);
+
         window.statusChart = new Chart(ctx, {
             type: 'bar',  // Changed to bar for histogram
             data: {
-                labels: Object.keys(data).map(k => k.charAt(0).toUpperCase() + k.slice(1)),
+                labels: labels,
                 datasets: [{
                     label: 'Commission Amount',
-                    data: Object.values(data),
-                    backgroundColor: Object.keys(data).map(k => colors[k]),
+                    data: amounts,
+                    backgroundColor: backgroundColors,
                 }]
             },
             options: {
