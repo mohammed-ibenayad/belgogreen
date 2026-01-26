@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Root Menu -->
+    <menuitem id="menu_bgg_custom_dev_root"
+              name="BelGoGreen Custom Development"
+              sequence="100"/>
+
+    <!-- Main Menu Categories -->
+    <!-- Uncomment and customize as needed
+    <menuitem id="menu_bgg_custom_dev_config"
+              name="Configuration"
+              parent="menu_bgg_custom_dev_root"
+              sequence="99"/>
+    -->
+
+</odoo>
