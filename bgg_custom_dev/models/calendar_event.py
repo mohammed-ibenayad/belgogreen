@@ -106,7 +106,9 @@ class CalendarEvent(models.Model):
         # IMPORTANT: _assign_existing_customer must run BEFORE _update_clickable_from_attendee
         # because it uses x_studio_customer_phone to find customers, and _update_clickable_from_attendee
         # will clear that field if no client attendees exist yet
-        self._assign_existing_customer(record)
+        # Only run on create (vals=None) or when relevant fields change
+        if vals is None or any(f in vals for f in ('partner_ids', 'attendee_ids', 'x_studio_customer_phone', 'partner_id')):
+            self._assign_existing_customer(record)
         self._update_clickable_from_attendee(record)
         self._replace_call_center_emails(record)
         self._create_activity_noshow(record)
@@ -408,11 +410,7 @@ class CalendarEvent(models.Model):
                         phone = phone_text
             except:
                 pass
-
-            # Fallback to partner phone
-            if not phone and record.partner_id:
-                if record.partner_id.phone:
-                    phone = record.partner_id.phone
+            
 
             if phone:
                 # Clean phone - keep only digits
