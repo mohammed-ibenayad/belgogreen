@@ -107,7 +107,7 @@ class CalendarEvent(models.Model):
         # because it uses x_studio_customer_phone to find customers, and _update_clickable_from_attendee
         # will clear that field if no client attendees exist yet
         # Only run on create (vals=None) or when relevant fields change
-        if vals is None or any(f in vals for f in ('partner_ids', 'attendee_ids', 'x_studio_customer_phone', 'partner_id')):
+        if vals is None or any(f in vals for f in ('partner_ids', 'attendee_ids', 'x_studio_customer_phone')):
             self._assign_existing_customer(record)
         self._update_clickable_from_attendee(record)
         self._replace_call_center_emails(record)
