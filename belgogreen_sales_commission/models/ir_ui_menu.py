@@ -12,8 +12,10 @@ class IrUiMenu(models.Model):
         visible = super()._visible_menu_ids(debug=debug)
 
         # Check if current user has any commission plan assignment
+        # Use sudo() because _visible_menu_ids is a system-level UI method and must not
+        # be affected by record rules that may restrict plan.user visibility per hierarchy level
         user = self.env.user
-        has_plan_assignment = self.env['sale.commission.plan.user'].search_count([
+        has_plan_assignment = self.env['sale.commission.plan.user'].sudo().search_count([
             ('user_id', '=', user.id)
         ]) > 0
 
