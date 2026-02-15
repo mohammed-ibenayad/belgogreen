@@ -3193,3 +3193,292 @@ msgstr "Génération de Commissions - Aucune Nouvelle Commission"
 msgid "Generate Commissions"
 msgstr "Générer les Commissions"
 
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/account_move.py:0
+#, python-format
+msgid "Amount Mismatch Warning"
+msgstr "Avertissement de différence de montant"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/account_move.py:0
+#, python-format
+msgid "Check server logs for detailed commission payment analysis."
+msgstr "Consultez les journaux du serveur pour une analyse détaillée des paiements de commissions."
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/account_move.py:0
+#, python-format
+msgid "Commissions Paid"
+msgstr "Commissions payées"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/account_move.py:0
+#, python-format
+msgid "Commissions have been marked as paid."
+msgstr "Les commissions ont été marquées comme payées."
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/account_move.py:0
+#, python-format
+msgid "Debug Complete"
+msgstr "Débogage terminé"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/account_move.py:0
+#, python-format
+msgid "Success"
+msgstr "Succès"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/account_move.py:0
+#, python-format
+msgid "This action is only for vendor bills."
+msgstr "Cette action est uniquement pour les factures fournisseur."
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/account_move.py:0
+#, python-format
+msgid "This bill is not linked to a purchase order."
+msgstr "Cette facture n'est pas liée à un bon de commande."
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/account_move.py:0
+#, python-format
+msgid "This bill is not linked to a commission purchase order."
+msgstr "Cette facture n'est pas liée à un bon de commande de commission."
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/commission_deduction.py:0
+#, python-format
+msgid "Waive Deduction"
+msgstr "Annuler la déduction"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/hr_commission_role_config.py:0
+#, python-format
+msgid "%(plan)s - %(role)s (Direct: %(direct)s%% / Supervision: %(override)s%%)"
+msgstr "%(plan)s - %(role)s (Direct : %(direct)s%% / Supervision : %(override)s%%)"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/hr_commission_role_config.py:0
+#, python-format
+msgid "Direct sale percentage must be between 0 and 100. Got: %s"
+msgstr "Le pourcentage de vente directe doit être entre 0 et 100. Obtenu : %s"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/hr_commission_role_config.py:0
+#, python-format
+msgid "Commission de Supervision percentage must be between 0 and 100. Got: %s"
+msgstr "Le pourcentage de commission de supervision doit être entre 0 et 100. Obtenu : %s"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/purchase_order.py:0
+#, python-format
+msgid "Purchase Order %s was cancelled. Claim and deductions have been reset to pending."
+msgstr "Le bon de commande %s a été annulé. La réclamation et les déductions ont été réinitialisées à en attente."
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/purchase_order.py:0
+#, python-format
+msgid "PO Cancelled - Claim Reset"
+msgstr "BC annulé - Réclamation réinitialisée"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/purchase_order.py:0
+#, python-format
+msgid "Deduction removed from Purchase Order %s. Status reset to pending."
+msgstr "Déduction retirée du bon de commande %s. Statut réinitialisé à en attente."
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/purchase_order.py:0
+#, python-format
+msgid "Deduction Removed from PO"
+msgstr "Déduction retirée du BC"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/res_users.py:0
+#, python-format
+msgid "Mes commissions"
+msgstr "Mes commissions"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/res_users.py:0
+#, python-format
+msgid "My Commission Plans"
+msgstr "Mes plans de commission"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_commission.py:0
+#, python-format
+msgid "%s Orders"
+msgstr "%s commandes"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_commission.py:0
+#, python-format
+msgid "Claim Commission"
+msgstr "Réclamer la commission"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_commission.py:0
+#, python-format
+msgid "Commande de Vente"
+msgstr "Commande de Vente"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_commission.py:0
+#, python-format
+msgid "Commandes de Vente"
+msgstr "Commandes de Vente"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_commission.py:0
+#, python-format
+msgid "No payment found for this commission."
+msgstr "Aucun paiement trouvé pour cette commission."
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_commission.py:0
+#: code:addons/belgogreen_sales_commission/models/sale_commission_claim.py:0
+#, python-format
+msgid "User %s does not have a linked partner record."
+msgstr "L'utilisateur %s n'a pas de fiche partenaire liée."
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_commission_claim.py:0
+#, python-format
+msgid "All claims must be from the same user."
+msgstr "Toutes les réclamations doivent provenir du même utilisateur."
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_commission_claim.py:0
+#, python-format
+msgid "Net claim amount must be positive."
+msgstr "Le montant net de la réclamation doit être positif."
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_commission_claim.py:0
+#, python-format
+msgid "No purchase order has been created yet."
+msgstr "Aucun bon de commande n'a encore été créé."
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_commission_claim.py:0
+#, python-format
+msgid "Only draft claims can be deleted."
+msgstr "Seules les réclamations en brouillon peuvent être supprimées."
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_commission_claim.py:0
+#, python-format
+msgid "Review Purchase Order"
+msgstr "Voir le bon de commande"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_commission_claim.py:0
+#, python-format
+msgid "You can only delete your own claims."
+msgstr "Vous ne pouvez supprimer que vos propres réclamations."
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_commission_plan_user.py:0
+#, python-format
+msgid "A user cannot be their own manager!"
+msgstr "Un utilisateur ne peut pas être son propre manager !"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_commission_plan_user.py:0
+#, python-format
+msgid "Complete Hierarchy Setup"
+msgstr "Configuration complète de la hiérarchie"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_commission_plan_user.py:0
+#, python-format
+msgid "Hierarchy depth exceeds 50 levels. Possible circular reference."
+msgstr "La profondeur de la hiérarchie dépasse 50 niveaux. Référence circulaire possible."
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_commission_plan_user.py:0
+#, python-format
+msgid "User %s added to plan. Please set their role and manager in \"Users & Hierarchy\" tab."
+msgstr "L'utilisateur %s a été ajouté au plan. Veuillez définir son rôle et son manager dans l'onglet \"Vendeurs et Hiérarchie\"."
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_commission_role.py:0
+#, python-format
+msgid "Commissions - %s"
+msgstr "Commissions - %s"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_commission_role.py:0
+#, python-format
+msgid "Hierarchy level must be a positive number"
+msgstr "Le niveau hiérarchique doit être un nombre positif"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_commission_role.py:0
+#, python-format
+msgid "Plan Assignments - %s"
+msgstr "Affectations au plan - %s"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_commission_role.py:0
+#, python-format
+msgid "Role code must be unique per company!"
+msgstr "Le code du rôle doit être unique par société !"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/models/sale_commission_role.py:0
+#, python-format
+msgid "Role name must be unique per company!"
+msgstr "Le nom du rôle doit être unique par société !"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/wizard/commission_manual_wizard.py:0
+#, python-format
+msgid "Base amount must be greater than zero."
+msgstr "Le montant de base doit être supérieur à zéro."
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/wizard/commission_manual_wizard.py:0
+#, python-format
+msgid "Commission %s for %s (%s) has been created successfully."
+msgstr "La commission %s pour %s (%s) a été créée avec succès."
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/wizard/commission_manual_wizard.py:0
+#, python-format
+msgid "Commission percentage must be greater than zero."
+msgstr "Le pourcentage de commission doit être supérieur à zéro."
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/wizard/commission_manual_wizard.py:0
+#, python-format
+msgid "Manual Commission Created"
+msgstr "Commission manuelle créée"
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/wizard/commission_manual_wizard.py:0
+#, python-format
+msgid "Month must be between 01 and 12."
+msgstr "Le mois doit être entre 01 et 12."
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/wizard/commission_manual_wizard.py:0
+#, python-format
+msgid "Only Commission Managers can create manual commissions."
+msgstr "Seuls les gestionnaires de commissions peuvent créer des commissions manuelles."
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/wizard/commission_manual_wizard.py:0
+#, python-format
+msgid "Period must be in YYYY-MM format (e.g., 2025-01)."
+msgstr "La période doit être au format AAAA-MM (ex. : 2025-01)."
+
+#. module: belgogreen_sales_commission
+#: code:addons/belgogreen_sales_commission/wizard/commission_manual_wizard.py:0
+#, python-format
+msgid "Commission Créée Manuellement"
+msgstr "Commission Créée Manuellement"
+
