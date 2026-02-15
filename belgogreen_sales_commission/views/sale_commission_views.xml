@@ -36,13 +36,13 @@
             <field name="arch" type="xml">
                 <form string="Commission">
                     <header>
-                        <button name="action_claim_payment" string="Claim Payment" type="object" class="oe_highlight"
+                        <button name="action_claim_payment" string="Réclamer le paiement" type="object" class="oe_highlight"
                                 invisible="status != 'unpaid' or user_id != uid"
                                 groups="belgogreen_sales_commission.group_commission_user"/>
-                        <button name="action_create_po_from_commissions" string="Create Purchase Order" type="object" class="oe_highlight"
+                        <button name="action_create_po_from_commissions" string="Créer un bon de commande" type="object" class="oe_highlight"
                                 invisible="status != 'unpaid'"
                                 groups="belgogreen_sales_commission.group_commission_manager"/>
-                        <button name="action_cancel" string="Cancel" type="object"
+                        <button name="action_cancel" string="Annuler" type="object"
                                 invisible="status not in ['unpaid', 'claimed', 'approved']"
                                 groups="belgogreen_sales_commission.group_commission_manager"/>
                         <field name="status" widget="statusbar" statusbar_visible="unpaid,claimed,approved,processing,paid"/>
@@ -99,14 +99,14 @@
                             </h1>
                         </div>
                         <group>
-                            <group string="Commission Information" name="commission_info">
+                            <group string="Informations de commission" name="commission_info">
                                 <field name="user_id" readonly="1" options="{'no_open': True}"/>
                                 <field name="role_id" readonly="1" options="{'no_open': True}" invisible="is_adjustment"/>
                                 <field name="commission_type" readonly="1"/>
                                 <field name="date" readonly="1"/>
                                 <field name="period" readonly="1"/>
                             </group>
-                            <group string="Calculation" name="calculation">
+                            <group string="Calcul" name="calculation">
                                 <field name="plan_id" readonly="1" groups="belgogreen_sales_commission.group_commission_manager" options="{'no_open': True}"/>
                                 <field name="base_amount" readonly="not is_adjustment or status in ['processing', 'paid', 'cancelled']" groups="belgogreen_sales_commission.group_commission_manager"/>
                                 <field name="percentage_override" string="Commission %" groups="belgogreen_sales_commission.group_commission_manager" readonly="not is_adjustment or status in ['processing', 'paid', 'cancelled']" invisible="not is_adjustment"/>
@@ -115,15 +115,15 @@
                             </group>
                         </group>
                         <group>
-                            <group string="Status" name="status_info">
+                            <group string="Statut" name="status_info">
                                 <field name="status" readonly="1"/>
                                 <field name="payment_date" readonly="1"/>
                                 <field name="payment_id" readonly="1"/>
                             </group>
-                            <group string="References" name="references">
+                            <group string="Références" name="references">
                                 <field name="customer_id" readonly="1" invisible="1"/>
                                 <field name="linked_sale_order_ids" invisible="1"/>
-                                <field name="sale_order_id" string="Sale Order" readonly="1"
+                                <field name="sale_order_id" string="Commande de vente" readonly="1"
                                        invisible="linked_sale_order_ids"
                                        options="{'no_open': True}"/>
                                 <field name="sale_order_display" string="Commandes de Vente" readonly="1"
@@ -149,31 +149,31 @@
                     <field name="invoice_id"/>
                     <field name="period"/>
                     <separator/>
-                    <filter string="My Commissions" name="my_commissions" domain="[('user_id', '=', uid)]"/>
+                    <filter string="Mes commissions" name="my_commissions" domain="[('user_id', '=', uid)]"/>
                     <separator/>
-                    <filter string="Unpaid" name="unpaid" domain="[('status', '=', 'unpaid')]"/>
-                    <filter string="Claimed" name="claimed" domain="[('status', '=', 'claimed')]"/>
-                    <filter string="Approved" name="approved" domain="[('status', '=', 'approved')]"/>
-                    <filter string="Processing" name="processing" domain="[('status', '=', 'processing')]"/>
-                    <filter string="Paid" name="paid" domain="[('status', '=', 'paid')]"/>
+                    <filter string="Non payé" name="unpaid" domain="[('status', '=', 'unpaid')]"/>
+                    <filter string="Réclamé" name="claimed" domain="[('status', '=', 'claimed')]"/>
+                    <filter string="Approuvé" name="approved" domain="[('status', '=', 'approved')]"/>
+                    <filter string="En traitement" name="processing" domain="[('status', '=', 'processing')]"/>
+                    <filter string="Payé" name="paid" domain="[('status', '=', 'paid')]"/>
                     <separator/>
-                    <filter string="Can Be Paid" name="can_be_paid" domain="[('can_be_paid', '=', True)]"/>
+                    <filter string="Peut être payé" name="can_be_paid" domain="[('can_be_paid', '=', True)]"/>
                     <separator/>
-                    <filter string="Direct Sales" name="direct_sales" domain="[('commission_type', '=', 'direct')]"/>
+                    <filter string="Ventes directes" name="direct_sales" domain="[('commission_type', '=', 'direct')]"/>
                     <filter string="Commissions de Supervision" name="override_commissions" domain="[('commission_type', '=', 'override')]"/>
                     <separator/>
-                    <filter string="Current Month" name="current_month"
+                    <filter string="Mois en cours" name="current_month"
                             domain="[('date', '&gt;=', (context_today() - relativedelta(day=1)).strftime('%Y-%m-%d')),
                                      ('date', '&lt;=', (context_today() + relativedelta(day=31)).strftime('%Y-%m-%d'))]"/>
-                    <filter string="Last Month" name="last_month"
+                    <filter string="Mois dernier" name="last_month"
                             domain="[('date', '&gt;=', (context_today() - relativedelta(months=1, day=1)).strftime('%Y-%m-%d')),
                                      ('date', '&lt;=', (context_today() - relativedelta(months=1, day=31)).strftime('%Y-%m-%d'))]"/>
                     <group>
-                        <filter string="User" name="group_user" context="{'group_by': 'user_id'}"/>
-                        <filter string="Role" name="group_role" context="{'group_by': 'role_id'}"/>
-                        <filter string="Commission Type" name="group_commission_type" context="{'group_by': 'commission_type'}"/>
-                        <filter string="Status" name="group_status" context="{'group_by': 'status'}"/>
-                        <filter string="Period" name="group_period" context="{'group_by': 'period'}"/>
+                        <filter string="Utilisateur" name="group_user" context="{'group_by': 'user_id'}"/>
+                        <filter string="Rôle" name="group_role" context="{'group_by': 'role_id'}"/>
+                        <filter string="Type de commission" name="group_commission_type" context="{'group_by': 'commission_type'}"/>
+                        <filter string="Statut" name="group_status" context="{'group_by': 'status'}"/>
+                        <filter string="Période" name="group_period" context="{'group_by': 'period'}"/>
                         <filter string="Plan" name="group_plan" context="{'group_by': 'plan_id'}"/>
                         <filter string="Date" name="group_date" context="{'group_by': 'date:month'}"/>
                     </group>
@@ -186,7 +186,7 @@
             <field name="name">sale.commission.pivot</field>
             <field name="model">sale.commission</field>
             <field name="arch" type="xml">
-                <pivot string="Commissions Analysis">
+                <pivot string="Analyse des commissions">
                     <field name="user_id" type="row"/>
                     <field name="period" type="col"/>
                     <field name="commission_amount" type="measure"/>
@@ -200,7 +200,7 @@
             <field name="name">sale.commission.graph</field>
             <field name="model">sale.commission</field>
             <field name="arch" type="xml">
-                <graph string="Commissions Analysis" type="bar">
+                <graph string="Analyse des commissions" type="bar">
                     <field name="period"/>
                     <field name="commission_amount" type="measure"/>
                 </graph>
@@ -253,46 +253,46 @@
 
         <!-- All Commissions (Manager View) -->
         <record id="action_sale_commission_all" model="ir.actions.act_window">
-            <field name="name">All Commissions</field>
+            <field name="name">Toutes les commissions</field>
             <field name="res_model">sale.commission</field>
             <field name="view_mode">list,form,kanban,pivot,graph</field>
             <field name="context">{'search_default_confirmed': 1, 'search_default_group_user': 1}</field>
             <field name="help" type="html">
                 <p class="o_view_nocontent_smiling_face">
-                    No commissions found
+                    Aucune commission trouvée
                 </p>
                 <p>
-                    Commissions are automatically created when invoices are paid.
+                    Les commissions sont automatiquement créées lorsque les factures sont payées.
                 </p>
             </field>
         </record>
 
         <!-- My Commissions (User View) -->
         <record id="action_sale_commission_my" model="ir.actions.act_window">
-            <field name="name">My Commissions</field>
+            <field name="name">Mes commissions</field>
             <field name="res_model">sale.commission</field>
             <field name="view_mode">list,form,kanban,pivot,graph</field>
             <field name="context">{'search_default_my_commissions': 1, 'search_default_group_period': 1}</field>
             <field name="domain">[('user_id', '=', uid)]</field>
             <field name="help" type="html">
                 <p class="o_view_nocontent_smiling_face">
-                    You don't have any commissions yet
+                    Vous n'avez pas encore de commissions
                 </p>
                 <p>
-                    Your commissions will appear here once sales orders are invoiced and paid.
+                    Vos commissions apparaîtront ici une fois que les commandes de vente seront facturées et payées.
                 </p>
             </field>
         </record>
 
         <!-- Unpaid Commissions (Manager View) -->
         <record id="action_sale_commission_unpaid" model="ir.actions.act_window">
-            <field name="name">Unpaid Commissions</field>
+            <field name="name">Commissions non payées</field>
             <field name="res_model">sale.commission</field>
             <field name="view_mode">list,form</field>
             <field name="context">{'search_default_can_be_paid': 1, 'search_default_group_user': 1}</field>
             <field name="help" type="html">
                 <p class="o_view_nocontent_smiling_face">
-                    No unpaid commissions
+                    Aucune commission non payée
                 </p>
             </field>
         </record>
@@ -321,7 +321,7 @@
 
         <!-- Server Action: Create PO from Selected Commissions (Manager Only) -->
         <record id="action_server_create_po_from_commissions" model="ir.actions.server">
-            <field name="name">Create Purchase Order</field>
+            <field name="name">Créer un bon de commande</field>
             <field name="model_id" ref="model_sale_commission"/>
             <field name="binding_model_id" ref="model_sale_commission"/>
             <field name="binding_view_types">list</field>

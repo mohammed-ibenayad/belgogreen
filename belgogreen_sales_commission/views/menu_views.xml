@@ -4,7 +4,7 @@
 
         <!-- Smart Entry Point Action - Redirects based on user role -->
         <record id="action_commission_smart_entry" model="ir.actions.server">
-            <field name="name">Commission Entry Point</field>
+            <field name="name">Point d'entrée des commissions</field>
             <field name="model_id" ref="model_sale_commission"/>
             <field name="state">code</field>
             <field name="code">
@@ -15,7 +15,7 @@ if env.user.has_group('belgogreen_sales_commission.group_commission_manager'):
         'type': 'ir.actions.act_window',
         'res_model': 'sale.commission',
         'view_mode': 'list,form',
-        'name': 'Unpaid Commissions',
+        'name': 'Commissions non payées',
         'context': {'search_default_can_be_paid': 1, 'search_default_group_user': 1},
         'domain': [],
     }
@@ -24,7 +24,7 @@ else:
     action = {
         'type': 'ir.actions.client',
         'tag': 'commission_dashboard',
-        'name': 'Dashboard',
+        'name': 'Tableau de bord',
     }
             </field>
         </record>
@@ -39,7 +39,7 @@ else:
 
         <!-- Dashboard Menu (for users) -->
         <menuitem id="menu_commission_dashboard"
-                  name="Dashboard"
+                  name="Tableau de bord"
                   parent="menu_commission_root"
                   action="action_commission_dashboard"
                   sequence="1"
@@ -79,25 +79,25 @@ else:
 
         <!-- Stats Submenu -->
         <menuitem id="menu_commission_stats"
-                  name="Statistics"
+                  name="Statistiques"
                   parent="menu_commission_management"
                   sequence="10"/>
 
         <menuitem id="menu_commission_all"
-                  name="All Commissions"
+                  name="Toutes les commissions"
                   parent="menu_commission_stats"
                   action="action_sale_commission_all"
                   sequence="10"/>
 
         <menuitem id="menu_commission_unpaid"
-                  name="Unpaid Commissions"
+                  name="Commissions non payées"
                   parent="menu_commission_stats"
                   action="action_sale_commission_unpaid"
                   sequence="20"/>
 
         <!-- Tracking Submenu (Suivi) -->
         <menuitem id="menu_commission_tracking"
-                  name="Tracking"
+                  name="Suivi"
                   parent="menu_commission_management"
                   sequence="20"/>
 
@@ -109,21 +109,21 @@ else:
                   groups="belgogreen_sales_commission.group_commission_manager"/>
 
         <menuitem id="menu_commission_deductions_management"
-                  name="Deductions"
+                  name="Déductions"
                   parent="menu_commission_tracking"
                   action="action_commission_deduction"
                   sequence="10"/>
 
         <!-- DISABLED: Custom payment model removed, use standard account.payment
         <menuitem id="menu_commission_payments"
-                  name="Payments"
+                  name="Paiements"
                   parent="menu_commission_tracking"
                   action="action_sale_commission_payment"
                   sequence="20"/>
         -->
 
         <menuitem id="menu_commission_claims"
-                  name="Claims"
+                  name="Réclamations"
                   parent="menu_commission_tracking"
                   action="action_sale_commission_claim_all"
                   sequence="30"/>
@@ -142,19 +142,19 @@ else:
                   sequence="10"/>
 
         <menuitem id="menu_commission_plans"
-                  name="Commission Plans"
+                  name="Plans de commission"
                   parent="menu_plans_management"
                   action="action_sale_commission_plan"
                   sequence="10"/>
 
         <menuitem id="menu_commission_role_config"
-                  name="Tiers Configuration"
+                  name="Configuration des paliers"
                   parent="menu_plans_management"
                   action="action_hr_commission_role_config"
                   sequence="20"/>
 
         <menuitem id="menu_sale_commission_role"
-                  name="Role Management"
+                  name="Gestion des rôles"
                   parent="menu_plans_management"
                   action="action_sale_commission_role"
                   sequence="30"
@@ -163,12 +163,12 @@ else:
         <!-- Hierarchy Management Submenu - DISABLED (incompatible with plan-based architecture) -->
         <!--
         <menuitem id="menu_hierarchy_management"
-                  name="Hierarchy"
+                  name="Hiérarchie"
                   parent="menu_commission_configuration"
                   sequence="20"/>
 
         <menuitem id="menu_team_hierarchy"
-                  name="Team Structure"
+                  name="Structure d'équipe"
                   parent="menu_hierarchy_management"
                   action="action_team_hierarchy"
                   sequence="10"/>

@@ -13,11 +13,11 @@
                 <xpath expr="//header" position="inside">
                     <button name="action_generate_commissions"
                             type="object"
-                            string="Generate Commissions"
+                            string="Générer les commissions"
                             class="btn-primary"
                             invisible="state not in ['sale', 'done']"
                             groups="belgogreen_sales_commission.group_commission_manager"
-                            help="Generate commissions for this sale order if invoices are paid"/>
+                            help="Générer les commissions pour cette commande de vente si les factures sont payées"/>
                 </xpath>
 
                 <!-- Add commissions button in button box -->
@@ -34,7 +34,7 @@
 
                 <!-- Add commission fields in Other Info tab -->
                 <xpath expr="//page[@name='other_information']" position="inside">
-                    <group string="Commission Information" groups="belgogreen_sales_commission.group_commission_manager">
+                    <group string="Informations de commission" groups="belgogreen_sales_commission.group_commission_manager">
                         <field name="commissions_generated" readonly="1"/>
                         <field name="commission_count" readonly="1"/>
                     </group>
@@ -62,7 +62,7 @@
 
         <!-- Server Action for Bulk Commission Generation -->
         <record id="action_server_generate_commissions_bulk" model="ir.actions.server">
-            <field name="name">Generate Commissions</field>
+            <field name="name">Générer les commissions</field>
             <field name="model_id" ref="sale.model_sale_order"/>
             <field name="binding_model_id" ref="sale.model_sale_order"/>
             <field name="binding_view_types">list</field>

@@ -7,14 +7,14 @@
             <field name="name">hr.commission.role.config.list</field>
             <field name="model">hr.commission.role.config</field>
             <field name="arch" type="xml">
-                <list string="Role Configurations" editable="bottom">
+                <list string="Configuration des rôles" editable="bottom">
                     <field name="plan_id" string="Plan" width="200px"/>
                     <field name="role_id" string="Rôle" width="150px"
                            options="{'no_create': True}"/>
-                    <field name="direct_sale_percentage" string="Direct Sale %" width="100px"/>
+                    <field name="direct_sale_percentage" string="Vente Directe %" width="100px"/>
                     <field name="override_percentage" string="Comm. Supervision %" width="100px"/>
-                    <field name="company_id" string="Company" groups="base.group_multi_company" width="150px"/>
-                    <field name="active" string="Active" width="80px" widget="boolean_toggle"/>
+                    <field name="company_id" string="Société" groups="base.group_multi_company" width="150px"/>
+                    <field name="active" string="Actif" width="80px" widget="boolean_toggle"/>
                 </list>
             </field>
         </record>
@@ -24,7 +24,7 @@
             <field name="name">hr.commission.role.config.form</field>
             <field name="model">hr.commission.role.config</field>
             <field name="arch" type="xml">
-                <form string="Role Configuration">
+                <form string="Configuration du rôle">
                     <sheet>
                         <group>
                             <group>
@@ -33,25 +33,25 @@
                             </group>
                             <group>
                                 <field name="direct_sale_percentage"
-                                       help="Percentage when this role makes their own sale"/>
+                                       help="Pourcentage lorsque ce rôle réalise sa propre vente"/>
                                 <field name="override_percentage"
                                        string="Commission de Supervision %"
-                                       help="Percentage when this role gets commission on subordinate's sale"/>
+                                       help="Pourcentage lorsque ce rôle reçoit une commission sur la vente d'un subordonné"/>
                                 <field name="active"/>
                                 <field name="company_id" groups="base.group_multi_company"/>
                             </group>
                         </group>
 
-                        <group string="Explanation">
+                        <group string="Explication">
                             <div class="alert alert-info" role="alert">
-                                <strong>Direct Sale %:</strong> Applied when a user with this role makes their own sale.
+                                <strong>Vente Directe % :</strong> Appliqué lorsqu'un utilisateur avec ce rôle réalise sa propre vente.
                                 <br/>
-                                <strong>Commission de Supervision %:</strong> Applied when a user receives commission on a subordinate's sale.
+                                <strong>Commission de Supervision % :</strong> Appliqué lorsqu'un utilisateur reçoit une commission sur la vente d'un subordonné.
                                 <br/><br/>
-                                <strong>Example:</strong> If Team Leader has Direct=5% and Supervision=2%:
+                                <strong>Exemple :</strong> Si le Chef d'équipe a Direct=5% et Supervision=2% :
                                 <ul>
-                                    <li>Team Leader makes $1000 sale → Gets $50 (5%)</li>
-                                    <li>Salesperson makes $1000 sale → Team Leader gets $20 (2%)</li>
+                                    <li>Le Chef d'équipe réalise une vente de 1000€ → Il reçoit 50€ (5%)</li>
+                                    <li>Le Commercial réalise une vente de 1000€ → Le Chef d'équipe reçoit 20€ (2%)</li>
                                 </ul>
                             </div>
                         </group>
@@ -65,14 +65,14 @@
             <field name="name">hr.commission.role.config.search</field>
             <field name="model">hr.commission.role.config</field>
             <field name="arch" type="xml">
-                <search string="Role Configuration">
+                <search string="Configuration des rôles">
                     <field name="plan_id"/>
                     <field name="role_id"/>
-                    <filter string="Active" name="active" domain="[('active', '=', True)]"/>
-                    <filter string="Inactive" name="inactive" domain="[('active', '=', False)]"/>
+                    <filter string="Actif" name="active" domain="[('active', '=', True)]"/>
+                    <filter string="Inactif" name="inactive" domain="[('active', '=', False)]"/>
                     <group>
                         <filter string="Plan" name="group_plan" context="{'group_by': 'plan_id'}"/>
-                        <filter string="Role" name="group_role" context="{'group_by': 'role_id'}"/>
+                        <filter string="Rôle" name="group_role" context="{'group_by': 'role_id'}"/>
                     </group>
                 </search>
             </field>
@@ -80,20 +80,20 @@
 
         <!-- Action -->
         <record id="action_hr_commission_role_config" model="ir.actions.act_window">
-            <field name="name">Commission Role Configuration</field>
+            <field name="name">Configuration des rôles de commission</field>
             <field name="res_model">hr.commission.role.config</field>
             <field name="view_mode">list,form</field>
             <field name="context">{'search_default_active': 1}</field>
             <field name="help" type="html">
                 <p class="o_view_nocontent_smiling_face">
-                    Create a commission role configuration
+                    Créer une configuration de rôle de commission
                 </p>
                 <p>
-                    Define commission percentages for each role within a commission plan.
-                    Each role has two percentages:
+                    Définissez les pourcentages de commission pour chaque rôle dans un plan de commission.
+                    Chaque rôle a deux pourcentages :
                     <ul>
-                        <li><strong>Direct Sale %</strong>: When the user makes their own sale</li>
-                        <li><strong>Comm. Supervision %</strong>: When they receive commission on subordinate's sale</li>
+                        <li><strong>Vente Directe %</strong> : Lorsque l'utilisateur réalise sa propre vente</li>
+                        <li><strong>Comm. Supervision %</strong> : Lorsqu'il reçoit une commission sur la vente d'un subordonné</li>
                     </ul>
                 </p>
             </field>
