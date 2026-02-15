@@ -5,7 +5,7 @@
         <field name="name">sale.commission.role.form</field>
         <field name="model">sale.commission.role</field>
         <field name="arch" type="xml">
-            <form string="Commission Role">
+            <form string="Rôle de Commission">
                 <sheet>
                     <div class="oe_button_box" name="button_box">
                         <button name="action_view_users"
@@ -13,35 +13,35 @@
                                 class="oe_stat_button"
                                 icon="fa-users"
                                 invisible="user_count == 0">
-                            <field name="user_count" widget="statinfo" string="Users"/>
+                            <field name="user_count" widget="statinfo" string="Utilisateurs"/>
                         </button>
                     </div>
 
-                    <widget name="web_ribbon" title="Archived" bg_color="bg-danger"
+                    <widget name="web_ribbon" title="Archivé" bg_color="bg-danger"
                             invisible="active"/>
 
                     <group>
                         <group>
-                            <field name="name" placeholder="e.g., Salesperson, Team Leader"/>
-                            <field name="code" placeholder="e.g., SP, TL, SD"/>
+                            <field name="name" placeholder="ex. Commercial, Chef d'équipe"/>
+                            <field name="code" placeholder="ex. COM, CE, DC"/>
                             <field name="sequence"
-                                   help="Lower numbers = bottom of hierarchy (e.g., 10=Salesperson, 20=Team Leader, 30=Director)"/>
+                                   help="Les nombres inférieurs = bas de la hiérarchie (ex. 10=Commercial, 20=Chef d'équipe, 30=Directeur)"/>
                             <field name="color" widget="color_picker"/>
                         </group>
                         <group>
                             <field name="company_id" groups="base.group_multi_company"/>
                             <field name="active" widget="boolean_toggle"/>
                             <field name="is_base_role"
-                                   help="Check if this is the base role that creates commissions from sales"/>
+                                   help="Cochez si c'est le rôle de base qui crée des commissions à partir des ventes"/>
                             <field name="requires_manager"
-                                   help="Users with this role must have a manager assigned"/>
+                                   help="Les utilisateurs avec ce rôle doivent avoir un manager assigné"/>
                             <field name="can_manage_subordinates"
-                                   help="Users with this role can have team members"/>
+                                   help="Les utilisateurs avec ce rôle peuvent avoir des membres d'équipe"/>
                         </group>
                     </group>
 
                     <group>
-                        <field name="description" placeholder="Describe this role's responsibilities and position in the hierarchy..."/>
+                        <field name="description" placeholder="Décrivez les responsabilités de ce rôle et sa position dans la hiérarchie..."/>
                     </group>
                 </sheet>
             </form>
@@ -88,7 +88,7 @@
                                 <div class="o_kanban_record_headings">
                                     <strong class="o_kanban_record_title"><field name="name"/></strong>
                                     <span class="o_kanban_record_subtitle">
-                                        <field name="code"/> (Level <field name="sequence"/>)
+                                        <field name="code"/> (Niveau <field name="sequence"/>)
                                     </span>
                                 </div>
                             </div>
@@ -98,7 +98,7 @@
                             <div class="o_kanban_record_bottom">
                                 <div class="oe_kanban_bottom_left">
                                     <span class="badge badge-pill">
-                                        <i class="fa fa-users" title="Users"/> <field name="user_count"/> users
+                                        <i class="fa fa-users" title="Utilisateurs"/> <field name="user_count"/> utilisateurs
                                     </span>
                                 </div>
                                 <div class="oe_kanban_bottom_right">
@@ -119,21 +119,21 @@
         <field name="name">sale.commission.role.search</field>
         <field name="model">sale.commission.role</field>
         <field name="arch" type="xml">
-            <search string="Commission Roles">
+            <search string="Rôles de Commission">
                 <field name="name"/>
                 <field name="code"/>
 
-                <filter name="active_roles" string="Active" domain="[('active', '=', True)]"/>
-                <filter name="inactive_roles" string="Archived" domain="[('active', '=', False)]"/>
+                <filter name="active_roles" string="Actif" domain="[('active', '=', True)]"/>
+                <filter name="inactive_roles" string="Archivé" domain="[('active', '=', False)]"/>
 
                 <separator/>
-                <filter name="base_roles" string="Base Roles" domain="[('is_base_role', '=', True)]"/>
-                <filter name="management_roles" string="Management Roles" domain="[('can_manage_subordinates', '=', True)]"/>
-                <filter name="top_level" string="Top Level" domain="[('requires_manager', '=', False)]"/>
+                <filter name="base_roles" string="Rôles de base" domain="[('is_base_role', '=', True)]"/>
+                <filter name="management_roles" string="Rôles de management" domain="[('can_manage_subordinates', '=', True)]"/>
+                <filter name="top_level" string="Niveau supérieur" domain="[('requires_manager', '=', False)]"/>
 
                 <group>
-                    <filter name="group_by_company" string="Company" context="{'group_by': 'company_id'}"/>
-                    <filter name="group_by_hierarchy" string="Hierarchy Level" context="{'group_by': 'sequence'}"/>
+                    <filter name="group_by_company" string="Société" context="{'group_by': 'company_id'}"/>
+                    <filter name="group_by_hierarchy" string="Niveau hiérarchique" context="{'group_by': 'sequence'}"/>
                 </group>
             </search>
         </field>
@@ -147,18 +147,18 @@
         <field name="context">{'search_default_active_roles': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
-                Create your first commission role!
+                Créez votre premier rôle de commission !
             </p>
             <p>
-                Define roles in your sales commission hierarchy (e.g., Salesperson, Team Leader, Sales Director).
-                Set the hierarchy level (sequence) to determine who reports to whom.
+                Définissez les rôles dans votre hiérarchie de commissions (ex. Commercial, Chef d'équipe, Directeur commercial).
+                Définissez le niveau hiérarchique (séquence) pour déterminer qui rend compte à qui.
             </p>
             <p>
-                Lower sequence numbers represent lower positions in the hierarchy:
+                Les numéros de séquence inférieurs représentent les positions les plus basses dans la hiérarchie :
                 <ul>
-                    <li>10 = Salesperson (bottom)</li>
-                    <li>20 = Team Leader (middle)</li>
-                    <li>30 = Sales Director (top)</li>
+                    <li>10 = Commercial (bas)</li>
+                    <li>20 = Chef d'équipe (milieu)</li>
+                    <li>30 = Directeur commercial (haut)</li>
                 </ul>
             </p>
         </field>
