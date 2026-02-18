@@ -42,6 +42,9 @@
                         <button name="action_create_po_from_commissions" string="Créer un bon de commande" type="object" class="oe_highlight"
                                 invisible="status != 'unpaid'"
                                 groups="belgogreen_sales_commission.group_commission_manager"/>
+                        <button name="action_manual_pay" string="Marquer comme payée" type="object" class="oe_highlight"
+                                invisible="status in ['paid', 'cancelled']"
+                                groups="belgogreen_sales_commission.group_commission_manager"/>
                         <button name="action_cancel" string="Annuler" type="object"
                                 invisible="status not in ['unpaid', 'claimed', 'approved']"
                                 groups="belgogreen_sales_commission.group_commission_manager"/>
@@ -328,6 +331,18 @@
             <field name="state">code</field>
             <field name="code">
 action = records.action_create_po_from_commissions()
+            </field>
+        </record>
+
+        <!-- Server Action: Manual Pay from Selected Commissions (Manager Only) -->
+        <record id="action_server_manual_pay_commissions" model="ir.actions.server">
+            <field name="name">Marquer comme payée</field>
+            <field name="model_id" ref="model_sale_commission"/>
+            <field name="binding_model_id" ref="model_sale_commission"/>
+            <field name="binding_view_types">list</field>
+            <field name="state">code</field>
+            <field name="code">
+records.action_manual_pay()
             </field>
         </record>
 
