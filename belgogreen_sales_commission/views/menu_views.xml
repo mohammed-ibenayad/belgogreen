@@ -35,7 +35,7 @@ else:
                   web_icon="fa-wallet"
                   action="action_commission_smart_entry"
                   sequence="75"
-                  groups="belgogreen_sales_commission.group_commission_user"/>
+                  groups="belgogreen_sales_commission.group_commission_user,belgogreen_sales_commission.group_commission_manager"/>
 
         <!-- Dashboard Menu (for users) -->
         <menuitem id="menu_commission_dashboard"
