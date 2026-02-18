@@ -405,6 +405,36 @@ class SaleCommission(models.Model):
 
             commission.visible_to_user_ids = visible_users
 
+    def action_manual_pay(self):
+        """
+        Mark commission(s) as paid directly, bypassing the standard payment workflow.
+        Restricted to Commission Managers only.
+        Can be applied to commissions in any active status (unpaid, claimed, approved, processing).
+        """
+        if not self.env.user.has_group('belgogreen_sales_commission.group_commission_manager'):
+            raise UserError(_('Only Commission Managers can manually mark commissions as paid.'))
+
+        invalid = self.filtered(lambda c: c.status in ['paid', 'cancelled'])
+        if invalid:
+            raise UserError(_(
+                'The following commissions cannot be marked as paid because they are already '
+                'paid or cancelled:\n%s'
+            ) % '\n'.join(['- %s (%s)' % (c.name, dict(c._fields['status'].selection).get(c.status))
+                           for c in invalid]))
+
+        today = fields.Date.today()
+        for commission in self:
+            commission.write({
+                'status': 'paid',
+                'payment_date': today,
+            })
+            commission.message_post(
+                body=_('Commission marked as paid manually by %s on %s.')
+                     % (self.env.user.name, today),
+                message_type='comment',
+                subtype_xmlid='mail.mt_note',
+            )
+
     def action_cancel(self):
         """Cancel commission"""
         self.write({'status': 'cancelled'})
