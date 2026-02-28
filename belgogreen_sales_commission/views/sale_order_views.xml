@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Inherit Sale Order Form View -->
+        <record id="view_sale_order_form_inherit_commission" model="ir.ui.view">
+            <field name="name">sale.order.form.inherit.commission</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.view_order_form"/>
+            <field name="arch" type="xml">
+
+                <!-- Add commission button in header -->
+                <xpath expr="//header" position="inside">
+                    <button name="action_generate_commissions"
+                            type="object"
+                            string="Générer les commissions"
+                            class="btn-primary"
+                            invisible="state not in ['sale', 'done']"
+                            groups="belgogreen_sales_commission.group_commission_manager"
+                            help="Générer les commissions pour cette commande de vente si les factures sont payées"/>
+                </xpath>
+
+                <!-- Add commissions button in button box -->
+                <xpath expr="//div[@name='button_box']" position="inside">
+                    <button name="action_view_commissions"
+                            type="object"
+                            class="oe_stat_button"
+                            icon="fa-money"
+                            invisible="commission_count == 0"
+                            groups="belgogreen_sales_commission.group_commission_manager">
+                        <field name="commission_count" widget="statinfo" string="Commissions"/>
+                    </button>
+                </xpath>
+
+                <!-- Add commission fields in Other Info tab -->
+                <xpath expr="//page[@name='other_information']" position="inside">
+                    <group string="Informations de commission" groups="belgogreen_sales_commission.group_commission_manager">
+                        <field name="commissions_generated" readonly="1"/>
+                        <field name="commission_count" readonly="1"/>
+                    </group>
+                </xpath>
+
+            </field>
+        </record>
+
+        <!-- Inherit Sale Order Tree View -->
+        <record id="view_sale_order_tree_inherit_commission" model="ir.ui.view">
+            <field name="name">sale.order.tree.inherit.commission</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.view_quotation_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='amount_total']" position="after">
+                    <field name="commissions_generated"
+                           optional="hide"
+                           groups="belgogreen_sales_commission.group_commission_manager"/>
+                    <field name="commission_count"
+                           optional="hide"
+                           groups="belgogreen_sales_commission.group_commission_manager"/>
+                </xpath>
+            </field>
+        </record>
+
+        <!-- Server Action for Bulk Commission Generation -->
+        <record id="action_server_generate_commissions_bulk" model="ir.actions.server">
+            <field name="name">Générer les commissions</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="binding_model_id" ref="sale.model_sale_order"/>
+            <field name="binding_view_types">list</field>
+            <field name="state">code</field>
+            <field name="code">
+action = records.action_generate_commissions_bulk()
+            </field>
+        </record>
+
+    </data>
+</odoo>

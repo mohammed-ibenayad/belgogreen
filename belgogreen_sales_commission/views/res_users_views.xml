@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Inherit User Form View -->
+        <!-- Commissions tab removed as per user request -->
+
+    </data>
+</odoo>
