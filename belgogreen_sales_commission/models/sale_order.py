@@ -2,6 +2,7 @@
 
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
+from odoo.tools import float_compare
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -61,9 +62,91 @@ class SaleOrder(models.Model):
             }
         }
 
+    def _check_commission_eligibility(self):
+        """
+        Check if the sale order is eligible for commission calculation.
+
+        Rules (from spec):
+        1. All eligible invoices linked to the SO must be fully paid.
+        2. The sum of eligible invoices must exactly match the SO total (to the cent).
+        3. No active credit notes (avoirs) may exist for this SO.
+
+        Eligible invoices: all invoices (out_invoice) linked to the SO,
+        excluding cancelled invoices and credit notes (out_refund).
+
+        Returns: dict with 'eligible', 'message', 'eligible_invoices', 'base_amount'
+        """
+        self.ensure_one()
+
+        result = {
+            'eligible': False,
+            'message': '',
+            'eligible_invoices': self.env['account.move'],
+            'base_amount': 0.0,
+        }
+
+        # Eligible invoices = out_invoice, not cancelled
+        eligible_invoices = self.invoice_ids.filtered(
+            lambda inv: inv.move_type == 'out_invoice' and inv.state != 'cancel'
+        )
+
+        if not eligible_invoices:
+            result['message'] = _("No eligible invoices found for order %s") % self.name
+            return result
+
+        # Block if any non-cancelled credit notes exist
+        active_credit_notes = self.invoice_ids.filtered(
+            lambda inv: inv.move_type == 'out_refund' and inv.state != 'cancel'
+        )
+
+        if active_credit_notes:
+            result['message'] = _(
+                "Order %s has active credit notes - commission cannot be calculated"
+            ) % self.name
+            return result
+
+        # ALL eligible invoices must be fully paid
+        unpaid_invoices = eligible_invoices.filtered(
+            lambda inv: inv.payment_state not in ['paid', 'in_payment']
+        )
+
+        if unpaid_invoices:
+            result['message'] = _(
+                "Order %s has unpaid eligible invoices: %s"
+            ) % (self.name, ', '.join(unpaid_invoices.mapped('name')))
+            return result
+
+        # Sum of eligible invoices must exactly match SO total (no rounding tolerance)
+        eligible_total = sum(eligible_invoices.mapped('amount_total'))
+        precision = self.currency_id.decimal_places
+
+        if float_compare(eligible_total, self.amount_total, precision_digits=precision) != 0:
+            result['message'] = _(
+                "Order %(order)s: sum of eligible invoices (%(inv_total).2f) does not match "
+                "order total (%(so_total).2f)"
+            ) % {
+                'order': self.name,
+                'inv_total': eligible_total,
+                'so_total': self.amount_total,
+            }
+            return result
+
+        # All checks passed
+        result['eligible'] = True
+        result['eligible_invoices'] = eligible_invoices
+        result['base_amount'] = eligible_total
+
+        return result
+
     def _generate_commissions(self):
         """
-        Generate commissions for this sale order if conditions are met
+        Generate commissions for this sale order if conditions are met.
+
+        Commission is only created when:
+        - The SO is fully invoiced (sum of eligible invoices = SO total)
+        - All eligible invoices are fully paid
+        - No active credit notes exist
+
         Returns: dict with result information
         """
         self.ensure_one()
@@ -84,7 +167,7 @@ class SaleOrder(models.Model):
             result['message'] = _("No salesperson assigned to order %s") % self.name
             return result
 
-        # Find ALL applicable commission plans (removed limit=1)
+        # Find ALL applicable commission plans
         commission_plans = self.env['sale.commission.plan'].search([
             ('type', '=', 'hierarchical'),
             ('state', '=', 'approved'),
@@ -95,21 +178,26 @@ class SaleOrder(models.Model):
             result['message'] = _("No approved hierarchical commission plan found")
             return result
 
-        # Get paid invoices for this sale order
-        paid_invoices = self.invoice_ids.filtered(
-            lambda inv: inv.move_type == 'out_invoice'
-            and inv.state == 'posted'
-            and inv.payment_state in ['paid', 'in_payment']
-        )
+        # Check commission eligibility (new spec rules)
+        eligibility = self._check_commission_eligibility()
 
-        if not paid_invoices:
-            result['message'] = _("No paid invoices found for order %s") % self.name
+        if not eligibility['eligible']:
+            result['message'] = eligibility['message']
             return result
+
+        base_amount = eligibility['base_amount']
+        eligible_invoices = eligibility['eligible_invoices']
+
+        # Use the most recent eligible invoice date for date validation
+        invoice_date = fields.Date.today()
+        if eligible_invoices:
+            dates = [d for d in eligible_invoices.mapped('invoice_date') if d]
+            if dates:
+                invoice_date = max(dates)
 
         # Process each commission plan
         total_commissions_created = 0
         plans_processed = []
-        invoice_date = fields.Date.today()  # Use today for initial check
 
         for commission_plan in commission_plans:
             # Check if salesperson has assignment in this plan (with date validation)
@@ -126,17 +214,10 @@ class SaleOrder(models.Model):
                            self.user_id.name, commission_plan.name)
                 continue
 
-            # Check if plan requires paid invoice
-            if commission_plan.require_invoice_paid and not paid_invoices:
-                _logger.info("Commission plan %s requires paid invoices, but none found for order %s, skipping",
-                           commission_plan.name, self.name)
-                continue
-
-            # Process each paid invoice for this plan
-            commissions_created = 0
-            for invoice in paid_invoices:
-                created = self._create_commissions_for_invoice(invoice, commission_plan)
-                commissions_created += created
+            # Create commissions for the entire order (not per invoice)
+            commissions_created = self._create_commissions_for_order(
+                base_amount, eligible_invoices, commission_plan
+            )
 
             if commissions_created > 0:
                 total_commissions_created += commissions_created
@@ -219,16 +300,15 @@ class SaleOrder(models.Model):
 
         return hierarchy
 
-    def _create_commissions_for_invoice(self, invoice, commission_plan):
+    def _create_commissions_for_order(self, base_amount, eligible_invoices, commission_plan):
         """
-        Create commission records for a specific invoice.
-        Now supports dynamic N-level hierarchies with dual percentage (direct vs override).
+        Create commission records for the entire sale order.
+
+        Commission base = sum of all eligible invoices (which must equal SO total).
+        One commission per user in the hierarchy, not per invoice.
 
         LEGACY SUPPORT: If ANY legacy commission flag is true on the sale order,
-        commission generation is completely blocked for that order:
-        - x_studio_payee_commercial
-        - x_studio_payee_responsable_commercial
-        - x_studio_payee_directeur_commercial
+        commission generation is completely blocked for that order.
 
         Returns: number of commissions created
         """
@@ -242,28 +322,30 @@ class SaleOrder(models.Model):
             return 0
 
         salesperson = self.user_id
-        base_amount = invoice.amount_total
 
-        # Build commission hierarchy dynamically - SUPPORTS ANY NUMBER OF LEVELS
-        # NOW USES PLAN-SPECIFIC ROLES AND HIERARCHY
+        # Build commission hierarchy dynamically
         users_to_commission = self._get_commission_hierarchy(salesperson, commission_plan)
 
         if not users_to_commission:
             _logger.info("No commission hierarchy found for user %s in plan %s", salesperson.name, commission_plan.name)
             return 0
 
-        # Calculate period (YYYY-MM format)
-        period = invoice.invoice_date.strftime('%Y-%m') if invoice.invoice_date else fields.Date.today().strftime('%Y-%m')
+        # Use the most recent eligible invoice date for period
+        invoice_date = fields.Date.today()
+        if eligible_invoices:
+            dates = [d for d in eligible_invoices.mapped('invoice_date') if d]
+            if dates:
+                invoice_date = max(dates)
+
+        period = invoice_date.strftime('%Y-%m')
 
         # Create commission records
         commissions_created = 0
         for user, role, commission_type in users_to_commission:
-            # User is already validated by hierarchy traversal (must be in plan)
-
-            # Check if commission already exists for this specific user
+            # Check if commission already exists for this SO + plan + user + role
             existing_commission = self.env['sale.commission'].search([
-                ('invoice_id', '=', invoice.id),
                 ('sale_order_id', '=', self.id),
+                ('plan_id', '=', commission_plan.id),
                 ('user_id', '=', user.id),
                 ('role_id', '=', role.id),
                 ('commission_type', '=', commission_type)
@@ -285,17 +367,16 @@ class SaleOrder(models.Model):
                 _logger.warning("No active role config found for %s in plan %s", role.name, commission_plan.name)
                 continue
 
-            # Create commission record with role_id and commission_type
-            # Use sudo() because this creates commissions for entire hierarchy (including managers)
+            # Create commission record - base_amount covers entire SO
             try:
                 self.env['sale.commission'].sudo().create({
                     'user_id': user.id,
                     'role_id': role.id,
-                    'commission_type': commission_type,  # NEW: direct or override
+                    'commission_type': commission_type,
                     'sale_order_id': self.id,
-                    'invoice_id': invoice.id,
+                    'invoice_id': False,  # Commission covers entire SO, not a single invoice
                     'plan_id': commission_plan.id,
-                    'date': invoice.invoice_date or fields.Date.today(),
+                    'date': invoice_date,
                     'period': period,
                     'base_amount': base_amount,
                     'status': 'unpaid',
@@ -303,8 +384,8 @@ class SaleOrder(models.Model):
                     'currency_id': self.currency_id.id,
                 })
                 commissions_created += 1
-                _logger.info("Created commission for %s (%s, %s) - Order: %s, Invoice: %s",
-                           user.name, role.name, commission_type, self.name, invoice.name)
+                _logger.info("Created commission for %s (%s, %s) - Order: %s, Base: %.2f",
+                           user.name, role.name, commission_type, self.name, base_amount)
             except Exception as e:
                 _logger.error("Error creating commission for %s: %s", user.name, str(e))
 
@@ -410,12 +491,12 @@ class SaleOrder(models.Model):
     @api.model
     def cron_generate_commissions(self):
         """
-        Scheduled action to generate commissions for all eligible sale orders
-        Runs nightly to process any orders with paid invoices
+        Scheduled action to generate commissions for all eligible sale orders.
+        Runs nightly to process any orders that meet full invoicing + payment criteria.
         """
         _logger.info("Starting scheduled commission generation...")
 
-        # Find confirmed sale orders with paid invoices that haven't had commissions generated
+        # Find confirmed sale orders with a salesperson
         orders = self.search([
             ('state', 'in', ['sale', 'done']),
             ('user_id', '!=', False),
@@ -427,22 +508,12 @@ class SaleOrder(models.Model):
 
         for order in orders:
             try:
-                # Check if order has paid invoices
-                has_paid_invoices = order.invoice_ids.filtered(
-                    lambda inv: inv.move_type == 'out_invoice'
-                    and inv.state == 'posted'
-                    and inv.payment_state in ['paid', 'in_payment']
-                )
-
-                if has_paid_invoices:
-                    result = order._generate_commissions()
-                    if result['success']:
-                        total_orders_processed += 1
-                        total_commissions_created += result['commissions_created']
-                        _logger.info(_("Processed order %s: %s") % (order.name, result['message']))
-                    elif result['message'] and 'already exist' not in result['message']:
-                        # Only log if it's not about existing commissions
-                        _logger.debug(_("Skipped order %s: %s") % (order.name, result['message']))
+                # _generate_commissions handles all eligibility checks internally
+                result = order._generate_commissions()
+                if result['success']:
+                    total_orders_processed += 1
+                    total_commissions_created += result['commissions_created']
+                    _logger.info("Processed order %s: %s", order.name, result['message'])
 
             except Exception as e:
                 error_msg = _("Error processing order %s: %s") % (order.name, str(e))
@@ -450,11 +521,12 @@ class SaleOrder(models.Model):
                 errors.append(error_msg)
 
         _logger.info(
-            _("Scheduled commission generation completed. Processed %s orders, created %s commissions.") % (total_orders_processed, total_commissions_created)
+            "Scheduled commission generation completed. Processed %s orders, created %s commissions.",
+            total_orders_processed, total_commissions_created
         )
 
         if errors:
-            _logger.warning(_("Encountered %s errors during commission generation") % len(errors))
+            _logger.warning("Encountered %s errors during commission generation", len(errors))
 
         return {
             'orders_processed': total_orders_processed,
