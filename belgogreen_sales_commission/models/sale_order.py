@@ -107,7 +107,7 @@ class SaleOrder(models.Model):
 
         # ALL eligible invoices must be fully paid
         unpaid_invoices = eligible_invoices.filtered(
-            lambda inv: inv.payment_state not in ['paid', 'in_payment']
+            lambda inv: inv.payment_state != 'paid'
         )
 
         if unpaid_invoices:
@@ -263,7 +263,7 @@ class SaleOrder(models.Model):
         invoice_date = fields.Date.today()
         if self.invoice_ids:
             paid_invoice = self.invoice_ids.filtered(
-                lambda inv: inv.move_type == 'out_invoice' and inv.payment_state in ['paid', 'in_payment']
+                lambda inv: inv.move_type == 'out_invoice' and inv.payment_state == 'paid'
             )[:1]
             if paid_invoice and paid_invoice.invoice_date:
                 invoice_date = paid_invoice.invoice_date

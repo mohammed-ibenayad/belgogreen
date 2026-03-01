@@ -301,7 +301,7 @@ class SaleCommission(models.Model):
                 if commission.invoice_id:
                     # Legacy per-invoice commission
                     commission.can_be_paid = (
-                        commission.invoice_id.payment_state in ['paid', 'in_payment'] and
+                        commission.invoice_id.payment_state == 'paid' and
                         commission.status in ['unpaid', 'claimed', 'processing']
                     )
                 elif commission.sale_order_id:
@@ -310,7 +310,7 @@ class SaleCommission(models.Model):
                         lambda inv: inv.move_type == 'out_invoice' and inv.state != 'cancel'
                     )
                     all_paid = eligible_invoices and all(
-                        inv.payment_state in ['paid', 'in_payment'] for inv in eligible_invoices
+                        inv.payment_state == 'paid' for inv in eligible_invoices
                     )
                     commission.can_be_paid = (
                         all_paid and
