@@ -47,10 +47,10 @@ class SaleOrder(models.Model):
         # Show notification to user
         if result['success']:
             message_type = 'success'
-            title = _('Commissions Generated')
+            title = _('Commissions générées')
         else:
             message_type = 'warning'
-            title = _('Commission Generation')
+            title = _('Génération de commissions')
 
         return {
             'type': 'ir.actions.client',
@@ -106,7 +106,7 @@ class SaleOrder(models.Model):
         )
 
         if not eligible_invoices:
-            result['message'] = _("No eligible invoices found for order %s") % self.name
+            result['message'] = _("Aucune facture éligible trouvée pour la commande %s") % self.name
             _logger.info("=== COMMISSION V2 === BLOCKED: no eligible invoices")
             return result
 
@@ -117,7 +117,7 @@ class SaleOrder(models.Model):
 
         if active_credit_notes:
             result['message'] = _(
-                "Order %s has active credit notes - commission cannot be calculated"
+                "La commande %s possède des notes de crédit actives - la commission ne peut pas être calculée"
             ) % self.name
             _logger.info(
                 "=== COMMISSION V2 === BLOCKED: active credit notes found: %s",
@@ -132,7 +132,7 @@ class SaleOrder(models.Model):
 
         if unpaid_invoices:
             result['message'] = _(
-                "Order %s has unpaid eligible invoices: %s"
+                "La commande %s a des factures éligibles non payées : %s"
             ) % (self.name, ', '.join(unpaid_invoices.mapped('name')))
             _logger.info(
                 "=== COMMISSION V2 === BLOCKED: unpaid invoices: %s",
@@ -152,8 +152,8 @@ class SaleOrder(models.Model):
 
         if float_compare(eligible_total, self.amount_total, precision_digits=precision) != 0:
             result['message'] = _(
-                "Order %(order)s: sum of eligible invoices (%(inv_total).2f) does not match "
-                "order total (%(so_total).2f)"
+                "Commande %(order)s : le total des factures éligibles (%(inv_total).2f) ne correspond pas "
+                "au total de la commande (%(so_total).2f)"
             ) % {
                 'order': self.name,
                 'inv_total': eligible_total,
@@ -191,12 +191,12 @@ class SaleOrder(models.Model):
 
         # Check if order is confirmed
         if self.state not in ['sale', 'done']:
-            result['message'] = _("Order %s is not confirmed (state: %s)") % (self.name, self.state)
+            result['message'] = _("La commande %s n'est pas confirmée (état : %s)") % (self.name, self.state)
             return result
 
         # Check if salesperson is assigned
         if not self.user_id:
-            result['message'] = _("No salesperson assigned to order %s") % self.name
+            result['message'] = _("Aucun vendeur assigné à la commande %s") % self.name
             return result
 
         # Find ALL applicable commission plans
@@ -207,7 +207,7 @@ class SaleOrder(models.Model):
         ])
 
         if not commission_plans:
-            result['message'] = _("No approved hierarchical commission plan found")
+            result['message'] = _("Aucun plan de commission hiérarchique approuvé trouvé")
             return result
 
         # Check commission eligibility (new spec rules)
@@ -260,12 +260,12 @@ class SaleOrder(models.Model):
         if total_commissions_created > 0:
             self.commissions_generated = True
             result['success'] = True
-            result['message'] = _("Successfully created %s commission(s) across %s plan(s) (%s) for order %s") % (
+            result['message'] = _("%s commission(s) créée(s) sur %s plan(s) (%s) pour la commande %s") % (
                 total_commissions_created, len(plans_processed), ', '.join(plans_processed), self.name
             )
             result['commissions_created'] = total_commissions_created
         else:
-            result['message'] = _("No new commissions to generate - your data is up to date")
+            result['message'] = _("Aucune nouvelle commission à générer - vos données sont à jour")
 
         return result
 
