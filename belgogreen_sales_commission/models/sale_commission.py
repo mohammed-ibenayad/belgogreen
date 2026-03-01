@@ -409,10 +409,19 @@ class SaleCommission(models.Model):
         """
         Mark commission(s) as paid directly, bypassing the standard payment workflow.
         Restricted to Commission Managers only.
+        Only applicable to manual commissions (is_adjustment=True), not plan-generated ones.
         Can be applied to commissions in any active status (unpaid, claimed, approved, processing).
         """
         if not self.env.user.has_group('belgogreen_sales_commission.group_commission_manager'):
             raise UserError(_('Only Commission Managers can manually mark commissions as paid.'))
+
+        non_manual = self.filtered(lambda c: not c.is_adjustment)
+        if non_manual:
+            raise UserError(_(
+                'Only manual commissions can be marked as paid directly.\n'
+                'The following commissions were generated from a commission plan '
+                'and must be paid through the standard workflow (purchase order / vendor bill):\n%s'
+            ) % '\n'.join(['- %s' % c.name for c in non_manual]))
 
         invalid = self.filtered(lambda c: c.status in ['paid', 'cancelled'])
         if invalid:
