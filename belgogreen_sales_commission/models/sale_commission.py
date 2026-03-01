@@ -320,6 +320,10 @@ class SaleCommission(models.Model):
     def _compute_claim_ids(self):
         """Find claims that include this commission"""
         for commission in self:
+            if isinstance(commission.id, models.NewId):
+                commission.claim_ids = self.env['sale.commission.claim']
+                commission.claim_count = 0
+                continue
             claims = self.env['sale.commission.claim'].search([
                 ('commission_ids', 'in', commission.id)
             ])

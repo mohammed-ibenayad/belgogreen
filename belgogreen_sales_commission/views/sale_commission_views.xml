@@ -50,7 +50,6 @@
                         <field name="status" widget="statusbar" statusbar_visible="unpaid,claimed,approved,processing,paid"/>
                     </header>
                     <sheet>
-                        <field name="purchase_order_id" invisible="1"/>
                         <field name="is_adjustment" invisible="1"/>
                         <div class="oe_button_box" name="button_box">
                             <button name="action_view_claim"
@@ -121,7 +120,6 @@
                                 <field name="payment_id" readonly="1"/>
                             </group>
                             <group string="Références" name="references">
-                                <field name="linked_sale_order_ids" invisible="1"/>
                                 <field name="sale_order_id" string="Commande de vente" readonly="1"
                                        invisible="linked_sale_order_ids"
                                        options="{'no_open': True}"/>

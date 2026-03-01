@@ -21,8 +21,6 @@
                                 <field name="manual_amount" string="Montant de la Commission" widget="monetary" readonly="1" class="oe_subtotal_footer_separator"/>
                             </group>
                         </group>
-                        <field name="sale_order_count" invisible="1"/>
-
                         <notebook>
                             <page string="Commandes de Vente" name="sale_orders">
                                 <field name="sale_order_ids" nolabel="1" widget="many2many" options="{'no_create': True}"/>
