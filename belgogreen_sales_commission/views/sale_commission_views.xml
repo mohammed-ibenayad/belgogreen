@@ -14,7 +14,6 @@
                       create="false"
                       edit="false"
                       delete="false">
-                    <field name="currency_id" column_invisible="1"/>
                     <field name="name" string="Référence" width="130px"/>
                     <field name="date" string="Date" width="90px"/>
                     <field name="user_id" string="Vendeur" width="140px"/>
@@ -51,9 +50,6 @@
                         <field name="status" widget="statusbar" statusbar_visible="unpaid,claimed,approved,processing,paid"/>
                     </header>
                     <sheet>
-                        <field name="sale_order_id" invisible="1"/>
-                        <field name="purchase_order_id" invisible="1"/>
-                        <field name="po_bill_id" invisible="1"/>
                         <field name="is_adjustment" invisible="1"/>
                         <div class="oe_button_box" name="button_box">
                             <button name="action_view_claim"
@@ -124,7 +120,6 @@
                                 <field name="payment_id" readonly="1"/>
                             </group>
                             <group string="Références" name="references">
-                                <field name="customer_id" readonly="1" invisible="1"/>
                                 <field name="linked_sale_order_ids" invisible="1"/>
                                 <field name="sale_order_id" string="Commande de vente" readonly="1"
                                        invisible="linked_sale_order_ids"
