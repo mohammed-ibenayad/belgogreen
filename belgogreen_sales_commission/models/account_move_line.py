@@ -42,7 +42,7 @@ class AccountMoveLine(models.Model):
             )
 
             # Check if payment state changed to paid
-            if previous_state not in ['paid', 'in_payment'] and current_state in ['paid', 'in_payment']:
+            if previous_state != 'paid' and current_state == 'paid':
                 _logger.info(
                     "Commission Payment: ✅ Reconciliation changed payment state! Triggering _mark_commissions_paid for %s",
                     bill.name
