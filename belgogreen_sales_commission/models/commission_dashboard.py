@@ -361,7 +361,7 @@ class CommissionDashboard(models.TransientModel):
         paid_invoices = Invoice.search([
             ('move_type', '=', 'out_invoice'),
             ('state', '=', 'posted'),
-            ('payment_state', 'in', ['paid', 'in_payment']),
+            ('payment_state', '=', 'paid'),
             ('invoice_origin', '!=', False),
         ])
 
@@ -403,7 +403,7 @@ class CommissionDashboard(models.TransientModel):
         paid_invoices = order.invoice_ids.filtered(
             lambda inv: inv.move_type == 'out_invoice'
             and inv.state == 'posted'
-            and inv.payment_state in ['paid', 'in_payment']
+            and inv.payment_state == 'paid'
         )
 
         if not paid_invoices:
