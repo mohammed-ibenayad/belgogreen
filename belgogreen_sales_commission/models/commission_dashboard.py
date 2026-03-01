@@ -356,38 +356,45 @@ class CommissionDashboard(models.TransientModel):
         }
 
     def _get_eligible_orders_for_user(self, user, Invoice, SaleOrder):
-        """Get sale orders with paid invoices for a specific user"""
-        # Get all paid invoices
-        paid_invoices = Invoice.search([
-            ('move_type', '=', 'out_invoice'),
-            ('state', '=', 'posted'),
-            ('payment_state', '=', 'paid'),
-            ('invoice_origin', '!=', False),
+        """Get sale orders eligible for commission for a specific user.
+
+        An order is eligible only if it passes _check_commission_eligibility():
+        - All eligible invoices (out_invoice, not cancelled) are fully paid
+        - Sum of eligible invoices exactly matches SO total
+        - No active credit notes exist
+        """
+        import logging
+        _logger = logging.getLogger(__name__)
+
+        # Get confirmed orders for this user
+        orders = SaleOrder.search([
+            ('user_id', '=', user.id),
+            ('state', 'in', ['sale', 'done']),
         ])
 
-        # Filter to get orders from these invoices that belong to the user
-        order_ids = set()
-        for invoice in paid_invoices:
-            sale_orders = SaleOrder.search([
-                ('name', '=', invoice.invoice_origin),
-                ('user_id', '=', user.id),
-                ('state', 'in', ['sale', 'done']),
-            ])
-            if sale_orders:
-                order_ids.update(sale_orders.ids)
+        eligible_orders = SaleOrder.browse()
+        for order in orders:
+            eligibility = order._check_commission_eligibility()
+            if eligibility['eligible']:
+                eligible_orders |= order
+            else:
+                _logger.debug(
+                    "=== COMMISSION V2 DASHBOARD === Order %s not eligible: %s",
+                    order.name, eligibility['message']
+                )
 
-        return SaleOrder.browse(list(order_ids))
+        return eligible_orders
 
     def _create_commission_for_user(self, user, role, commission_type, order, commission_plan, role_config):
-        """Create a single commission record for a user on a specific order
+        """Create a single commission record for a user on a specific order.
+
+        Creates ONE commission per SO (not per invoice). The base_amount is the
+        SO total (= sum of eligible invoices, validated by _check_commission_eligibility).
 
         LEGACY SUPPORT: If ANY legacy commission flag is true on the sale order,
-        commission generation is completely blocked for that order:
-        - x_studio_payee_commercial
-        - x_studio_payee_responsable_commercial
-        - x_studio_payee_directeur_commercial
+        commission generation is completely blocked for that order.
 
-        Returns: 1 if commission created, 0 if already exists or error
+        Returns: 1 if commission created, 0 if already exists or blocked
         """
         import logging
         _logger = logging.getLogger(__name__)
@@ -399,54 +406,54 @@ class CommissionDashboard(models.TransientModel):
             _logger.info("Legacy commission flags detected on order %s - commission generation blocked", order.name)
             return 0
 
-        # Get paid invoices for this order
-        paid_invoices = order.invoice_ids.filtered(
-            lambda inv: inv.move_type == 'out_invoice'
-            and inv.state == 'posted'
-            and inv.payment_state == 'paid'
-        )
+        # Check if commission already exists for this SO + plan + user + role
+        existing_commission = self.env['sale.commission'].search([
+            ('sale_order_id', '=', order.id),
+            ('user_id', '=', user.id),
+            ('plan_id', '=', commission_plan.id),
+            ('role_id', '=', role.id),
+            ('commission_type', '=', commission_type)
+        ], limit=1)
 
-        if not paid_invoices:
+        if existing_commission:
             return 0
 
-        commissions_created = 0
-        for invoice in paid_invoices:
-            # Check if commission already exists
-            existing_commission = self.env['sale.commission'].search([
-                ('invoice_id', '=', invoice.id),
-                ('sale_order_id', '=', order.id),
-                ('user_id', '=', user.id),
-                ('role_id', '=', role.id),
-                ('commission_type', '=', commission_type)
-            ], limit=1)
+        # Get eligible invoices for date/period
+        eligible_invoices = order.invoice_ids.filtered(
+            lambda inv: inv.move_type == 'out_invoice' and inv.state != 'cancel'
+        )
 
-            if existing_commission:
-                continue
+        # Use the most recent invoice date for period
+        invoice_date = fields.Date.today()
+        if eligible_invoices:
+            dates = [d for d in eligible_invoices.mapped('invoice_date') if d]
+            if dates:
+                invoice_date = max(dates)
 
-            # Calculate period
-            period = invoice.invoice_date.strftime('%Y-%m') if invoice.invoice_date else fields.Date.today().strftime('%Y-%m')
-            base_amount = invoice.amount_total
+        period = invoice_date.strftime('%Y-%m')
+        base_amount = order.amount_total  # = sum of eligible invoices (validated upstream)
 
-            # Create commission record
-            try:
-                self.env['sale.commission'].create({
-                    'user_id': user.id,
-                    'role_id': role.id,
-                    'commission_type': commission_type,
-                    'sale_order_id': order.id,
-                    'invoice_id': invoice.id,
-                    'plan_id': commission_plan.id,
-                    'date': invoice.invoice_date or fields.Date.today(),
-                    'period': period,
-                    'base_amount': base_amount,
-                    'status': 'unpaid',
-                    'company_id': order.company_id.id,
-                    'currency_id': order.currency_id.id,
-                })
-                commissions_created += 1
-            except Exception as e:
-                import logging
-                _logger = logging.getLogger(__name__)
-                _logger.error("Error creating commission for %s on order %s: %s", user.name, order.name, str(e))
-
-        return commissions_created
+        # Create commission record — one per SO, not per invoice
+        try:
+            self.env['sale.commission'].create({
+                'user_id': user.id,
+                'role_id': role.id,
+                'commission_type': commission_type,
+                'sale_order_id': order.id,
+                'invoice_id': False,  # Commission covers entire SO
+                'plan_id': commission_plan.id,
+                'date': invoice_date,
+                'period': period,
+                'base_amount': base_amount,
+                'status': 'unpaid',
+                'company_id': order.company_id.id,
+                'currency_id': order.currency_id.id,
+            })
+            _logger.info(
+                "=== COMMISSION V2 DASHBOARD === Created commission for %s (%s, %s) - Order: %s, Base: %.2f",
+                user.name, role.name, commission_type, order.name, base_amount
+            )
+            return 1
+        except Exception as e:
+            _logger.error("Error creating commission for %s on order %s: %s", user.name, order.name, str(e))
+            return 0
