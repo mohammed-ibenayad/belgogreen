@@ -41,6 +41,7 @@ class SaleOrder(models.Model):
         Can be called from a button or scheduled action
         """
         self.ensure_one()
+        _logger.info("=== COMMISSION V2 === action_generate_commissions called for order %s (ID: %s)", self.name, self.id)
         result = self._generate_commissions()
 
         # Show notification to user
@@ -86,16 +87,31 @@ class SaleOrder(models.Model):
         }
 
         # Eligible invoices = out_invoice, not cancelled
-        eligible_invoices = self.invoice_ids.filtered(
+        all_invoices = self.invoice_ids
+        _logger.info(
+            "=== COMMISSION V2 === Eligibility check for order %s: "
+            "SO total=%.2f, all linked invoices=%s",
+            self.name, self.amount_total,
+            [(inv.name, inv.move_type, inv.state, inv.payment_state, inv.amount_total)
+             for inv in all_invoices]
+        )
+
+        eligible_invoices = all_invoices.filtered(
             lambda inv: inv.move_type == 'out_invoice' and inv.state != 'cancel'
+        )
+
+        _logger.info(
+            "=== COMMISSION V2 === Eligible invoices (out_invoice, not cancelled): %s",
+            [(inv.name, inv.amount_total, inv.payment_state) for inv in eligible_invoices]
         )
 
         if not eligible_invoices:
             result['message'] = _("No eligible invoices found for order %s") % self.name
+            _logger.info("=== COMMISSION V2 === BLOCKED: no eligible invoices")
             return result
 
         # Block if any non-cancelled credit notes exist
-        active_credit_notes = self.invoice_ids.filtered(
+        active_credit_notes = all_invoices.filtered(
             lambda inv: inv.move_type == 'out_refund' and inv.state != 'cancel'
         )
 
@@ -103,6 +119,10 @@ class SaleOrder(models.Model):
             result['message'] = _(
                 "Order %s has active credit notes - commission cannot be calculated"
             ) % self.name
+            _logger.info(
+                "=== COMMISSION V2 === BLOCKED: active credit notes found: %s",
+                active_credit_notes.mapped('name')
+            )
             return result
 
         # ALL eligible invoices must be fully paid
@@ -114,11 +134,21 @@ class SaleOrder(models.Model):
             result['message'] = _(
                 "Order %s has unpaid eligible invoices: %s"
             ) % (self.name, ', '.join(unpaid_invoices.mapped('name')))
+            _logger.info(
+                "=== COMMISSION V2 === BLOCKED: unpaid invoices: %s",
+                [(inv.name, inv.payment_state) for inv in unpaid_invoices]
+            )
             return result
 
         # Sum of eligible invoices must exactly match SO total (no rounding tolerance)
         eligible_total = sum(eligible_invoices.mapped('amount_total'))
         precision = self.currency_id.decimal_places
+
+        _logger.info(
+            "=== COMMISSION V2 === Amount check: eligible_total=%.2f, so_total=%.2f, precision=%d, match=%s",
+            eligible_total, self.amount_total, precision,
+            float_compare(eligible_total, self.amount_total, precision_digits=precision) == 0
+        )
 
         if float_compare(eligible_total, self.amount_total, precision_digits=precision) != 0:
             result['message'] = _(
@@ -129,6 +159,7 @@ class SaleOrder(models.Model):
                 'inv_total': eligible_total,
                 'so_total': self.amount_total,
             }
+            _logger.info("=== COMMISSION V2 === BLOCKED: amount mismatch")
             return result
 
         # All checks passed
@@ -136,6 +167,7 @@ class SaleOrder(models.Model):
         result['eligible_invoices'] = eligible_invoices
         result['base_amount'] = eligible_total
 
+        _logger.info("=== COMMISSION V2 === ELIGIBLE: all checks passed, base_amount=%.2f", eligible_total)
         return result
 
     def _generate_commissions(self):
