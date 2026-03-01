@@ -50,6 +50,7 @@
                         <field name="status" widget="statusbar" statusbar_visible="unpaid,claimed,approved,processing,paid"/>
                     </header>
                     <sheet>
+                        <field name="purchase_order_id" invisible="1"/>
                         <field name="is_adjustment" invisible="1"/>
                         <div class="oe_button_box" name="button_box">
                             <button name="action_view_claim"
