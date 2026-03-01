@@ -274,63 +274,35 @@ class CommissionDashboard(models.TransientModel):
         total_amount = 0
         plans_processed = []
 
-        # Process each commission plan the user is assigned to
+        # Collect all unique orders to process (user's own + subordinates')
+        # Delegate to SO-level _generate_commissions() which applies full eligibility
+        # checks (credit notes, all paid, sum matches SO total, etc.)
+        all_orders = self.env['sale.order']
+
         for user_assignment in user_assignments:
             commission_plan = user_assignment.plan_id
-            user_role = user_assignment.role_id
 
-            # Get role configuration for current user
-            role_config = self.env['hr.commission.role.config'].search([
-                ('plan_id', '=', commission_plan.id),
-                ('role_id', '=', user_role.id),
-                ('active', '=', True)
-            ], limit=1)
+            # 1. User's own orders
+            all_orders |= self._get_eligible_orders_for_user(user, Invoice, SaleOrder)
 
-            if not role_config:
-                import logging
-                _logger = logging.getLogger(__name__)
-                _logger.warning(f'No active configuration found for role {user_role.name} in plan {commission_plan.name}, skipping')
-                continue
-
-            commissions_created = 0
-
-            # 1. DIRECT COMMISSIONS: Process user's own orders
-            direct_orders = self._get_eligible_orders_for_user(user, Invoice, SaleOrder)
-            for order in direct_orders:
-                created = self._create_commission_for_user(
-                    user=user,
-                    role=user_role,
-                    commission_type='direct',
-                    order=order,
-                    commission_plan=commission_plan,
-                    role_config=role_config
-                )
-                commissions_created += created
-
-            # 2. OVERRIDE COMMISSIONS: Process subordinates' orders (within this plan)
-            # Get ALL subordinates in the hierarchy tree (not just direct reports)
+            # 2. Subordinates' orders (for override commissions)
             all_subordinates = self._get_all_subordinates(user, commission_plan)
+            for subordinate in all_subordinates:
+                all_orders |= self._get_eligible_orders_for_user(subordinate, Invoice, SaleOrder)
 
-            if all_subordinates:
-                for subordinate in all_subordinates:
-                    subordinate_orders = self._get_eligible_orders_for_user(subordinate, Invoice, SaleOrder)
-                    for order in subordinate_orders:
-                        created = self._create_commission_for_user(
-                            user=user,  # Commission for current user, not subordinate
-                            role=user_role,
-                            commission_type='override',
-                            order=order,
-                            commission_plan=commission_plan,
-                            role_config=role_config
-                        )
-                        commissions_created += created
-
-            if commissions_created > 0:
-                total_commissions_created += commissions_created
-                plans_processed.append(commission_plan.name)
+        # Process each unique order — _generate_commissions() handles:
+        # - SO-level eligibility (credit notes, all invoices paid, sum == SO total)
+        # - Full hierarchy (direct + override commissions for all levels)
+        # - Duplicate detection (safe to call multiple times)
+        for order in all_orders:
+            result = order._generate_commissions()
+            if result['success']:
+                total_commissions_created += result['commissions_created']
+                # Extract plan names from the message for reporting
                 import logging
                 _logger = logging.getLogger(__name__)
-                _logger.info(f'Created {commissions_created} commission(s) for plan {commission_plan.name}')
+                _logger.info('Dashboard: Generated %s commission(s) for order %s',
+                           result['commissions_created'], order.name)
 
         # Calculate total and claimable amounts for current user
         claimable_amount = 0

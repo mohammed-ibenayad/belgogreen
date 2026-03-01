@@ -291,14 +291,27 @@ class SaleCommission(models.Model):
 
     @api.depends('invoice_id.payment_state', 'status')
     def _compute_can_be_paid(self):
-        """Check if commission can be paid"""
+        """Check if commission can be paid.
+
+        For invoice-level commissions (legacy): checks that the linked invoice is paid.
+        For SO-level commissions (no invoice_id): eligibility was fully validated
+        at creation time (all eligible invoices paid, sum matches SO total, no credit notes).
+        """
         for commission in self:
             if commission.plan_id.require_invoice_paid:
-                commission.can_be_paid = (
-                    commission.invoice_id and
-                    commission.invoice_id.payment_state in ['paid', 'in_payment'] and
-                    commission.status in ['unpaid', 'claimed', 'processing']
-                )
+                if commission.invoice_id:
+                    # Invoice-level commission: check this specific invoice
+                    commission.can_be_paid = (
+                        commission.invoice_id.payment_state in ['paid', 'in_payment'] and
+                        commission.status in ['unpaid', 'claimed', 'processing']
+                    )
+                elif commission.sale_order_id:
+                    # SO-level commission: all eligibility was validated at creation time
+                    commission.can_be_paid = (
+                        commission.status in ['unpaid', 'claimed', 'processing']
+                    )
+                else:
+                    commission.can_be_paid = False
             else:
                 commission.can_be_paid = (
                     commission.status in ['unpaid', 'claimed', 'processing']
