@@ -140,26 +140,27 @@ class SaleOrder(models.Model):
             )
             return result
 
-        # Sum of eligible invoices must exactly match SO total (no rounding tolerance)
+        # Sum of eligible invoices must be at least equal to SO total
+        # (client may pay more than SO total, which is allowed)
         eligible_total = sum(eligible_invoices.mapped('amount_total'))
         precision = self.currency_id.decimal_places
 
         _logger.info(
-            "=== COMMISSION V2 === Amount check: eligible_total=%.2f, so_total=%.2f, precision=%d, match=%s",
+            "=== COMMISSION V2 === Amount check: eligible_total=%.2f, so_total=%.2f, precision=%d, gte=%s",
             eligible_total, self.amount_total, precision,
-            float_compare(eligible_total, self.amount_total, precision_digits=precision) == 0
+            float_compare(eligible_total, self.amount_total, precision_digits=precision) >= 0
         )
 
-        if float_compare(eligible_total, self.amount_total, precision_digits=precision) != 0:
+        if float_compare(eligible_total, self.amount_total, precision_digits=precision) < 0:
             result['message'] = _(
-                "Commande %(order)s : le total des factures éligibles (%(inv_total).2f) ne correspond pas "
+                "Commande %(order)s : le total des factures éligibles (%(inv_total).2f) est inférieur "
                 "au total de la commande (%(so_total).2f)"
             ) % {
                 'order': self.name,
                 'inv_total': eligible_total,
                 'so_total': self.amount_total,
             }
-            _logger.info("=== COMMISSION V2 === BLOCKED: amount mismatch")
+            _logger.info("=== COMMISSION V2 === BLOCKED: invoice total less than SO total")
             return result
 
         # All checks passed
@@ -397,6 +398,18 @@ class SaleOrder(models.Model):
 
             if not role_config:
                 _logger.warning("No active role config found for %s in plan %s", role.name, commission_plan.name)
+                continue
+
+            # Skip if the commission percentage is 0%
+            applicable_percentage = (
+                role_config.direct_sale_percentage if commission_type == 'direct'
+                else role_config.override_percentage
+            )
+            if not applicable_percentage:
+                _logger.info(
+                    "Skipping commission for %s (%s, %s) - percentage is 0%%",
+                    user.name, role.name, commission_type
+                )
                 continue
 
             # Create commission record - base_amount covers entire SO
