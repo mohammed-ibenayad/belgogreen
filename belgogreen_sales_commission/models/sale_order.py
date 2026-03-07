@@ -140,26 +140,27 @@ class SaleOrder(models.Model):
             )
             return result
 
-        # Sum of eligible invoices must exactly match SO total (no rounding tolerance)
+        # Sum of eligible invoices must be at least equal to SO total
+        # (client may pay more than SO total, which is allowed)
         eligible_total = sum(eligible_invoices.mapped('amount_total'))
         precision = self.currency_id.decimal_places
 
         _logger.info(
-            "=== COMMISSION V2 === Amount check: eligible_total=%.2f, so_total=%.2f, precision=%d, match=%s",
+            "=== COMMISSION V2 === Amount check: eligible_total=%.2f, so_total=%.2f, precision=%d, gte=%s",
             eligible_total, self.amount_total, precision,
-            float_compare(eligible_total, self.amount_total, precision_digits=precision) == 0
+            float_compare(eligible_total, self.amount_total, precision_digits=precision) >= 0
         )
 
-        if float_compare(eligible_total, self.amount_total, precision_digits=precision) != 0:
+        if float_compare(eligible_total, self.amount_total, precision_digits=precision) < 0:
             result['message'] = _(
-                "Commande %(order)s : le total des factures éligibles (%(inv_total).2f) ne correspond pas "
+                "Commande %(order)s : le total des factures éligibles (%(inv_total).2f) est inférieur "
                 "au total de la commande (%(so_total).2f)"
             ) % {
                 'order': self.name,
                 'inv_total': eligible_total,
                 'so_total': self.amount_total,
             }
-            _logger.info("=== COMMISSION V2 === BLOCKED: amount mismatch")
+            _logger.info("=== COMMISSION V2 === BLOCKED: invoice total less than SO total")
             return result
 
         # All checks passed
