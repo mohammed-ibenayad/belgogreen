@@ -400,6 +400,18 @@ class SaleOrder(models.Model):
                 _logger.warning("No active role config found for %s in plan %s", role.name, commission_plan.name)
                 continue
 
+            # Skip if the commission percentage is 0%
+            applicable_percentage = (
+                role_config.direct_sale_percentage if commission_type == 'direct'
+                else role_config.override_percentage
+            )
+            if not applicable_percentage:
+                _logger.info(
+                    "Skipping commission for %s (%s, %s) - percentage is 0%%",
+                    user.name, role.name, commission_type
+                )
+                continue
+
             # Create commission record - base_amount covers entire SO
             try:
                 self.env['sale.commission'].sudo().create({
