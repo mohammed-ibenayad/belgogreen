@@ -406,6 +406,18 @@ class CommissionDashboard(models.TransientModel):
             _logger.info("Legacy commission flags detected on order %s - commission generation blocked", order.name)
             return 0
 
+        # Skip if the applicable percentage is 0%
+        applicable_percentage = (
+            role_config.direct_sale_percentage if commission_type == 'direct'
+            else role_config.override_percentage
+        )
+        if not applicable_percentage:
+            _logger.debug(
+                "Skipping %s commission for %s on order %s: 0%% percentage configured",
+                commission_type, user.name, order.name
+            )
+            return 0
+
         # Check if commission already exists for this SO + plan + user + role
         existing_commission = self.env['sale.commission'].search([
             ('sale_order_id', '=', order.id),
