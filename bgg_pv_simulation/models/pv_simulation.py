@@ -469,6 +469,20 @@ class PvSimulation(models.Model):
                 "You can get these from the installation address using a geocoding service."
             ))
 
+        # Check if sale order has solar panels configured
+        if not self.number_of_panels or not self.panel_unit_power_wc:
+            missing = []
+            if not self.number_of_panels:
+                missing.append(_("- No solar panel products found on the sale order (products must have 'Is Solar Panel' checked)"))
+            if not self.panel_unit_power_wc:
+                missing.append(_("- Solar panel product has no power (Wc) specified"))
+            raise UserError(_(
+                "Cannot fetch solar data: the sale order is missing required solar panel information.\n\n"
+                "%s\n\n"
+                "Please ensure the sale order has at least one product marked as a solar panel "
+                "with the power rating (Wc) properly configured."
+            ) % '\n'.join(missing))
+
         # Get Solar API client
         solar_api = self.env['solar.api.client']
 
@@ -637,7 +651,14 @@ class PvSimulation(models.Model):
 
         # Check if we have required data for PVGIS
         if not self.latitude or not self.longitude or not self.total_pv_power_wc:
-            _logger.warning("⚠️ Missing required data for PVGIS (lat/lon/power)")
+            missing_fields = []
+            if not self.latitude:
+                missing_fields.append('latitude')
+            if not self.longitude:
+                missing_fields.append('longitude')
+            if not self.total_pv_power_wc:
+                missing_fields.append('total_pv_power_wc (no solar panel with power rating on sale order)')
+            _logger.warning("⚠️ Missing required data for PVGIS: %s", ', '.join(missing_fields))
             if fallback_to_profile:
                 _logger.info("⚠️ Using production profile fallback")
                 self._compute_monthly_from_profile()

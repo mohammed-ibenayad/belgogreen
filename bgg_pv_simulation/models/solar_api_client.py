@@ -425,9 +425,10 @@ class SolarApiClient(models.AbstractModel):
                 _logger.info(f"✅ Best match: {best_config.get('panelsCount')} panels, "
                            f"{best_config.get('yearlyEnergyDcKwh', 0):.0f} kWh/year")
             else:
-                # Use the first (largest) configuration as default
-                best_config = configs[0]
-                _logger.info(f"Using default config: {best_config.get('panelsCount')} panels")
+                # Use the last (largest) configuration as default
+                # Google Solar API returns configs sorted ascending by panelsCount
+                best_config = configs[-1]
+                _logger.info(f"Using default config (max): {best_config.get('panelsCount')} panels")
 
             # Get production values (API assumes 400W panels)
             api_yearly_kwh = best_config.get('yearlyEnergyDcKwh', 0)
