@@ -160,15 +160,6 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         savings_total = savings_panels + savings_battery + savings_resale
         purchase_total = sum(results.mapped('purchase_cost')) if results else 0.0
 
-        # Environmental impact calculations
-        # Average: 0.233 kg CO2 per kWh (Belgian grid mix)
-        co2_saved_kg = prod_total * 0.233
-        co2_saved_tons = co2_saved_kg / 1000.0
-        # Average mature tree absorbs ~22 kg CO2/year
-        trees_equivalent = int(co2_saved_kg / 22.0) if co2_saved_kg else 0
-        # Average Belgian household drives ~15,000 km/year at 120g CO2/km = 1,800 kg
-        car_km_equivalent = int(co2_saved_kg / 0.120) if co2_saved_kg else 0
-
         def _fmt(val):
             if not val:
                 return '—'
@@ -340,7 +331,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
     </div>
 
     <!-- ============================================ -->
-    <!-- PAGE 4: BILAN ÉNERGÉTIQUE + IMPACT           -->
+    <!-- PAGE 4: BILAN ÉNERGÉTIQUE                    -->
     <!-- ============================================ -->
     <div class="page content-page">
         <div class="section">
@@ -348,7 +339,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             <h2 class="section-title">{title_bilan}</h2>
         </div>
 
-        <!-- Production -->
+        <!-- Production (always shown) -->
         <div class="bilan-section">
             <div class="bilan-section-header">Production</div>
             <table class="bilan-table">
@@ -356,71 +347,17 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             </table>
         </div>
 
-        <!-- Consommation -->
-        <div class="bilan-section">
-            <div class="bilan-section-header">Consommation</div>
-            <table class="bilan-table">
-                {_bilan_row('&#9788;', 'Consommation jour', conso_day, 'kWh')}
-                {_bilan_row('&#9790;', 'Consommation nuit', conso_night, 'kWh')}
-                {_bilan_row('&#9751;', 'Consommation totale', conso_total, 'kWh', 'bilan-row-total')}
-            </table>
-        </div>
+        <!-- Consommation (only if data exists) -->
+        {'<div class="bilan-section"><div class="bilan-section-header">Consommation</div><table class="bilan-table">' + _bilan_row('&#9788;', 'Consommation jour', conso_day, 'kWh') + _bilan_row('&#9790;', 'Consommation nuit', conso_night, 'kWh') + _bilan_row('&#9751;', 'Consommation totale', conso_total, 'kWh', 'bilan-row-total') + '</table></div>' if conso_total else ''}
 
-        <!-- Auto Consommation -->
-        <div class="bilan-section">
-            <div class="bilan-section-header">Autoconsommation</div>
-            <table class="bilan-table">
-                {autocons_rows}
-            </table>
-        </div>
+        <!-- Autoconsommation (only if data exists) -->
+        {'<div class="bilan-section"><div class="bilan-section-header">Autoconsommation</div><table class="bilan-table">' + autocons_rows + '</table></div>' if autocons_total else ''}
 
-        <!-- Economies -->
-        <div class="bilan-section">
-            <div class="bilan-section-header">\u00c9conomies</div>
-            <table class="bilan-table">
-                {eco_rows}
-            </table>
-        </div>
+        <!-- Economies (only if data exists) -->
+        {'<div class="bilan-section"><div class="bilan-section-header">' + '\u00c9conomies' + '</div><table class="bilan-table">' + eco_rows + '</table></div>' if savings_total else ''}
 
-        <!-- Bottom summary -->
-        <div class="bilan-bottom">
-            <div class="bilan-total-savings">
-                <span class="bts-label">Total \u00e9conomies annuelles</span>
-                <span class="bts-value">{_fmt(savings_total)} &euro;</span>
-            </div>
-            <div class="bilan-total-purchase">
-                <span class="btp-label">Co\u00fbt d\u2019achat r\u00e9seau</span>
-                <span class="btp-value">{_fmt(purchase_total)} &euro;</span>
-            </div>
-        </div>
-
-        <!-- Environmental Impact Section -->
-        <div class="eco-impact-section">
-            <h3 class="eco-impact-title">Impact Environnemental</h3>
-            <p class="eco-impact-subtitle">Votre production de {simulation.annual_production_kwh:,.0f} kWh/an \u00e9quivaut \u00e0\u00a0:</p>
-            <table class="eco-impact-table">
-                <tr>
-                    <td class="eco-card">
-                        <div class="eco-card-icon">&#127793;</div>
-                        <div class="eco-card-value">{co2_saved_tons:.1f}</div>
-                        <div class="eco-card-unit">tonnes CO\u2082</div>
-                        <div class="eco-card-label">\u00e9vit\u00e9es par an</div>
-                    </td>
-                    <td class="eco-card">
-                        <div class="eco-card-icon">&#127794;</div>
-                        <div class="eco-card-value">{trees_equivalent}</div>
-                        <div class="eco-card-unit">arbres</div>
-                        <div class="eco-card-label">plant\u00e9s \u00e9quivalents</div>
-                    </td>
-                    <td class="eco-card">
-                        <div class="eco-card-icon">&#128664;</div>
-                        <div class="eco-card-value">{car_km_equivalent:,}</div>
-                        <div class="eco-card-unit">km</div>
-                        <div class="eco-card-label">en voiture \u00e9vit\u00e9s</div>
-                    </td>
-                </tr>
-            </table>
-        </div>
+        <!-- Bottom summary (only if data exists) -->
+        {'<div class="bilan-bottom"><div class="bilan-total-savings"><span class="bts-label">Total \u00e9conomies annuelles</span><span class="bts-value">' + _fmt(savings_total) + ' &euro;</span></div><div class="bilan-total-purchase"><span class="btp-label">Co\u00fbt d\u2019achat r\u00e9seau</span><span class="btp-value">' + _fmt(purchase_total) + ' &euro;</span></div></div>' if savings_total or purchase_total else ''}
     </div>
 </body>
 </html>"""
@@ -986,67 +923,6 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             color: #212121;
         }
 
-        /* ===================================================
-           ENVIRONMENTAL IMPACT
-           =================================================== */
-        .eco-impact-section {
-            margin-top: 8mm;
-            padding: 5mm 6mm;
-            background: #E8F5E9;
-            border: 1px solid #C8E6C9;
-            border-radius: 10px;
-            page-break-inside: avoid;
-        }
-
-        .eco-impact-title {
-            font-size: 12pt;
-            font-weight: 600;
-            color: #388E3C;
-            text-transform: uppercase;
-            letter-spacing: 0.3mm;
-            margin-bottom: 2mm;
-        }
-
-        .eco-impact-subtitle {
-            font-size: 9pt;
-            color: #616161;
-            margin-bottom: 4mm;
-        }
-
-        .eco-impact-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .eco-card {
-            width: 33.33%;
-            text-align: center;
-            padding: 3mm 2mm;
-            vertical-align: top;
-        }
-
-        .eco-card-icon {
-            font-size: 22pt;
-            margin-bottom: 1mm;
-        }
-
-        .eco-card-value {
-            font-size: 18pt;
-            font-weight: 700;
-            color: #388E3C;
-            line-height: 1.2;
-        }
-
-        .eco-card-unit {
-            font-size: 9pt;
-            font-weight: 600;
-            color: #4A9B5D;
-        }
-
-        .eco-card-label {
-            font-size: 8pt;
-            color: #616161;
-        }
         """
 
         return css
