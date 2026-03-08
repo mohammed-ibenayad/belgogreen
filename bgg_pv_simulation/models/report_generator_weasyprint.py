@@ -125,9 +125,10 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             except Exception as e:
                 _logger.warning(f"Could not generate chart: {e}")
 
-        # Cover title + subtitle
-        cover_title = _esc(simulation.cover_title or 'Votre installation photovoltaïque')
-        cover_subtitle = _esc(simulation.cover_subtitle or 'Étude personnalisée')
+        # Cover title + subtitle + tagline
+        cover_title = _esc(simulation.cover_title or 'Votre installation')
+        cover_subtitle = _esc(simulation.cover_subtitle or 'Photovoltaïque')
+        tagline = _esc(company.pv_report_tagline or '')
 
         # Section titles
         title_location = _esc(simulation.section_title_location or "LOCALISATION DE L'INSTALLATION")
@@ -258,39 +259,35 @@ class PvSimulationWeasyPrint(models.AbstractModel):
     <!-- PAGE 1: COVER PAGE                           -->
     <!-- ============================================ -->
     <div class="page cover-page">
-        <!-- Logo top-right -->
+        <!-- Full-bleed cover photo with gradient fade -->
+        {f'<div class="cover-photo-wrap"><img src="{cover_photo_data}" alt="" class="cover-photo"><div class="cover-photo-fade"></div></div>' if cover_photo_data else '<div class="cover-photo-wrap"><div class="cover-photo-placeholder"></div></div>'}
+
+        <!-- Logo overlaid top-left on photo -->
         <div class="cover-logo">
             {f'<img src="{logo_data}" alt="Logo" class="logo-img">' if logo_data else ''}
         </div>
 
-        <!-- Cover Photo -->
-        {f'<div class="cover-photo-wrap"><img src="{cover_photo_data}" alt="" class="cover-photo"></div>' if cover_photo_data else ''}
-
-        <!-- Main Title Block -->
+        <!-- Title block below photo -->
         <div class="cover-title-block">
             <h1 class="cover-title">{cover_title}</h1>
-            <p class="cover-subtitle">{cover_subtitle}</p>
+            <h1 class="cover-title-accent">{cover_subtitle}</h1>
+            {f'<p class="cover-tagline">{tagline}</p>' if tagline else ''}
         </div>
 
-        <!-- Client Info Card -->
-        <div class="cover-client-card">
-            <div class="cover-client-inner">
-                {client_info_rows}
-            </div>
-            <div class="cover-meta">
-                {f'<p>R\u00e9f\u00e9rence\u00a0: <strong>{project_ref}</strong></p>' if project_ref else ''}
-                {f'<p>Date\u00a0: <strong>{report_date}</strong></p>' if report_date else ''}
-            </div>
-        </div>
-
-        <!-- Cover Footer -->
-        <div class="cover-footer">
-            <div class="cover-footer-content">
-                <span class="footer-company">{company_name}</span>
-                {f'<span class="footer-sep">|</span><span>&#9742; {sp_phone}</span>' if sp_phone else ''}
-                {f'<span class="footer-sep">|</span><span>&#9993; {sp_email}</span>' if sp_email else ''}
-                {f'<br/><span class="footer-contact">{sp_name}</span>' if sp_name else ''}
-            </div>
+        <!-- Client info + reference at bottom -->
+        <div class="cover-bottom-info">
+            <table class="cover-info-table">
+                <tr>
+                    <td class="cover-info-left">
+                        {f'<p class="cover-client-name">{partner_name}</p>' if partner_name else ''}
+                        {f'<p class="cover-client-addr">{address.replace(chr(10), "<br/>")}</p>' if address else ''}
+                    </td>
+                    <td class="cover-info-right">
+                        {f'<p class="cover-ref">R\u00e9f.\u00a0: {project_ref}</p>' if project_ref else ''}
+                        {f'<p class="cover-date">{report_date}</p>' if report_date else ''}
+                    </td>
+                </tr>
+            </table>
         </div>
     </div>
 
@@ -528,148 +525,157 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             overflow: hidden;
         }
 
-        /* Decorative top band */
-        .cover-page::before {
-            content: '';
+        /* Full-bleed photo at top ~60% of page */
+        .cover-photo-wrap {
             position: absolute;
             top: 0;
             left: 0;
             right: 0;
-            height: 8mm;
-            background: #1B3A5C;
-        }
-
-        .cover-logo {
-            position: absolute;
-            top: 16mm;
-            right: 20mm;
-        }
-
-        .logo-img {
-            max-height: 22mm;
-            max-width: 50mm;
-        }
-
-        .cover-photo-wrap {
-            position: absolute;
-            top: 48mm;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 140mm;
-            height: 90mm;
-            text-align: center;
+            height: 178mm;
+            overflow: hidden;
         }
 
         .cover-photo {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            border-radius: 8px;
-            border: 2px solid #E0E0E0;
         }
 
+        .cover-photo-placeholder {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 50%, #A5D6A7 100%);
+        }
+
+        /* Gradient fade from photo to white */
+        .cover-photo-fade {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 80mm;
+            background: linear-gradient(
+                to bottom,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.5) 40%,
+                rgba(255, 255, 255, 0.85) 70%,
+                rgba(255, 255, 255, 1) 100%
+            );
+        }
+
+        /* Thin separator line at photo/title boundary */
+        .cover-photo-wrap::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 15mm;
+            right: 15mm;
+            height: 0.5px;
+            background: #BDBDBD;
+        }
+
+        /* Logo overlaid top-left on photo */
+        .cover-logo {
+            position: absolute;
+            top: 12mm;
+            left: 15mm;
+            z-index: 10;
+        }
+
+        .logo-img {
+            max-height: 18mm;
+            max-width: 55mm;
+        }
+
+        /* Title block: centered, below photo area */
         .cover-title-block {
             position: absolute;
-            top: 150mm;
-            left: 20mm;
-            right: 20mm;
+            top: 185mm;
+            left: 0;
+            right: 0;
             text-align: center;
         }
 
         .cover-title {
             font-size: 30pt;
-            font-weight: 700;
-            color: #1B3A5C;
-            letter-spacing: 0.3mm;
-            margin-bottom: 4mm;
-            line-height: 1.2;
-        }
-
-        .cover-subtitle {
-            font-size: 14pt;
-            font-style: italic;
-            color: #5F6368;
+            font-weight: 300;
+            color: #1A1A1A;
+            letter-spacing: 2mm;
+            text-transform: uppercase;
             margin: 0;
+            line-height: 1.3;
         }
 
-        /* Client info card on cover */
-        .cover-client-card {
-            position: absolute;
-            top: 195mm;
-            left: 20mm;
-            right: 20mm;
-            border: 1px solid #E0E0E0;
-            border-left: 4px solid #4A9B5D;
-            border-radius: 0 6px 6px 0;
-            padding: 6mm 8mm;
-            background: #F7F8FA;
+        .cover-title-accent {
+            font-size: 30pt;
+            font-weight: 300;
+            color: #4A9B5D;
+            letter-spacing: 2mm;
+            text-transform: uppercase;
+            margin: 0 0 6mm 0;
+            line-height: 1.3;
         }
 
-        .cover-client-inner {
-            display: inline-block;
-            vertical-align: top;
-            width: 58%;
-        }
-
-        .cover-meta {
-            display: inline-block;
-            vertical-align: top;
-            width: 38%;
-            text-align: right;
-        }
-
-        .cover-meta p {
-            margin-bottom: 2mm;
-            font-size: 10pt;
-            color: #5F6368;
-        }
-
-        .cover-meta strong {
-            color: #1A1A1A;
-        }
-
-        .client-name {
-            font-size: 14pt;
-            font-weight: 600;
-            color: #1A1A1A;
-            margin-bottom: 2mm;
-        }
-
-        .client-detail {
-            font-size: 10pt;
-            color: #5F6368;
-            margin-bottom: 1mm;
-        }
-
-        /* Cover footer */
-        .cover-footer {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: #1B3A5C;
-            padding: 4mm 20mm;
-        }
-
-        .cover-footer-content {
-            font-size: 8.5pt;
-            color: #FFFFFF;
-            text-align: center;
-            line-height: 1.7;
-        }
-
-        .footer-company {
-            font-weight: 600;
-        }
-
-        .footer-sep {
-            margin: 0 2mm;
-            opacity: 0.6;
-        }
-
-        .footer-contact {
+        .cover-tagline {
+            font-size: 11pt;
             font-style: italic;
-            opacity: 0.8;
+            color: #757575;
+            margin: 0;
+            letter-spacing: 0.3mm;
+        }
+
+        /* Client info row at bottom of cover */
+        .cover-bottom-info {
+            position: absolute;
+            bottom: 12mm;
+            left: 15mm;
+            right: 15mm;
+            border-top: 0.5px solid #BDBDBD;
+            padding-top: 4mm;
+        }
+
+        .cover-info-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .cover-info-left {
+            vertical-align: top;
+            width: 60%;
+            padding: 0;
+        }
+
+        .cover-info-right {
+            vertical-align: top;
+            width: 40%;
+            text-align: right;
+            padding: 0;
+        }
+
+        .cover-client-name {
+            font-size: 10pt;
+            font-weight: 600;
+            color: #1A1A1A;
+            margin: 0 0 1mm 0;
+        }
+
+        .cover-client-addr {
+            font-size: 9pt;
+            color: #757575;
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        .cover-ref {
+            font-size: 9pt;
+            color: #757575;
+            margin: 0 0 1mm 0;
+        }
+
+        .cover-date {
+            font-size: 9pt;
+            color: #757575;
+            margin: 0;
         }
 
         /* ===================================================
