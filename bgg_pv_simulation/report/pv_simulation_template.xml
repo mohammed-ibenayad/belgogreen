@@ -232,6 +232,15 @@
                                     letter-spacing: 0.2mm;
                                 }
 
+                                .pv-section-subtitle {
+                                    font-size: 12pt;
+                                    font-weight: 600;
+                                    color: #4A9B5D;
+                                    text-transform: uppercase;
+                                    letter-spacing: 0.5mm;
+                                    margin: 6mm 0 4mm 0;
+                                }
+
                                 /* --- Two-column system layout --- */
                                 .pv-system-container {
                                     background: #DCF0DC;
@@ -626,6 +635,14 @@
                 <t t-esc="o.section_title_production or 'PRODUCTION ESTIMÉE'"/>
             </h2>
 
+            <div t-if="o.chart_monthly_production" class="pv-chart-wrap">
+                <img t-att-src="'data:image/png;base64,%s' % o.chart_monthly_production.decode()"/>
+            </div>
+
+            <h3 class="pv-section-subtitle">
+                <t t-esc="o.section_title_system or 'CARACTÉRISTIQUES DU SYSTÈME'"/>
+            </h3>
+
             <div class="pv-system-container">
                 <table class="pv-system-layout">
                     <tr>
@@ -681,19 +698,6 @@
                         </td>
                     </tr>
                 </table>
-            </div>
-
-            <div t-if="o.chart_monthly_production" class="pv-chart-wrap">
-                <img t-att-src="'data:image/png;base64,%s' % o.chart_monthly_production.decode()"/>
-            </div>
-
-            <!-- Hero metric -->
-            <div class="pv-hero-metric">
-                <div>
-                    <span class="pv-hero-value"><t t-esc="'{:,.0f}'.format(o.annual_production_kwh)"/></span>
-                    <span class="pv-hero-unit">kWh/an</span>
-                </div>
-                <span class="pv-hero-label">Production totale annuelle</span>
             </div>
         </template>
 

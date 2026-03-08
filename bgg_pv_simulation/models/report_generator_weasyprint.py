@@ -318,6 +318,10 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             <div class="section-number">02</div>
             <h2 class="section-title">{title_production}</h2>
 
+            {f'<div class="chart-container"><img src="{chart_data}" alt="Production mensuelle" class="chart-img"></div>' if chart_data else ''}
+
+            <h3 class="section-subtitle">{title_system}</h3>
+
             <div class="system-container">
                 <table class="system-layout">
                     <tr>
@@ -332,16 +336,6 @@ class PvSimulationWeasyPrint(models.AbstractModel):
                         </td>
                     </tr>
                 </table>
-            </div>
-
-            {f'<div class="chart-container"><img src="{chart_data}" alt="Production mensuelle" class="chart-img"></div>' if chart_data else ''}
-
-            <div class="hero-metric">
-                <div class="hero-metric-inner">
-                    <span class="hero-metric-value">{simulation.annual_production_kwh:,.0f}</span>
-                    <span class="hero-metric-unit">kWh/an</span>
-                </div>
-                <span class="hero-metric-label">Production totale annuelle</span>
             </div>
         </div>
     </div>
@@ -665,6 +659,15 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             margin-bottom: 8mm;
             overflow: hidden;
             page-break-after: avoid;
+        }
+
+        .section-subtitle {
+            font-size: 12pt;
+            font-weight: 600;
+            color: #4A9B5D;
+            text-transform: uppercase;
+            letter-spacing: 0.5mm;
+            margin: 6mm 0 4mm 0;
         }
 
         /* ===================================================
