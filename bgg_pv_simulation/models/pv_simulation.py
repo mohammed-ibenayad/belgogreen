@@ -75,8 +75,13 @@ class PvSimulation(models.Model):
     )
     cover_title = fields.Char(
         string='Cover Title',
-        default='VOTRE INSTALLATION PHOTOVOLTAÏQUE',
-        help='Main title on cover page'
+        default='Votre installation photovoltaïque',
+        help='Main title on cover page (large text)'
+    )
+    cover_subtitle = fields.Char(
+        string='Cover Subtitle',
+        default='Étude personnalisée',
+        help='Subtitle on cover page (smaller italic text below title)'
     )
 
     # Section Titles (Configurable per Quotation)
@@ -85,10 +90,20 @@ class PvSimulation(models.Model):
         default='LOCALISATION DE L\'INSTALLATION',
         help='Page 2: Installation location section'
     )
+    section_title_system = fields.Char(
+        string='System Section Title',
+        default='CARACTÉRISTIQUES DU SYSTÈME',
+        help='Page 3: System characteristics section'
+    )
     section_title_production = fields.Char(
         string='Production Section Title',
-        default='PRODUCTION MOYENNE JOURNALIÈRE',
-        help='Page 2: Production section'
+        default='PRODUCTION ESTIMÉE',
+        help='Page 3: Production section'
+    )
+    section_title_bilan = fields.Char(
+        string='Energy Balance Section Title',
+        default='BILAN ÉNERGÉTIQUE',
+        help='Page 4: Annual energy balance section'
     )
 
     # PV System Parameters
