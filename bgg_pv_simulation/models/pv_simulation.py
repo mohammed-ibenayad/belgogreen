@@ -265,22 +265,15 @@ class PvSimulation(models.Model):
         }
 
     def action_generate_report(self):
-        """Generate PDF report (QWeb - default)"""
-        self.ensure_one()
-        return self.env.ref('bgg_pv_simulation.action_report_pv_simulation').report_action(self)
-
-
-    def action_generate_report_weasyprint(self):
         """Generate PDF report using WeasyPrint"""
         self.ensure_one()
 
-        # Generate PDF using WeasyPrint
         generator = self.env['pv.simulation.weasyprint.generator']
         pdf_content = generator.generate_report(self.id)
 
         # Create attachment
         attachment = self.env['ir.attachment'].create({
-            'name': f'Report_WeasyPrint_{self.name}.pdf',
+            'name': f'Rapport_PV_{self.name}.pdf',
             'type': 'binary',
             'datas': base64.b64encode(pdf_content),
             'res_model': 'pv.simulation',

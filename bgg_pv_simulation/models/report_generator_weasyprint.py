@@ -104,8 +104,15 @@ class PvSimulationWeasyPrint(models.AbstractModel):
                 mime = 'image/png'
             return f"data:{mime};base64,{b64_field.decode()}"
 
+        def _esc(value):
+            """Escape HTML special characters to prevent XSS."""
+            if not value:
+                return ''
+            from markupsafe import escape
+            return str(escape(str(value)))
+
         # Encode images as base64
-        logo_data = _make_data_uri(company.pv_report_logo)
+        logo_data = _make_data_uri(company.pv_report_logo or company.logo)
         cover_photo_data = _make_data_uri(simulation.cover_photo)
         location_image_data = _make_data_uri(simulation.location_image)
         chart_data = _make_data_uri(simulation.chart_monthly_production)
@@ -124,99 +131,135 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         raw_cover_title = simulation.cover_title or 'VOTRE INSTALLATION'
         cover_title_line1 = raw_cover_title.replace(' PHOTOVOLTAÏQUE', '').replace('PHOTOVOLTAÏQUE', '').strip()
 
-        html = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <title>Installation Photovoltaïque</title>
-        </head>
-        <body>
-            <!-- Page 1: Cover Page -->
-            <div class="page cover-page">
-                <!-- Logo -->
-                <div class="logo-container">
-                    {f'<img src="{logo_data}" alt="Logo" class="logo">' if logo_data else ''}
-                </div>
+        # Build dynamic footer for @page margins using position: running()
+        company_street = _esc(company.street or '')
+        company_zip = _esc(company.zip or '')
+        company_city = _esc(company.city or '')
+        company_email = _esc(company.pv_report_email or company.email or '')
+        company_phone = _esc(company.pv_report_phone or company.phone or '')
+        footer_line = ' | '.join(filter(None, [
+            f"{company_street} {company_zip} {company_city}".strip(),
+            company_email,
+            f"Tél: {company_phone}" if company_phone else '',
+        ]))
 
-                <!-- Decorative blobs -->
-                <div class="blob blob-1"></div>
-                <div class="blob blob-2"></div>
+        # Build contact line for cover
+        contact_parts = []
+        if user:
+            contact_parts.append(_esc(user.name))
+            phone = _esc(user.phone or company.phone or '')
+            if phone:
+                contact_parts.append(f"Tél: {phone}")
+            email = _esc(user.email or getattr(user, 'login', '') or '')
+            if email:
+                contact_parts.append(email)
+        elif company_phone:
+            contact_parts.append(f"Tél: {company_phone}")
+        cover_contact_line = ' | '.join(contact_parts)
 
-                <!-- Cover Photo -->
-                <div class="cover-photo-container">
-                    {f'<img src="{cover_photo_data}" alt="Cover Photo" class="cover-photo">' if cover_photo_data else ''}
-                </div>
+        # Partner info
+        partner_name = _esc(partner.name) if partner else ''
+        partner_phone = _esc(partner.phone) if partner and partner.phone else ''
+        partner_email = _esc(partner.email) if partner and partner.email else ''
+        partner_contact_parts = []
+        if partner_phone:
+            partner_contact_parts.append(f"Tél: {partner_phone}")
+        if partner_email:
+            partner_contact_parts.append(f"Email: {partner_email}")
+        partner_contact_line = ' | '.join(partner_contact_parts)
 
-                <!-- Main Title -->
-                <div class="main-title">
-                    <h1 class="title-green">{cover_title_line1}</h1>
-                    <h1 class="title-black">PHOTOVOLTAÏQUE</h1>
-                    <p class="tagline">{company.pv_report_tagline or 'Save your planet. Save your wallet.'}</p>
-                </div>
+        address = _esc(simulation.installation_address or '')
 
-                <!-- Customer Info Box -->
-                <div class="customer-box">
-                    <div class="customer-box-border"></div>
-                    <div class="customer-content">
-                        <h3>CLIENT</h3>
-                        {f'<p class="customer-name">{partner.name}</p>' if partner else ''}
-                        {f'<p class="customer-contact">Tél: {partner.phone} | Email: {partner.email}</p>' if partner and (partner.phone or partner.email) else ''}
-                        {f'<p>Adresse: {simulation.installation_address}</p>' if simulation.installation_address else ''}
-                    </div>
-                </div>
+        html = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Installation Photovoltaïque</title>
+</head>
+<body>
+    <!-- Running footer element for @page (placed in page margin by CSS) -->
+    <div class="running-footer">{_esc(footer_line)}</div>
 
-                <!-- Footer -->
-                <div class="footer-wave">
-                    <div class="footer-content">
-                        <p><strong>{company.name}</strong></p>
-                        <p>{company.street} - {company.zip} {company.city}</p>
-                        {f'<p>{user.name} | Tél: {user.phone or company.phone} | {user.email or user.login or ""}</p>' if user else f'<p>{company.phone}</p>'}
-                        {f'<p>TVA: {company.vat}</p>' if company.vat else ''}
-                    </div>
+    <!-- Page 1: Cover Page -->
+    <div class="page cover-page">
+        <!-- Logo -->
+        <div class="logo-container">
+            {f'<img src="{logo_data}" alt="Logo" class="logo">' if logo_data else ''}
+        </div>
+
+        <!-- Decorative blobs -->
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+
+        <!-- Cover Photo -->
+        <div class="cover-photo-container">
+            {f'<img src="{cover_photo_data}" alt="Cover Photo" class="cover-photo">' if cover_photo_data else ''}
+        </div>
+
+        <!-- Main Title -->
+        <div class="main-title">
+            <h1 class="title-green">{_esc(cover_title_line1)}</h1>
+            <h1 class="title-black">PHOTOVOLTAÏQUE</h1>
+            <p class="tagline">{_esc(company.pv_report_tagline or 'Save your planet. Save your wallet.')}</p>
+        </div>
+
+        <!-- Customer Info Box -->
+        <div class="customer-box">
+            <div class="customer-content">
+                <h3>CLIENT</h3>
+                {f'<p class="customer-name">{partner_name}</p>' if partner_name else ''}
+                {f'<p class="customer-contact">{partner_contact_line}</p>' if partner_contact_line else ''}
+                {f'<p>Adresse: {address}</p>' if address else ''}
+            </div>
+        </div>
+
+        <!-- Cover Footer -->
+        <div class="cover-footer">
+            <p class="cover-footer-company">{_esc(company.name)}</p>
+            <p>{company_street} - {company_zip} {_esc(company_city)}</p>
+            {f'<p>{cover_contact_line}</p>' if cover_contact_line else ''}
+            {f'<p>TVA: {_esc(company.vat)}</p>' if company.vat else ''}
+        </div>
+    </div>
+
+    <!-- Page 2: Location & Production -->
+    <div class="page content-page">
+        <!-- Section: Location -->
+        <div class="section">
+            <h2 class="section-title">{_esc(simulation.section_title_location or "LOCALISATION DE L'INSTALLATION")}</h2>
+            <div class="section-underline"></div>
+
+            <div class="location-info">
+                {f'<p class="address">{address}</p>' if address else ''}
+                {f'<p>Superficie de la toiture : <strong>{simulation.roof_surface_m2:.0f} m²</strong></p>' if simulation.roof_surface_m2 else ''}
+            </div>
+
+            {f'<div class="location-image-container"><img src="{location_image_data}" alt="Location" class="location-image"></div>' if location_image_data else ''}
+        </div>
+
+        <!-- Section: Production -->
+        <div class="section production-section">
+            <h2 class="section-title">{_esc(simulation.section_title_production or 'PRODUCTION MOYENNE JOURNALIÈRE')}</h2>
+            <div class="section-underline"></div>
+
+            <div class="production-stats">
+                <div class="stats-content">
+                    <p>Puissance panneaux : <strong>{simulation.total_pv_power_wc:,.0f} Wc</strong></p>
+                    {f'<p>Orientation : <strong>{simulation.orientation_deg:.0f}°</strong></p>' if simulation.orientation_deg else ''}
+                    {f'<p>Inclinaison : <strong>{simulation.tilt_deg:.0f}°</strong></p>' if simulation.tilt_deg else ''}
                 </div>
             </div>
 
-            <!-- Page 2: Location & Production -->
-            <div class="page location-page">
-                <!-- Section: Location -->
-                <div class="section">
-                    <h2 class="section-title">LOCALISATION DE L'INSTALLATION</h2>
-                    <div class="section-underline"></div>
+            {f'<div class="chart-container"><img src="{chart_data}" alt="Production Chart" class="chart"></div>' if chart_data else ''}
 
-                    <div class="location-info">
-                        {f'<p class="address">{simulation.installation_address}</p>' if simulation.installation_address else ''}
-                        {f'<p>Superficie de la toiture : <strong>{simulation.roof_surface_m2:.0f} m²</strong></p>' if simulation.roof_surface_m2 else ''}
-                    </div>
-
-                    {f'<div class="location-image-container"><img src="{location_image_data}" alt="Location" class="location-image"></div>' if location_image_data else ''}
-                </div>
-
-                <!-- Section: Production (keep chart + stats + total together) -->
-                <div class="section production-section">
-                    <h2 class="section-title">PRODUCTION MOYENNE JOURNALIÈRE</h2>
-                    <div class="section-underline"></div>
-
-                    <div class="production-stats">
-                        <div class="stats-sidebar"></div>
-                        <div class="stats-content">
-                            <p>Puissance panneaux : <strong>{simulation.total_pv_power_wc:.0f} Wc</strong></p>
-                            {f'<p>Orientation : <strong>{simulation.orientation_deg:.0f}°</strong></p>' if simulation.orientation_deg else ''}
-                            {f'<p>Inclinaison : <strong>{simulation.tilt_deg:.0f}°</strong></p>' if simulation.tilt_deg else ''}
-                        </div>
-                    </div>
-
-                    {f'<div class="chart-container"><img src="{chart_data}" alt="Production Chart" class="chart"></div>' if chart_data else ''}
-
-                    <div class="annual-total">
-                        Production totale annuelle :
-                        <strong>{simulation.annual_production_kwh:,.2f} kWh</strong>
-                    </div>
-                </div>
+            <div class="annual-total">
+                Production totale annuelle :
+                <strong>{simulation.annual_production_kwh:,.2f} kWh</strong>
             </div>
-        </body>
-        </html>
-        """
+        </div>
+    </div>
+</body>
+</html>"""
 
         return html
 
@@ -224,10 +267,21 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         """Generate CSS styling per DESIGN SYSTEM v2.0"""
 
         css = """
-        /* PHOTOVOLTAIC REPORT DESIGN SYSTEM v2.0 - PAGE RULES */
+        /* PHOTOVOLTAIC REPORT DESIGN SYSTEM v2.0 */
+
+        /* Running element: dynamic footer placed in page margin */
+        .running-footer {
+            position: running(pageFooter);
+            font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+            font-size: 8pt;
+            color: #5F6368;
+            text-align: center;
+            padding: 2mm 0;
+        }
+
         @page {
             size: A4;
-            margin: 25mm 20mm 20mm 20mm;
+            margin: 25mm 20mm 18mm 20mm;
 
             @top-center {
                 content: "VOTRE INSTALLATION PHOTOVOLTAÏQUE";
@@ -246,15 +300,10 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             }
 
             @bottom-center {
-                /* NOTE: Static footer text - WeasyPrint @page boxes cannot use dynamic content
-                   TODO: Replace with actual company data: {company.street} | {company.email} | {company.phone} */
-                content: "8000 Marina Blvd, Suite 300 | mark.brown23@example.com | Tél: (441)-695-2334";
-                font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
-                font-size: 8pt;
-                color: #5F6368;
+                content: element(pageFooter);
                 background: #F5F5F5;
                 border-top: 1px solid #E0E0E0;
-                padding: 4mm 10mm;
+                padding: 3mm 10mm;
                 width: 100%;
             }
         }
@@ -280,16 +329,20 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         }
 
         .page {
-            width: 210mm;
-            height: 297mm;
-            position: relative;
             page-break-after: always;
         }
 
         /* ===== COVER PAGE ===== */
         .cover-page {
+            width: 210mm;
+            height: 297mm;
+            position: relative;
             background: linear-gradient(135deg, #FAFAFA 0%, #F5F5F5 100%);
             overflow: hidden;
+        }
+
+        .content-page {
+            padding: 0;
         }
 
         .logo-container {
@@ -386,10 +439,6 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
         }
 
-        .customer-box-border {
-            display: none;
-        }
-
         .customer-content h3 {
             color: #4A9B5D;
             font-size: 16pt;
@@ -413,42 +462,35 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             font-size: 9pt;
         }
 
-        .footer-wave {
+        .cover-footer {
             position: absolute;
             bottom: 0;
             left: 0;
             right: 0;
-            height: 20mm;
+            padding: 6mm 15mm;
             background: #2D7A4F;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 5mm 10mm;
-        }
-
-        .footer-content {
             text-align: center;
             color: #FFFFFF;
-            string-set: footer-left content();
         }
 
-        .footer-content p {
+        .cover-footer p {
             margin: 1mm 0;
             font-size: 8pt;
             font-weight: 400;
+            color: #FFFFFF;
         }
 
-        /* ===== LOCATION PAGE ===== */
-        .location-page {
-            background: #F5F5F5;
+        .cover-footer-company {
+            font-weight: 600 !important;
+            font-size: 9pt !important;
         }
 
+        /* ===== CONTENT PAGES ===== */
         .section {
-            margin-bottom: 20mm;
+            margin-bottom: 15mm;
             page-break-inside: avoid;
         }
 
-        /* Keep production chart + specs + summary together */
         .production-section {
             page-break-inside: avoid;
         }
@@ -466,8 +508,8 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             color: #2D7A4F;
             font-size: 20pt;
             font-weight: 600;
-            margin-top: 20mm;
-            margin-bottom: 10mm;
+            margin-top: 15mm;
+            margin-bottom: 8mm;
             page-break-after: avoid;
         }
 
@@ -482,33 +524,31 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             color: #2D7A4F;
             font-size: 20pt;
             font-weight: 600;
-            margin-top: 15mm;
-            margin-bottom: 8mm;
+            margin-top: 0;
+            margin-bottom: 4mm;
             page-break-after: avoid;
         }
 
-        /* Section underline - gold accent bar */
         .section-underline {
             width: 60px;
             height: 3px;
             background: #F9A825;
-            margin-top: 6mm;
-            margin-bottom: 12mm;
+            margin-bottom: 10mm;
             border: none;
         }
 
         .location-info {
-            margin-bottom: 10mm;
+            margin-bottom: 8mm;
         }
 
         .address {
             font-size: 11pt;
-            margin-bottom: 5mm;
+            margin-bottom: 4mm;
             color: #1A1A1A;
         }
 
         p {
-            margin-bottom: 8mm;
+            margin-bottom: 4mm;
             color: #1A1A1A;
         }
 
@@ -519,41 +559,36 @@ class PvSimulationWeasyPrint(models.AbstractModel):
 
         .location-image-container {
             text-align: center;
-            margin: 12mm auto;
+            margin: 8mm auto;
             page-break-inside: avoid;
         }
 
         .location-image {
             max-width: 170mm;
-            height: auto;
+            max-height: 80mm;
             object-fit: cover;
             border: 1px solid #E0E0E0;
             border-radius: 8px;
         }
 
-        /* Info card - specs box with gold accent */
         .production-stats {
             background: #FFFFFF;
             border-left: 4px solid #F9A825;
             border-radius: 0 8px 8px 0;
-            padding: 12mm 15mm;
-            margin: 10mm 0;
+            padding: 8mm 15mm;
+            margin: 8mm 0;
             page-break-inside: avoid;
         }
 
-        .stats-sidebar {
-            display: none;
-        }
-
         .stats-content p {
-            margin: 4mm 0;
+            margin: 3mm 0;
             font-size: 11pt;
             line-height: 1.5;
         }
 
         .chart-container {
             text-align: center;
-            margin: 15mm auto;
+            margin: 10mm auto;
             page-break-inside: avoid;
         }
 
@@ -563,12 +598,11 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             border-radius: 8px;
         }
 
-        /* Data highlight box - annual production (ATTENTION GRABBER) */
         .annual-total {
             text-align: center;
             font-size: 14pt;
-            margin: 15mm auto;
-            padding: 15mm 25mm;
+            margin: 10mm auto;
+            padding: 12mm 25mm;
             background: #2D7A4F;
             color: #FFFFFF;
             border-radius: 8px;
@@ -584,11 +618,6 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             color: #FFFFFF;
             display: block;
             margin-top: 5mm;
-        }
-
-        /* Page footer removed - handled by @page @bottom-center */
-        .page-footer {
-            display: none;
         }
         """
 
