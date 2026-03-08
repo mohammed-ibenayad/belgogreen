@@ -229,8 +229,11 @@ class SolarApiClient(models.AbstractModel):
                     _logger.info(f"✅ Converted to PNG: {len(converted_image)} bytes")
                     return converted_image
                 else:
-                    _logger.warning(f"⚠️ GeoTIFF conversion failed, returning original")
-                    return response.content
+                    _logger.warning(
+                        "⚠️ GeoTIFF conversion failed - skipping image. "
+                        "Install rasterio (pip install rasterio) for GeoTIFF support."
+                    )
+                    return None
 
             return response.content
 
