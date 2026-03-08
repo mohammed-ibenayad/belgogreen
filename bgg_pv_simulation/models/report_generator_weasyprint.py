@@ -679,10 +679,11 @@ class PvSimulationWeasyPrint(models.AbstractModel):
 
         /* ===== BILAN ANNUEL DASHBOARD ===== */
         .bilan-dashboard {
-            background: #2D2D2D;
+            background: #FFFFFF;
+            border: 2px solid #4A9B5D;
             border-radius: 10px;
             padding: 6mm;
-            color: #FFFFFF;
+            color: #1A1A1A;
             page-break-inside: avoid;
         }
 
@@ -693,7 +694,8 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         }
 
         .bilan-cell {
-            background: #3A3A3A;
+            background: #F8FBF9;
+            border: 1px solid #D6E9DB;
             border-radius: 8px;
             padding: 5mm;
             text-align: center;
@@ -712,30 +714,32 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         }
 
         .bilan-cell-header {
-            color: #C8E84A;
-            font-size: 11pt;
+            color: #FFFFFF;
+            background: #4A9B5D;
+            font-size: 10pt;
             font-weight: 600;
-            margin-bottom: 4mm;
+            margin: -5mm -5mm 4mm -5mm;
+            padding: 2.5mm 5mm;
+            border-radius: 7px 7px 0 0;
             text-align: center;
         }
 
         .bilan-cell-icon {
             font-size: 18pt;
-            color: #FFFFFF;
-            opacity: 0.7;
+            color: #4A9B5D;
             margin-bottom: 2mm;
         }
 
         .bilan-cell-label {
             font-size: 8pt;
-            color: #BBBBBB;
+            color: #5F6368;
             margin-bottom: 1mm;
         }
 
         .bilan-cell-value {
             font-size: 10pt;
             font-weight: 700;
-            color: #C8E84A;
+            color: #1A1A1A;
         }
 
         .bilan-trio {
@@ -765,13 +769,14 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         }
 
         .bilan-savings-total {
-            background: #C8E84A;
-            color: #1A1A1A;
+            background: #4A9B5D;
+            color: #FFFFFF;
             flex: 1;
         }
 
         .bilan-purchase {
-            background: #C8E84A;
+            background: #F0F7F2;
+            border: 2px solid #4A9B5D;
             color: #1A1A1A;
             flex: 1;
         }
@@ -784,6 +789,14 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         .bilan-bottom-value {
             font-size: 12pt;
             font-weight: 700;
+        }
+
+        .bilan-savings-total .bilan-bottom-value {
+            color: #FFFFFF;
+        }
+
+        .bilan-purchase .bilan-bottom-value {
+            color: #4A9B5D;
         }
         """
 
