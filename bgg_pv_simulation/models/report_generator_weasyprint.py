@@ -1,27 +1,26 @@
 # -*- coding: utf-8 -*-
 """
-PHOTOVOLTAIC REPORT DESIGN SYSTEM v2.0
+PHOTOVOLTAIC REPORT DESIGN SYSTEM v3.0
 WeasyPrint-based PDF Report Generator
 
-This module implements the complete design system for photovoltaic installation reports.
-All colors, spacing, typography, and layout rules follow the v2.0 design specification.
+Professional solar installation proposal report.
 
 COLOR PALETTE:
-- Primary Green:    #4A9B5D  (headings, CTAs, chart bars)
-- Primary Dark:     #2D7A4F  (emphasis, data highlights)
-- Primary Light:    #6BB87A  (secondary elements, icons)
-- Gold Accent:      #F9A825  (highlights, underlines)
-- Dark Text:        #1A1A1A  (body text)
-- Gray Text:        #5F6368  (secondary text, headers, footers)
-- Light Gray:       #F5F5F5  (backgrounds, footer)
-- Border Gray:      #E0E0E0  (borders, dividers)
+- Primary Dark Blue: #1B3A5C  (section headings, header accents)
+- Primary Green:     #4A9B5D  (savings highlights, positive values)
+- Gold Accent:       #F9A825  (special highlights)
+- Dark Text:         #1A1A1A  (body text)
+- Gray Text:         #5F6368  (secondary text, labels)
+- Light Gray BG:     #F7F8FA  (card backgrounds, alternating rows)
+- Border Gray:       #E0E0E0  (borders, dividers)
+- White:             #FFFFFF  (page background)
 
 LAYOUT RULES:
-- Page margins: 25mm top, 20mm sides and bottom
-- Header: white background, gray text, subtle border
-- Footer: light gray background (#F5F5F5), NOT dark green (except cover)
-- Section spacing: 15mm before, 12mm after underline
+- Page margins: 25mm top, 20mm sides, 22mm bottom
+- Font: Inter / Helvetica / sans-serif
+- Section spacing: 30px before title, 20px after
 - All content blocks use page-break-inside: avoid
+- WeasyPrint compatible: no flex-gap, no CSS grid, tables + inline-block only
 """
 
 import io
@@ -33,7 +32,7 @@ _logger = logging.getLogger(__name__)
 
 
 class PvSimulationWeasyPrint(models.AbstractModel):
-    """WeasyPrint-based PDF Report Generator - Design System v2.0"""
+    """WeasyPrint-based PDF Report Generator - Design System v3.0"""
     _name = 'pv.simulation.weasyprint.generator'
     _description = 'WeasyPrint Report Generator for PV Simulation'
 
@@ -126,53 +125,48 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             except Exception as e:
                 _logger.warning(f"Could not generate chart: {e}")
 
-        # Strip trailing "PHOTOVOLTAÏQUE" from cover_title so it doesn't duplicate
-        # the hardcoded second title line in the template
-        raw_cover_title = simulation.cover_title or 'VOTRE INSTALLATION'
-        cover_title_line1 = raw_cover_title.replace(' PHOTOVOLTAÏQUE', '').replace('PHOTOVOLTAÏQUE', '').strip()
+        # Cover title
+        cover_title = _esc(simulation.cover_title or 'Votre installation photovoltaïque')
 
         # Footer data
         company_name = _esc(company.name or '')
-        company_street = _esc(company.street or '')
-        company_zip = _esc(company.zip or '')
-        company_city = _esc(company.city or '')
-        company_email = _esc(company.pv_report_email or company.email or '')
         company_phone = _esc(company.pv_report_phone or company.phone or '')
+        company_email = _esc(company.pv_report_email or company.email or '')
         address = _esc(simulation.installation_address or '')
 
-        # Footer line 1: Company Name | Address
-        address_str = f"{company_street} {company_zip} {company_city}".strip()
-        footer_line1 = ' | '.join(filter(None, [company_name, address_str]))
-
-        # Salesperson info for footer line 2 (with icons)
+        # Salesperson info
         sp_name = _esc(user.name) if user else ''
         sp_phone = _esc(user.phone or company.phone or '') if user else company_phone
         sp_email = _esc(user.email or getattr(user, 'login', '') or '') if user else company_email
-        footer_line2_parts = []
-        if sp_name:
-            footer_line2_parts.append(sp_name)
+
+        # Footer parts
+        footer_parts = []
+        if company_name:
+            footer_parts.append(company_name)
         if sp_phone:
-            footer_line2_parts.append(f'&#9742; {sp_phone}')
+            footer_parts.append(f'&#9742; {sp_phone}')
         if sp_email:
-            footer_line2_parts.append(f'&#9993; {sp_email}')
-        footer_line2 = '&nbsp;&nbsp;&nbsp;'.join(footer_line2_parts)
+            footer_parts.append(f'&#9993; {sp_email}')
+        footer_line = ' &nbsp;|&nbsp; '.join(footer_parts)
 
         # Partner info
         partner_name = _esc(partner.name) if partner else ''
         partner_phone = _esc(partner.phone) if partner and partner.phone else ''
         partner_email = _esc(partner.email) if partner and partner.email else ''
-        partner_contact_parts = []
-        if partner_phone:
-            partner_contact_parts.append(f"Tél: {partner_phone}")
-        if partner_email:
-            partner_contact_parts.append(f"Email: {partner_email}")
-        partner_contact_line = ' | '.join(partner_contact_parts)
+
+        # Report date
+        report_date = ''
+        if simulation.report_date:
+            report_date = simulation.report_date.strftime('%d/%m/%Y')
+
+        # Project reference
+        project_ref = _esc(simulation.name or '')
 
         # ---- Bilan Annuel: aggregate monthly results ----
         results = simulation.monthly_result_ids
         # Production
         prod_total = simulation.annual_production_kwh or 0.0
-        # Consumption (from monthly results or consumption profile)
+        # Consumption
         conso_day = sum(results.mapped('monthly_day_consumption_kwh')) if results else 0.0
         conso_night = sum(results.mapped('monthly_night_consumption_kwh')) if results else 0.0
         conso_total = sum(results.mapped('monthly_consumption_kwh')) if results else 0.0
@@ -182,12 +176,12 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         autocons_total = sum(results.mapped('monthly_autoconsumption_kwh')) if results else 0.0
         battery_charge = sum(results.mapped('monthly_battery_charge_kwh')) if results else 0.0
         autocons_day = autocons_total - battery_charge
-        # Economies
+        # Savings
         savings_panels = sum(results.mapped('panel_savings')) if results else 0.0
         savings_battery = sum(results.mapped('battery_savings')) if results else 0.0
         savings_resale = sum(results.mapped('sale_revenue')) if results else 0.0
         savings_total = savings_panels + savings_battery + savings_resale
-        # Achat
+        # Purchase
         purchase_total = sum(results.mapped('purchase_cost')) if results else 0.0
 
         def _fmt(val):
@@ -196,185 +190,242 @@ class PvSimulationWeasyPrint(models.AbstractModel):
                 return '—'
             return f'{val:,.2f}'
 
+        # Build client info block for cover
+        client_info_rows = ''
+        if partner_name:
+            client_info_rows += f'<p class="client-name">{partner_name}</p>'
+        if address:
+            addr_lines = address.replace('\n', '<br/>')
+            client_info_rows += f'<p class="client-detail">{addr_lines}</p>'
+        if partner_phone:
+            client_info_rows += f'<p class="client-detail">T\u00e9l\u00a0: {partner_phone}</p>'
+        if partner_email:
+            client_info_rows += f'<p class="client-detail">Email\u00a0: {partner_email}</p>'
+
+        # Build metric cards for system characteristics
+        metric_cards = ''
+        metric_cards += f'''
+            <div class="card">
+                <div class="card-value">{simulation.total_pv_power_wc:,.0f}</div>
+                <div class="card-unit">Wc</div>
+                <div class="card-label">Puissance install\u00e9e</div>
+            </div>'''
+
+        if simulation.number_of_panels:
+            metric_cards += f'''
+            <div class="card">
+                <div class="card-value">{simulation.number_of_panels}</div>
+                <div class="card-unit">panneaux</div>
+                <div class="card-label">Nombre de panneaux</div>
+            </div>'''
+
+        if simulation.orientation_deg:
+            metric_cards += f'''
+            <div class="card">
+                <div class="card-value">{simulation.orientation_deg:.0f}\u00b0</div>
+                <div class="card-unit">&nbsp;</div>
+                <div class="card-label">Orientation</div>
+            </div>'''
+
+        if simulation.tilt_deg:
+            metric_cards += f'''
+            <div class="card">
+                <div class="card-value">{simulation.tilt_deg:.0f}\u00b0</div>
+                <div class="card-unit">&nbsp;</div>
+                <div class="card-label">Inclinaison</div>
+            </div>'''
+
         html = f"""<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Installation Photovoltaïque</title>
+    <title>Installation Photovolta\u00efque</title>
 </head>
 <body>
-    <!-- Running footer for content pages (placed in @page margin by CSS) -->
+    <!-- Running footer for content pages -->
     <div class="running-footer">
-        <div class="footer-row">
-            <span class="footer-info">{footer_line1}</span>
-        </div>
-        <div class="footer-row">
-            <span class="footer-info">{footer_line2}</span>
-        </div>
+        <span class="footer-info">{footer_line}</span>
     </div>
 
-    <!-- Page 1: Cover Page -->
+    <!-- ============================================ -->
+    <!-- PAGE 1: COVER PAGE                           -->
+    <!-- ============================================ -->
     <div class="page cover-page">
-        <!-- Logo -->
-        <div class="logo-container">
-            {f'<img src="{logo_data}" alt="Logo" class="logo">' if logo_data else ''}
+        <!-- Logo top-right -->
+        <div class="cover-logo">
+            {f'<img src="{logo_data}" alt="Logo" class="logo-img">' if logo_data else ''}
         </div>
-
-        <!-- Decorative blobs -->
-        <div class="blob blob-1"></div>
-        <div class="blob blob-2"></div>
 
         <!-- Cover Photo -->
-        <div class="cover-photo-container">
-            {f'<img src="{cover_photo_data}" alt="Cover Photo" class="cover-photo">' if cover_photo_data else ''}
+        {f'<div class="cover-photo-wrap"><img src="{cover_photo_data}" alt="" class="cover-photo"></div>' if cover_photo_data else ''}
+
+        <!-- Main Title Block -->
+        <div class="cover-title-block">
+            <h1 class="cover-title">{_esc(cover_title)}</h1>
+            <p class="cover-subtitle">\u00c9tude personnalis\u00e9e</p>
         </div>
 
-        <!-- Main Title -->
-        <div class="main-title">
-            <h1 class="title-line1">{_esc(cover_title_line1)}</h1>
-            <h1 class="title-line2">PHOTOVOLTAÏQUE</h1>
-            <p class="tagline">{_esc(company.pv_report_tagline or 'Save your planet. Save your wallet.')}</p>
+        <!-- Client Info Card -->
+        <div class="cover-client-card">
+            <div class="cover-client-inner">
+                {client_info_rows}
+            </div>
+            <div class="cover-meta">
+                {f'<p>R\u00e9f\u00e9rence\u00a0: <strong>{project_ref}</strong></p>' if project_ref else ''}
+                {f'<p>Date\u00a0: <strong>{report_date}</strong></p>' if report_date else ''}
+            </div>
         </div>
 
-        <!-- Cover Footer (same as content footer, no page number) -->
+        <!-- Cover Footer -->
         <div class="cover-footer">
-            <div class="cover-footer-inner">
-                <span class="footer-info">{footer_line1}</span>
-                <br/>
-                <span class="footer-info">{footer_line2}</span>
+            <div class="cover-footer-content">
+                <span class="footer-company">{company_name}</span>
+                {f'<span class="footer-sep">|</span><span>&#9742; {sp_phone}</span>' if sp_phone else ''}
+                {f'<span class="footer-sep">|</span><span>&#9993; {sp_email}</span>' if sp_email else ''}
+                {f'<br/><span class="footer-contact">{sp_name}</span>' if sp_name else ''}
             </div>
         </div>
     </div>
 
-    <!-- Page 2: Location -->
+    <!-- ============================================ -->
+    <!-- PAGE 2: LOCALISATION                         -->
+    <!-- ============================================ -->
     <div class="page content-page">
         <div class="section">
+            <div class="section-number">01</div>
             <h2 class="section-title">{_esc(simulation.section_title_location or "LOCALISATION DE L'INSTALLATION")}</h2>
-            <div class="section-underline"></div>
 
-            <div class="location-info">
-                {f'<p class="address">{address}</p>' if address else ''}
-                {f'<p>Superficie de la toiture : <strong>{simulation.roof_surface_m2:.0f} m²</strong></p>' if simulation.roof_surface_m2 else ''}
+            <div class="location-block">
+                {f'<p class="address-text">{address.replace(chr(10), "<br/>")}</p>' if address else ''}
+                {f'<p>Superficie de la toiture\u00a0: <strong>{simulation.roof_surface_m2:.0f} m\u00b2</strong></p>' if simulation.roof_surface_m2 else ''}
             </div>
 
-            {f'<div class="location-image-container"><img src="{location_image_data}" alt="Location" class="location-image"></div>' if location_image_data else ''}
+            {f'<div class="location-image-container"><img src="{location_image_data}" alt="Localisation" class="location-image"></div>' if location_image_data else ''}
         </div>
     </div>
 
-    <!-- Page 3: Production -->
+    <!-- ============================================ -->
+    <!-- PAGE 3: CARACTÉRISTIQUES + PRODUCTION        -->
+    <!-- ============================================ -->
     <div class="page content-page">
         <div class="section">
-            <h2 class="section-title">{_esc(simulation.section_title_production or 'PRODUCTION MOYENNE JOURNALIÈRE')}</h2>
-            <div class="section-underline"></div>
+            <div class="section-number">02</div>
+            <h2 class="section-title">CARACT\u00c9RISTIQUES DU SYST\u00c8ME</h2>
 
-            <div class="production-stats">
-                <div class="stats-content">
-                    <p>Puissance panneaux : <strong>{simulation.total_pv_power_wc:,.0f} Wc</strong></p>
-                    {f'<p>Orientation : <strong>{simulation.orientation_deg:.0f}°</strong></p>' if simulation.orientation_deg else ''}
-                    {f'<p>Inclinaison : <strong>{simulation.tilt_deg:.0f}°</strong></p>' if simulation.tilt_deg else ''}
-                </div>
+            <div class="cards-row">
+                {metric_cards}
             </div>
+        </div>
 
-            {f'<div class="chart-container"><img src="{chart_data}" alt="Production Chart" class="chart"></div>' if chart_data else ''}
+        <div class="section">
+            <div class="section-number">03</div>
+            <h2 class="section-title">{_esc(simulation.section_title_production or 'PRODUCTION ESTIM\u00c9E')}</h2>
 
-            <p class="annual-total">Production totale annuelle : <strong>{simulation.annual_production_kwh:,.2f} kWh</strong></p>
+            {f'<div class="chart-container"><img src="{chart_data}" alt="Production mensuelle" class="chart-img"></div>' if chart_data else ''}
+
+            <div class="annual-production-highlight">
+                <span class="aph-label">Production totale annuelle</span>
+                <span class="aph-value">{simulation.annual_production_kwh:,.2f} kWh</span>
+            </div>
         </div>
     </div>
 
-    <!-- Page 4: Bilan Annuel -->
+    <!-- ============================================ -->
+    <!-- PAGE 4: BILAN ÉNERGÉTIQUE                    -->
+    <!-- ============================================ -->
     <div class="page content-page">
-        <h2 class="section-title">BILAN ANNUEL</h2>
-        <div class="section-underline"></div>
+        <div class="section">
+            <div class="section-number">04</div>
+            <h2 class="section-title">BILAN \u00c9NERG\u00c9TIQUE</h2>
+        </div>
 
-        <div class="bilan-dashboard">
-            <!-- Row 1: Production + Consommation -->
-            <div class="bilan-row">
-                <div class="bilan-cell bilan-prod">
-                    <div class="bilan-cell-header">Production</div>
-                    <div class="bilan-cell-icon">&#9788;</div>
-                    <div class="bilan-cell-label">Totale</div>
-                    <div class="bilan-cell-value">{_fmt(prod_total)} kWh</div>
-                </div>
-                <div class="bilan-cell bilan-conso-group">
-                    <div class="bilan-cell-header">Consommation</div>
-                    <div class="bilan-trio">
-                        <div class="bilan-trio-item">
-                            <div class="bilan-cell-icon">&#9788;</div>
-                            <div class="bilan-cell-label">Jour</div>
-                            <div class="bilan-cell-value">{_fmt(conso_day)} kWh</div>
-                        </div>
-                        <div class="bilan-trio-item">
-                            <div class="bilan-cell-icon">&#9790;</div>
-                            <div class="bilan-cell-label">Nuit</div>
-                            <div class="bilan-cell-value">{_fmt(conso_night)} kWh</div>
-                        </div>
-                        <div class="bilan-trio-item">
-                            <div class="bilan-cell-icon">&#9751;</div>
-                            <div class="bilan-cell-label">Totale</div>
-                            <div class="bilan-cell-value">{_fmt(conso_total)} kWh</div>
-                        </div>
-                    </div>
-                </div>
+        <!-- Production -->
+        <div class="bilan-section">
+            <div class="bilan-section-header">Production</div>
+            <table class="bilan-table">
+                <tr>
+                    <td class="bilan-icon">&#9788;</td>
+                    <td class="bilan-label">Production totale annuelle</td>
+                    <td class="bilan-value">{_fmt(prod_total)} kWh</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Consommation -->
+        <div class="bilan-section">
+            <div class="bilan-section-header">Consommation</div>
+            <table class="bilan-table">
+                <tr>
+                    <td class="bilan-icon">&#9788;</td>
+                    <td class="bilan-label">Consommation jour</td>
+                    <td class="bilan-value">{_fmt(conso_day)} kWh</td>
+                </tr>
+                <tr>
+                    <td class="bilan-icon">&#9790;</td>
+                    <td class="bilan-label">Consommation nuit</td>
+                    <td class="bilan-value">{_fmt(conso_night)} kWh</td>
+                </tr>
+                <tr class="bilan-row-total">
+                    <td class="bilan-icon">&#9751;</td>
+                    <td class="bilan-label">Consommation totale</td>
+                    <td class="bilan-value">{_fmt(conso_total)} kWh</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Auto Consommation -->
+        <div class="bilan-section">
+            <div class="bilan-section-header">Autoconsommation</div>
+            <table class="bilan-table">
+                <tr>
+                    <td class="bilan-icon">&#9889;</td>
+                    <td class="bilan-label">Consomm\u00e9 directement</td>
+                    <td class="bilan-value">{_fmt(autocons_day)} kWh</td>
+                </tr>
+                <tr>
+                    <td class="bilan-icon">&#9107;</td>
+                    <td class="bilan-label">Stock\u00e9 dans la batterie</td>
+                    <td class="bilan-value">{_fmt(battery_charge)} kWh</td>
+                </tr>
+                <tr class="bilan-row-total">
+                    <td class="bilan-icon">&#9751;</td>
+                    <td class="bilan-label">Total autoconsommation</td>
+                    <td class="bilan-value">{_fmt(autocons_total)} kWh</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Economies -->
+        <div class="bilan-section">
+            <div class="bilan-section-header">\u00c9conomies</div>
+            <table class="bilan-table">
+                <tr>
+                    <td class="bilan-icon">&#9788;</td>
+                    <td class="bilan-label">\u00c9conomies li\u00e9es aux panneaux</td>
+                    <td class="bilan-value">{_fmt(savings_panels)} &euro;</td>
+                </tr>
+                <tr>
+                    <td class="bilan-icon">&#9107;</td>
+                    <td class="bilan-label">\u00c9conomies li\u00e9es \u00e0 la batterie</td>
+                    <td class="bilan-value">{_fmt(savings_battery)} &euro;</td>
+                </tr>
+                <tr>
+                    <td class="bilan-icon">&#8364;</td>
+                    <td class="bilan-label">Revenus de revente</td>
+                    <td class="bilan-value">{_fmt(savings_resale)} &euro;</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Bottom summary: Total savings + Purchase -->
+        <div class="bilan-bottom">
+            <div class="bilan-total-savings">
+                <span class="bts-label">Total \u00e9conomies annuelles</span>
+                <span class="bts-value">{_fmt(savings_total)} &euro;</span>
             </div>
-
-            <!-- Row 2: Auto Consommation -->
-            <div class="bilan-row">
-                <div class="bilan-cell bilan-full-row">
-                    <div class="bilan-cell-header">Auto Consommation</div>
-                    <div class="bilan-trio">
-                        <div class="bilan-trio-item">
-                            <div class="bilan-cell-icon">&#9889;</div>
-                            <div class="bilan-cell-label">Consommé la journée</div>
-                            <div class="bilan-cell-value">{_fmt(autocons_day)} kWh</div>
-                        </div>
-                        <div class="bilan-trio-item">
-                            <div class="bilan-cell-icon">&#9107;</div>
-                            <div class="bilan-cell-label">Stocké dans la batterie</div>
-                            <div class="bilan-cell-value">{_fmt(battery_charge)} kWh</div>
-                        </div>
-                        <div class="bilan-trio-item">
-                            <div class="bilan-cell-icon">&#9751;</div>
-                            <div class="bilan-cell-label">Total</div>
-                            <div class="bilan-cell-value">{_fmt(autocons_total)} kWh</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Row 3: Economies -->
-            <div class="bilan-row">
-                <div class="bilan-cell bilan-full-row">
-                    <div class="bilan-cell-header">Economies</div>
-                    <div class="bilan-trio">
-                        <div class="bilan-trio-item">
-                            <div class="bilan-cell-icon">&#9788;</div>
-                            <div class="bilan-cell-label">Liées aux panneaux</div>
-                            <div class="bilan-cell-value">{_fmt(savings_panels)} &euro;</div>
-                        </div>
-                        <div class="bilan-trio-item">
-                            <div class="bilan-cell-icon">&#9107;</div>
-                            <div class="bilan-cell-label">Liées à la batterie</div>
-                            <div class="bilan-cell-value">{_fmt(savings_battery)} &euro;</div>
-                        </div>
-                        <div class="bilan-trio-item">
-                            <div class="bilan-cell-icon">&#8364;</div>
-                            <div class="bilan-cell-label">Liées à la revente</div>
-                            <div class="bilan-cell-value">{_fmt(savings_resale)} &euro;</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Row 4: Total economies + Achat -->
-            <div class="bilan-bottom-row">
-                <div class="bilan-bottom-cell bilan-savings-total">
-                    <span class="bilan-bottom-label">Total économies</span>
-                    <span class="bilan-bottom-value">{_fmt(savings_total)}&euro;</span>
-                </div>
-                <div class="bilan-bottom-cell bilan-purchase">
-                    <span class="bilan-bottom-label">Achat</span>
-                    <span class="bilan-bottom-value">{_fmt(purchase_total)}&euro;</span>
-                </div>
+            <div class="bilan-total-purchase">
+                <span class="btp-label">Co\u00fbt d\u2019achat r\u00e9seau</span>
+                <span class="btp-value">{_fmt(purchase_total)} &euro;</span>
             </div>
         </div>
     </div>
@@ -384,48 +435,45 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         return html
 
     def _generate_css(self):
-        """Generate CSS styling per DESIGN SYSTEM v2.0"""
+        """Generate CSS styling per DESIGN SYSTEM v3.0"""
 
         css = """
-        /* PHOTOVOLTAIC REPORT DESIGN SYSTEM v3.1
-           Primary Green #4A9B5D: cover titles, lines, accents
-           Black #1A1A1A: content page titles */
+        /* ==============================================
+           PHOTOVOLTAIC REPORT – DESIGN SYSTEM v3.0
+           WeasyPrint-compatible (no grid, no flex-gap)
+           ============================================== */
 
-        /* Running footer for content pages */
+        /* ---------- Running footer (content pages) ---------- */
         .running-footer {
             position: running(pageFooter);
-            font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+            font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
             font-size: 8pt;
             color: #5F6368;
             text-align: left;
             padding: 1mm 0;
             width: 100%;
+            line-height: 1.5;
         }
 
-        .footer-row {
-            margin: 0.5mm 0;
-            line-height: 1.4;
-        }
-
-        /* ===== PAGE RULES ===== */
+        /* ---------- @page rules ---------- */
         @page {
             size: A4;
-            margin: 15mm 20mm 20mm 20mm;
+            margin: 25mm 20mm 22mm 20mm;
 
             @bottom-left {
                 content: element(pageFooter);
-                border-top: 2px solid #4A9B5D;
+                border-top: 2px solid #1B3A5C;
                 padding: 2mm 0 0 0;
-                width: 85%;
+                width: 80%;
                 vertical-align: top;
             }
 
             @bottom-right {
                 content: "Page " counter(page) " / " counter(pages);
-                font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+                font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
                 font-size: 8pt;
                 color: #5F6368;
-                border-top: 2px solid #4A9B5D;
+                border-top: 2px solid #1B3A5C;
                 padding-top: 3mm;
                 vertical-align: top;
             }
@@ -433,10 +481,11 @@ class PvSimulationWeasyPrint(models.AbstractModel):
 
         @page :first {
             margin: 0;
-            @bottom-left { content: none; }
+            @bottom-left  { content: none; }
             @bottom-right { content: none; }
         }
 
+        /* ---------- Reset & base ---------- */
         * {
             margin: 0;
             padding: 0;
@@ -444,359 +493,450 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         }
 
         body {
-            font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
             font-size: 11pt;
             color: #1A1A1A;
-            line-height: 1.5;
+            line-height: 1.55;
+        }
+
+        p { margin-bottom: 4mm; }
+
+        strong {
+            font-weight: 600;
+            color: #1B3A5C;
         }
 
         .page {
             page-break-after: always;
         }
 
-        /* ===== COVER PAGE (original light background) ===== */
+        /* ===================================================
+           PAGE 1 – COVER
+           =================================================== */
         .cover-page {
             width: 210mm;
             height: 297mm;
             position: relative;
-            background: linear-gradient(135deg, #FAFAFA 0%, #F5F5F5 100%);
+            background: #FFFFFF;
             overflow: hidden;
         }
 
-        .content-page {
-            padding: 0;
+        /* Decorative top band */
+        .cover-page::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 8mm;
+            background: #1B3A5C;
         }
 
-        .logo-container {
+        .cover-logo {
             position: absolute;
-            top: 20mm;
+            top: 16mm;
             right: 20mm;
-            width: 40mm;
-            height: 40mm;
         }
 
-        .logo {
-            max-width: 100%;
-            max-height: 100%;
+        .logo-img {
+            max-height: 22mm;
+            max-width: 50mm;
         }
 
-        /* Decorative blobs */
-        .blob {
+        .cover-photo-wrap {
             position: absolute;
-            background: #E8F5E9;
-            border-radius: 50%;
-            opacity: 0.6;
-        }
-
-        .blob-1 {
-            width: 160mm;
-            height: 160mm;
-            top: 40mm;
-            left: -30mm;
-        }
-
-        .blob-2 {
-            width: 120mm;
-            height: 120mm;
-            top: 60mm;
-            right: -20mm;
-        }
-
-        .cover-photo-container {
-            position: absolute;
-            top: 55mm;
+            top: 48mm;
             left: 50%;
             transform: translateX(-50%);
-            width: 130mm;
-            height: 95mm;
+            width: 140mm;
+            height: 90mm;
+            text-align: center;
         }
 
         .cover-photo {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            border-radius: 12px;
-            border: 3px solid #4A9B5D;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            border: 2px solid #E0E0E0;
         }
 
-        .main-title {
+        .cover-title-block {
             position: absolute;
-            top: 160mm;
-            width: 100%;
+            top: 150mm;
+            left: 20mm;
+            right: 20mm;
             text-align: center;
         }
 
-        .title-line1,
-        .title-line2 {
-            color: #1A1A1A;
-            font-size: 28pt;
+        .cover-title {
+            font-size: 30pt;
             font-weight: 700;
-            letter-spacing: 0.5mm;
+            color: #1B3A5C;
+            letter-spacing: 0.3mm;
+            margin-bottom: 4mm;
+            line-height: 1.2;
         }
 
-        .title-line1 {
-            margin-bottom: 3mm;
-        }
-
-        .title-line2 {
-            margin-bottom: 6mm;
-        }
-
-        .tagline {
-            color: #666;
-            font-size: 12pt;
+        .cover-subtitle {
+            font-size: 14pt;
             font-style: italic;
+            color: #5F6368;
+            margin: 0;
         }
 
-        /* Cover footer: matches content footer style, no page number */
+        /* Client info card on cover */
+        .cover-client-card {
+            position: absolute;
+            top: 195mm;
+            left: 20mm;
+            right: 20mm;
+            border: 1px solid #E0E0E0;
+            border-left: 4px solid #4A9B5D;
+            border-radius: 0 6px 6px 0;
+            padding: 6mm 8mm;
+            background: #F7F8FA;
+        }
+
+        .cover-client-inner {
+            display: inline-block;
+            vertical-align: top;
+            width: 58%;
+        }
+
+        .cover-meta {
+            display: inline-block;
+            vertical-align: top;
+            width: 38%;
+            text-align: right;
+        }
+
+        .cover-meta p {
+            margin-bottom: 2mm;
+            font-size: 10pt;
+            color: #5F6368;
+        }
+
+        .cover-meta strong {
+            color: #1A1A1A;
+        }
+
+        .client-name {
+            font-size: 14pt;
+            font-weight: 600;
+            color: #1A1A1A;
+            margin-bottom: 2mm;
+        }
+
+        .client-detail {
+            font-size: 10pt;
+            color: #5F6368;
+            margin-bottom: 1mm;
+        }
+
+        /* Cover footer */
         .cover-footer {
             position: absolute;
             bottom: 0;
             left: 0;
             right: 0;
+            background: #1B3A5C;
             padding: 4mm 20mm;
-            border-top: 2px solid #4A9B5D;
-            background: #FFFFFF;
         }
 
-        .cover-footer-inner {
-            font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
-            font-size: 8pt;
-            color: #5F6368;
-            text-align: left;
-            line-height: 1.6;
+        .cover-footer-content {
+            font-size: 8.5pt;
+            color: #FFFFFF;
+            text-align: center;
+            line-height: 1.7;
         }
 
-        /* ===== CONTENT PAGES ===== */
+        .footer-company {
+            font-weight: 600;
+        }
+
+        .footer-sep {
+            margin: 0 2mm;
+            opacity: 0.6;
+        }
+
+        .footer-contact {
+            font-style: italic;
+            opacity: 0.8;
+        }
+
+        /* ===================================================
+           CONTENT PAGES – Shared
+           =================================================== */
+        .content-page {
+            padding: 0;
+        }
+
         .section {
-            margin-bottom: 15mm;
+            margin-bottom: 12mm;
             page-break-inside: avoid;
         }
 
-        /* Content page titles: black */
+        .section-number {
+            font-size: 28pt;
+            font-weight: 700;
+            color: #E0E0E0;
+            float: left;
+            margin-right: 4mm;
+            line-height: 1;
+            margin-top: -2mm;
+        }
+
         .section-title {
-            color: #1A1A1A;
-            font-size: 20pt;
+            font-size: 18pt;
             font-weight: 600;
-            margin-top: 0;
-            margin-bottom: 4mm;
+            color: #1B3A5C;
+            text-transform: uppercase;
+            border-bottom: 2px solid #E0E0E0;
+            padding-bottom: 3mm;
+            margin-bottom: 8mm;
+            overflow: hidden;
             page-break-after: avoid;
         }
 
-        /* Horizontal underline - green */
-        .section-underline {
-            width: 60px;
-            height: 3px;
-            background: #4A9B5D;
-            margin-bottom: 10mm;
-            border: none;
-        }
-
-        .location-info {
+        /* ===================================================
+           PAGE 2 – LOCALISATION
+           =================================================== */
+        .location-block {
             margin-bottom: 8mm;
         }
 
-        .address {
+        .address-text {
             font-size: 11pt;
-            margin-bottom: 4mm;
             color: #1A1A1A;
+            margin-bottom: 3mm;
         }
 
-        p {
-            margin-bottom: 4mm;
-            color: #1A1A1A;
-        }
-
-        strong {
-            font-weight: 600;
-            color: #4A9B5D;
-        }
-
-        /* Location image: rectangular, bigger, decorative border with pattern background */
         .location-image-container {
             text-align: center;
-            margin: 10mm auto;
-            padding: 12mm;
-            background:
-                radial-gradient(circle at 20px 20px, rgba(74, 155, 93, 0.04) 2px, transparent 2px),
-                radial-gradient(circle at 60px 60px, rgba(74, 155, 93, 0.03) 2px, transparent 2px),
-                linear-gradient(135deg, #F8FBF9 0%, #F0F7F2 100%);
-            background-size: 40px 40px, 40px 40px, 100% 100%;
-            border: 2px solid #4A9B5D;
-            border-radius: 10px;
+            margin: 8mm auto;
+            padding: 6mm;
+            background: #F7F8FA;
+            border: 1px solid #E0E0E0;
+            border-radius: 8px;
             page-break-inside: avoid;
         }
 
         .location-image {
-            width: 70%;
-            max-height: 112mm;
+            width: 75%;
+            max-height: 120mm;
             object-fit: cover;
-            border-radius: 6px;
-            border: 1px solid #E0E0E0;
+            border-radius: 4px;
         }
 
-        /* Vertical line (border-left) - green */
-        .production-stats {
-            background: #F9F9F9;
-            border-left: 4px solid #4A9B5D;
-            border-radius: 0 8px 8px 0;
-            padding: 8mm 15mm;
-            margin: 8mm 0;
+        /* ===================================================
+           PAGE 3 – METRIC CARDS + PRODUCTION
+           =================================================== */
+        .cards-row {
+            text-align: center;
+            margin: 6mm 0 10mm 0;
+        }
+
+        .card {
+            display: inline-block;
+            vertical-align: top;
+            width: 23%;
+            margin: 0 0.8%;
+            text-align: center;
+            padding: 6mm 3mm;
+            border: 1px solid #E0E0E0;
+            border-radius: 8px;
+            background: #F7F8FA;
             page-break-inside: avoid;
         }
 
-        .stats-content p {
-            margin: 3mm 0;
-            font-size: 11pt;
-            line-height: 1.5;
+        .card-value {
+            font-size: 22pt;
+            font-weight: 700;
+            color: #1B3A5C;
+            line-height: 1.2;
+        }
+
+        .card-unit {
+            font-size: 10pt;
+            color: #5F6368;
+            margin-bottom: 2mm;
+        }
+
+        .card-label {
+            font-size: 9pt;
+            color: #5F6368;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
         }
 
         .chart-container {
             text-align: center;
-            margin: 10mm auto;
+            margin: 6mm auto;
             page-break-inside: avoid;
         }
 
-        .chart {
-            max-width: 170mm;
+        .chart-img {
+            max-width: 165mm;
             height: auto;
-            border-radius: 8px;
+            border-radius: 6px;
         }
 
-        /* Annual total: plain text, no background */
-        .annual-total {
+        /* Annual production highlight */
+        .annual-production-highlight {
             text-align: center;
-            font-size: 13pt;
             margin: 8mm auto;
-            color: #1A1A1A;
-        }
-
-        .annual-total strong {
-            font-weight: 700;
-            color: #1A1A1A;
-        }
-
-        /* ===== BILAN ANNUEL DASHBOARD ===== */
-        .bilan-dashboard {
-            background: #FFFFFF;
-            border: 2px solid #4A9B5D;
-            border-radius: 10px;
-            padding: 6mm;
-            color: #1A1A1A;
+            padding: 5mm 10mm;
+            background: #F7F8FA;
+            border: 1px solid #E0E0E0;
+            border-radius: 8px;
             page-break-inside: avoid;
         }
 
-        .bilan-row {
-            display: flex;
-            gap: 3mm;
-            margin-bottom: 3mm;
-        }
-
-        .bilan-cell {
-            background: #F8FBF9;
-            border: 1px solid #D6E9DB;
-            border-radius: 8px;
-            padding: 5mm;
-            text-align: center;
-        }
-
-        .bilan-prod {
-            width: 28%;
-        }
-
-        .bilan-conso-group {
-            width: 72%;
-        }
-
-        .bilan-full-row {
-            width: 100%;
-        }
-
-        .bilan-cell-header {
-            color: #FFFFFF;
-            background: #4A9B5D;
+        .aph-label {
+            display: block;
             font-size: 10pt;
-            font-weight: 600;
-            margin: -5mm -5mm 4mm -5mm;
-            padding: 2.5mm 5mm;
-            border-radius: 7px 7px 0 0;
-            text-align: center;
-        }
-
-        .bilan-cell-icon {
-            font-size: 18pt;
-            color: #4A9B5D;
+            color: #5F6368;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
             margin-bottom: 2mm;
         }
 
-        .bilan-cell-label {
-            font-size: 8pt;
-            color: #5F6368;
-            margin-bottom: 1mm;
-        }
-
-        .bilan-cell-value {
-            font-size: 10pt;
+        .aph-value {
+            display: block;
+            font-size: 22pt;
             font-weight: 700;
-            color: #1A1A1A;
+            color: #4A9B5D;
         }
 
-        .bilan-trio {
-            display: flex;
-            justify-content: space-around;
-        }
-
-        .bilan-trio-item {
-            text-align: center;
-            flex: 1;
-            padding: 0 2mm;
-        }
-
-        /* Bottom row: Total economies + Achat */
-        .bilan-bottom-row {
-            display: flex;
-            gap: 3mm;
-            margin-top: 3mm;
-        }
-
-        .bilan-bottom-cell {
+        /* ===================================================
+           PAGE 4 – BILAN ÉNERGÉTIQUE
+           =================================================== */
+        .bilan-section {
+            margin-bottom: 5mm;
+            border: 1px solid #E0E0E0;
             border-radius: 8px;
-            padding: 4mm 8mm;
-            display: flex;
-            align-items: center;
-            gap: 4mm;
+            overflow: hidden;
+            page-break-inside: avoid;
         }
 
-        .bilan-savings-total {
-            background: #4A9B5D;
+        .bilan-section-header {
+            background: #1B3A5C;
             color: #FFFFFF;
-            flex: 1;
-        }
-
-        .bilan-purchase {
-            background: #F0F7F2;
-            border: 2px solid #4A9B5D;
-            color: #1A1A1A;
-            flex: 1;
-        }
-
-        .bilan-bottom-label {
             font-size: 10pt;
+            font-weight: 600;
+            padding: 2.5mm 5mm;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .bilan-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .bilan-table tr {
+            border-bottom: 1px solid #F0F0F0;
+        }
+
+        .bilan-table tr:last-child {
+            border-bottom: none;
+        }
+
+        .bilan-icon {
+            width: 10mm;
+            text-align: center;
+            font-size: 12pt;
+            color: #5F6368;
+            padding: 3mm 2mm;
+        }
+
+        .bilan-label {
+            padding: 3mm 4mm;
+            font-size: 10pt;
+            color: #1A1A1A;
+        }
+
+        .bilan-value {
+            text-align: right;
+            padding: 3mm 5mm;
+            font-size: 10pt;
+            font-weight: 600;
+            color: #1A1A1A;
+            white-space: nowrap;
+        }
+
+        .bilan-row-total {
+            background: #F7F8FA;
+        }
+
+        .bilan-row-total .bilan-label {
             font-weight: 600;
         }
 
-        .bilan-bottom-value {
-            font-size: 12pt;
+        .bilan-row-total .bilan-value {
+            font-weight: 700;
+            color: #1B3A5C;
+        }
+
+        /* Bottom summary row */
+        .bilan-bottom {
+            margin-top: 6mm;
+            page-break-inside: avoid;
+        }
+
+        .bilan-total-savings {
+            display: inline-block;
+            width: 48%;
+            background: #4A9B5D;
+            color: #FFFFFF;
+            border-radius: 8px;
+            padding: 5mm 6mm;
+            text-align: center;
+            vertical-align: top;
+        }
+
+        .bts-label {
+            display: block;
+            font-size: 9pt;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            opacity: 0.9;
+            margin-bottom: 2mm;
+        }
+
+        .bts-value {
+            display: block;
+            font-size: 20pt;
             font-weight: 700;
         }
 
-        .bilan-savings-total .bilan-bottom-value {
-            color: #FFFFFF;
+        .bilan-total-purchase {
+            display: inline-block;
+            width: 48%;
+            margin-left: 2%;
+            background: #F7F8FA;
+            border: 2px solid #E0E0E0;
+            border-radius: 8px;
+            padding: 5mm 6mm;
+            text-align: center;
+            vertical-align: top;
         }
 
-        .bilan-purchase .bilan-bottom-value {
-            color: #4A9B5D;
+        .btp-label {
+            display: block;
+            font-size: 9pt;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            color: #5F6368;
+            margin-bottom: 2mm;
+        }
+
+        .btp-value {
+            display: block;
+            font-size: 20pt;
+            font-weight: 700;
+            color: #1A1A1A;
         }
         """
 
@@ -827,53 +967,40 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             production = [r.production_pv_kwh for r in monthly_results]
 
             # Month labels (French)
-            month_labels = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D']
+            month_labels = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun',
+                            'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']
 
-            # Create figure with design system styling
-            fig, ax = plt.subplots(figsize=(10, 4))
+            # Create figure
+            fig, ax = plt.subplots(figsize=(10, 3.8))
             fig.patch.set_facecolor('white')
             ax.set_facecolor('#FFFFFF')
 
-            # Create bars with gradient effect using design system colors
-            # Bar Gradient: Bottom #81C784 → Top #4A9B5D
-            from matplotlib.colors import LinearSegmentedColormap
-            import matplotlib.patches as mpatches
-
-            # Create gradient colormap from design system
-            cmap = LinearSegmentedColormap.from_list(
-                'green_gradient',
-                ['#81C784', '#4A9B5D']  # Bottom to Top
-            )
-
             bars = ax.bar(range(len(months)), production,
-                         color='#4A9B5D',  # Solid color for compatibility
-                         edgecolor='#2D7A4F',
-                         linewidth=1.2,
-                         width=0.75)
+                         color='#4A9B5D',
+                         edgecolor='#3A8B4D',
+                         linewidth=0.8,
+                         width=0.7,
+                         zorder=3)
 
-            # Apply gradient to each bar and add value labels
-            for i, (bar, val) in enumerate(zip(bars, production)):
-                # Apply gradient color from design system
-                bar.set_facecolor('#6BB87A')  # Mid-gradient approximation
-                bar.set_edgecolor('#2D7A4F')
-
-                # Add value labels on bars
+            # Add value labels on bars
+            for bar, val in zip(bars, production):
                 height = bar.get_height()
-                ax.text(bar.get_x() + bar.get_width()/2., height,
-                       f'{val:.1f}',
-                       ha='center', va='bottom', fontsize=9,
+                ax.text(bar.get_x() + bar.get_width() / 2., height + 0.5,
+                       f'{val:.0f}',
+                       ha='center', va='bottom', fontsize=8.5,
                        fontweight='600', color='#1A1A1A')
 
-            # Styling per design system
+            # Styling
+            labels = [month_labels[m - 1] if 1 <= m <= 12 else str(m) for m in months]
             ax.set_xticks(range(len(months)))
-            ax.set_xticklabels(month_labels, fontsize=10, fontweight='500', color='#5F6368')
-            ax.set_ylabel('kWh', fontsize=11, fontweight='600', color='#5F6368')
+            ax.set_xticklabels(labels, fontsize=9.5, fontweight='500', color='#5F6368')
+            ax.set_ylabel('kWh', fontsize=10, fontweight='600', color='#5F6368')
 
-            # Grid lines per design system: #E0E0E0
-            ax.grid(axis='y', alpha=1.0, linestyle='-', linewidth=0.5, color='#E0E0E0')
+            # Grid
+            ax.grid(axis='y', alpha=0.5, linestyle='-', linewidth=0.5, color='#E0E0E0', zorder=0)
             ax.set_axisbelow(True)
 
-            # Remove borders/spines for clean look
+            # Spines
             ax.spines['top'].set_visible(False)
             ax.spines['right'].set_visible(False)
             ax.spines['bottom'].set_color('#E0E0E0')
@@ -881,12 +1008,15 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             ax.spines['left'].set_color('#E0E0E0')
             ax.spines['left'].set_linewidth(0.5)
 
-            # Style tick parameters per design system
-            ax.tick_params(axis='both', which='both', length=0, labelcolor='#5F6368', labelsize=10)
+            ax.tick_params(axis='both', which='both', length=0,
+                          labelcolor='#5F6368', labelsize=9.5)
+
+            # Add some padding at top for value labels
+            ymax = max(production) if production else 1
+            ax.set_ylim(0, ymax * 1.15)
 
             plt.tight_layout()
 
-            # Save to buffer (transparent background, no frame)
             buffer = io.BytesIO()
             plt.savefig(buffer, format='png', dpi=150, bbox_inches='tight',
                        facecolor='white', edgecolor='none', transparent=False)
