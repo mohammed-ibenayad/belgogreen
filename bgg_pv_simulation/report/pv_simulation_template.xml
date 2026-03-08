@@ -234,7 +234,7 @@
 
                                 /* --- Two-column system layout --- */
                                 .pv-system-container {
-                                    background: #E8F5E9;
+                                    background: #DCF0DC;
                                     border-radius: 16px;
                                     margin: 4mm 0 8mm 0;
                                     overflow: hidden;
@@ -277,7 +277,7 @@
                                     left: 0;
                                     bottom: 0;
                                     width: 25mm;
-                                    background: linear-gradient(to right, #E8F5E9 0%, rgba(232, 245, 233, 0) 100%);
+                                    background: linear-gradient(to right, #DCF0DC 0%, rgba(220, 240, 220, 0) 100%);
                                 }
 
                                 .pv-card {
@@ -497,6 +497,12 @@
                                     color: #212121;
                                 }
 
+                                .pv-production-page {
+                                    background: #F1F9F1;
+                                    margin: -25mm -20mm;
+                                    padding: 25mm 20mm;
+                                }
+
                                 .pv-strong-green {
                                     font-weight: 600;
                                     color: #4A9B5D;
@@ -511,8 +517,8 @@
                                 <t t-call="bgg_pv_simulation.report_pv_simulation_page_location"/>
                             </div>
 
-                            <!-- Page 3: System + Production -->
-                            <div class="page" style="page-break-before: always;">
+                            <!-- Page 3: Production -->
+                            <div class="page pv-production-page" style="page-break-before: always;">
                                 <t t-call="bgg_pv_simulation.report_pv_simulation_page_production"/>
                             </div>
 
@@ -612,12 +618,13 @@
         </template>
 
         <!-- ============================================ -->
-        <!-- Page 3: System Characteristics + Production  -->
+        <!-- Page 3: Production (System + Chart)           -->
         <!-- ============================================ -->
         <template id="report_pv_simulation_page_production">
-            <!-- System Characteristics -->
             <div class="pv-section-number">02</div>
-            <h2 class="pv-section-title"><t t-esc="o.section_title_system or 'CARACTÉRISTIQUES DU SYSTÈME'"/></h2>
+            <h2 class="pv-section-title">
+                <t t-esc="o.section_title_production or 'PRODUCTION ESTIMÉE'"/>
+            </h2>
 
             <div class="pv-system-container">
                 <table class="pv-system-layout">
@@ -676,25 +683,17 @@
                 </table>
             </div>
 
-            <!-- Production -->
-            <div style="margin-top: 10mm;">
-                <div class="pv-section-number">03</div>
-                <h2 class="pv-section-title">
-                    <t t-esc="o.section_title_production or 'PRODUCTION ESTIMÉE'"/>
-                </h2>
+            <div t-if="o.chart_monthly_production" class="pv-chart-wrap">
+                <img t-att-src="'data:image/png;base64,%s' % o.chart_monthly_production.decode()"/>
+            </div>
 
-                <div t-if="o.chart_monthly_production" class="pv-chart-wrap">
-                    <img t-att-src="'data:image/png;base64,%s' % o.chart_monthly_production.decode()"/>
+            <!-- Hero metric -->
+            <div class="pv-hero-metric">
+                <div>
+                    <span class="pv-hero-value"><t t-esc="'{:,.0f}'.format(o.annual_production_kwh)"/></span>
+                    <span class="pv-hero-unit">kWh/an</span>
                 </div>
-
-                <!-- Hero metric -->
-                <div class="pv-hero-metric">
-                    <div>
-                        <span class="pv-hero-value"><t t-esc="'{:,.0f}'.format(o.annual_production_kwh)"/></span>
-                        <span class="pv-hero-unit">kWh/an</span>
-                    </div>
-                    <span class="pv-hero-label">Production totale annuelle</span>
-                </div>
+                <span class="pv-hero-label">Production totale annuelle</span>
             </div>
         </template>
 
@@ -716,7 +715,7 @@
             <t t-set="savings_total" t-value="savings_panels + savings_battery + savings_resale"/>
             <t t-set="purchase_total" t-value="sum(results.mapped('purchase_cost')) if results else 0.0"/>
 
-            <div class="pv-section-number">04</div>
+            <div class="pv-section-number">03</div>
             <h2 class="pv-section-title"><t t-esc="o.section_title_bilan or 'BILAN ÉNERGÉTIQUE'"/></h2>
 
             <!-- Production (always shown) -->

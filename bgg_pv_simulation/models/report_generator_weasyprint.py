@@ -311,12 +311,12 @@ class PvSimulationWeasyPrint(models.AbstractModel):
     </div>
 
     <!-- ============================================ -->
-    <!-- PAGE 3: CARACTÉRISTIQUES + PRODUCTION        -->
+    <!-- PAGE 3: PRODUCTION (System + Chart)           -->
     <!-- ============================================ -->
-    <div class="page content-page">
+    <div class="page content-page production-page">
         <div class="section">
             <div class="section-number">02</div>
-            <h2 class="section-title">{title_system}</h2>
+            <h2 class="section-title">{title_production}</h2>
 
             <div class="system-container">
                 <table class="system-layout">
@@ -333,11 +333,6 @@ class PvSimulationWeasyPrint(models.AbstractModel):
                     </tr>
                 </table>
             </div>
-        </div>
-
-        <div class="section">
-            <div class="section-number">03</div>
-            <h2 class="section-title">{title_production}</h2>
 
             {f'<div class="chart-container"><img src="{chart_data}" alt="Production mensuelle" class="chart-img"></div>' if chart_data else ''}
 
@@ -356,7 +351,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
     <!-- ============================================ -->
     <div class="page content-page">
         <div class="section">
-            <div class="section-number">04</div>
+            <div class="section-number">03</div>
             <h2 class="section-title">{title_bilan}</h2>
         </div>
 
@@ -639,6 +634,12 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             padding: 0;
         }
 
+        .production-page {
+            background: #F1F9F1;
+            margin: -25mm -20mm;
+            padding: 25mm 20mm;
+        }
+
         .section {
             margin-bottom: 10mm;
             page-break-inside: avoid;
@@ -723,7 +724,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
            =================================================== */
         /* Two-column system layout */
         .system-container {
-            background: #E8F5E9;
+            background: #DCF0DC;
             border-radius: 16px;
             margin: 4mm 0 8mm 0;
             overflow: hidden;
@@ -766,7 +767,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             left: 0;
             bottom: 0;
             width: 25mm;
-            background: linear-gradient(to right, #E8F5E9 0%, rgba(232, 245, 233, 0) 100%);
+            background: linear-gradient(to right, #DCF0DC 0%, rgba(220, 240, 220, 0) 100%);
         }
 
         .card {
