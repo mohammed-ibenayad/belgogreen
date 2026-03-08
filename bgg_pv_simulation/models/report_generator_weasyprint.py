@@ -131,31 +131,31 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         raw_cover_title = simulation.cover_title or 'VOTRE INSTALLATION'
         cover_title_line1 = raw_cover_title.replace(' PHOTOVOLTAÏQUE', '').replace('PHOTOVOLTAÏQUE', '').strip()
 
-        # Build dynamic footer for @page margins using position: running()
+        # Footer data
+        company_name = _esc(company.name or '')
         company_street = _esc(company.street or '')
         company_zip = _esc(company.zip or '')
         company_city = _esc(company.city or '')
         company_email = _esc(company.pv_report_email or company.email or '')
         company_phone = _esc(company.pv_report_phone or company.phone or '')
-        footer_line = ' | '.join(filter(None, [
-            f"{company_street} {company_zip} {company_city}".strip(),
-            company_email,
-            f"Tél: {company_phone}" if company_phone else '',
-        ]))
+        address = _esc(simulation.installation_address or '')
 
-        # Build contact line for cover
-        contact_parts = []
-        if user:
-            contact_parts.append(_esc(user.name))
-            phone = _esc(user.phone or company.phone or '')
-            if phone:
-                contact_parts.append(f"Tél: {phone}")
-            email = _esc(user.email or getattr(user, 'login', '') or '')
-            if email:
-                contact_parts.append(email)
-        elif company_phone:
-            contact_parts.append(f"Tél: {company_phone}")
-        cover_contact_line = ' | '.join(contact_parts)
+        # Footer line 1: Company Name | Address
+        address_str = f"{company_street} {company_zip} {company_city}".strip()
+        footer_line1 = ' | '.join(filter(None, [company_name, address_str]))
+
+        # Salesperson info for footer line 2 (with icons)
+        sp_name = _esc(user.name) if user else ''
+        sp_phone = _esc(user.phone or company.phone or '') if user else company_phone
+        sp_email = _esc(user.email or getattr(user, 'login', '') or '') if user else company_email
+        footer_line2_parts = []
+        if sp_name:
+            footer_line2_parts.append(sp_name)
+        if sp_phone:
+            footer_line2_parts.append(f'&#9742; {sp_phone}')
+        if sp_email:
+            footer_line2_parts.append(f'&#9993; {sp_email}')
+        footer_line2 = '&nbsp;&nbsp;&nbsp;'.join(footer_line2_parts)
 
         # Partner info
         partner_name = _esc(partner.name) if partner else ''
@@ -168,8 +168,6 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             partner_contact_parts.append(f"Email: {partner_email}")
         partner_contact_line = ' | '.join(partner_contact_parts)
 
-        address = _esc(simulation.installation_address or '')
-
         html = f"""<!DOCTYPE html>
 <html>
 <head>
@@ -177,8 +175,15 @@ class PvSimulationWeasyPrint(models.AbstractModel):
     <title>Installation Photovoltaïque</title>
 </head>
 <body>
-    <!-- Running footer element for @page (placed in page margin by CSS) -->
-    <div class="running-footer">{_esc(footer_line)}</div>
+    <!-- Running footer for content pages (placed in @page margin by CSS) -->
+    <div class="running-footer">
+        <div class="footer-row">
+            <span class="footer-info">{footer_line1}</span>
+        </div>
+        <div class="footer-row">
+            <span class="footer-info">{footer_line2}</span>
+        </div>
+    </div>
 
     <!-- Page 1: Cover Page -->
     <div class="page cover-page">
@@ -198,8 +203,8 @@ class PvSimulationWeasyPrint(models.AbstractModel):
 
         <!-- Main Title -->
         <div class="main-title">
-            <h1 class="title-green">{_esc(cover_title_line1)}</h1>
-            <h1 class="title-black">PHOTOVOLTAÏQUE</h1>
+            <h1 class="title-line1">{_esc(cover_title_line1)}</h1>
+            <h1 class="title-line2">PHOTOVOLTAÏQUE</h1>
             <p class="tagline">{_esc(company.pv_report_tagline or 'Save your planet. Save your wallet.')}</p>
         </div>
 
@@ -213,12 +218,10 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             </div>
         </div>
 
-        <!-- Cover Footer -->
+        <!-- Cover Footer (same content as running footer, no page number) -->
         <div class="cover-footer">
-            <p class="cover-footer-company">{_esc(company.name)}</p>
-            <p>{company_street} - {company_zip} {_esc(company_city)}</p>
-            {f'<p>{cover_contact_line}</p>' if cover_contact_line else ''}
-            {f'<p>TVA: {_esc(company.vat)}</p>' if company.vat else ''}
+            <p>{footer_line1}</p>
+            <p>{footer_line2}</p>
         </div>
     </div>
 
@@ -267,52 +270,55 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         """Generate CSS styling per DESIGN SYSTEM v2.0"""
 
         css = """
-        /* PHOTOVOLTAIC REPORT DESIGN SYSTEM v2.0 */
+        /* PHOTOVOLTAIC REPORT DESIGN SYSTEM v3.0
+           Primary Green #4A9B5D used for: titles, lines, accents, cover background */
 
-        /* Running element: dynamic footer placed in page margin */
+        /* Running footer element for content pages */
         .running-footer {
             position: running(pageFooter);
             font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
             font-size: 8pt;
             color: #5F6368;
-            text-align: center;
-            padding: 2mm 0;
+            text-align: left;
+            padding: 1mm 0;
+            width: 100%;
         }
 
+        .footer-row {
+            margin: 0.5mm 0;
+            line-height: 1.4;
+        }
+
+        /* ===== PAGE RULES ===== */
         @page {
             size: A4;
-            margin: 25mm 20mm 18mm 20mm;
+            margin: 15mm 20mm 20mm 20mm;
 
-            @top-center {
-                content: "VOTRE INSTALLATION PHOTOVOLTAÏQUE";
-                font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
-                font-size: 9pt;
-                color: #5F6368;
-                border-bottom: 1px solid #E0E0E0;
-                padding-bottom: 3mm;
+            /* No header */
+
+            @bottom-left {
+                content: element(pageFooter);
+                border-top: 2px solid #4A9B5D;
+                padding: 2mm 0 0 0;
+                width: 85%;
+                vertical-align: top;
             }
 
-            @top-right {
+            @bottom-right {
                 content: "Page " counter(page) " / " counter(pages);
                 font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
-                font-size: 9pt;
+                font-size: 8pt;
                 color: #5F6368;
-            }
-
-            @bottom-center {
-                content: element(pageFooter);
-                background: #F5F5F5;
-                border-top: 1px solid #E0E0E0;
-                padding: 3mm 10mm;
-                width: 100%;
+                border-top: 2px solid #4A9B5D;
+                padding-top: 3mm;
+                vertical-align: top;
             }
         }
 
         @page :first {
             margin: 0;
-            @top-center { content: none; }
-            @top-right { content: none; }
-            @bottom-center { content: none; }
+            @bottom-left { content: none; }
+            @bottom-right { content: none; }
         }
 
         * {
@@ -337,7 +343,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             width: 210mm;
             height: 297mm;
             position: relative;
-            background: linear-gradient(135deg, #FAFAFA 0%, #F5F5F5 100%);
+            background: #4A9B5D;
             overflow: hidden;
         }
 
@@ -358,12 +364,11 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             max-height: 100%;
         }
 
-        /* Decorative blobs */
+        /* Decorative blobs - white/translucent on green background */
         .blob {
             position: absolute;
-            background: #E8F5E9;
+            background: rgba(255, 255, 255, 0.08);
             border-radius: 50%;
-            opacity: 0.6;
         }
 
         .blob-1 {
@@ -394,8 +399,8 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             height: 100%;
             object-fit: cover;
             border-radius: 12px;
-            border: 3px solid #4A9B5D;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            border: 3px solid #FFFFFF;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
         }
 
         .main-title {
@@ -405,24 +410,25 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             text-align: center;
         }
 
-        .title-green {
-            color: #4A9B5D;
+        /* Both title lines use the same green - rendered as white on green cover */
+        .title-line1,
+        .title-line2 {
+            color: #FFFFFF;
             font-size: 28pt;
             font-weight: 700;
-            margin-bottom: 3mm;
             letter-spacing: 0.5mm;
         }
 
-        .title-black {
-            color: #1A1A1A;
-            font-size: 28pt;
-            font-weight: 700;
+        .title-line1 {
+            margin-bottom: 3mm;
+        }
+
+        .title-line2 {
             margin-bottom: 6mm;
-            letter-spacing: 0.5mm;
         }
 
         .tagline {
-            color: #666;
+            color: rgba(255, 255, 255, 0.85);
             font-size: 12pt;
             font-style: italic;
         }
@@ -436,7 +442,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             padding: 8mm 15mm;
             border-radius: 8px;
             border-left: 4px solid #4A9B5D;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
         }
 
         .customer-content h3 {
@@ -462,15 +468,17 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             font-size: 9pt;
         }
 
+        /* Cover footer: 2 lines, no page number */
         .cover-footer {
             position: absolute;
             bottom: 0;
             left: 0;
             right: 0;
-            padding: 6mm 15mm;
-            background: #2D7A4F;
+            padding: 5mm 20mm;
+            background: rgba(0, 0, 0, 0.15);
             text-align: center;
             color: #FFFFFF;
+            border-top: 2px solid rgba(255, 255, 255, 0.3);
         }
 
         .cover-footer p {
@@ -478,11 +486,6 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             font-size: 8pt;
             font-weight: 400;
             color: #FFFFFF;
-        }
-
-        .cover-footer-company {
-            font-weight: 600 !important;
-            font-size: 9pt !important;
         }
 
         /* ===== CONTENT PAGES ===== */
@@ -505,7 +508,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         }
 
         h2 {
-            color: #2D7A4F;
+            color: #4A9B5D;
             font-size: 20pt;
             font-weight: 600;
             margin-top: 15mm;
@@ -521,7 +524,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         }
 
         .section-title {
-            color: #2D7A4F;
+            color: #4A9B5D;
             font-size: 20pt;
             font-weight: 600;
             margin-top: 0;
@@ -529,10 +532,11 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             page-break-after: avoid;
         }
 
+        /* Horizontal underline - same green */
         .section-underline {
             width: 60px;
             height: 3px;
-            background: #F9A825;
+            background: #4A9B5D;
             margin-bottom: 10mm;
             border: none;
         }
@@ -554,7 +558,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
 
         strong {
             font-weight: 600;
-            color: #2D7A4F;
+            color: #4A9B5D;
         }
 
         .location-image-container {
@@ -571,9 +575,10 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             border-radius: 8px;
         }
 
+        /* Vertical line (border-left) - same green */
         .production-stats {
-            background: #FFFFFF;
-            border-left: 4px solid #F9A825;
+            background: #F9F9F9;
+            border-left: 4px solid #4A9B5D;
             border-radius: 0 8px 8px 0;
             padding: 8mm 15mm;
             margin: 8mm 0;
@@ -603,7 +608,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             font-size: 14pt;
             margin: 10mm auto;
             padding: 12mm 25mm;
-            background: #2D7A4F;
+            background: #4A9B5D;
             color: #FFFFFF;
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
