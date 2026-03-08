@@ -168,6 +168,34 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             partner_contact_parts.append(f"Email: {partner_email}")
         partner_contact_line = ' | '.join(partner_contact_parts)
 
+        # ---- Bilan Annuel: aggregate monthly results ----
+        results = simulation.monthly_result_ids
+        # Production
+        prod_total = simulation.annual_production_kwh or 0.0
+        # Consumption (from monthly results or consumption profile)
+        conso_day = sum(results.mapped('monthly_day_consumption_kwh')) if results else 0.0
+        conso_night = sum(results.mapped('monthly_night_consumption_kwh')) if results else 0.0
+        conso_total = sum(results.mapped('monthly_consumption_kwh')) if results else 0.0
+        if not conso_total and hasattr(simulation, 'consumption_profile_id') and simulation.consumption_profile_id:
+            conso_total = simulation.consumption_profile_id.annual_consumption_kwh or 0.0
+        # Auto-consumption
+        autocons_total = sum(results.mapped('monthly_autoconsumption_kwh')) if results else 0.0
+        battery_charge = sum(results.mapped('monthly_battery_charge_kwh')) if results else 0.0
+        autocons_day = autocons_total - battery_charge
+        # Economies
+        savings_panels = sum(results.mapped('panel_savings')) if results else 0.0
+        savings_battery = sum(results.mapped('battery_savings')) if results else 0.0
+        savings_resale = sum(results.mapped('sale_revenue')) if results else 0.0
+        savings_total = savings_panels + savings_battery + savings_resale
+        # Achat
+        purchase_total = sum(results.mapped('purchase_cost')) if results else 0.0
+
+        def _fmt(val):
+            """Format number with 2 decimals and thousand separator, or dash if zero."""
+            if not val:
+                return '—'
+            return f'{val:,.2f}'
+
         html = f"""<!DOCTYPE html>
 <html>
 <head>
@@ -250,6 +278,104 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             {f'<div class="chart-container"><img src="{chart_data}" alt="Production Chart" class="chart"></div>' if chart_data else ''}
 
             <p class="annual-total">Production totale annuelle : <strong>{simulation.annual_production_kwh:,.2f} kWh</strong></p>
+        </div>
+    </div>
+
+    <!-- Page 4: Bilan Annuel -->
+    <div class="page content-page">
+        <h2 class="section-title">BILAN ANNUEL</h2>
+        <div class="section-underline"></div>
+
+        <div class="bilan-dashboard">
+            <!-- Row 1: Production + Consommation -->
+            <div class="bilan-row">
+                <div class="bilan-cell bilan-prod">
+                    <div class="bilan-cell-header">Production</div>
+                    <div class="bilan-cell-icon">&#9788;</div>
+                    <div class="bilan-cell-label">Totale</div>
+                    <div class="bilan-cell-value">{_fmt(prod_total)} kWh</div>
+                </div>
+                <div class="bilan-cell bilan-conso-group">
+                    <div class="bilan-cell-header">Consommation</div>
+                    <div class="bilan-trio">
+                        <div class="bilan-trio-item">
+                            <div class="bilan-cell-icon">&#9788;</div>
+                            <div class="bilan-cell-label">Jour</div>
+                            <div class="bilan-cell-value">{_fmt(conso_day)} kWh</div>
+                        </div>
+                        <div class="bilan-trio-item">
+                            <div class="bilan-cell-icon">&#9790;</div>
+                            <div class="bilan-cell-label">Nuit</div>
+                            <div class="bilan-cell-value">{_fmt(conso_night)} kWh</div>
+                        </div>
+                        <div class="bilan-trio-item">
+                            <div class="bilan-cell-icon">&#9751;</div>
+                            <div class="bilan-cell-label">Totale</div>
+                            <div class="bilan-cell-value">{_fmt(conso_total)} kWh</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 2: Auto Consommation -->
+            <div class="bilan-row">
+                <div class="bilan-cell bilan-full-row">
+                    <div class="bilan-cell-header">Auto Consommation</div>
+                    <div class="bilan-trio">
+                        <div class="bilan-trio-item">
+                            <div class="bilan-cell-icon">&#9889;</div>
+                            <div class="bilan-cell-label">Consommé la journée</div>
+                            <div class="bilan-cell-value">{_fmt(autocons_day)} kWh</div>
+                        </div>
+                        <div class="bilan-trio-item">
+                            <div class="bilan-cell-icon">&#9107;</div>
+                            <div class="bilan-cell-label">Stocké dans la batterie</div>
+                            <div class="bilan-cell-value">{_fmt(battery_charge)} kWh</div>
+                        </div>
+                        <div class="bilan-trio-item">
+                            <div class="bilan-cell-icon">&#9751;</div>
+                            <div class="bilan-cell-label">Total</div>
+                            <div class="bilan-cell-value">{_fmt(autocons_total)} kWh</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 3: Economies -->
+            <div class="bilan-row">
+                <div class="bilan-cell bilan-full-row">
+                    <div class="bilan-cell-header">Economies</div>
+                    <div class="bilan-trio">
+                        <div class="bilan-trio-item">
+                            <div class="bilan-cell-icon">&#9788;</div>
+                            <div class="bilan-cell-label">Liées aux panneaux</div>
+                            <div class="bilan-cell-value">{_fmt(savings_panels)} &euro;</div>
+                        </div>
+                        <div class="bilan-trio-item">
+                            <div class="bilan-cell-icon">&#9107;</div>
+                            <div class="bilan-cell-label">Liées à la batterie</div>
+                            <div class="bilan-cell-value">{_fmt(savings_battery)} &euro;</div>
+                        </div>
+                        <div class="bilan-trio-item">
+                            <div class="bilan-cell-icon">&#8364;</div>
+                            <div class="bilan-cell-label">Liées à la revente</div>
+                            <div class="bilan-cell-value">{_fmt(savings_resale)} &euro;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 4: Total economies + Achat -->
+            <div class="bilan-bottom-row">
+                <div class="bilan-bottom-cell bilan-savings-total">
+                    <span class="bilan-bottom-label">Total économies</span>
+                    <span class="bilan-bottom-value">{_fmt(savings_total)}&euro;</span>
+                </div>
+                <div class="bilan-bottom-cell bilan-purchase">
+                    <span class="bilan-bottom-label">Achat</span>
+                    <span class="bilan-bottom-value">{_fmt(purchase_total)}&euro;</span>
+                </div>
+            </div>
         </div>
     </div>
 </body>
@@ -549,6 +675,115 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         .annual-total strong {
             font-weight: 700;
             color: #1A1A1A;
+        }
+
+        /* ===== BILAN ANNUEL DASHBOARD ===== */
+        .bilan-dashboard {
+            background: #2D2D2D;
+            border-radius: 10px;
+            padding: 6mm;
+            color: #FFFFFF;
+            page-break-inside: avoid;
+        }
+
+        .bilan-row {
+            display: flex;
+            gap: 3mm;
+            margin-bottom: 3mm;
+        }
+
+        .bilan-cell {
+            background: #3A3A3A;
+            border-radius: 8px;
+            padding: 5mm;
+            text-align: center;
+        }
+
+        .bilan-prod {
+            width: 28%;
+        }
+
+        .bilan-conso-group {
+            width: 72%;
+        }
+
+        .bilan-full-row {
+            width: 100%;
+        }
+
+        .bilan-cell-header {
+            color: #C8E84A;
+            font-size: 11pt;
+            font-weight: 600;
+            margin-bottom: 4mm;
+            text-align: center;
+        }
+
+        .bilan-cell-icon {
+            font-size: 18pt;
+            color: #FFFFFF;
+            opacity: 0.7;
+            margin-bottom: 2mm;
+        }
+
+        .bilan-cell-label {
+            font-size: 8pt;
+            color: #BBBBBB;
+            margin-bottom: 1mm;
+        }
+
+        .bilan-cell-value {
+            font-size: 10pt;
+            font-weight: 700;
+            color: #C8E84A;
+        }
+
+        .bilan-trio {
+            display: flex;
+            justify-content: space-around;
+        }
+
+        .bilan-trio-item {
+            text-align: center;
+            flex: 1;
+            padding: 0 2mm;
+        }
+
+        /* Bottom row: Total economies + Achat */
+        .bilan-bottom-row {
+            display: flex;
+            gap: 3mm;
+            margin-top: 3mm;
+        }
+
+        .bilan-bottom-cell {
+            border-radius: 8px;
+            padding: 4mm 8mm;
+            display: flex;
+            align-items: center;
+            gap: 4mm;
+        }
+
+        .bilan-savings-total {
+            background: #C8E84A;
+            color: #1A1A1A;
+            flex: 1;
+        }
+
+        .bilan-purchase {
+            background: #C8E84A;
+            color: #1A1A1A;
+            flex: 1;
+        }
+
+        .bilan-bottom-label {
+            font-size: 10pt;
+            font-weight: 600;
+        }
+
+        .bilan-bottom-value {
+            font-size: 12pt;
+            font-weight: 700;
         }
         """
 
