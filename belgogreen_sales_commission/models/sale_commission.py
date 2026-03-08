@@ -289,16 +289,37 @@ class SaleCommission(models.Model):
         for commission in self:
             commission.commission_amount = (commission.base_amount * commission.commission_percentage) / 100.0
 
-    @api.depends('invoice_id.payment_state', 'status')
+    @api.depends('invoice_id.payment_state', 'sale_order_id.invoice_ids.payment_state', 'status')
     def _compute_can_be_paid(self):
-        """Check if commission can be paid"""
+        """Check if commission can be paid.
+
+        For SO-level commissions (no invoice_id), checks that all eligible
+        invoices on the sale order are still fully paid.
+        """
         for commission in self:
             if commission.plan_id.require_invoice_paid:
-                commission.can_be_paid = (
-                    commission.invoice_id and
-                    commission.invoice_id.payment_state in ['paid', 'in_payment'] and
-                    commission.status in ['unpaid', 'claimed', 'processing']
-                )
+                if commission.invoice_id:
+                    # Legacy per-invoice commission
+                    commission.can_be_paid = (
+                        commission.invoice_id.payment_state == 'paid' and
+                        commission.status in ['unpaid', 'claimed', 'processing']
+                    )
+                elif commission.sale_order_id:
+                    # SO-level commission: check all eligible invoices are paid
+                    eligible_invoices = commission.sale_order_id.invoice_ids.filtered(
+                        lambda inv: inv.move_type == 'out_invoice' and inv.state != 'cancel'
+                    )
+                    all_paid = eligible_invoices and all(
+                        inv.payment_state == 'paid' for inv in eligible_invoices
+                    )
+                    commission.can_be_paid = (
+                        all_paid and
+                        commission.status in ['unpaid', 'claimed', 'processing']
+                    )
+                else:
+                    commission.can_be_paid = (
+                        commission.status in ['unpaid', 'claimed', 'processing']
+                    )
             else:
                 commission.can_be_paid = (
                     commission.status in ['unpaid', 'claimed', 'processing']
@@ -409,10 +430,19 @@ class SaleCommission(models.Model):
         """
         Mark commission(s) as paid directly, bypassing the standard payment workflow.
         Restricted to Commission Managers only.
+        Only allowed for manual/adjustment commissions (not plan-generated ones).
         Can be applied to commissions in any active status (unpaid, claimed, approved, processing).
         """
         if not self.env.user.has_group('belgogreen_sales_commission.group_commission_manager'):
             raise UserError(_('Only Commission Managers can manually mark commissions as paid.'))
+
+        non_manual = self.filtered(lambda c: not c.is_adjustment)
+        if non_manual:
+            raise UserError(_(
+                'Only manual commissions can be marked as paid directly.\n'
+                'The following commissions were generated from a commission plan '
+                'and must go through the standard payment workflow:\n%s'
+            ) % '\n'.join(['- %s' % c.name for c in non_manual]))
 
         invalid = self.filtered(lambda c: c.status in ['paid', 'cancelled'])
         if invalid:

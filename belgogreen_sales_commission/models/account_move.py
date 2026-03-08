@@ -55,8 +55,8 @@ class AccountMove(models.Model):
 
             # Check if payment_state changed to paid
             payment_state_changed = (
-                previous_payment_state not in ['paid', 'in_payment'] and
-                current_payment_state in ['paid', 'in_payment']
+                previous_payment_state != 'paid' and
+                current_payment_state == 'paid'
             )
 
             _logger.info(

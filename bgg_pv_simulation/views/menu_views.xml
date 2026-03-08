@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Main Menu -->
+    <menuitem id="menu_pv_simulation_root"
+              name="PV Simulation"
+              sequence="50"/>
+
+    <!-- Simulations Submenu -->
+    <menuitem id="menu_pv_simulation_simulations"
+              name="Simulations"
+              parent="menu_pv_simulation_root"
+              sequence="10"/>
+
+    <!-- PV Simulation Action -->
+    <record id="action_pv_simulation" model="ir.actions.act_window">
+        <field name="name">PV Simulations</field>
+        <field name="res_model">pv.simulation</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first PV simulation
+            </p>
+            <p>
+                PV simulations calculate energy production, consumption, and financial impacts for photovoltaic installations.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_pv_simulation_list"
+              name="All Simulations"
+              parent="menu_pv_simulation_simulations"
+              action="action_pv_simulation"
+              sequence="10"/>
+
+    <!-- Configuration Submenu -->
+    <menuitem id="menu_pv_simulation_config"
+              name="Configuration"
+              parent="menu_pv_simulation_root"
+              sequence="90"
+              groups="bgg_pv_simulation.group_pv_admin"/>
+
+    <!-- Consumption Profiles -->
+    <record id="action_pv_consumption_profile" model="ir.actions.act_window">
+        <field name="name">Consumption Profiles</field>
+        <field name="res_model">pv.consumption.profile</field>
+        <field name="view_mode">form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a consumption profile
+            </p>
+            <p>
+                Consumption profiles define electricity usage patterns (day/night).
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_pv_consumption_profile"
+              name="Consumption Profiles"
+              parent="menu_pv_simulation_config"
+              action="action_pv_consumption_profile"
+              sequence="10"/>
+
+    <!-- Production Profiles -->
+    <record id="action_pv_production_profile" model="ir.actions.act_window">
+        <field name="name">Production Profiles</field>
+        <field name="res_model">pv.production.profile</field>
+        <field name="view_mode">form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a production profile
+            </p>
+            <p>
+                Production profiles define monthly percentage distribution of annual PV production.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_pv_production_profile"
+              name="Production Profiles"
+              parent="menu_pv_simulation_config"
+              action="action_pv_production_profile"
+              sequence="20"/>
+
+    <!-- Battery Configurations -->
+    <record id="action_pv_battery_config" model="ir.actions.act_window">
+        <field name="name">Battery Configurations</field>
+        <field name="res_model">pv.battery.config</field>
+        <field name="view_mode">form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a battery configuration
+            </p>
+            <p>
+                Battery configurations define technical specifications for energy storage systems.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_pv_battery_config"
+              name="Battery Configurations"
+              parent="menu_pv_simulation_config"
+              action="action_pv_battery_config"
+              sequence="30"/>
+
+    <!-- Tariff Profiles -->
+    <record id="action_pv_tariff_profile" model="ir.actions.act_window">
+        <field name="name">Tariff Profiles</field>
+        <field name="res_model">pv.tariff.profile</field>
+        <field name="view_mode">form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a tariff profile
+            </p>
+            <p>
+                Tariff profiles define electricity purchase and feed-in prices.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_pv_tariff_profile"
+              name="Tariff Profiles"
+              parent="menu_pv_simulation_config"
+              action="action_pv_tariff_profile"
+              sequence="40"/>
+
+</odoo>

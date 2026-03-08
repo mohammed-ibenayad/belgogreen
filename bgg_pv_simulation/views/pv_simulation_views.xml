@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- List View -->
+    <record id="view_pv_simulation_list" model="ir.ui.view">
+        <field name="name">pv.simulation.list</field>
+        <field name="model">pv.simulation</field>
+        <field name="arch" type="xml">
+            <list string="PV Simulations">
+                <field name="name" string="Reference"/>
+                <field name="sale_order_id"/>
+                <field name="installation_address"/>
+                <field name="total_pv_power_wc" string="PV Power (Wc)"/>
+                <field name="annual_production_kwh" string="Annual Production (kWh)"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="report_date"/>
+                <field name="create_date" string="Created"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_pv_simulation_search" model="ir.ui.view">
+        <field name="name">pv.simulation.search</field>
+        <field name="model">pv.simulation</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="sale_order_id"/>
+                <field name="installation_address"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_pv_simulation_form" model="ir.ui.view">
+        <field name="name">pv.simulation.form</field>
+        <field name="model">pv.simulation</field>
+        <field name="arch" type="xml">
+            <form string="PV Simulation">
+                <header>
+                    <button name="action_regenerate_simulation"
+                            string="Regenerate Simulation"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="not id"
+                            confirm="This will fetch fresh data from APIs and recalculate the simulation. Existing values will be replaced. Continue?"/>
+                    <button name="action_generate_report"
+                            string="PDF Report"
+                            type="object"
+                            class="btn-primary"
+                            invisible="not id"
+                            help="Generate professional PDF report"/>
+                </header>
+                <sheet>
+                    <field name="currency_id" invisible="1"/>
+                    <field name="company_id" invisible="1"/>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Quotation">
+                            <field name="sale_order_id" readonly="1"/>
+                            <field name="installation_address"/>
+                            <field name="report_date"/>
+                        </group>
+                        <group string="Location">
+                            <field name="roof_surface_m2"/>
+                            <field name="latitude"/>
+                            <field name="longitude"/>
+                            <field name="location_image" widget="image" class="oe_avatar"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="PV System" name="pv_system">
+                            <group>
+                                <group string="Panel Configuration (Auto-detected from Sale Order)">
+                                    <field name="number_of_panels" readonly="1"/>
+                                    <label for="panel_unit_power_wc" string="Panel Unit Power"/>
+                                    <div class="o_row">
+                                        <field name="panel_unit_power_wc" readonly="1"/>
+                                        <span>Wc</span>
+                                    </div>
+                                    <label for="total_pv_power_wc" string="Total PV Power"/>
+                                    <div class="o_row">
+                                        <field name="total_pv_power_wc" readonly="1"/>
+                                        <span>Wc</span>
+                                    </div>
+                                    <label for="orientation_deg" string="Orientation"/>
+                                    <div class="o_row">
+                                        <field name="orientation_deg"/>
+                                        <span>° (0=South)</span>
+                                    </div>
+                                    <label for="tilt_deg" string="Inclination"/>
+                                    <div class="o_row">
+                                        <field name="tilt_deg"/>
+                                        <span>°</span>
+                                    </div>
+                                </group>
+                                <group string="Production">
+                                    <label for="annual_production_kwh" string="Annual Production (GSA)"/>
+                                    <div class="o_row">
+                                        <field name="annual_production_kwh"/>
+                                        <span>kWh</span>
+                                    </div>
+                                    <field name="max_panels_count" readonly="1" string="Max Panels (GSA)"/>
+                                    <label for="pvgis_annual_production_kwh" string="Annual Production (PVGIS)"/>
+                                    <div class="o_row">
+                                        <field name="pvgis_annual_production_kwh" readonly="1"/>
+                                        <span>kWh</span>
+                                    </div>
+                                    <field name="production_profile_id"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <page string="Monthly Results (Backend Data)" name="monthly_results">
+                            <div class="alert alert-info" role="status">
+                                Monthly calculation results used for chart generation on Page 2.
+                                This data is computed but not directly displayed in the PDF.
+                            </div>
+                            <field name="monthly_result_ids" nolabel="1"/>
+                        </page>
+
+                        <page string="Charts Preview" name="charts">
+                            <group>
+                                <field name="chart_monthly_production" widget="image" nolabel="1"/>
+                            </group>
+                        </page>
+
+                        <page string="Report Customization" name="customization">
+                            <group string="Cover Page">
+                                <group>
+                                    <field name="cover_photo" widget="image" class="oe_avatar"/>
+                                    <field name="cover_title"/>
+                                    <field name="cover_subtitle"/>
+                                </group>
+                            </group>
+                            <group string="Section Titles (Leave empty to use defaults)">
+                                <group>
+                                    <field name="section_title_location"/>
+                                    <field name="section_title_system"/>
+                                    <field name="section_title_production"/>
+                                    <field name="section_title_bilan"/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>
