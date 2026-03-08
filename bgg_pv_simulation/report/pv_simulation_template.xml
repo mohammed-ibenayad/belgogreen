@@ -232,47 +232,84 @@
                                     letter-spacing: 0.2mm;
                                 }
 
-                                /* --- Metric cards --- */
-                                .pv-cards-row {
-                                    text-align: center;
-                                    margin: 6mm 0 10mm 0;
+                                /* --- Two-column system layout --- */
+                                .pv-system-layout {
+                                    width: 100%;
+                                    border-collapse: collapse;
+                                    margin: 4mm 0 8mm 0;
+                                }
+
+                                .pv-system-cards-col {
+                                    width: 48%;
+                                    vertical-align: top;
+                                    padding: 0 4mm 0 0;
+                                }
+
+                                .pv-system-image-col {
+                                    width: 52%;
+                                    vertical-align: top;
+                                    padding: 0;
+                                }
+
+                                .pv-system-image {
+                                    width: 100%;
+                                    height: auto;
+                                    border-radius: 12px;
+                                    object-fit: cover;
+                                    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
                                 }
 
                                 .pv-card {
-                                    display: inline-block;
-                                    vertical-align: top;
-                                    width: 23%;
-                                    margin: 0 0.8%;
-                                    text-align: center;
-                                    padding: 5mm 3mm;
+                                    display: block;
+                                    width: 100%;
+                                    margin-bottom: 3mm;
+                                    padding: 3.5mm 4mm;
                                     background: rgba(255, 255, 255, 0.85);
                                     border: 1px solid #E0E0E0;
-                                    border-radius: 12px;
+                                    border-radius: 10px;
                                     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+                                    page-break-inside: avoid;
+                                }
+
+                                .pv-card::after {
+                                    content: '';
+                                    display: table;
+                                    clear: both;
                                 }
 
                                 .pv-card-icon {
-                                    margin-bottom: 2mm;
+                                    float: left;
+                                    width: 10mm;
+                                    margin-right: 3mm;
+                                    margin-top: 1mm;
+                                }
+
+                                .pv-card-text {
+                                    overflow: hidden;
                                 }
 
                                 .pv-card-value {
-                                    font-size: 20pt;
+                                    font-size: 16pt;
                                     font-weight: 700;
                                     color: #212121;
                                     line-height: 1.2;
+                                    display: inline;
                                 }
 
                                 .pv-card-unit {
                                     font-size: 9pt;
                                     color: #616161;
-                                    margin-bottom: 1mm;
+                                    display: inline;
+                                    margin-left: 1mm;
                                 }
 
                                 .pv-card-label {
-                                    font-size: 8pt;
+                                    display: block;
+                                    font-size: 7.5pt;
                                     color: #616161;
                                     text-transform: uppercase;
                                     letter-spacing: 0.3px;
+                                    margin-top: 1mm;
                                 }
 
                                 /* --- Chart / Production --- */
@@ -435,47 +472,6 @@
                                     color: #212121;
                                 }
 
-                                /* --- Environmental Impact --- */
-                                .pv-eco-section {
-                                    margin-top: 8mm;
-                                    padding: 5mm 6mm;
-                                    background: #E8F5E9;
-                                    border: 1px solid #C8E6C9;
-                                    border-radius: 10px;
-                                }
-
-                                .pv-eco-title {
-                                    font-size: 12pt;
-                                    font-weight: 600;
-                                    color: #388E3C;
-                                    text-transform: uppercase;
-                                    letter-spacing: 0.3mm;
-                                    margin-bottom: 2mm;
-                                }
-
-                                .pv-eco-subtitle {
-                                    font-size: 9pt;
-                                    color: #616161;
-                                    margin-bottom: 4mm;
-                                }
-
-                                .pv-eco-table {
-                                    width: 100%;
-                                    border-collapse: collapse;
-                                }
-
-                                .pv-eco-card {
-                                    width: 33.33%;
-                                    text-align: center;
-                                    padding: 3mm 2mm;
-                                    vertical-align: top;
-                                }
-
-                                .pv-eco-icon { font-size: 22pt; margin-bottom: 1mm; }
-                                .pv-eco-value { font-size: 18pt; font-weight: 700; color: #388E3C; line-height: 1.2; }
-                                .pv-eco-unit { font-size: 9pt; font-weight: 600; color: #4A9B5D; }
-                                .pv-eco-label { font-size: 8pt; color: #616161; }
-
                                 .pv-strong-green {
                                     font-weight: 600;
                                     color: #4A9B5D;
@@ -495,7 +491,7 @@
                                 <t t-call="bgg_pv_simulation.report_pv_simulation_page_production"/>
                             </div>
 
-                            <!-- Page 4: Bilan Énergétique + Impact -->
+                            <!-- Page 4: Bilan Énergétique -->
                             <div class="page" style="page-break-before: always;">
                                 <t t-call="bgg_pv_simulation.report_pv_simulation_page_bilan"/>
                             </div>
@@ -598,40 +594,57 @@
             <div class="pv-section-number">02</div>
             <h2 class="pv-section-title"><t t-esc="o.section_title_system or 'CARACTÉRISTIQUES DU SYSTÈME'"/></h2>
 
-            <div class="pv-cards-row">
-                <div class="pv-card">
-                    <div class="pv-card-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-                    </div>
-                    <div class="pv-card-value"><t t-esc="'{:,.0f}'.format(o.total_pv_power_wc)"/></div>
-                    <div class="pv-card-unit">Wc</div>
-                    <div class="pv-card-label">Puissance installée</div>
-                </div>
-                <div t-if="o.number_of_panels" class="pv-card">
-                    <div class="pv-card-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="12" y1="3" x2="12" y2="17"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-                    </div>
-                    <div class="pv-card-value"><t t-esc="o.number_of_panels"/></div>
-                    <div class="pv-card-unit">panneaux</div>
-                    <div class="pv-card-label">Nombre de panneaux</div>
-                </div>
-                <div t-if="o.orientation_deg" class="pv-card">
-                    <div class="pv-card-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" fill="#4A9B5D" opacity="0.3"/></svg>
-                    </div>
-                    <div class="pv-card-value"><t t-esc="'{:.0f}'.format(o.orientation_deg)"/>°</div>
-                    <div class="pv-card-unit"> </div>
-                    <div class="pv-card-label">Orientation</div>
-                </div>
-                <div t-if="o.tilt_deg" class="pv-card">
-                    <div class="pv-card-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 20L2 20"/><path d="M4 20L18 6"/><path d="M18 6L18 14"/><path d="M14 10L18 6" stroke-dasharray="2 2"/></svg>
-                    </div>
-                    <div class="pv-card-value"><t t-esc="'{:.0f}'.format(o.tilt_deg)"/>°</div>
-                    <div class="pv-card-unit"> </div>
-                    <div class="pv-card-label">Inclinaison</div>
-                </div>
-            </div>
+            <table class="pv-system-layout">
+                <tr>
+                    <td class="pv-system-cards-col">
+                        <div class="pv-card">
+                            <div class="pv-card-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                            </div>
+                            <div class="pv-card-text">
+                                <div class="pv-card-value"><t t-esc="'{:,.0f}'.format(o.total_pv_power_wc)"/></div>
+                                <div class="pv-card-unit">Wc</div>
+                                <div class="pv-card-label">Puissance installée</div>
+                            </div>
+                        </div>
+                        <div t-if="o.number_of_panels" class="pv-card">
+                            <div class="pv-card-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="12" y1="3" x2="12" y2="17"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                            </div>
+                            <div class="pv-card-text">
+                                <div class="pv-card-value"><t t-esc="o.number_of_panels"/></div>
+                                <div class="pv-card-unit">panneaux</div>
+                                <div class="pv-card-label">Nombre de panneaux</div>
+                            </div>
+                        </div>
+                        <div t-if="o.orientation_deg" class="pv-card">
+                            <div class="pv-card-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" fill="#4A9B5D" opacity="0.3"/></svg>
+                            </div>
+                            <div class="pv-card-text">
+                                <div class="pv-card-value"><t t-esc="'{:.0f}'.format(o.orientation_deg)"/>°</div>
+                                <div class="pv-card-unit"> </div>
+                                <div class="pv-card-label">Orientation</div>
+                            </div>
+                        </div>
+                        <div t-if="o.tilt_deg" class="pv-card">
+                            <div class="pv-card-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 20L2 20"/><path d="M4 20L18 6"/><path d="M18 6L18 14"/><path d="M14 10L18 6" stroke-dasharray="2 2"/></svg>
+                            </div>
+                            <div class="pv-card-text">
+                                <div class="pv-card-value"><t t-esc="'{:.0f}'.format(o.tilt_deg)"/>°</div>
+                                <div class="pv-card-unit"> </div>
+                                <div class="pv-card-label">Inclinaison</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="pv-system-image-col">
+                        <img t-if="o.system_image"
+                             t-att-src="'data:image/png;base64,%s' % o.system_image.decode()"
+                             class="pv-system-image"/>
+                    </td>
+                </tr>
+            </table>
 
             <!-- Production -->
             <div style="margin-top: 10mm;">
@@ -656,7 +669,7 @@
         </template>
 
         <!-- ============================================ -->
-        <!-- Page 4: Bilan Énergétique + Impact           -->
+        <!-- Page 4: Bilan Énergétique                    -->
         <!-- ============================================ -->
         <template id="report_pv_simulation_page_bilan">
             <t t-set="results" t-value="o.monthly_result_ids"/>
@@ -672,15 +685,11 @@
             <t t-set="savings_resale" t-value="sum(results.mapped('sale_revenue')) if results else 0.0"/>
             <t t-set="savings_total" t-value="savings_panels + savings_battery + savings_resale"/>
             <t t-set="purchase_total" t-value="sum(results.mapped('purchase_cost')) if results else 0.0"/>
-            <!-- Environmental calculations -->
-            <t t-set="co2_saved_tons" t-value="(prod_total * 0.233) / 1000.0"/>
-            <t t-set="trees_equiv" t-value="int((prod_total * 0.233) / 22.0) if prod_total else 0"/>
-            <t t-set="car_km_equiv" t-value="int((prod_total * 0.233) / 0.120) if prod_total else 0"/>
 
             <div class="pv-section-number">04</div>
             <h2 class="pv-section-title"><t t-esc="o.section_title_bilan or 'BILAN ÉNERGÉTIQUE'"/></h2>
 
-            <!-- Production -->
+            <!-- Production (always shown) -->
             <div class="pv-bilan-section">
                 <div class="pv-bilan-header">Production</div>
                 <table class="pv-bilan-table">
@@ -692,113 +701,91 @@
                 </table>
             </div>
 
-            <!-- Consommation -->
-            <div class="pv-bilan-section">
-                <div class="pv-bilan-header">Consommation</div>
-                <table class="pv-bilan-table">
-                    <tr>
-                        <td class="pv-bilan-icon">&#9788;</td>
-                        <td>Consommation jour</td>
-                        <td class="pv-bilan-val"><t t-esc="'{:,.2f}'.format(conso_day)"/> kWh</td>
-                    </tr>
-                    <tr>
-                        <td class="pv-bilan-icon">&#9790;</td>
-                        <td>Consommation nuit</td>
-                        <td class="pv-bilan-val"><t t-esc="'{:,.2f}'.format(conso_night)"/> kWh</td>
-                    </tr>
-                    <tr class="pv-bilan-total">
-                        <td class="pv-bilan-icon">&#9751;</td>
-                        <td>Consommation totale</td>
-                        <td class="pv-bilan-val"><t t-esc="'{:,.2f}'.format(conso_total)"/> kWh</td>
-                    </tr>
-                </table>
-            </div>
-
-            <!-- Autoconsommation (hide battery row if zero) -->
-            <div class="pv-bilan-section">
-                <div class="pv-bilan-header">Autoconsommation</div>
-                <table class="pv-bilan-table">
-                    <tr>
-                        <td class="pv-bilan-icon">&#9889;</td>
-                        <td>Consommé directement</td>
-                        <td class="pv-bilan-val"><t t-esc="'{:,.2f}'.format(autocons_day)"/> kWh</td>
-                    </tr>
-                    <tr t-if="battery_charge">
-                        <td class="pv-bilan-icon">&#9107;</td>
-                        <td>Stocké dans la batterie</td>
-                        <td class="pv-bilan-val"><t t-esc="'{:,.2f}'.format(battery_charge)"/> kWh</td>
-                    </tr>
-                    <tr class="pv-bilan-total">
-                        <td class="pv-bilan-icon">&#9751;</td>
-                        <td>Total autoconsommation</td>
-                        <td class="pv-bilan-val"><t t-esc="'{:,.2f}'.format(autocons_total)"/> kWh</td>
-                    </tr>
-                </table>
-            </div>
-
-            <!-- Économies (hide zero rows) -->
-            <div class="pv-bilan-section">
-                <div class="pv-bilan-header">Économies</div>
-                <table class="pv-bilan-table">
-                    <tr t-if="savings_panels">
-                        <td class="pv-bilan-icon">&#9788;</td>
-                        <td>Économies liées aux panneaux</td>
-                        <td class="pv-bilan-val"><t t-esc="'{:,.2f}'.format(savings_panels)"/> €</td>
-                    </tr>
-                    <tr t-if="savings_battery">
-                        <td class="pv-bilan-icon">&#9107;</td>
-                        <td>Économies liées à la batterie</td>
-                        <td class="pv-bilan-val"><t t-esc="'{:,.2f}'.format(savings_battery)"/> €</td>
-                    </tr>
-                    <tr t-if="savings_resale">
-                        <td class="pv-bilan-icon">&#8364;</td>
-                        <td>Revenus de revente</td>
-                        <td class="pv-bilan-val"><t t-esc="'{:,.2f}'.format(savings_resale)"/> €</td>
-                    </tr>
-                </table>
-            </div>
-
-            <!-- Bottom summary -->
-            <div class="pv-bilan-bottom">
-                <div class="pv-savings-block">
-                    <span class="pv-savings-label">Total économies annuelles</span>
-                    <span class="pv-savings-value"><t t-esc="'{:,.2f}'.format(savings_total)"/> €</span>
+            <!-- Consommation (only if data exists) -->
+            <t t-if="conso_total">
+                <div class="pv-bilan-section">
+                    <div class="pv-bilan-header">Consommation</div>
+                    <table class="pv-bilan-table">
+                        <tr>
+                            <td class="pv-bilan-icon">&#9788;</td>
+                            <td>Consommation jour</td>
+                            <td class="pv-bilan-val"><t t-esc="'{:,.2f}'.format(conso_day)"/> kWh</td>
+                        </tr>
+                        <tr>
+                            <td class="pv-bilan-icon">&#9790;</td>
+                            <td>Consommation nuit</td>
+                            <td class="pv-bilan-val"><t t-esc="'{:,.2f}'.format(conso_night)"/> kWh</td>
+                        </tr>
+                        <tr class="pv-bilan-total">
+                            <td class="pv-bilan-icon">&#9751;</td>
+                            <td>Consommation totale</td>
+                            <td class="pv-bilan-val"><t t-esc="'{:,.2f}'.format(conso_total)"/> kWh</td>
+                        </tr>
+                    </table>
                 </div>
-                <div class="pv-purchase-block">
-                    <span class="pv-purchase-label">Coût d'achat réseau</span>
-                    <span class="pv-purchase-value"><t t-esc="'{:,.2f}'.format(purchase_total)"/> €</span>
-                </div>
-            </div>
+            </t>
 
-            <!-- Environmental Impact -->
-            <div class="pv-eco-section">
-                <h3 class="pv-eco-title">Impact Environnemental</h3>
-                <p class="pv-eco-subtitle">
-                    Votre production de <t t-esc="'{:,.0f}'.format(prod_total)"/> kWh/an équivaut à :
-                </p>
-                <table class="pv-eco-table">
-                    <tr>
-                        <td class="pv-eco-card">
-                            <div class="pv-eco-icon">&#127793;</div>
-                            <div class="pv-eco-value"><t t-esc="'{:.1f}'.format(co2_saved_tons)"/></div>
-                            <div class="pv-eco-unit">tonnes CO₂</div>
-                            <div class="pv-eco-label">évitées par an</div>
-                        </td>
-                        <td class="pv-eco-card">
-                            <div class="pv-eco-icon">&#127794;</div>
-                            <div class="pv-eco-value"><t t-esc="trees_equiv"/></div>
-                            <div class="pv-eco-unit">arbres</div>
-                            <div class="pv-eco-label">plantés équivalents</div>
-                        </td>
-                        <td class="pv-eco-card">
-                            <div class="pv-eco-icon">&#128664;</div>
-                            <div class="pv-eco-value"><t t-esc="'{:,}'.format(car_km_equiv)"/></div>
-                            <div class="pv-eco-unit">km</div>
-                            <div class="pv-eco-label">en voiture évités</div>
-                        </td>
-                    </tr>
-                </table>
-            </div>
+            <!-- Autoconsommation (only if data exists) -->
+            <t t-if="autocons_total">
+                <div class="pv-bilan-section">
+                    <div class="pv-bilan-header">Autoconsommation</div>
+                    <table class="pv-bilan-table">
+                        <tr>
+                            <td class="pv-bilan-icon">&#9889;</td>
+                            <td>Consommé directement</td>
+                            <td class="pv-bilan-val"><t t-esc="'{:,.2f}'.format(autocons_day)"/> kWh</td>
+                        </tr>
+                        <tr t-if="battery_charge">
+                            <td class="pv-bilan-icon">&#9107;</td>
+                            <td>Stocké dans la batterie</td>
+                            <td class="pv-bilan-val"><t t-esc="'{:,.2f}'.format(battery_charge)"/> kWh</td>
+                        </tr>
+                        <tr class="pv-bilan-total">
+                            <td class="pv-bilan-icon">&#9751;</td>
+                            <td>Total autoconsommation</td>
+                            <td class="pv-bilan-val"><t t-esc="'{:,.2f}'.format(autocons_total)"/> kWh</td>
+                        </tr>
+                    </table>
+                </div>
+            </t>
+
+            <!-- Économies (only if data exists) -->
+            <t t-if="savings_total">
+                <div class="pv-bilan-section">
+                    <div class="pv-bilan-header">Économies</div>
+                    <table class="pv-bilan-table">
+                        <tr t-if="savings_panels">
+                            <td class="pv-bilan-icon">&#9788;</td>
+                            <td>Économies liées aux panneaux</td>
+                            <td class="pv-bilan-val"><t t-esc="'{:,.2f}'.format(savings_panels)"/> €</td>
+                        </tr>
+                        <tr t-if="savings_battery">
+                            <td class="pv-bilan-icon">&#9107;</td>
+                            <td>Économies liées à la batterie</td>
+                            <td class="pv-bilan-val"><t t-esc="'{:,.2f}'.format(savings_battery)"/> €</td>
+                        </tr>
+                        <tr t-if="savings_resale">
+                            <td class="pv-bilan-icon">&#8364;</td>
+                            <td>Revenus de revente</td>
+                            <td class="pv-bilan-val"><t t-esc="'{:,.2f}'.format(savings_resale)"/> €</td>
+                        </tr>
+                    </table>
+                </div>
+            </t>
+
+            <!-- Bottom summary (only if data exists) -->
+            <t t-if="savings_total or purchase_total">
+                <div class="pv-bilan-bottom">
+                    <div class="pv-savings-block">
+                        <span class="pv-savings-label">Total économies annuelles</span>
+                        <span class="pv-savings-value"><t t-esc="'{:,.2f}'.format(savings_total)"/> €</span>
+                    </div>
+                    <div class="pv-purchase-block">
+                        <span class="pv-purchase-label">Coût d'achat réseau</span>
+                        <span class="pv-purchase-value"><t t-esc="'{:,.2f}'.format(purchase_total)"/> €</span>
+                    </div>
+                </div>
+            </t>
         </template>
     </data>
 </odoo>

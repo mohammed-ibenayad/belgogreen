@@ -137,6 +137,11 @@
                                     <field name="cover_subtitle"/>
                                 </group>
                             </group>
+                            <group string="System Characteristics">
+                                <group>
+                                    <field name="system_image" widget="image" class="oe_avatar"/>
+                                </group>
+                            </group>
                             <group string="Section Titles (Leave empty to use defaults)">
                                 <group>
                                     <field name="section_title_location"/>

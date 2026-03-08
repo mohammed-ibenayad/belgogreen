@@ -101,6 +101,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         logo_data = _make_data_uri(company.pv_report_logo or company.logo)
         cover_photo_data = _make_data_uri(simulation.cover_photo)
         location_image_data = _make_data_uri(simulation.location_image)
+        system_image_data = _make_data_uri(simulation.system_image)
         chart_data = _make_data_uri(simulation.chart_monthly_production)
 
         if not chart_data and simulation.monthly_result_ids:
@@ -160,15 +161,6 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         savings_total = savings_panels + savings_battery + savings_resale
         purchase_total = sum(results.mapped('purchase_cost')) if results else 0.0
 
-        # Environmental impact calculations
-        # Average: 0.233 kg CO2 per kWh (Belgian grid mix)
-        co2_saved_kg = prod_total * 0.233
-        co2_saved_tons = co2_saved_kg / 1000.0
-        # Average mature tree absorbs ~22 kg CO2/year
-        trees_equivalent = int(co2_saved_kg / 22.0) if co2_saved_kg else 0
-        # Average Belgian household drives ~15,000 km/year at 120g CO2/km = 1,800 kg
-        car_km_equivalent = int(co2_saved_kg / 0.120) if co2_saved_kg else 0
-
         def _fmt(val):
             if not val:
                 return '—'
@@ -178,36 +170,44 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         metric_cards = f'''
             <div class="card">
                 <div class="card-icon">{SVG_ICON_SUN}</div>
-                <div class="card-value">{simulation.total_pv_power_wc:,.0f}</div>
-                <div class="card-unit">Wc</div>
-                <div class="card-label">Puissance install\u00e9e</div>
+                <div class="card-text">
+                    <div class="card-value">{simulation.total_pv_power_wc:,.0f}</div>
+                    <div class="card-unit">Wc</div>
+                    <div class="card-label">Puissance install\u00e9e</div>
+                </div>
             </div>'''
 
         if simulation.number_of_panels:
             metric_cards += f'''
             <div class="card">
                 <div class="card-icon">{SVG_ICON_PANELS}</div>
-                <div class="card-value">{simulation.number_of_panels}</div>
-                <div class="card-unit">panneaux</div>
-                <div class="card-label">Nombre de panneaux</div>
+                <div class="card-text">
+                    <div class="card-value">{simulation.number_of_panels}</div>
+                    <div class="card-unit">panneaux</div>
+                    <div class="card-label">Nombre de panneaux</div>
+                </div>
             </div>'''
 
         if simulation.orientation_deg:
             metric_cards += f'''
             <div class="card">
                 <div class="card-icon">{SVG_ICON_COMPASS}</div>
-                <div class="card-value">{simulation.orientation_deg:.0f}\u00b0</div>
-                <div class="card-unit">&nbsp;</div>
-                <div class="card-label">Orientation</div>
+                <div class="card-text">
+                    <div class="card-value">{simulation.orientation_deg:.0f}\u00b0</div>
+                    <div class="card-unit">&nbsp;</div>
+                    <div class="card-label">Orientation</div>
+                </div>
             </div>'''
 
         if simulation.tilt_deg:
             metric_cards += f'''
             <div class="card">
                 <div class="card-icon">{SVG_ICON_TILT}</div>
-                <div class="card-value">{simulation.tilt_deg:.0f}\u00b0</div>
-                <div class="card-unit">&nbsp;</div>
-                <div class="card-label">Inclinaison</div>
+                <div class="card-text">
+                    <div class="card-value">{simulation.tilt_deg:.0f}\u00b0</div>
+                    <div class="card-unit">&nbsp;</div>
+                    <div class="card-label">Inclinaison</div>
+                </div>
             </div>'''
 
         # Build bilan rows conditionally (hide zero rows)
@@ -318,9 +318,16 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             <div class="section-number">02</div>
             <h2 class="section-title">{title_system}</h2>
 
-            <div class="cards-row">
-                {metric_cards}
-            </div>
+            <table class="system-layout">
+                <tr>
+                    <td class="system-cards-col">
+                        {metric_cards}
+                    </td>
+                    <td class="system-image-col">
+                        {f'<img src="{system_image_data}" alt="" class="system-image">' if system_image_data else ''}
+                    </td>
+                </tr>
+            </table>
         </div>
 
         <div class="section">
@@ -340,7 +347,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
     </div>
 
     <!-- ============================================ -->
-    <!-- PAGE 4: BILAN ÉNERGÉTIQUE + IMPACT           -->
+    <!-- PAGE 4: BILAN ÉNERGÉTIQUE                    -->
     <!-- ============================================ -->
     <div class="page content-page">
         <div class="section">
@@ -348,7 +355,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             <h2 class="section-title">{title_bilan}</h2>
         </div>
 
-        <!-- Production -->
+        <!-- Production (always shown) -->
         <div class="bilan-section">
             <div class="bilan-section-header">Production</div>
             <table class="bilan-table">
@@ -356,71 +363,17 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             </table>
         </div>
 
-        <!-- Consommation -->
-        <div class="bilan-section">
-            <div class="bilan-section-header">Consommation</div>
-            <table class="bilan-table">
-                {_bilan_row('&#9788;', 'Consommation jour', conso_day, 'kWh')}
-                {_bilan_row('&#9790;', 'Consommation nuit', conso_night, 'kWh')}
-                {_bilan_row('&#9751;', 'Consommation totale', conso_total, 'kWh', 'bilan-row-total')}
-            </table>
-        </div>
+        <!-- Consommation (only if data exists) -->
+        {'<div class="bilan-section"><div class="bilan-section-header">Consommation</div><table class="bilan-table">' + _bilan_row('&#9788;', 'Consommation jour', conso_day, 'kWh') + _bilan_row('&#9790;', 'Consommation nuit', conso_night, 'kWh') + _bilan_row('&#9751;', 'Consommation totale', conso_total, 'kWh', 'bilan-row-total') + '</table></div>' if conso_total else ''}
 
-        <!-- Auto Consommation -->
-        <div class="bilan-section">
-            <div class="bilan-section-header">Autoconsommation</div>
-            <table class="bilan-table">
-                {autocons_rows}
-            </table>
-        </div>
+        <!-- Autoconsommation (only if data exists) -->
+        {'<div class="bilan-section"><div class="bilan-section-header">Autoconsommation</div><table class="bilan-table">' + autocons_rows + '</table></div>' if autocons_total else ''}
 
-        <!-- Economies -->
-        <div class="bilan-section">
-            <div class="bilan-section-header">\u00c9conomies</div>
-            <table class="bilan-table">
-                {eco_rows}
-            </table>
-        </div>
+        <!-- Economies (only if data exists) -->
+        {'<div class="bilan-section"><div class="bilan-section-header">' + '\u00c9conomies' + '</div><table class="bilan-table">' + eco_rows + '</table></div>' if savings_total else ''}
 
-        <!-- Bottom summary -->
-        <div class="bilan-bottom">
-            <div class="bilan-total-savings">
-                <span class="bts-label">Total \u00e9conomies annuelles</span>
-                <span class="bts-value">{_fmt(savings_total)} &euro;</span>
-            </div>
-            <div class="bilan-total-purchase">
-                <span class="btp-label">Co\u00fbt d\u2019achat r\u00e9seau</span>
-                <span class="btp-value">{_fmt(purchase_total)} &euro;</span>
-            </div>
-        </div>
-
-        <!-- Environmental Impact Section -->
-        <div class="eco-impact-section">
-            <h3 class="eco-impact-title">Impact Environnemental</h3>
-            <p class="eco-impact-subtitle">Votre production de {simulation.annual_production_kwh:,.0f} kWh/an \u00e9quivaut \u00e0\u00a0:</p>
-            <table class="eco-impact-table">
-                <tr>
-                    <td class="eco-card">
-                        <div class="eco-card-icon">&#127793;</div>
-                        <div class="eco-card-value">{co2_saved_tons:.1f}</div>
-                        <div class="eco-card-unit">tonnes CO\u2082</div>
-                        <div class="eco-card-label">\u00e9vit\u00e9es par an</div>
-                    </td>
-                    <td class="eco-card">
-                        <div class="eco-card-icon">&#127794;</div>
-                        <div class="eco-card-value">{trees_equivalent}</div>
-                        <div class="eco-card-unit">arbres</div>
-                        <div class="eco-card-label">plant\u00e9s \u00e9quivalents</div>
-                    </td>
-                    <td class="eco-card">
-                        <div class="eco-card-icon">&#128664;</div>
-                        <div class="eco-card-value">{car_km_equivalent:,}</div>
-                        <div class="eco-card-unit">km</div>
-                        <div class="eco-card-label">en voiture \u00e9vit\u00e9s</div>
-                    </td>
-                </tr>
-            </table>
-        </div>
+        <!-- Bottom summary (only if data exists) -->
+        {'<div class="bilan-bottom"><div class="bilan-total-savings"><span class="bts-label">Total \u00e9conomies annuelles</span><span class="bts-value">' + _fmt(savings_total) + ' &euro;</span></div><div class="bilan-total-purchase"><span class="btp-label">Co\u00fbt d\u2019achat r\u00e9seau</span><span class="btp-value">' + _fmt(purchase_total) + ' &euro;</span></div></div>' if savings_total or purchase_total else ''}
     </div>
 </body>
 </html>"""
@@ -763,47 +716,84 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         /* ===================================================
            PAGE 3 – METRIC CARDS + PRODUCTION
            =================================================== */
-        .cards-row {
-            text-align: center;
-            margin: 6mm 0 10mm 0;
+        /* Two-column system layout */
+        .system-layout {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 4mm 0 8mm 0;
+        }
+
+        .system-cards-col {
+            width: 48%;
+            vertical-align: top;
+            padding: 0 4mm 0 0;
+        }
+
+        .system-image-col {
+            width: 52%;
+            vertical-align: top;
+            padding: 0;
+        }
+
+        .system-image {
+            width: 100%;
+            height: auto;
+            border-radius: 12px;
+            object-fit: cover;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
         }
 
         .card {
-            display: inline-block;
-            vertical-align: top;
-            width: 23%;
-            margin: 0 0.8%;
-            text-align: center;
-            padding: 5mm 3mm;
+            display: block;
+            width: 100%;
+            margin-bottom: 3mm;
+            padding: 3.5mm 4mm;
             background: rgba(255, 255, 255, 0.85);
             border: 1px solid #E0E0E0;
-            border-radius: 12px;
+            border-radius: 10px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
             page-break-inside: avoid;
         }
 
+        .card::after {
+            content: '';
+            display: table;
+            clear: both;
+        }
+
         .card-icon {
-            margin-bottom: 2mm;
+            float: left;
+            width: 10mm;
+            margin-right: 3mm;
+            margin-top: 1mm;
+        }
+
+        .card-text {
+            overflow: hidden;
         }
 
         .card-value {
-            font-size: 20pt;
+            font-size: 16pt;
             font-weight: 700;
             color: #212121;
             line-height: 1.2;
+            display: inline;
         }
 
         .card-unit {
             font-size: 9pt;
             color: #616161;
-            margin-bottom: 1mm;
+            display: inline;
+            margin-left: 1mm;
         }
 
         .card-label {
-            font-size: 8pt;
+            display: block;
+            font-size: 7.5pt;
             color: #616161;
             text-transform: uppercase;
             letter-spacing: 0.3px;
+            margin-top: 1mm;
         }
 
         .chart-container {
@@ -986,67 +976,6 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             color: #212121;
         }
 
-        /* ===================================================
-           ENVIRONMENTAL IMPACT
-           =================================================== */
-        .eco-impact-section {
-            margin-top: 8mm;
-            padding: 5mm 6mm;
-            background: #E8F5E9;
-            border: 1px solid #C8E6C9;
-            border-radius: 10px;
-            page-break-inside: avoid;
-        }
-
-        .eco-impact-title {
-            font-size: 12pt;
-            font-weight: 600;
-            color: #388E3C;
-            text-transform: uppercase;
-            letter-spacing: 0.3mm;
-            margin-bottom: 2mm;
-        }
-
-        .eco-impact-subtitle {
-            font-size: 9pt;
-            color: #616161;
-            margin-bottom: 4mm;
-        }
-
-        .eco-impact-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .eco-card {
-            width: 33.33%;
-            text-align: center;
-            padding: 3mm 2mm;
-            vertical-align: top;
-        }
-
-        .eco-card-icon {
-            font-size: 22pt;
-            margin-bottom: 1mm;
-        }
-
-        .eco-card-value {
-            font-size: 18pt;
-            font-weight: 700;
-            color: #388E3C;
-            line-height: 1.2;
-        }
-
-        .eco-card-unit {
-            font-size: 9pt;
-            font-weight: 600;
-            color: #4A9B5D;
-        }
-
-        .eco-card-label {
-            font-size: 8pt;
-            color: #616161;
-        }
         """
 
         return css
