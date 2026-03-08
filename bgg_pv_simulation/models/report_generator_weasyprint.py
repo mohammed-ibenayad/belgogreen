@@ -318,16 +318,21 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             <div class="section-number">02</div>
             <h2 class="section-title">{title_system}</h2>
 
-            <table class="system-layout">
-                <tr>
-                    <td class="system-cards-col">
-                        {metric_cards}
-                    </td>
-                    <td class="system-image-col">
-                        {f'<img src="{system_image_data}" alt="" class="system-image">' if system_image_data else ''}
-                    </td>
-                </tr>
-            </table>
+            <div class="system-container">
+                <table class="system-layout">
+                    <tr>
+                        <td class="system-cards-col">
+                            {metric_cards}
+                        </td>
+                        <td class="system-image-col">
+                            <div class="system-image-wrap">
+                                {f'<img src="{system_image_data}" alt="" class="system-image">' if system_image_data else ''}
+                                <div class="system-image-fade"></div>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
         </div>
 
         <div class="section">
@@ -717,30 +722,51 @@ class PvSimulationWeasyPrint(models.AbstractModel):
            PAGE 3 – METRIC CARDS + PRODUCTION
            =================================================== */
         /* Two-column system layout */
+        .system-container {
+            background: #E8F5E9;
+            border-radius: 16px;
+            margin: 4mm 0 8mm 0;
+            overflow: hidden;
+        }
+
         .system-layout {
             width: 100%;
             border-collapse: collapse;
-            margin: 4mm 0 8mm 0;
         }
 
         .system-cards-col {
-            width: 48%;
+            width: 45%;
             vertical-align: top;
-            padding: 0 4mm 0 0;
+            padding: 5mm 4mm 5mm 5mm;
         }
 
         .system-image-col {
-            width: 52%;
+            width: 55%;
             vertical-align: top;
             padding: 0;
+            position: relative;
+        }
+
+        .system-image-wrap {
+            position: relative;
+            overflow: hidden;
         }
 
         .system-image {
             width: 100%;
-            height: auto;
-            border-radius: 12px;
+            height: 100%;
+            min-height: 60mm;
             object-fit: cover;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+            display: block;
+        }
+
+        .system-image-fade {
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 25mm;
+            background: linear-gradient(to right, #E8F5E9 0%, rgba(232, 245, 233, 0) 100%);
         }
 
         .card {
@@ -748,11 +774,15 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             width: 100%;
             margin-bottom: 3mm;
             padding: 3.5mm 4mm;
-            background: rgba(255, 255, 255, 0.85);
-            border: 1px solid #E0E0E0;
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid rgba(255, 255, 255, 0.6);
             border-radius: 10px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
             page-break-inside: avoid;
+        }
+
+        .card:last-child {
+            margin-bottom: 0;
         }
 
         .card::after {
