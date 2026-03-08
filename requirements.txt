@@ -15,5 +15,5 @@ reportlab>=4.0.0
 # If odoo-update fails with WeasyPrint errors, comment this line out
 weasyprint>=60.0
 
-# Optional: For GeoTIFF imagery processing
-# rasterio>=1.3.0
+# For GeoTIFF imagery processing (required for Solar API satellite images)
+rasterio>=1.3.0
