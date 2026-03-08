@@ -101,6 +101,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         logo_data = _make_data_uri(company.pv_report_logo or company.logo)
         cover_photo_data = _make_data_uri(simulation.cover_photo)
         location_image_data = _make_data_uri(simulation.location_image)
+        system_image_data = _make_data_uri(simulation.system_image)
         chart_data = _make_data_uri(simulation.chart_monthly_production)
 
         if not chart_data and simulation.monthly_result_ids:
@@ -169,36 +170,44 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         metric_cards = f'''
             <div class="card">
                 <div class="card-icon">{SVG_ICON_SUN}</div>
-                <div class="card-value">{simulation.total_pv_power_wc:,.0f}</div>
-                <div class="card-unit">Wc</div>
-                <div class="card-label">Puissance install\u00e9e</div>
+                <div class="card-text">
+                    <div class="card-value">{simulation.total_pv_power_wc:,.0f}</div>
+                    <div class="card-unit">Wc</div>
+                    <div class="card-label">Puissance install\u00e9e</div>
+                </div>
             </div>'''
 
         if simulation.number_of_panels:
             metric_cards += f'''
             <div class="card">
                 <div class="card-icon">{SVG_ICON_PANELS}</div>
-                <div class="card-value">{simulation.number_of_panels}</div>
-                <div class="card-unit">panneaux</div>
-                <div class="card-label">Nombre de panneaux</div>
+                <div class="card-text">
+                    <div class="card-value">{simulation.number_of_panels}</div>
+                    <div class="card-unit">panneaux</div>
+                    <div class="card-label">Nombre de panneaux</div>
+                </div>
             </div>'''
 
         if simulation.orientation_deg:
             metric_cards += f'''
             <div class="card">
                 <div class="card-icon">{SVG_ICON_COMPASS}</div>
-                <div class="card-value">{simulation.orientation_deg:.0f}\u00b0</div>
-                <div class="card-unit">&nbsp;</div>
-                <div class="card-label">Orientation</div>
+                <div class="card-text">
+                    <div class="card-value">{simulation.orientation_deg:.0f}\u00b0</div>
+                    <div class="card-unit">&nbsp;</div>
+                    <div class="card-label">Orientation</div>
+                </div>
             </div>'''
 
         if simulation.tilt_deg:
             metric_cards += f'''
             <div class="card">
                 <div class="card-icon">{SVG_ICON_TILT}</div>
-                <div class="card-value">{simulation.tilt_deg:.0f}\u00b0</div>
-                <div class="card-unit">&nbsp;</div>
-                <div class="card-label">Inclinaison</div>
+                <div class="card-text">
+                    <div class="card-value">{simulation.tilt_deg:.0f}\u00b0</div>
+                    <div class="card-unit">&nbsp;</div>
+                    <div class="card-label">Inclinaison</div>
+                </div>
             </div>'''
 
         # Build bilan rows conditionally (hide zero rows)
@@ -309,9 +318,16 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             <div class="section-number">02</div>
             <h2 class="section-title">{title_system}</h2>
 
-            <div class="cards-row">
-                {metric_cards}
-            </div>
+            <table class="system-layout">
+                <tr>
+                    <td class="system-cards-col">
+                        {metric_cards}
+                    </td>
+                    <td class="system-image-col">
+                        {f'<img src="{system_image_data}" alt="" class="system-image">' if system_image_data else ''}
+                    </td>
+                </tr>
+            </table>
         </div>
 
         <div class="section">
@@ -700,47 +716,84 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         /* ===================================================
            PAGE 3 – METRIC CARDS + PRODUCTION
            =================================================== */
-        .cards-row {
-            text-align: center;
-            margin: 6mm 0 10mm 0;
+        /* Two-column system layout */
+        .system-layout {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 4mm 0 8mm 0;
+        }
+
+        .system-cards-col {
+            width: 48%;
+            vertical-align: top;
+            padding: 0 4mm 0 0;
+        }
+
+        .system-image-col {
+            width: 52%;
+            vertical-align: top;
+            padding: 0;
+        }
+
+        .system-image {
+            width: 100%;
+            height: auto;
+            border-radius: 12px;
+            object-fit: cover;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
         }
 
         .card {
-            display: inline-block;
-            vertical-align: top;
-            width: 23%;
-            margin: 0 0.8%;
-            text-align: center;
-            padding: 5mm 3mm;
+            display: block;
+            width: 100%;
+            margin-bottom: 3mm;
+            padding: 3.5mm 4mm;
             background: rgba(255, 255, 255, 0.85);
             border: 1px solid #E0E0E0;
-            border-radius: 12px;
+            border-radius: 10px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
             page-break-inside: avoid;
         }
 
+        .card::after {
+            content: '';
+            display: table;
+            clear: both;
+        }
+
         .card-icon {
-            margin-bottom: 2mm;
+            float: left;
+            width: 10mm;
+            margin-right: 3mm;
+            margin-top: 1mm;
+        }
+
+        .card-text {
+            overflow: hidden;
         }
 
         .card-value {
-            font-size: 20pt;
+            font-size: 16pt;
             font-weight: 700;
             color: #212121;
             line-height: 1.2;
+            display: inline;
         }
 
         .card-unit {
             font-size: 9pt;
             color: #616161;
-            margin-bottom: 1mm;
+            display: inline;
+            margin-left: 1mm;
         }
 
         .card-label {
-            font-size: 8pt;
+            display: block;
+            font-size: 7.5pt;
             color: #616161;
             text-transform: uppercase;
             letter-spacing: 0.3px;
+            margin-top: 1mm;
         }
 
         .chart-container {

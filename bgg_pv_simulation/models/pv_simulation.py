@@ -83,6 +83,13 @@ class PvSimulation(models.Model):
         default='Photovoltaïque',
         help='Second line of cover title (green accent text)'
     )
+    system_image = fields.Binary(
+        string='System Image',
+        help='Image displayed next to system characteristics (e.g. panel layout photo)'
+    )
+    system_image_filename = fields.Char(
+        string='System Image Filename'
+    )
 
     # Section Titles (Configurable per Quotation)
     section_title_location = fields.Char(

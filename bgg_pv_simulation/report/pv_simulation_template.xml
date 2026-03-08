@@ -232,47 +232,84 @@
                                     letter-spacing: 0.2mm;
                                 }
 
-                                /* --- Metric cards --- */
-                                .pv-cards-row {
-                                    text-align: center;
-                                    margin: 6mm 0 10mm 0;
+                                /* --- Two-column system layout --- */
+                                .pv-system-layout {
+                                    width: 100%;
+                                    border-collapse: collapse;
+                                    margin: 4mm 0 8mm 0;
+                                }
+
+                                .pv-system-cards-col {
+                                    width: 48%;
+                                    vertical-align: top;
+                                    padding: 0 4mm 0 0;
+                                }
+
+                                .pv-system-image-col {
+                                    width: 52%;
+                                    vertical-align: top;
+                                    padding: 0;
+                                }
+
+                                .pv-system-image {
+                                    width: 100%;
+                                    height: auto;
+                                    border-radius: 12px;
+                                    object-fit: cover;
+                                    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
                                 }
 
                                 .pv-card {
-                                    display: inline-block;
-                                    vertical-align: top;
-                                    width: 23%;
-                                    margin: 0 0.8%;
-                                    text-align: center;
-                                    padding: 5mm 3mm;
+                                    display: block;
+                                    width: 100%;
+                                    margin-bottom: 3mm;
+                                    padding: 3.5mm 4mm;
                                     background: rgba(255, 255, 255, 0.85);
                                     border: 1px solid #E0E0E0;
-                                    border-radius: 12px;
+                                    border-radius: 10px;
                                     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+                                    page-break-inside: avoid;
+                                }
+
+                                .pv-card::after {
+                                    content: '';
+                                    display: table;
+                                    clear: both;
                                 }
 
                                 .pv-card-icon {
-                                    margin-bottom: 2mm;
+                                    float: left;
+                                    width: 10mm;
+                                    margin-right: 3mm;
+                                    margin-top: 1mm;
+                                }
+
+                                .pv-card-text {
+                                    overflow: hidden;
                                 }
 
                                 .pv-card-value {
-                                    font-size: 20pt;
+                                    font-size: 16pt;
                                     font-weight: 700;
                                     color: #212121;
                                     line-height: 1.2;
+                                    display: inline;
                                 }
 
                                 .pv-card-unit {
                                     font-size: 9pt;
                                     color: #616161;
-                                    margin-bottom: 1mm;
+                                    display: inline;
+                                    margin-left: 1mm;
                                 }
 
                                 .pv-card-label {
-                                    font-size: 8pt;
+                                    display: block;
+                                    font-size: 7.5pt;
                                     color: #616161;
                                     text-transform: uppercase;
                                     letter-spacing: 0.3px;
+                                    margin-top: 1mm;
                                 }
 
                                 /* --- Chart / Production --- */
@@ -557,40 +594,57 @@
             <div class="pv-section-number">02</div>
             <h2 class="pv-section-title"><t t-esc="o.section_title_system or 'CARACTÉRISTIQUES DU SYSTÈME'"/></h2>
 
-            <div class="pv-cards-row">
-                <div class="pv-card">
-                    <div class="pv-card-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-                    </div>
-                    <div class="pv-card-value"><t t-esc="'{:,.0f}'.format(o.total_pv_power_wc)"/></div>
-                    <div class="pv-card-unit">Wc</div>
-                    <div class="pv-card-label">Puissance installée</div>
-                </div>
-                <div t-if="o.number_of_panels" class="pv-card">
-                    <div class="pv-card-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="12" y1="3" x2="12" y2="17"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-                    </div>
-                    <div class="pv-card-value"><t t-esc="o.number_of_panels"/></div>
-                    <div class="pv-card-unit">panneaux</div>
-                    <div class="pv-card-label">Nombre de panneaux</div>
-                </div>
-                <div t-if="o.orientation_deg" class="pv-card">
-                    <div class="pv-card-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" fill="#4A9B5D" opacity="0.3"/></svg>
-                    </div>
-                    <div class="pv-card-value"><t t-esc="'{:.0f}'.format(o.orientation_deg)"/>°</div>
-                    <div class="pv-card-unit"> </div>
-                    <div class="pv-card-label">Orientation</div>
-                </div>
-                <div t-if="o.tilt_deg" class="pv-card">
-                    <div class="pv-card-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 20L2 20"/><path d="M4 20L18 6"/><path d="M18 6L18 14"/><path d="M14 10L18 6" stroke-dasharray="2 2"/></svg>
-                    </div>
-                    <div class="pv-card-value"><t t-esc="'{:.0f}'.format(o.tilt_deg)"/>°</div>
-                    <div class="pv-card-unit"> </div>
-                    <div class="pv-card-label">Inclinaison</div>
-                </div>
-            </div>
+            <table class="pv-system-layout">
+                <tr>
+                    <td class="pv-system-cards-col">
+                        <div class="pv-card">
+                            <div class="pv-card-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                            </div>
+                            <div class="pv-card-text">
+                                <div class="pv-card-value"><t t-esc="'{:,.0f}'.format(o.total_pv_power_wc)"/></div>
+                                <div class="pv-card-unit">Wc</div>
+                                <div class="pv-card-label">Puissance installée</div>
+                            </div>
+                        </div>
+                        <div t-if="o.number_of_panels" class="pv-card">
+                            <div class="pv-card-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="12" y1="3" x2="12" y2="17"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                            </div>
+                            <div class="pv-card-text">
+                                <div class="pv-card-value"><t t-esc="o.number_of_panels"/></div>
+                                <div class="pv-card-unit">panneaux</div>
+                                <div class="pv-card-label">Nombre de panneaux</div>
+                            </div>
+                        </div>
+                        <div t-if="o.orientation_deg" class="pv-card">
+                            <div class="pv-card-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" fill="#4A9B5D" opacity="0.3"/></svg>
+                            </div>
+                            <div class="pv-card-text">
+                                <div class="pv-card-value"><t t-esc="'{:.0f}'.format(o.orientation_deg)"/>°</div>
+                                <div class="pv-card-unit"> </div>
+                                <div class="pv-card-label">Orientation</div>
+                            </div>
+                        </div>
+                        <div t-if="o.tilt_deg" class="pv-card">
+                            <div class="pv-card-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 20L2 20"/><path d="M4 20L18 6"/><path d="M18 6L18 14"/><path d="M14 10L18 6" stroke-dasharray="2 2"/></svg>
+                            </div>
+                            <div class="pv-card-text">
+                                <div class="pv-card-value"><t t-esc="'{:.0f}'.format(o.tilt_deg)"/>°</div>
+                                <div class="pv-card-unit"> </div>
+                                <div class="pv-card-label">Inclinaison</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="pv-system-image-col">
+                        <img t-if="o.system_image"
+                             t-att-src="'data:image/png;base64,%s' % o.system_image.decode()"
+                             class="pv-system-image"/>
+                    </td>
+                </tr>
+            </table>
 
             <!-- Production -->
             <div style="margin-top: 10mm;">
