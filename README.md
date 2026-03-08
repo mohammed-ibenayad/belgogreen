@@ -54,3 +54,4 @@ For support, please contact https://www.belgogreen.com
 ### Version 19.0.0.0
 - Initial release
 - Basic module structure
+
