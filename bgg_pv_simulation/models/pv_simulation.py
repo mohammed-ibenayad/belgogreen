@@ -248,8 +248,13 @@ class PvSimulation(models.Model):
             record.total_pv_power_wc = record.number_of_panels * record.panel_unit_power_wc
 
     def action_regenerate_simulation(self):
-        """Button action to recalculate everything"""
+        """Button action to fetch API data and recalculate everything"""
         self.ensure_one()
+
+        # Fetch solar data from APIs (force update to replace existing values)
+        self.action_fetch_solar_data(force_update=True)
+
+        # Recalculate monthly results and charts
         self._compute_monthly_results()
         self._generate_charts()
 
@@ -264,30 +269,6 @@ class PvSimulation(models.Model):
         self.ensure_one()
         return self.env.ref('bgg_pv_simulation.action_report_pv_simulation').report_action(self)
 
-    def action_generate_report_reportlab(self):
-        """Generate PDF report using ReportLab"""
-        self.ensure_one()
-
-        # Generate PDF using ReportLab
-        generator = self.env['pv.simulation.reportlab.generator']
-        pdf_content = generator.generate_report(self.id)
-
-        # Create attachment
-        attachment = self.env['ir.attachment'].create({
-            'name': f'Report_ReportLab_{self.name}.pdf',
-            'type': 'binary',
-            'datas': base64.b64encode(pdf_content),
-            'res_model': 'pv.simulation',
-            'res_id': self.id,
-            'mimetype': 'application/pdf'
-        })
-
-        # Return download action
-        return {
-            'type': 'ir.actions.act_url',
-            'url': f'/web/content/{attachment.id}?download=true',
-            'target': 'new',
-        }
 
     def action_generate_report_weasyprint(self):
         """Generate PDF report using WeasyPrint"""

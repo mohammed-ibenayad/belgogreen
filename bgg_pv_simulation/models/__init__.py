@@ -10,5 +10,5 @@ from . import pv_monthly_result
 from . import solar_api_client
 from . import pv_simulation
 from . import sale_order
-from . import report_generator_reportlab
+
 from . import report_generator_weasyprint
