@@ -293,19 +293,32 @@ class PvSimulationWeasyPrint(models.AbstractModel):
     <!-- ============================================ -->
     <!-- PAGE 2: LOCALISATION                         -->
     <!-- ============================================ -->
-    <div class="page content-page">
+    <div class="page content-page" style="position: relative;">
+        <div class="location-page-bg"></div>
         <div class="section">
             <div class="section-number">01</div>
             <h2 class="section-title">{title_location}</h2>
 
-            <div class="location-block">
-                {f'<p class="address-text">{address.replace(chr(10), "<br/>")}</p>' if address else ''}
+            <div class="location-cards-row">
+                {f"""<div class="card">
+                    <div class="card-icon">{SVG_ICON_PIN}</div>
+                    <div class="card-text">
+                        <div class="card-value" style="font-size:11pt;">{address.replace(chr(10), '<br/>')}</div>
+                        <div class="card-label">Adresse d'installation</div>
+                    </div>
+                </div>""" if address else ''}
+                {f"""<div class="card">
+                    <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="12" y1="3" x2="12" y2="21"/></svg></div>
+                    <div class="card-text">
+                        <div class="card-value">{simulation.roof_surface_m2:.0f}</div>
+                        <div class="card-unit">m\u00b2</div>
+                        <div class="card-label">Surface de toiture</div>
+                    </div>
+                </div>""" if simulation.roof_surface_m2 else ''}
             </div>
 
             <div class="location-image-container">
                 {f'<img src="{location_image_data}" alt="Localisation" class="location-image">' if location_image_data else ''}
-                <div class="location-pin">{SVG_ICON_PIN}</div>
-                {roof_badge}
             </div>
         </div>
     </div>
@@ -317,6 +330,10 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         <div class="section">
             <div class="section-number">02</div>
             <h2 class="section-title">{title_production}</h2>
+
+            {f'<div class="chart-container"><img src="{chart_data}" alt="Production mensuelle" class="chart-img"></div>' if chart_data else ''}
+
+            <h3 class="section-subtitle">{title_system}</h3>
 
             <div class="system-container">
                 <table class="system-layout">
@@ -332,16 +349,6 @@ class PvSimulationWeasyPrint(models.AbstractModel):
                         </td>
                     </tr>
                 </table>
-            </div>
-
-            {f'<div class="chart-container"><img src="{chart_data}" alt="Production mensuelle" class="chart-img"></div>' if chart_data else ''}
-
-            <div class="hero-metric">
-                <div class="hero-metric-inner">
-                    <span class="hero-metric-value">{simulation.annual_production_kwh:,.0f}</span>
-                    <span class="hero-metric-unit">kWh/an</span>
-                </div>
-                <span class="hero-metric-label">Production totale annuelle</span>
             </div>
         </div>
     </div>
@@ -667,56 +674,53 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             page-break-after: avoid;
         }
 
+        .section-subtitle {
+            font-size: 12pt;
+            font-weight: 600;
+            color: #4A9B5D;
+            text-transform: uppercase;
+            letter-spacing: 0.5mm;
+            margin: 6mm 0 4mm 0;
+        }
+
         /* ===================================================
            PAGE 2 – LOCALISATION
            =================================================== */
-        .location-block {
-            margin-bottom: 6mm;
+        .location-page-bg {
+            position: absolute;
+            top: 0;
+            left: -20mm;
+            right: -20mm;
+            height: 55%;
+            background: #F1F9F1;
+            z-index: -1;
         }
 
-        .address-text {
-            font-size: 11pt;
-            color: #212121;
-            margin-bottom: 3mm;
+        .location-cards-row {
+            margin-bottom: 5mm;
+        }
+
+        .location-cards-row .card {
+            display: inline-block;
+            vertical-align: top;
+            width: 48%;
+            margin-right: 2%;
+            margin-bottom: 0;
         }
 
         .location-image-container {
             position: relative;
             text-align: center;
-            margin: 6mm auto;
+            margin: 4mm auto 0 auto;
             page-break-inside: avoid;
         }
 
         .location-image {
             width: 100%;
-            max-height: 130mm;
+            max-height: 140mm;
             object-fit: cover;
             border-radius: 15px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
-        }
-
-        /* Location pin overlay */
-        .location-pin {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            margin-top: -16px;
-            margin-left: -16px;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-        }
-
-        /* Roof surface badge */
-        .location-badge {
-            position: absolute;
-            bottom: 12px;
-            right: 12px;
-            background: #4A9B5D;
-            color: #FFFFFF;
-            font-size: 9pt;
-            font-weight: 600;
-            padding: 2mm 4mm;
-            border-radius: 20px;
-            letter-spacing: 0.2mm;
         }
 
         /* ===================================================
