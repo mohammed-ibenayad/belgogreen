@@ -38,7 +38,7 @@
               name="Configuration"
               parent="menu_pv_simulation_root"
               sequence="90"
-              groups="pv_simulation_mod_o19.group_pv_admin"/>
+              groups="bgg_pv_simulation.group_pv_admin"/>
 
     <!-- Consumption Profiles -->
     <record id="action_pv_consumption_profile" model="ir.actions.act_window">

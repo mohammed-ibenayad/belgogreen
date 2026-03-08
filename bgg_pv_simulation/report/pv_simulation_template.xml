@@ -8,11 +8,11 @@
                     <t t-call="web.external_layout">
                         <div class="page pv_simulation_report">
                             <!-- Page 1: Cover Page -->
-                            <t t-call="pv_simulation_mod_o19.report_pv_simulation_page_cover"/>
+                            <t t-call="bgg_pv_simulation.report_pv_simulation_page_cover"/>
 
                             <!-- Page 2: Installation Location & Production -->
                             <div class="page">
-                                <t t-call="pv_simulation_mod_o19.report_pv_simulation_page_location"/>
+                                <t t-call="bgg_pv_simulation.report_pv_simulation_page_location"/>
                             </div>
                         </div>
                     </t>
