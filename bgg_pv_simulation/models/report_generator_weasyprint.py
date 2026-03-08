@@ -1,26 +1,22 @@
 # -*- coding: utf-8 -*-
 """
-PHOTOVOLTAIC REPORT DESIGN SYSTEM v3.0
-WeasyPrint-based PDF Report Generator
-
-Professional solar installation proposal report.
+PHOTOVOLTAIC REPORT DESIGN SYSTEM v4.0
+WeasyPrint-based PDF Report Generator — Premium Solar Proposal
 
 COLOR PALETTE:
-- Primary Dark Blue: #1B3A5C  (section headings, header accents)
-- Primary Green:     #4A9B5D  (savings highlights, positive values)
-- Gold Accent:       #F9A825  (special highlights)
-- Dark Text:         #1A1A1A  (body text)
-- Gray Text:         #5F6368  (secondary text, labels)
-- Light Gray BG:     #F7F8FA  (card backgrounds, alternating rows)
-- Border Gray:       #E0E0E0  (borders, dividers)
-- White:             #FFFFFF  (page background)
+- Primary Green:     #4A9B5D  (accents, savings, title accent)
+- Dark Green:        #388E3C  (hover/emphasis)
+- Light Green BG:    #E8F5E9  (eco impact backgrounds)
+- Deep Charcoal:     #212121  (primary text)
+- Secondary Text:    #616161  (metadata, labels)
+- Light Grey BG:     #F9F9F9  (zebra rows, card backgrounds)
+- Border Grey:       #E0E0E0  (borders, dividers)
+- White:             #FFFFFF  (page background, card fills)
 
-LAYOUT RULES:
-- Page margins: 25mm top, 20mm sides, 22mm bottom
-- Font: Inter / Helvetica / sans-serif
-- Section spacing: 30px before title, 20px after
-- All content blocks use page-break-inside: avoid
-- WeasyPrint compatible: no flex-gap, no CSS grid, tables + inline-block only
+LAYOUT:
+- WeasyPrint-optimized: tables + inline-block (no CSS grid, no flex-gap)
+- Page size: A4 (210mm x 297mm)
+- Margins: 25mm top, 20mm sides, 22mm bottom (except cover: 0)
 """
 
 import io
@@ -30,23 +26,22 @@ from odoo import models, api
 
 _logger = logging.getLogger(__name__)
 
+# SVG icons for metric cards (inline, WeasyPrint-safe)
+SVG_ICON_SUN = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>'
+SVG_ICON_PANELS = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="12" y1="3" x2="12" y2="17"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>'
+SVG_ICON_COMPASS = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" fill="#4A9B5D" opacity="0.3"/></svg>'
+SVG_ICON_TILT = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 20L2 20"/><path d="M4 20L18 6"/><path d="M18 6L18 14"/><path d="M14 10L18 6" stroke-dasharray="2 2"/></svg>'
+SVG_ICON_PIN = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="#4A9B5D" stroke="#FFFFFF" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3" fill="#FFFFFF"/></svg>'
+
 
 class PvSimulationWeasyPrint(models.AbstractModel):
-    """WeasyPrint-based PDF Report Generator - Design System v3.0"""
+    """WeasyPrint-based PDF Report Generator — Design System v4.0"""
     _name = 'pv.simulation.weasyprint.generator'
     _description = 'WeasyPrint Report Generator for PV Simulation'
 
     @api.model
     def generate_report(self, simulation_id):
-        """
-        Generate a PDF report using WeasyPrint (HTML/CSS)
-
-        Args:
-            simulation_id: pv.simulation record ID
-
-        Returns:
-            bytes: PDF file content
-        """
+        """Generate a PDF report using WeasyPrint (HTML/CSS)"""
         try:
             from weasyprint import HTML, CSS
         except ImportError as e:
@@ -61,14 +56,9 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             )
 
         simulation = self.env['pv.simulation'].browse(simulation_id)
-
-        # Generate HTML
         html_content = self._generate_html(simulation)
-
-        # Generate CSS
         css_content = self._generate_css()
 
-        # Create PDF
         try:
             pdf_bytes = HTML(string=html_content).write_pdf(
                 stylesheets=[CSS(string=css_content)]
@@ -82,13 +72,11 @@ class PvSimulationWeasyPrint(models.AbstractModel):
     def _generate_html(self, simulation):
         """Generate HTML content for the report"""
 
-        # Prepare data
         partner = simulation.sale_order_id.partner_id if simulation.sale_order_id else None
         company = simulation.company_id
         user = simulation.sale_order_id.user_id if simulation.sale_order_id else None
 
         def _make_data_uri(b64_field):
-            """Build a data URI with correct MIME type by inspecting image magic bytes."""
             if not b64_field:
                 return ""
             import base64 as _base64
@@ -104,19 +92,17 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             return f"data:{mime};base64,{b64_field.decode()}"
 
         def _esc(value):
-            """Escape HTML special characters to prevent XSS."""
             if not value:
                 return ''
             from markupsafe import escape
             return str(escape(str(value)))
 
-        # Encode images as base64
+        # Encode images
         logo_data = _make_data_uri(company.pv_report_logo or company.logo)
         cover_photo_data = _make_data_uri(simulation.cover_photo)
         location_image_data = _make_data_uri(simulation.location_image)
         chart_data = _make_data_uri(simulation.chart_monthly_production)
 
-        # Generate monthly chart if not already generated
         if not chart_data and simulation.monthly_result_ids:
             try:
                 chart_buffer = self._generate_monthly_chart(simulation)
@@ -125,29 +111,24 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             except Exception as e:
                 _logger.warning(f"Could not generate chart: {e}")
 
-        # Cover title + subtitle + tagline
+        # Text fields
         cover_title = _esc(simulation.cover_title or 'Votre installation')
         cover_subtitle = _esc(simulation.cover_subtitle or 'Photovoltaïque')
         tagline = _esc(company.pv_report_tagline or '')
-
-        # Section titles
         title_location = _esc(simulation.section_title_location or "LOCALISATION DE L'INSTALLATION")
         title_system = _esc(simulation.section_title_system or 'CARACTÉRISTIQUES DU SYSTÈME')
         title_production = _esc(simulation.section_title_production or 'PRODUCTION ESTIMÉE')
         title_bilan = _esc(simulation.section_title_bilan or 'BILAN ÉNERGÉTIQUE')
 
-        # Footer data
+        # Footer
         company_name = _esc(company.name or '')
         company_phone = _esc(company.pv_report_phone or company.phone or '')
         company_email = _esc(company.pv_report_email or company.email or '')
         address = _esc(simulation.installation_address or '')
-
-        # Salesperson info
         sp_name = _esc(user.name) if user else ''
         sp_phone = _esc(user.phone or company.phone or '') if user else company_phone
         sp_email = _esc(user.email or getattr(user, 'login', '') or '') if user else company_email
 
-        # Footer parts
         footer_parts = []
         if company_name:
             footer_parts.append(company_name)
@@ -157,63 +138,46 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             footer_parts.append(f'&#9993; {sp_email}')
         footer_line = ' &nbsp;|&nbsp; '.join(footer_parts)
 
-        # Partner info
+        # Partner
         partner_name = _esc(partner.name) if partner else ''
-        partner_phone = _esc(partner.phone) if partner and partner.phone else ''
-        partner_email = _esc(partner.email) if partner and partner.email else ''
-
-        # Report date
-        report_date = ''
-        if simulation.report_date:
-            report_date = simulation.report_date.strftime('%d/%m/%Y')
-
-        # Project reference
+        report_date = simulation.report_date.strftime('%d/%m/%Y') if simulation.report_date else ''
         project_ref = _esc(simulation.name or '')
 
-        # ---- Bilan Annuel: aggregate monthly results ----
+        # Bilan data
         results = simulation.monthly_result_ids
-        # Production
         prod_total = simulation.annual_production_kwh or 0.0
-        # Consumption
         conso_day = sum(results.mapped('monthly_day_consumption_kwh')) if results else 0.0
         conso_night = sum(results.mapped('monthly_night_consumption_kwh')) if results else 0.0
         conso_total = sum(results.mapped('monthly_consumption_kwh')) if results else 0.0
         if not conso_total and hasattr(simulation, 'consumption_profile_id') and simulation.consumption_profile_id:
             conso_total = simulation.consumption_profile_id.annual_consumption_kwh or 0.0
-        # Auto-consumption
         autocons_total = sum(results.mapped('monthly_autoconsumption_kwh')) if results else 0.0
         battery_charge = sum(results.mapped('monthly_battery_charge_kwh')) if results else 0.0
         autocons_day = autocons_total - battery_charge
-        # Savings
         savings_panels = sum(results.mapped('panel_savings')) if results else 0.0
         savings_battery = sum(results.mapped('battery_savings')) if results else 0.0
         savings_resale = sum(results.mapped('sale_revenue')) if results else 0.0
         savings_total = savings_panels + savings_battery + savings_resale
-        # Purchase
         purchase_total = sum(results.mapped('purchase_cost')) if results else 0.0
 
+        # Environmental impact calculations
+        # Average: 0.233 kg CO2 per kWh (Belgian grid mix)
+        co2_saved_kg = prod_total * 0.233
+        co2_saved_tons = co2_saved_kg / 1000.0
+        # Average mature tree absorbs ~22 kg CO2/year
+        trees_equivalent = int(co2_saved_kg / 22.0) if co2_saved_kg else 0
+        # Average Belgian household drives ~15,000 km/year at 120g CO2/km = 1,800 kg
+        car_km_equivalent = int(co2_saved_kg / 0.120) if co2_saved_kg else 0
+
         def _fmt(val):
-            """Format number with 2 decimals and thousand separator, or dash if zero."""
             if not val:
                 return '—'
             return f'{val:,.2f}'
 
-        # Build client info block for cover
-        client_info_rows = ''
-        if partner_name:
-            client_info_rows += f'<p class="client-name">{partner_name}</p>'
-        if address:
-            addr_lines = address.replace('\n', '<br/>')
-            client_info_rows += f'<p class="client-detail">{addr_lines}</p>'
-        if partner_phone:
-            client_info_rows += f'<p class="client-detail">T\u00e9l\u00a0: {partner_phone}</p>'
-        if partner_email:
-            client_info_rows += f'<p class="client-detail">Email\u00a0: {partner_email}</p>'
-
-        # Build metric cards for system characteristics
-        metric_cards = ''
-        metric_cards += f'''
+        # Build metric cards with SVG icons
+        metric_cards = f'''
             <div class="card">
+                <div class="card-icon">{SVG_ICON_SUN}</div>
                 <div class="card-value">{simulation.total_pv_power_wc:,.0f}</div>
                 <div class="card-unit">Wc</div>
                 <div class="card-label">Puissance install\u00e9e</div>
@@ -222,6 +186,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         if simulation.number_of_panels:
             metric_cards += f'''
             <div class="card">
+                <div class="card-icon">{SVG_ICON_PANELS}</div>
                 <div class="card-value">{simulation.number_of_panels}</div>
                 <div class="card-unit">panneaux</div>
                 <div class="card-label">Nombre de panneaux</div>
@@ -230,6 +195,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         if simulation.orientation_deg:
             metric_cards += f'''
             <div class="card">
+                <div class="card-icon">{SVG_ICON_COMPASS}</div>
                 <div class="card-value">{simulation.orientation_deg:.0f}\u00b0</div>
                 <div class="card-unit">&nbsp;</div>
                 <div class="card-label">Orientation</div>
@@ -238,10 +204,40 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         if simulation.tilt_deg:
             metric_cards += f'''
             <div class="card">
+                <div class="card-icon">{SVG_ICON_TILT}</div>
                 <div class="card-value">{simulation.tilt_deg:.0f}\u00b0</div>
                 <div class="card-unit">&nbsp;</div>
                 <div class="card-label">Inclinaison</div>
             </div>'''
+
+        # Build bilan rows conditionally (hide zero rows)
+        def _bilan_row(icon, label, value, unit, css_class=''):
+            return f'''<tr class="{css_class}">
+                    <td class="bilan-icon">{icon}</td>
+                    <td class="bilan-label">{label}</td>
+                    <td class="bilan-value">{_fmt(value)} {unit}</td>
+                </tr>'''
+
+        def _bilan_row_if(icon, label, value, unit, css_class=''):
+            """Only render row if value is non-zero."""
+            if not value:
+                return ''
+            return _bilan_row(icon, label, value, unit, css_class)
+
+        # Autoconsommation rows
+        autocons_rows = _bilan_row('&#9889;', 'Consomm\u00e9 directement', autocons_day, 'kWh')
+        autocons_rows += _bilan_row_if('&#9107;', 'Stock\u00e9 dans la batterie', battery_charge, 'kWh')
+        autocons_rows += _bilan_row('&#9751;', 'Total autoconsommation', autocons_total, 'kWh', 'bilan-row-total')
+
+        # Economies rows
+        eco_rows = _bilan_row_if('&#9788;', '\u00c9conomies li\u00e9es aux panneaux', savings_panels, '&euro;')
+        eco_rows += _bilan_row_if('&#9107;', '\u00c9conomies li\u00e9es \u00e0 la batterie', savings_battery, '&euro;')
+        eco_rows += _bilan_row_if('&#8364;', 'Revenus de revente', savings_resale, '&euro;')
+
+        # Location badge
+        roof_badge = ''
+        if simulation.roof_surface_m2:
+            roof_badge = f'<div class="location-badge">{simulation.roof_surface_m2:.0f} m\u00b2</div>'
 
         html = f"""<!DOCTYPE html>
 <html>
@@ -259,35 +255,38 @@ class PvSimulationWeasyPrint(models.AbstractModel):
     <!-- PAGE 1: COVER PAGE                           -->
     <!-- ============================================ -->
     <div class="page cover-page">
-        <!-- Full-bleed cover photo with gradient fade -->
-        {f'<div class="cover-photo-wrap"><img src="{cover_photo_data}" alt="" class="cover-photo"><div class="cover-photo-fade"></div></div>' if cover_photo_data else '<div class="cover-photo-wrap"><div class="cover-photo-placeholder"></div></div>'}
+        <!-- Full-bleed hero photo with dark overlay -->
+        <div class="cover-photo-wrap">
+            {f'<img src="{cover_photo_data}" alt="" class="cover-photo">' if cover_photo_data else ''}
+            <div class="cover-overlay"></div>
+            <div class="cover-fade"></div>
+        </div>
 
-        <!-- Logo overlaid top-left on photo -->
+        <!-- Logo overlaid top-left -->
         <div class="cover-logo">
             {f'<img src="{logo_data}" alt="Logo" class="logo-img">' if logo_data else ''}
         </div>
 
-        <!-- Title block below photo -->
-        <div class="cover-title-block">
-            <h1 class="cover-title">{cover_title}</h1>
-            <h1 class="cover-title-accent">{cover_subtitle}</h1>
-            {f'<p class="cover-tagline">{tagline}</p>' if tagline else ''}
+        <!-- Vertical green accent line + title block -->
+        <div class="cover-title-area">
+            <div class="cover-accent-line"></div>
+            <div class="cover-title-block">
+                <h1 class="cover-title">{cover_title}</h1>
+                <h1 class="cover-title-accent">{cover_subtitle}</h1>
+                {f'<p class="cover-tagline">{tagline}</p>' if tagline else ''}
+            </div>
         </div>
 
-        <!-- Client info + reference at bottom -->
-        <div class="cover-bottom-info">
-            <table class="cover-info-table">
-                <tr>
-                    <td class="cover-info-left">
-                        {f'<p class="cover-client-name">{partner_name}</p>' if partner_name else ''}
-                        {f'<p class="cover-client-addr">{address.replace(chr(10), "<br/>")}</p>' if address else ''}
-                    </td>
-                    <td class="cover-info-right">
-                        {f'<p class="cover-ref">R\u00e9f.\u00a0: {project_ref}</p>' if project_ref else ''}
-                        {f'<p class="cover-date">{report_date}</p>' if report_date else ''}
-                    </td>
-                </tr>
-            </table>
+        <!-- Client name (prominent) -->
+        <div class="cover-client-area">
+            {f'<p class="cover-client-name">{partner_name}</p>' if partner_name else ''}
+            {f'<p class="cover-client-addr">{address.replace(chr(10), "<br/>")}</p>' if address else ''}
+        </div>
+
+        <!-- Metadata box bottom-right -->
+        <div class="cover-meta-box">
+            {f'<p class="cover-meta-line">R\u00e9f\u00e9rence</p><p class="cover-meta-val">{project_ref}</p>' if project_ref else ''}
+            {f'<p class="cover-meta-line">Date</p><p class="cover-meta-val">{report_date}</p>' if report_date else ''}
         </div>
     </div>
 
@@ -301,10 +300,13 @@ class PvSimulationWeasyPrint(models.AbstractModel):
 
             <div class="location-block">
                 {f'<p class="address-text">{address.replace(chr(10), "<br/>")}</p>' if address else ''}
-                {f'<p>Superficie de la toiture\u00a0: <strong>{simulation.roof_surface_m2:.0f} m\u00b2</strong></p>' if simulation.roof_surface_m2 else ''}
             </div>
 
-            {f'<div class="location-image-container"><img src="{location_image_data}" alt="Localisation" class="location-image"></div>' if location_image_data else ''}
+            <div class="location-image-container">
+                {f'<img src="{location_image_data}" alt="Localisation" class="location-image">' if location_image_data else ''}
+                <div class="location-pin">{SVG_ICON_PIN}</div>
+                {roof_badge}
+            </div>
         </div>
     </div>
 
@@ -327,15 +329,18 @@ class PvSimulationWeasyPrint(models.AbstractModel):
 
             {f'<div class="chart-container"><img src="{chart_data}" alt="Production mensuelle" class="chart-img"></div>' if chart_data else ''}
 
-            <div class="annual-production-highlight">
-                <span class="aph-label">Production totale annuelle</span>
-                <span class="aph-value">{simulation.annual_production_kwh:,.2f} kWh</span>
+            <div class="hero-metric">
+                <div class="hero-metric-inner">
+                    <span class="hero-metric-value">{simulation.annual_production_kwh:,.0f}</span>
+                    <span class="hero-metric-unit">kWh/an</span>
+                </div>
+                <span class="hero-metric-label">Production totale annuelle</span>
             </div>
         </div>
     </div>
 
     <!-- ============================================ -->
-    <!-- PAGE 4: BILAN ÉNERGÉTIQUE                    -->
+    <!-- PAGE 4: BILAN ÉNERGÉTIQUE + IMPACT           -->
     <!-- ============================================ -->
     <div class="page content-page">
         <div class="section">
@@ -347,11 +352,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         <div class="bilan-section">
             <div class="bilan-section-header">Production</div>
             <table class="bilan-table">
-                <tr>
-                    <td class="bilan-icon">&#9788;</td>
-                    <td class="bilan-label">Production totale annuelle</td>
-                    <td class="bilan-value">{_fmt(prod_total)} kWh</td>
-                </tr>
+                {_bilan_row('&#9788;', 'Production totale annuelle', prod_total, 'kWh')}
             </table>
         </div>
 
@@ -359,21 +360,9 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         <div class="bilan-section">
             <div class="bilan-section-header">Consommation</div>
             <table class="bilan-table">
-                <tr>
-                    <td class="bilan-icon">&#9788;</td>
-                    <td class="bilan-label">Consommation jour</td>
-                    <td class="bilan-value">{_fmt(conso_day)} kWh</td>
-                </tr>
-                <tr>
-                    <td class="bilan-icon">&#9790;</td>
-                    <td class="bilan-label">Consommation nuit</td>
-                    <td class="bilan-value">{_fmt(conso_night)} kWh</td>
-                </tr>
-                <tr class="bilan-row-total">
-                    <td class="bilan-icon">&#9751;</td>
-                    <td class="bilan-label">Consommation totale</td>
-                    <td class="bilan-value">{_fmt(conso_total)} kWh</td>
-                </tr>
+                {_bilan_row('&#9788;', 'Consommation jour', conso_day, 'kWh')}
+                {_bilan_row('&#9790;', 'Consommation nuit', conso_night, 'kWh')}
+                {_bilan_row('&#9751;', 'Consommation totale', conso_total, 'kWh', 'bilan-row-total')}
             </table>
         </div>
 
@@ -381,21 +370,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         <div class="bilan-section">
             <div class="bilan-section-header">Autoconsommation</div>
             <table class="bilan-table">
-                <tr>
-                    <td class="bilan-icon">&#9889;</td>
-                    <td class="bilan-label">Consomm\u00e9 directement</td>
-                    <td class="bilan-value">{_fmt(autocons_day)} kWh</td>
-                </tr>
-                <tr>
-                    <td class="bilan-icon">&#9107;</td>
-                    <td class="bilan-label">Stock\u00e9 dans la batterie</td>
-                    <td class="bilan-value">{_fmt(battery_charge)} kWh</td>
-                </tr>
-                <tr class="bilan-row-total">
-                    <td class="bilan-icon">&#9751;</td>
-                    <td class="bilan-label">Total autoconsommation</td>
-                    <td class="bilan-value">{_fmt(autocons_total)} kWh</td>
-                </tr>
+                {autocons_rows}
             </table>
         </div>
 
@@ -403,25 +378,11 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         <div class="bilan-section">
             <div class="bilan-section-header">\u00c9conomies</div>
             <table class="bilan-table">
-                <tr>
-                    <td class="bilan-icon">&#9788;</td>
-                    <td class="bilan-label">\u00c9conomies li\u00e9es aux panneaux</td>
-                    <td class="bilan-value">{_fmt(savings_panels)} &euro;</td>
-                </tr>
-                <tr>
-                    <td class="bilan-icon">&#9107;</td>
-                    <td class="bilan-label">\u00c9conomies li\u00e9es \u00e0 la batterie</td>
-                    <td class="bilan-value">{_fmt(savings_battery)} &euro;</td>
-                </tr>
-                <tr>
-                    <td class="bilan-icon">&#8364;</td>
-                    <td class="bilan-label">Revenus de revente</td>
-                    <td class="bilan-value">{_fmt(savings_resale)} &euro;</td>
-                </tr>
+                {eco_rows}
             </table>
         </div>
 
-        <!-- Bottom summary: Total savings + Purchase -->
+        <!-- Bottom summary -->
         <div class="bilan-bottom">
             <div class="bilan-total-savings">
                 <span class="bts-label">Total \u00e9conomies annuelles</span>
@@ -432,6 +393,34 @@ class PvSimulationWeasyPrint(models.AbstractModel):
                 <span class="btp-value">{_fmt(purchase_total)} &euro;</span>
             </div>
         </div>
+
+        <!-- Environmental Impact Section -->
+        <div class="eco-impact-section">
+            <h3 class="eco-impact-title">Impact Environnemental</h3>
+            <p class="eco-impact-subtitle">Votre production de {simulation.annual_production_kwh:,.0f} kWh/an \u00e9quivaut \u00e0\u00a0:</p>
+            <table class="eco-impact-table">
+                <tr>
+                    <td class="eco-card">
+                        <div class="eco-card-icon">&#127793;</div>
+                        <div class="eco-card-value">{co2_saved_tons:.1f}</div>
+                        <div class="eco-card-unit">tonnes CO\u2082</div>
+                        <div class="eco-card-label">\u00e9vit\u00e9es par an</div>
+                    </td>
+                    <td class="eco-card">
+                        <div class="eco-card-icon">&#127794;</div>
+                        <div class="eco-card-value">{trees_equivalent}</div>
+                        <div class="eco-card-unit">arbres</div>
+                        <div class="eco-card-label">plant\u00e9s \u00e9quivalents</div>
+                    </td>
+                    <td class="eco-card">
+                        <div class="eco-card-icon">&#128664;</div>
+                        <div class="eco-card-value">{car_km_equivalent:,}</div>
+                        <div class="eco-card-unit">km</div>
+                        <div class="eco-card-label">en voiture \u00e9vit\u00e9s</div>
+                    </td>
+                </tr>
+            </table>
+        </div>
     </div>
 </body>
 </html>"""
@@ -439,20 +428,20 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         return html
 
     def _generate_css(self):
-        """Generate CSS styling per DESIGN SYSTEM v3.0"""
+        """Generate CSS styling — Design System v4.0"""
 
         css = """
         /* ==============================================
-           PHOTOVOLTAIC REPORT – DESIGN SYSTEM v3.0
+           PHOTOVOLTAIC REPORT – DESIGN SYSTEM v4.0
            WeasyPrint-compatible (no grid, no flex-gap)
            ============================================== */
 
-        /* ---------- Running footer (content pages) ---------- */
+        /* ---------- Running footer ---------- */
         .running-footer {
             position: running(pageFooter);
             font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
             font-size: 8pt;
-            color: #5F6368;
+            color: #616161;
             text-align: left;
             padding: 1mm 0;
             width: 100%;
@@ -466,7 +455,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
 
             @bottom-left {
                 content: element(pageFooter);
-                border-top: 2px solid #1B3A5C;
+                border-top: 1.5px solid #4A9B5D;
                 padding: 2mm 0 0 0;
                 width: 80%;
                 vertical-align: top;
@@ -476,8 +465,8 @@ class PvSimulationWeasyPrint(models.AbstractModel):
                 content: "Page " counter(page) " / " counter(pages);
                 font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
                 font-size: 8pt;
-                color: #5F6368;
-                border-top: 2px solid #1B3A5C;
+                color: #616161;
+                border-top: 1.5px solid #4A9B5D;
                 padding-top: 3mm;
                 vertical-align: top;
             }
@@ -499,7 +488,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         body {
             font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
             font-size: 11pt;
-            color: #1A1A1A;
+            color: #212121;
             line-height: 1.55;
         }
 
@@ -507,7 +496,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
 
         strong {
             font-weight: 600;
-            color: #1B3A5C;
+            color: #212121;
         }
 
         .page {
@@ -525,13 +514,13 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             overflow: hidden;
         }
 
-        /* Full-bleed photo at top ~60% of page */
+        /* Full-bleed photo with dark overlay */
         .cover-photo-wrap {
             position: absolute;
             top: 0;
             left: 0;
             right: 0;
-            height: 178mm;
+            height: 175mm;
             overflow: hidden;
         }
 
@@ -541,14 +530,18 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             object-fit: cover;
         }
 
-        .cover-photo-placeholder {
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 50%, #A5D6A7 100%);
+        /* Dark overlay on photo for contrast */
+        .cover-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.18);
         }
 
-        /* Gradient fade from photo to white */
-        .cover-photo-fade {
+        /* Fade from photo to white */
+        .cover-fade {
             position: absolute;
             bottom: 0;
             left: 0;
@@ -556,25 +549,14 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             height: 80mm;
             background: linear-gradient(
                 to bottom,
-                rgba(255, 255, 255, 0) 0%,
-                rgba(255, 255, 255, 0.5) 40%,
-                rgba(255, 255, 255, 0.85) 70%,
-                rgba(255, 255, 255, 1) 100%
+                rgba(255,255,255, 0) 0%,
+                rgba(255,255,255, 0.4) 35%,
+                rgba(255,255,255, 0.8) 65%,
+                rgba(255,255,255, 1) 100%
             );
         }
 
-        /* Thin separator line at photo/title boundary */
-        .cover-photo-wrap::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 15mm;
-            right: 15mm;
-            height: 0.5px;
-            background: #BDBDBD;
-        }
-
-        /* Logo overlaid top-left on photo */
+        /* Logo */
         .cover-logo {
             position: absolute;
             top: 12mm;
@@ -587,95 +569,109 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             max-width: 55mm;
         }
 
-        /* Title block: centered, below photo area */
-        .cover-title-block {
+        /* Green accent line + title */
+        .cover-title-area {
             position: absolute;
-            top: 185mm;
+            top: 180mm;
+            left: 20mm;
+            right: 20mm;
+        }
+
+        .cover-accent-line {
+            position: absolute;
             left: 0;
-            right: 0;
-            text-align: center;
+            top: 2mm;
+            width: 3px;
+            height: 42mm;
+            background: #4A9B5D;
+            border-radius: 2px;
+        }
+
+        .cover-title-block {
+            margin-left: 12mm;
         }
 
         .cover-title {
-            font-size: 30pt;
+            font-size: 28pt;
             font-weight: 300;
-            color: #1A1A1A;
-            letter-spacing: 2mm;
+            color: #212121;
+            letter-spacing: 1.5mm;
             text-transform: uppercase;
             margin: 0;
-            line-height: 1.3;
+            line-height: 1.25;
         }
 
         .cover-title-accent {
-            font-size: 30pt;
+            font-size: 28pt;
             font-weight: 300;
             color: #4A9B5D;
-            letter-spacing: 2mm;
+            letter-spacing: 1.5mm;
             text-transform: uppercase;
-            margin: 0 0 6mm 0;
-            line-height: 1.3;
+            margin: 0 0 4mm 0;
+            line-height: 1.25;
         }
 
         .cover-tagline {
-            font-size: 11pt;
+            font-size: 10.5pt;
             font-style: italic;
             color: #757575;
             margin: 0;
-            letter-spacing: 0.3mm;
+            letter-spacing: 0.2mm;
         }
 
-        /* Client info row at bottom of cover */
-        .cover-bottom-info {
+        /* Client area (left side, below title) */
+        .cover-client-area {
             position: absolute;
-            bottom: 12mm;
-            left: 15mm;
-            right: 15mm;
-            border-top: 0.5px solid #BDBDBD;
-            padding-top: 4mm;
-        }
-
-        .cover-info-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .cover-info-left {
-            vertical-align: top;
-            width: 60%;
-            padding: 0;
-        }
-
-        .cover-info-right {
-            vertical-align: top;
-            width: 40%;
-            text-align: right;
-            padding: 0;
+            top: 235mm;
+            left: 20mm;
+            right: 110mm;
         }
 
         .cover-client-name {
-            font-size: 10pt;
+            font-size: 16pt;
             font-weight: 600;
-            color: #1A1A1A;
-            margin: 0 0 1mm 0;
+            color: #212121;
+            margin: 0 0 2mm 0;
+            line-height: 1.2;
         }
 
         .cover-client-addr {
-            font-size: 9pt;
-            color: #757575;
+            font-size: 9.5pt;
+            color: #616161;
             margin: 0;
             line-height: 1.4;
         }
 
-        .cover-ref {
-            font-size: 9pt;
-            color: #757575;
-            margin: 0 0 1mm 0;
+        /* Metadata box bottom-right */
+        .cover-meta-box {
+            position: absolute;
+            bottom: 15mm;
+            right: 15mm;
+            background: rgba(74, 155, 93, 0.08);
+            border: 1px solid rgba(74, 155, 93, 0.25);
+            border-radius: 8px;
+            padding: 5mm 7mm;
+            text-align: right;
+            min-width: 45mm;
         }
 
-        .cover-date {
-            font-size: 9pt;
-            color: #757575;
+        .cover-meta-line {
+            font-size: 7.5pt;
+            color: #616161;
+            text-transform: uppercase;
+            letter-spacing: 0.3mm;
             margin: 0;
+        }
+
+        .cover-meta-val {
+            font-size: 10.5pt;
+            font-weight: 600;
+            color: #212121;
+            margin: 0 0 2mm 0;
+        }
+
+        .cover-meta-val:last-child {
+            margin-bottom: 0;
         }
 
         /* ===================================================
@@ -686,7 +682,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         }
 
         .section {
-            margin-bottom: 12mm;
+            margin-bottom: 10mm;
             page-break-inside: avoid;
         }
 
@@ -701,11 +697,11 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         }
 
         .section-title {
-            font-size: 18pt;
+            font-size: 16pt;
             font-weight: 600;
-            color: #1B3A5C;
+            color: #212121;
             text-transform: uppercase;
-            border-bottom: 2px solid #E0E0E0;
+            border-bottom: 2px solid #4A9B5D;
             padding-bottom: 3mm;
             margin-bottom: 8mm;
             overflow: hidden;
@@ -716,30 +712,52 @@ class PvSimulationWeasyPrint(models.AbstractModel):
            PAGE 2 – LOCALISATION
            =================================================== */
         .location-block {
-            margin-bottom: 8mm;
+            margin-bottom: 6mm;
         }
 
         .address-text {
             font-size: 11pt;
-            color: #1A1A1A;
+            color: #212121;
             margin-bottom: 3mm;
         }
 
         .location-image-container {
+            position: relative;
             text-align: center;
-            margin: 8mm auto;
-            padding: 6mm;
-            background: #F7F8FA;
-            border: 1px solid #E0E0E0;
-            border-radius: 8px;
+            margin: 6mm auto;
             page-break-inside: avoid;
         }
 
         .location-image {
-            width: 75%;
-            max-height: 120mm;
+            width: 100%;
+            max-height: 130mm;
             object-fit: cover;
-            border-radius: 4px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+        }
+
+        /* Location pin overlay */
+        .location-pin {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            margin-top: -16px;
+            margin-left: -16px;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        }
+
+        /* Roof surface badge */
+        .location-badge {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            background: #4A9B5D;
+            color: #FFFFFF;
+            font-size: 9pt;
+            font-weight: 600;
+            padding: 2mm 4mm;
+            border-radius: 20px;
+            letter-spacing: 0.2mm;
         }
 
         /* ===================================================
@@ -756,29 +774,34 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             width: 23%;
             margin: 0 0.8%;
             text-align: center;
-            padding: 6mm 3mm;
+            padding: 5mm 3mm;
+            background: rgba(255, 255, 255, 0.85);
             border: 1px solid #E0E0E0;
-            border-radius: 8px;
-            background: #F7F8FA;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
             page-break-inside: avoid;
         }
 
+        .card-icon {
+            margin-bottom: 2mm;
+        }
+
         .card-value {
-            font-size: 22pt;
+            font-size: 20pt;
             font-weight: 700;
-            color: #1B3A5C;
+            color: #212121;
             line-height: 1.2;
         }
 
         .card-unit {
-            font-size: 10pt;
-            color: #5F6368;
-            margin-bottom: 2mm;
+            font-size: 9pt;
+            color: #616161;
+            margin-bottom: 1mm;
         }
 
         .card-label {
-            font-size: 9pt;
-            color: #5F6368;
+            font-size: 8pt;
+            color: #616161;
             text-transform: uppercase;
             letter-spacing: 0.3px;
         }
@@ -795,38 +818,47 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             border-radius: 6px;
         }
 
-        /* Annual production highlight */
-        .annual-production-highlight {
+        /* Hero metric for annual production */
+        .hero-metric {
             text-align: center;
             margin: 8mm auto;
-            padding: 5mm 10mm;
-            background: #F7F8FA;
-            border: 1px solid #E0E0E0;
-            border-radius: 8px;
+            padding: 6mm 10mm;
+            background: linear-gradient(135deg, #4A9B5D 0%, #388E3C 100%);
+            border-radius: 12px;
             page-break-inside: avoid;
         }
 
-        .aph-label {
-            display: block;
-            font-size: 10pt;
-            color: #5F6368;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
+        .hero-metric-inner {
             margin-bottom: 2mm;
         }
 
-        .aph-value {
-            display: block;
-            font-size: 22pt;
+        .hero-metric-value {
+            font-size: 32pt;
             font-weight: 700;
-            color: #4A9B5D;
+            color: #FFFFFF;
+            letter-spacing: 0.5mm;
+        }
+
+        .hero-metric-unit {
+            font-size: 14pt;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.85);
+            margin-left: 2mm;
+        }
+
+        .hero-metric-label {
+            display: block;
+            font-size: 9pt;
+            color: rgba(255, 255, 255, 0.8);
+            text-transform: uppercase;
+            letter-spacing: 0.5mm;
         }
 
         /* ===================================================
            PAGE 4 – BILAN ÉNERGÉTIQUE
            =================================================== */
         .bilan-section {
-            margin-bottom: 5mm;
+            margin-bottom: 4mm;
             border: 1px solid #E0E0E0;
             border-radius: 8px;
             overflow: hidden;
@@ -834,13 +866,13 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         }
 
         .bilan-section-header {
-            background: #1B3A5C;
+            background: #212121;
             color: #FFFFFF;
-            font-size: 10pt;
+            font-size: 9pt;
             font-weight: 600;
-            padding: 2.5mm 5mm;
+            padding: 2mm 5mm;
             text-transform: uppercase;
-            letter-spacing: 0.3px;
+            letter-spacing: 0.5px;
         }
 
         .bilan-table {
@@ -849,38 +881,40 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         }
 
         .bilan-table tr {
-            border-bottom: 1px solid #F0F0F0;
+            border-bottom: none;
         }
 
-        .bilan-table tr:last-child {
-            border-bottom: none;
+        /* Zebra striping */
+        .bilan-table tr:nth-child(even) {
+            background: #F9F9F9;
         }
 
         .bilan-icon {
             width: 10mm;
             text-align: center;
             font-size: 12pt;
-            color: #5F6368;
-            padding: 3mm 2mm;
+            color: #616161;
+            padding: 2.5mm 2mm;
         }
 
         .bilan-label {
-            padding: 3mm 4mm;
+            padding: 2.5mm 4mm;
             font-size: 10pt;
-            color: #1A1A1A;
+            color: #212121;
         }
 
         .bilan-value {
             text-align: right;
-            padding: 3mm 5mm;
+            padding: 2.5mm 5mm;
             font-size: 10pt;
             font-weight: 600;
-            color: #1A1A1A;
+            color: #212121;
             white-space: nowrap;
+            font-variant-numeric: tabular-nums;
         }
 
         .bilan-row-total {
-            background: #F7F8FA;
+            background: #E8F5E9 !important;
         }
 
         .bilan-row-total .bilan-label {
@@ -889,21 +923,21 @@ class PvSimulationWeasyPrint(models.AbstractModel):
 
         .bilan-row-total .bilan-value {
             font-weight: 700;
-            color: #1B3A5C;
+            color: #388E3C;
         }
 
-        /* Bottom summary row */
+        /* Bottom summary */
         .bilan-bottom {
-            margin-top: 6mm;
+            margin-top: 5mm;
             page-break-inside: avoid;
         }
 
         .bilan-total-savings {
             display: inline-block;
             width: 48%;
-            background: #4A9B5D;
+            background: linear-gradient(135deg, #4A9B5D 0%, #388E3C 100%);
             color: #FFFFFF;
-            border-radius: 8px;
+            border-radius: 10px;
             padding: 5mm 6mm;
             text-align: center;
             vertical-align: top;
@@ -911,7 +945,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
 
         .bts-label {
             display: block;
-            font-size: 9pt;
+            font-size: 8pt;
             text-transform: uppercase;
             letter-spacing: 0.3px;
             opacity: 0.9;
@@ -920,7 +954,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
 
         .bts-value {
             display: block;
-            font-size: 20pt;
+            font-size: 18pt;
             font-weight: 700;
         }
 
@@ -928,9 +962,9 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             display: inline-block;
             width: 48%;
             margin-left: 2%;
-            background: #F7F8FA;
-            border: 2px solid #E0E0E0;
-            border-radius: 8px;
+            background: #F9F9F9;
+            border: 1.5px solid #E0E0E0;
+            border-radius: 10px;
             padding: 5mm 6mm;
             text-align: center;
             vertical-align: top;
@@ -938,29 +972,93 @@ class PvSimulationWeasyPrint(models.AbstractModel):
 
         .btp-label {
             display: block;
-            font-size: 9pt;
+            font-size: 8pt;
             text-transform: uppercase;
             letter-spacing: 0.3px;
-            color: #5F6368;
+            color: #616161;
             margin-bottom: 2mm;
         }
 
         .btp-value {
             display: block;
-            font-size: 20pt;
+            font-size: 18pt;
             font-weight: 700;
-            color: #1A1A1A;
+            color: #212121;
+        }
+
+        /* ===================================================
+           ENVIRONMENTAL IMPACT
+           =================================================== */
+        .eco-impact-section {
+            margin-top: 8mm;
+            padding: 5mm 6mm;
+            background: #E8F5E9;
+            border: 1px solid #C8E6C9;
+            border-radius: 10px;
+            page-break-inside: avoid;
+        }
+
+        .eco-impact-title {
+            font-size: 12pt;
+            font-weight: 600;
+            color: #388E3C;
+            text-transform: uppercase;
+            letter-spacing: 0.3mm;
+            margin-bottom: 2mm;
+        }
+
+        .eco-impact-subtitle {
+            font-size: 9pt;
+            color: #616161;
+            margin-bottom: 4mm;
+        }
+
+        .eco-impact-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .eco-card {
+            width: 33.33%;
+            text-align: center;
+            padding: 3mm 2mm;
+            vertical-align: top;
+        }
+
+        .eco-card-icon {
+            font-size: 22pt;
+            margin-bottom: 1mm;
+        }
+
+        .eco-card-value {
+            font-size: 18pt;
+            font-weight: 700;
+            color: #388E3C;
+            line-height: 1.2;
+        }
+
+        .eco-card-unit {
+            font-size: 9pt;
+            font-weight: 600;
+            color: #4A9B5D;
+        }
+
+        .eco-card-label {
+            font-size: 8pt;
+            color: #616161;
         }
         """
 
         return css
 
     def _generate_monthly_chart(self, simulation):
-        """Generate monthly production bar chart using matplotlib"""
+        """Generate monthly production bar chart with gradient bars + transparent bg"""
         try:
             import matplotlib
             matplotlib.use('Agg')
             import matplotlib.pyplot as plt
+            import matplotlib.colors as mcolors
+            import numpy as np
             import io
         except ImportError as e:
             _logger.warning(f"Matplotlib not available for chart generation: {e}")
@@ -970,50 +1068,52 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             return None
 
         try:
-            # Get monthly data
             monthly_results = simulation.monthly_result_ids.sorted(key=lambda r: r.month)
-
             if not monthly_results:
                 return None
 
             months = [r.month for r in monthly_results]
             production = [r.production_pv_kwh for r in monthly_results]
 
-            # Month labels (French)
             month_labels = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun',
                             'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']
 
-            # Create figure
             fig, ax = plt.subplots(figsize=(10, 3.8))
-            fig.patch.set_facecolor('white')
-            ax.set_facecolor('#FFFFFF')
+            fig.patch.set_alpha(0)
+            ax.set_facecolor('none')
+
+            # Gradient-like effect: color bars from light to dark green based on value
+            max_prod = max(production) if production else 1
+            colors = []
+            for val in production:
+                ratio = val / max_prod if max_prod else 0
+                r = int(200 - ratio * 78)   # 200 -> 122 (light -> dark green)
+                g = int(230 - ratio * 88)   # 230 -> 142
+                b = int(201 - ratio * 141)  # 201 -> 60
+                colors.append(f'#{r:02x}{g:02x}{b:02x}')
 
             bars = ax.bar(range(len(months)), production,
-                         color='#4A9B5D',
-                         edgecolor='#3A8B4D',
-                         linewidth=0.8,
+                         color=colors,
+                         edgecolor='#388E3C',
+                         linewidth=0.6,
                          width=0.7,
                          zorder=3)
 
-            # Add value labels on bars
             for bar, val in zip(bars, production):
                 height = bar.get_height()
                 ax.text(bar.get_x() + bar.get_width() / 2., height + 0.5,
                        f'{val:.0f}',
                        ha='center', va='bottom', fontsize=8.5,
-                       fontweight='600', color='#1A1A1A')
+                       fontweight='600', color='#212121')
 
-            # Styling
             labels = [month_labels[m - 1] if 1 <= m <= 12 else str(m) for m in months]
             ax.set_xticks(range(len(months)))
-            ax.set_xticklabels(labels, fontsize=9.5, fontweight='500', color='#5F6368')
-            ax.set_ylabel('kWh', fontsize=10, fontweight='600', color='#5F6368')
+            ax.set_xticklabels(labels, fontsize=9.5, fontweight='500', color='#616161')
+            ax.set_ylabel('kWh', fontsize=10, fontweight='600', color='#616161')
 
-            # Grid
-            ax.grid(axis='y', alpha=0.5, linestyle='-', linewidth=0.5, color='#E0E0E0', zorder=0)
+            ax.grid(axis='y', alpha=0.4, linestyle='-', linewidth=0.5, color='#E0E0E0', zorder=0)
             ax.set_axisbelow(True)
 
-            # Spines
             ax.spines['top'].set_visible(False)
             ax.spines['right'].set_visible(False)
             ax.spines['bottom'].set_color('#E0E0E0')
@@ -1022,9 +1122,8 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             ax.spines['left'].set_linewidth(0.5)
 
             ax.tick_params(axis='both', which='both', length=0,
-                          labelcolor='#5F6368', labelsize=9.5)
+                          labelcolor='#616161', labelsize=9.5)
 
-            # Add some padding at top for value labels
             ymax = max(production) if production else 1
             ax.set_ylim(0, ymax * 1.15)
 
@@ -1032,7 +1131,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
 
             buffer = io.BytesIO()
             plt.savefig(buffer, format='png', dpi=150, bbox_inches='tight',
-                       facecolor='white', edgecolor='none', transparent=False)
+                       facecolor='none', edgecolor='none', transparent=True)
             buffer.seek(0)
             plt.close(fig)
 
