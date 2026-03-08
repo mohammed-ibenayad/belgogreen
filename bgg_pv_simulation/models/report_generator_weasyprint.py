@@ -272,9 +272,8 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             font-size: 8pt;
             color: #5F6368;
             text-align: left;
-            padding: 3mm 4mm;
+            padding: 1mm 0;
             width: 100%;
-            border: 1px solid #E0E0E0;
         }
 
         .footer-row {
@@ -285,23 +284,23 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         /* ===== PAGE RULES ===== */
         @page {
             size: A4;
-            margin: 15mm 20mm 22mm 20mm;
+            margin: 15mm 20mm 20mm 20mm;
 
             @bottom-left {
+                content: element(pageFooter);
+                border-top: 2px solid #4A9B5D;
+                padding: 2mm 0 0 0;
+                width: 85%;
+                vertical-align: top;
+            }
+
+            @bottom-right {
                 content: "Page " counter(page) " / " counter(pages);
                 font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
                 font-size: 8pt;
                 color: #5F6368;
-                border-top: 3px solid #4A9B5D;
+                border-top: 2px solid #4A9B5D;
                 padding-top: 3mm;
-                vertical-align: top;
-                width: 15%;
-            }
-
-            @bottom-center {
-                content: element(pageFooter);
-                border-top: 3px solid #4A9B5D;
-                padding: 2mm 0 0 0;
                 vertical-align: top;
             }
         }
@@ -309,7 +308,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         @page :first {
             margin: 0;
             @bottom-left { content: none; }
-            @bottom-center { content: none; }
+            @bottom-right { content: none; }
         }
 
         * {
@@ -424,22 +423,15 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             font-style: italic;
         }
 
-        /* Cover footer: green top line + gray bordered box, no page number */
+        /* Cover footer: matches content footer style, no page number */
         .cover-footer {
             position: absolute;
             bottom: 0;
             left: 0;
             right: 0;
-            padding: 0 20mm 8mm 20mm;
+            padding: 4mm 20mm;
+            border-top: 2px solid #4A9B5D;
             background: #FFFFFF;
-        }
-
-        .cover-footer::before {
-            content: "";
-            display: block;
-            height: 3px;
-            background: #4A9B5D;
-            margin-bottom: 3mm;
         }
 
         .cover-footer-inner {
@@ -448,8 +440,6 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             color: #5F6368;
             text-align: left;
             line-height: 1.6;
-            border: 1px solid #E0E0E0;
-            padding: 3mm 4mm;
         }
 
         /* ===== CONTENT PAGES ===== */
