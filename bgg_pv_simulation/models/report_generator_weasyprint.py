@@ -403,7 +403,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
 
         .title-line1,
         .title-line2 {
-            color: #4A9B5D;
+            color: #1A1A1A;
             font-size: 28pt;
             font-weight: 700;
             letter-spacing: 0.5mm;
@@ -503,8 +503,8 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         }
 
         .location-image {
-            width: 100%;
-            max-height: 160mm;
+            width: 70%;
+            max-height: 112mm;
             object-fit: cover;
             border-radius: 6px;
             border: 1px solid #E0E0E0;
@@ -547,9 +547,8 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         }
 
         .annual-total strong {
-            font-size: 18pt;
             font-weight: 700;
-            color: #4A9B5D;
+            color: #1A1A1A;
         }
         """
 
