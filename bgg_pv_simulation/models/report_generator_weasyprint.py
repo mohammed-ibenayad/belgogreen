@@ -125,8 +125,15 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             except Exception as e:
                 _logger.warning(f"Could not generate chart: {e}")
 
-        # Cover title
+        # Cover title + subtitle
         cover_title = _esc(simulation.cover_title or 'Votre installation photovoltaïque')
+        cover_subtitle = _esc(simulation.cover_subtitle or 'Étude personnalisée')
+
+        # Section titles
+        title_location = _esc(simulation.section_title_location or "LOCALISATION DE L'INSTALLATION")
+        title_system = _esc(simulation.section_title_system or 'CARACTÉRISTIQUES DU SYSTÈME')
+        title_production = _esc(simulation.section_title_production or 'PRODUCTION ESTIMÉE')
+        title_bilan = _esc(simulation.section_title_bilan or 'BILAN ÉNERGÉTIQUE')
 
         # Footer data
         company_name = _esc(company.name or '')
@@ -261,8 +268,8 @@ class PvSimulationWeasyPrint(models.AbstractModel):
 
         <!-- Main Title Block -->
         <div class="cover-title-block">
-            <h1 class="cover-title">{_esc(cover_title)}</h1>
-            <p class="cover-subtitle">\u00c9tude personnalis\u00e9e</p>
+            <h1 class="cover-title">{cover_title}</h1>
+            <p class="cover-subtitle">{cover_subtitle}</p>
         </div>
 
         <!-- Client Info Card -->
@@ -293,7 +300,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
     <div class="page content-page">
         <div class="section">
             <div class="section-number">01</div>
-            <h2 class="section-title">{_esc(simulation.section_title_location or "LOCALISATION DE L'INSTALLATION")}</h2>
+            <h2 class="section-title">{title_location}</h2>
 
             <div class="location-block">
                 {f'<p class="address-text">{address.replace(chr(10), "<br/>")}</p>' if address else ''}
@@ -310,7 +317,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
     <div class="page content-page">
         <div class="section">
             <div class="section-number">02</div>
-            <h2 class="section-title">CARACT\u00c9RISTIQUES DU SYST\u00c8ME</h2>
+            <h2 class="section-title">{title_system}</h2>
 
             <div class="cards-row">
                 {metric_cards}
@@ -319,7 +326,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
 
         <div class="section">
             <div class="section-number">03</div>
-            <h2 class="section-title">{_esc(simulation.section_title_production or 'PRODUCTION ESTIM\u00c9E')}</h2>
+            <h2 class="section-title">{title_production}</h2>
 
             {f'<div class="chart-container"><img src="{chart_data}" alt="Production mensuelle" class="chart-img"></div>' if chart_data else ''}
 
@@ -336,7 +343,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
     <div class="page content-page">
         <div class="section">
             <div class="section-number">04</div>
-            <h2 class="section-title">BILAN \u00c9NERG\u00c9TIQUE</h2>
+            <h2 class="section-title">{title_bilan}</h2>
         </div>
 
         <!-- Production -->

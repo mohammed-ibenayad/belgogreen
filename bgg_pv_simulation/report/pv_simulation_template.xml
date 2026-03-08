@@ -434,7 +434,7 @@
                 <div class="pv-cover-title">
                     <h1><t t-esc="o.cover_title or 'Votre installation photovoltaïque'"/></h1>
                 </div>
-                <p class="pv-cover-subtitle">Étude personnalisée</p>
+                <p class="pv-cover-subtitle"><t t-esc="o.cover_subtitle or 'Étude personnalisée'"/></p>
 
                 <!-- Client info card -->
                 <div class="pv-cover-client">
@@ -518,7 +518,7 @@
         <template id="report_pv_simulation_page_production">
             <!-- System Characteristics -->
             <div class="pv-section-number">02</div>
-            <h2 class="pv-section-title">CARACTÉRISTIQUES DU SYSTÈME</h2>
+            <h2 class="pv-section-title"><t t-esc="o.section_title_system or 'CARACTÉRISTIQUES DU SYSTÈME'"/></h2>
 
             <div class="pv-cards-row">
                 <div class="pv-card">
@@ -580,7 +580,7 @@
             <t t-set="purchase_total" t-value="sum(results.mapped('purchase_cost')) if results else 0.0"/>
 
             <div class="pv-section-number">04</div>
-            <h2 class="pv-section-title">BILAN ÉNERGÉTIQUE</h2>
+            <h2 class="pv-section-title"><t t-esc="o.section_title_bilan or 'BILAN ÉNERGÉTIQUE'"/></h2>
 
             <!-- Production -->
             <div class="pv-bilan-section">

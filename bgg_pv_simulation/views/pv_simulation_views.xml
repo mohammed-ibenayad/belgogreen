@@ -134,12 +134,15 @@
                                 <group>
                                     <field name="cover_photo" widget="image" class="oe_avatar"/>
                                     <field name="cover_title"/>
+                                    <field name="cover_subtitle"/>
                                 </group>
                             </group>
                             <group string="Section Titles (Leave empty to use defaults)">
                                 <group>
                                     <field name="section_title_location"/>
+                                    <field name="section_title_system"/>
                                     <field name="section_title_production"/>
+                                    <field name="section_title_bilan"/>
                                 </group>
                             </group>
                         </page>
