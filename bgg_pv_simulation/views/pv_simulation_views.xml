@@ -37,39 +37,12 @@
         <field name="arch" type="xml">
             <form string="PV Simulation">
                 <header>
-                    <button name="action_fetch_solar_data"
-                            string="🌞 Fetch Solar Data"
-                            type="object"
-                            class="btn-primary"
-                            invisible="not id"
-                            help="Fetch from Google Solar API (only fills empty fields)"/>
-                    <button name="action_fetch_solar_data_force"
-                            string="⚡ Force Update from API"
-                            type="object"
-                            class="btn-warning"
-                            invisible="not id"
-                            confirm="This will OVERWRITE existing values with API data. Continue?"
-                            help="Fetch from API and overwrite ALL existing values"/>
                     <button name="action_regenerate_simulation"
                             string="Regenerate Simulation"
                             type="object"
                             class="oe_highlight"
-                            invisible="not id"/>
-                    <button name="action_generate_report"
-                            string="PDF Report (QWeb)"
-                            type="object"
                             invisible="not id"
-                            help="Generate report using Odoo's QWeb template (basic)"/>
-                    <button name="action_generate_report_reportlab"
-                            string="PDF Report (ReportLab)"
-                            type="object"
-                            invisible="not id"
-                            help="Generate report using ReportLab (professional quality)"/>
-                    <button name="action_generate_report_weasyprint"
-                            string="PDF Report (WeasyPrint)"
-                            type="object"
-                            invisible="not id"
-                            help="Generate report using WeasyPrint (HTML/CSS based)"/>
+                            confirm="This will fetch fresh data from APIs and recalculate the simulation. Existing values will be replaced. Continue?"/>
                 </header>
                 <sheet>
                     <field name="currency_id" invisible="1"/>
@@ -82,23 +55,14 @@
                     <group>
                         <group string="Quotation">
                             <field name="sale_order_id" readonly="1"/>
+                            <field name="installation_address"/>
                             <field name="report_date"/>
                         </group>
                         <group string="Location">
-                            <field name="installation_address"/>
                             <field name="roof_surface_m2"/>
                             <field name="latitude"/>
                             <field name="longitude"/>
-                        </group>
-                    </group>
-
-                    <group>
-                        <group string="Location Image">
                             <field name="location_image" widget="image" class="oe_avatar"/>
-                        </group>
-                        <group string="Cover Page">
-                            <field name="cover_photo" widget="image" class="oe_avatar"/>
-                            <field name="cover_title"/>
                         </group>
                     </group>
 
@@ -107,7 +71,6 @@
                             <group>
                                 <group string="Panel Configuration (Auto-detected from Sale Order)">
                                     <field name="number_of_panels" readonly="1"/>
-                                    <field name="max_panels_count" readonly="1"/>
                                     <label for="panel_unit_power_wc" string="Panel Unit Power"/>
                                     <div class="o_row">
                                         <field name="panel_unit_power_wc" readonly="1"/>
@@ -130,11 +93,12 @@
                                     </div>
                                 </group>
                                 <group string="Production">
-                                    <label for="annual_production_kwh" string="Annual Production (Google Solar API)"/>
+                                    <label for="annual_production_kwh" string="Annual Production (GSA)"/>
                                     <div class="o_row">
                                         <field name="annual_production_kwh"/>
                                         <span>kWh</span>
                                     </div>
+                                    <field name="max_panels_count" readonly="1" string="Max Panels (GSA)"/>
                                     <label for="pvgis_annual_production_kwh" string="Annual Production (PVGIS)"/>
                                     <div class="o_row">
                                         <field name="pvgis_annual_production_kwh" readonly="1"/>
@@ -160,6 +124,12 @@
                         </page>
 
                         <page string="Report Customization" name="customization">
+                            <group string="Cover Page">
+                                <group>
+                                    <field name="cover_photo" widget="image" class="oe_avatar"/>
+                                    <field name="cover_title"/>
+                                </group>
+                            </group>
                             <group string="Section Titles (Leave empty to use defaults)">
                                 <group>
                                     <field name="section_title_location"/>
