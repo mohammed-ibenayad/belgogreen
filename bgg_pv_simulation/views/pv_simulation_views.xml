@@ -44,15 +44,11 @@
                             invisible="not id"
                             confirm="This will fetch fresh data from APIs and recalculate the simulation. Existing values will be replaced. Continue?"/>
                     <button name="action_generate_report"
-                            string="PDF Report (QWeb)"
+                            string="PDF Report"
                             type="object"
+                            class="btn-primary"
                             invisible="not id"
-                            help="Generate report using Odoo's QWeb template"/>
-                    <button name="action_generate_report_weasyprint"
-                            string="PDF Report (WeasyPrint)"
-                            type="object"
-                            invisible="not id"
-                            help="Generate report using WeasyPrint (HTML/CSS based)"/>
+                            help="Generate professional PDF report"/>
                 </header>
                 <sheet>
                     <field name="currency_id" invisible="1"/>
