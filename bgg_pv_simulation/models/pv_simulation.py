@@ -74,14 +74,14 @@ class PvSimulation(models.Model):
         string='Cover Photo Filename'
     )
     cover_title = fields.Char(
-        string='Cover Title',
-        default='Votre installation photovoltaïque',
-        help='Main title on cover page (large text)'
+        string='Cover Title (Line 1)',
+        default='Votre installation',
+        help='First line of cover title (dark text)'
     )
     cover_subtitle = fields.Char(
-        string='Cover Subtitle',
-        default='Étude personnalisée',
-        help='Subtitle on cover page (smaller italic text below title)'
+        string='Cover Title (Line 2)',
+        default='Photovoltaïque',
+        help='Second line of cover title (green accent text)'
     )
 
     # Section Titles (Configurable per Quotation)
