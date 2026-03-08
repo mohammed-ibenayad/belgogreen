@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pv_tariff_profile_form" model="ir.ui.view">
+        <field name="name">pv.tariff.profile.form</field>
+        <field name="model">pv.tariff.profile</field>
+        <field name="arch" type="xml">
+            <form string="Tariff Profile">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Tariff Name"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Currency">
+                            <field name="currency_id"/>
+                        </group>
+                        <group>
+                        </group>
+                    </group>
+                    <group string="Electricity Prices">
+                        <group>
+                            <label for="purchase_price_kwh" string="Purchase Price"/>
+                            <div class="o_row">
+                                <field name="purchase_price_kwh"/>
+                                <span>/kWh</span>
+                            </div>
+                        </group>
+                        <group>
+                            <label for="feed_in_tariff_kwh" string="Feed-in Tariff"/>
+                            <div class="o_row">
+                                <field name="feed_in_tariff_kwh"/>
+                                <span>/kWh</span>
+                            </div>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Info" name="info">
+                            <group>
+                                <group>
+                                    <label for="purchase_price_kwh" string="Purchase Price"/>
+                                    <div class="text-muted">
+                                        Price paid when buying electricity from the grid
+                                    </div>
+                                </group>
+                                <group>
+                                    <label for="feed_in_tariff_kwh" string="Feed-in Tariff"/>
+                                    <div class="text-muted">
+                                        Price received when selling excess solar energy to the grid
+                                    </div>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- Standard Household Consumption Profile -->
+        <record id="consumption_profile_standard_household" model="pv.consumption.profile">
+            <field name="name">Ménage Standard</field>
+            <field name="annual_consumption_kwh">29500.0</field>
+            <field name="daily_day_consumption_kwh">39.33</field>
+            <field name="daily_night_consumption_kwh">42.61</field>
+        </record>
+
+    </data>
+</odoo>

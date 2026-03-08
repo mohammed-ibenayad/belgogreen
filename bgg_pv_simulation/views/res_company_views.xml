@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_company_form_pv" model="ir.ui.view">
+        <field name="name">res.company.form.pv</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml">
+            <notebook position="inside">
+                <page string="PV Reports" name="pv_reports">
+                    <group>
+                        <group string="Branding">
+                            <field name="pv_report_logo" widget="image" class="oe_avatar"/>
+                            <field name="pv_report_tagline" placeholder="e.g., Save your planet. Save your wallet."/>
+                        </group>
+                        <group string="Contact Information">
+                            <field name="pv_report_phone" placeholder="e.g., +32 123 45 67 89"/>
+                            <field name="pv_report_email" widget="email" placeholder="e.g., info@company.com"/>
+                        </group>
+                    </group>
+                    <separator string="Information"/>
+                    <div class="text-muted">
+                        <p>These settings customize the branding and contact information displayed on PV simulation PDF reports.</p>
+                        <ul>
+                            <li><strong>Logo:</strong> Recommended size 200x80px PNG with transparent background</li>
+                            <li><strong>Tagline:</strong> Displayed on the cover page of reports</li>
+                            <li><strong>Contact Info:</strong> Falls back to standard company settings if not specified</li>
+                        </ul>
+                    </div>
+                </page>
+            </notebook>
+        </field>
+    </record>
+</odoo>

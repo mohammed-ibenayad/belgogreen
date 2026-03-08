@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- PV Simulation PDF Report -->
+        <record id="action_report_pv_simulation" model="ir.actions.report">
+            <field name="name">PV Simulation Report</field>
+            <field name="model">pv.simulation</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">pv_simulation_mod_o19.report_pv_simulation_document</field>
+            <field name="report_file">pv_simulation_mod_o19.report_pv_simulation_document</field>
+            <field name="binding_model_id" ref="model_pv_simulation"/>
+            <field name="binding_type">report</field>
+            <field name="paperformat_id" ref="base.paperformat_euro"/>
+        </record>
+    </data>
+</odoo>
