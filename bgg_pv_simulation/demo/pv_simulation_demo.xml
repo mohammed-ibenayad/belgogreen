@@ -32,7 +32,7 @@
             <field name="orientation_deg">0</field>
             <field name="tilt_deg">35</field>
             <field name="annual_production_kwh">11500</field>
-            <field name="production_profile_id" ref="pv_simulation_mod_o19.production_profile_belgium_standard"/>
+            <field name="production_profile_id" ref="bgg_pv_simulation.production_profile_belgium_standard"/>
         </record>
 
         <record id="demo_pv_simulation_2" model="pv.simulation">
@@ -48,7 +48,7 @@
             <field name="orientation_deg">-15</field>
             <field name="tilt_deg">30</field>
             <field name="annual_production_kwh">17200</field>
-            <field name="production_profile_id" ref="pv_simulation_mod_o19.production_profile_belgium_standard"/>
+            <field name="production_profile_id" ref="bgg_pv_simulation.production_profile_belgium_standard"/>
         </record>
 
         <record id="demo_pv_simulation_3" model="pv.simulation">
@@ -64,7 +64,7 @@
             <field name="orientation_deg">10</field>
             <field name="tilt_deg">40</field>
             <field name="annual_production_kwh">8600</field>
-            <field name="production_profile_id" ref="pv_simulation_mod_o19.production_profile_belgium_standard"/>
+            <field name="production_profile_id" ref="bgg_pv_simulation.production_profile_belgium_standard"/>
         </record>
 
         <!-- Link simulations back to quotations -->

@@ -262,7 +262,7 @@ class PvSimulation(models.Model):
     def action_generate_report(self):
         """Generate PDF report (QWeb - default)"""
         self.ensure_one()
-        return self.env.ref('pv_simulation_mod_o19.action_report_pv_simulation').report_action(self)
+        return self.env.ref('bgg_pv_simulation.action_report_pv_simulation').report_action(self)
 
     def action_generate_report_reportlab(self):
         """Generate PDF report using ReportLab"""
