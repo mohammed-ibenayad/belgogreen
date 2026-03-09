@@ -226,9 +226,9 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         cards_col_left = '\n'.join(metric_cards_list[:mid])
         cards_col_right = '\n'.join(metric_cards_list[mid:])
 
-        # Build bilan card helper
+        # Build bilan card helper (uses same .card design as system section)
         def _bilan_card(icon_svg, label, value, unit):
-            return f'''<div class="bilan-card">
+            return f'''<div class="card">
                     <div class="card-icon">{icon_svg}</div>
                     <div class="card-text">
                         <div class="card-value">{_fmt(value)}</div>
@@ -236,11 +236,6 @@ class PvSimulationWeasyPrint(models.AbstractModel):
                         <div class="card-label">{label}</div>
                     </div>
                 </div>'''
-
-        def _bilan_card_if(icon_svg, label, value, unit):
-            if not value:
-                return ''
-            return _bilan_card(icon_svg, label, value, unit)
 
         # Location badge
         roof_badge = ''
@@ -372,28 +367,79 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             <h2 class="section-title">{title_bilan}</h2>
         </div>
 
-        <div class="bilan-cards-wrap">
-            <!-- Production subtitle + card -->
+        <div class="bilan-bg">
+            <!-- Production -->
             <h3 class="section-subtitle">Production</h3>
-            <table class="bilan-cards-grid">
+            <table class="system-cards-grid">
                 <tr>
-                    <td class="bilan-cards-col">{_bilan_card(SVG_ICON_SUN, 'Totale', prod_total, 'kWh')}</td>
-                    <td class="bilan-cards-col"></td>
-                    <td class="bilan-cards-col"></td>
+                    <td class="system-cards-col">
+                        {_bilan_card(SVG_ICON_SUN, 'Production totale', prod_total, 'kWh')}
+                    </td>
+                    <td class="system-cards-col"></td>
                 </tr>
             </table>
 
-            <!-- Consommation subtitle + cards -->
-            {'<h3 class="section-subtitle">Consommation</h3><table class="bilan-cards-grid"><tr>' + '<td class="bilan-cards-col">' + _bilan_card(SVG_ICON_HOME, 'Jour', conso_day, 'kWh') + '</td>' + '<td class="bilan-cards-col">' + _bilan_card(SVG_ICON_MOON, 'Nuit', conso_night, 'kWh') + '</td>' + '<td class="bilan-cards-col">' + _bilan_card(SVG_ICON_BOLT, 'Totale', conso_total, 'kWh') + '</td>' + '</tr></table>' if conso_total else ''}
+            <!-- Consommation -->
+            <h3 class="section-subtitle">Consommation</h3>
+            <table class="system-cards-grid">
+                <tr>
+                    <td class="system-cards-col">
+                        {_bilan_card(SVG_ICON_HOME, 'Jour', conso_day, 'kWh')}
+                        {_bilan_card(SVG_ICON_BOLT, 'Totale', conso_total, 'kWh')}
+                    </td>
+                    <td class="system-cards-col">
+                        {_bilan_card(SVG_ICON_MOON, 'Nuit', conso_night, 'kWh')}
+                    </td>
+                </tr>
+            </table>
 
-            <!-- Autoconsommation subtitle + cards -->
-            {'<h3 class="section-subtitle">Auto Consommation</h3><table class="bilan-cards-grid"><tr>' + '<td class="bilan-cards-col">' + _bilan_card(SVG_ICON_RECYCLE, 'Consomm\u00e9 la journ\u00e9e', autocons_day, 'kWh') + '</td>' + '<td class="bilan-cards-col">' + _bilan_card_if(SVG_ICON_BATTERY, 'Stock\u00e9 dans la batterie', battery_charge, 'kWh') + '</td>' + '<td class="bilan-cards-col">' + _bilan_card(SVG_ICON_BOLT, 'Total', autocons_total, 'kWh') + '</td>' + '</tr></table>' if autocons_total else ''}
+            <!-- Auto Consommation -->
+            <h3 class="section-subtitle">Auto Consommation</h3>
+            <table class="system-cards-grid">
+                <tr>
+                    <td class="system-cards-col">
+                        {_bilan_card(SVG_ICON_RECYCLE, 'Consomm\u00e9 la journ\u00e9e', autocons_day, 'kWh')}
+                        {_bilan_card(SVG_ICON_BOLT, 'Total', autocons_total, 'kWh')}
+                    </td>
+                    <td class="system-cards-col">
+                        {_bilan_card(SVG_ICON_BATTERY, 'Stock\u00e9 dans la batterie', battery_charge, 'kWh')}
+                    </td>
+                </tr>
+            </table>
 
-            <!-- Economies subtitle + cards -->
-            {'<h3 class="section-subtitle">\u00c9conomies</h3><table class="bilan-cards-grid"><tr>' + '<td class="bilan-cards-col">' + _bilan_card_if(SVG_ICON_PANELS, 'Li\u00e9es aux panneaux', savings_panels, '\u20ac') + '</td>' + '<td class="bilan-cards-col">' + _bilan_card_if(SVG_ICON_BATTERY, 'Li\u00e9es \u00e0 la batterie', savings_battery, '\u20ac') + '</td>' + '<td class="bilan-cards-col">' + _bilan_card_if(SVG_ICON_EURO, 'Li\u00e9es \u00e0 la revente', savings_resale, '\u20ac') + '</td>' + '</tr></table>' if savings_total else ''}
+            <!-- Économies -->
+            <h3 class="section-subtitle">\u00c9conomies</h3>
+            <table class="system-cards-grid">
+                <tr>
+                    <td class="system-cards-col">
+                        {_bilan_card(SVG_ICON_PANELS, 'Li\u00e9es aux panneaux', savings_panels, '\u20ac')}
+                        {_bilan_card(SVG_ICON_EURO, 'Li\u00e9es \u00e0 la revente', savings_resale, '\u20ac')}
+                    </td>
+                    <td class="system-cards-col">
+                        {_bilan_card(SVG_ICON_BATTERY, 'Li\u00e9es \u00e0 la batterie', savings_battery, '\u20ac')}
+                    </td>
+                </tr>
+            </table>
 
             <!-- Bottom summary -->
-            {'<table class="bilan-summary-row"><tr><td class="bilan-summary-savings"><div class="bilan-summary-savings-inner"><span class="bts-icon">' + SVG_ICON_PIGGY + '</span><span class="bts-label">Total \u00e9conomies</span><span class="bts-value">' + _fmt(savings_total) + ' &euro;</span></div></td><td class="bilan-summary-purchase"><div class="bilan-summary-purchase-inner"><span class="btp-icon">' + SVG_ICON_WALLET + '</span><span class="btp-label">Achat</span><span class="btp-value">' + _fmt(purchase_total) + ' &euro;</span></div></td></tr></table>' if savings_total or purchase_total else ''}
+            <table class="bilan-summary-row">
+                <tr>
+                    <td class="bilan-summary-savings">
+                        <div class="bilan-summary-savings-inner">
+                            <span class="bts-icon">{SVG_ICON_PIGGY}</span>
+                            <span class="bts-label">Total \u00e9conomies</span>
+                            <span class="bts-value">{_fmt(savings_total)} &euro;</span>
+                        </div>
+                    </td>
+                    <td class="bilan-summary-purchase">
+                        <div class="bilan-summary-purchase-inner">
+                            <span class="btp-icon">{SVG_ICON_WALLET}</span>
+                            <span class="btp-label">Achat</span>
+                            <span class="btp-value">{_fmt(purchase_total)} &euro;</span>
+                        </div>
+                    </td>
+                </tr>
+            </table>
         </div>
     </div>
 </body>
@@ -899,47 +945,21 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         /* ===================================================
            PAGE 4 – BILAN ÉNERGÉTIQUE (Card-based design)
            =================================================== */
-        .bilan-cards-wrap {
+        .bilan-bg {
+            background: #F1F9F1;
+            margin: 3mm -20mm -25mm -20mm;
+            padding: 4mm 20mm 10mm 20mm;
             page-break-inside: avoid;
         }
 
-        .bilan-cards-wrap .section-subtitle {
+        .bilan-bg .section-subtitle {
             margin: 5mm 0 2mm 0;
             padding-bottom: 1.5mm;
-            border-bottom: 1px solid #E0E0E0;
+            border-bottom: 1px solid #C8E6C9;
         }
 
-        .bilan-cards-wrap .section-subtitle:first-child {
-            margin-top: 2mm;
-        }
-
-        .bilan-cards-grid {
-            width: 100%;
-            table-layout: fixed;
-            border-collapse: separate;
-            border-spacing: 2mm 0;
-        }
-
-        .bilan-cards-col {
-            width: 33.33%;
-            vertical-align: top;
-        }
-
-        .bilan-card {
-            display: block;
-            width: 100%;
-            padding: 2.5mm 3mm;
-            background: rgba(255, 255, 255, 0.92);
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-            page-break-inside: avoid;
-        }
-
-        .bilan-card::after {
-            content: '';
-            display: table;
-            clear: both;
+        .bilan-bg .section-subtitle:first-child {
+            margin-top: 0;
         }
 
         /* Bottom summary */
