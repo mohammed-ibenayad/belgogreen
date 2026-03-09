@@ -196,14 +196,27 @@
                                 .pv-location-page-bg {
                                     background: #F1F9F1;
                                     margin: -25mm -20mm 0 -20mm;
-                                    padding: 25mm 20mm 8mm 20mm;
+                                    padding: 25mm 20mm 6mm 20mm;
+                                }
+
+                                .pv-location-image-wrap {
+                                    text-align: center;
+                                    margin: 4mm 0 6mm 0;
+                                }
+
+                                .pv-location-image-wrap img {
+                                    width: 100%;
+                                    height: 80mm;
+                                    object-fit: cover;
+                                    border-radius: 12px;
+                                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
                                 }
 
                                 .pv-location-cards-row {
                                     width: 100%;
                                     border-collapse: separate;
                                     border-spacing: 3mm 0;
-                                    margin-bottom: 5mm;
+                                    margin: 0;
                                 }
 
                                 .pv-location-cards-row td {
@@ -213,19 +226,6 @@
 
                                 .pv-location-cards-row .pv-card {
                                     margin-bottom: 0;
-                                }
-
-                                .pv-location-image-wrap {
-                                    text-align: center;
-                                    margin: 0 auto;
-                                }
-
-                                .pv-location-image-wrap img {
-                                    width: 70%;
-                                    max-height: 110mm;
-                                    object-fit: cover;
-                                    border-radius: 15px;
-                                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
                                 }
 
                                 .pv-section-subtitle {
@@ -604,6 +604,10 @@
                     <t t-esc="o.section_title_location or 'LOCALISATION DE L\'INSTALLATION'"/>
                 </h2>
 
+                <div t-if="o.location_image" class="pv-location-image-wrap">
+                    <img t-att-src="'data:image/png;base64,%s' % o.location_image.decode()"/>
+                </div>
+
                 <table class="pv-location-cards-row">
                     <tr>
                         <td t-if="o.installation_address">
@@ -631,10 +635,6 @@
                         </td>
                     </tr>
                 </table>
-            </div>
-
-            <div t-if="o.location_image" class="pv-location-image-wrap">
-                <img t-att-src="'data:image/png;base64,%s' % o.location_image.decode()"/>
             </div>
         </template>
 
