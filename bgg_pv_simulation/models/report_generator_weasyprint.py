@@ -166,8 +166,9 @@ class PvSimulationWeasyPrint(models.AbstractModel):
                 return '—'
             return f'{val:,.2f}'
 
-        # Build metric cards with SVG icons
-        metric_cards = f'''
+        # Build metric cards list
+        metric_cards_list = []
+        metric_cards_list.append(f'''
             <div class="card">
                 <div class="card-icon">{SVG_ICON_SUN}</div>
                 <div class="card-text">
@@ -175,10 +176,10 @@ class PvSimulationWeasyPrint(models.AbstractModel):
                     <div class="card-unit">Wc</div>
                     <div class="card-label">Puissance install\u00e9e</div>
                 </div>
-            </div>'''
+            </div>''')
 
         if simulation.number_of_panels:
-            metric_cards += f'''
+            metric_cards_list.append(f'''
             <div class="card">
                 <div class="card-icon">{SVG_ICON_PANELS}</div>
                 <div class="card-text">
@@ -186,10 +187,10 @@ class PvSimulationWeasyPrint(models.AbstractModel):
                     <div class="card-unit">panneaux</div>
                     <div class="card-label">Nombre de panneaux</div>
                 </div>
-            </div>'''
+            </div>''')
 
         if simulation.orientation_deg:
-            metric_cards += f'''
+            metric_cards_list.append(f'''
             <div class="card">
                 <div class="card-icon">{SVG_ICON_COMPASS}</div>
                 <div class="card-text">
@@ -197,10 +198,10 @@ class PvSimulationWeasyPrint(models.AbstractModel):
                     <div class="card-unit">&nbsp;</div>
                     <div class="card-label">Orientation</div>
                 </div>
-            </div>'''
+            </div>''')
 
         if simulation.tilt_deg:
-            metric_cards += f'''
+            metric_cards_list.append(f'''
             <div class="card">
                 <div class="card-icon">{SVG_ICON_TILT}</div>
                 <div class="card-text">
@@ -208,7 +209,12 @@ class PvSimulationWeasyPrint(models.AbstractModel):
                     <div class="card-unit">&nbsp;</div>
                     <div class="card-label">Inclinaison</div>
                 </div>
-            </div>'''
+            </div>''')
+
+        # Split cards into two columns (left: first half, right: second half)
+        mid = (len(metric_cards_list) + 1) // 2
+        cards_col_left = '\n'.join(metric_cards_list[:mid])
+        cards_col_right = '\n'.join(metric_cards_list[mid:])
 
         # Build bilan rows conditionally (hide zero rows)
         def _bilan_row(icon, label, value, unit, css_class=''):
@@ -339,19 +345,17 @@ class PvSimulationWeasyPrint(models.AbstractModel):
                 <h3 class="section-subtitle">{title_system}</h3>
 
                 <div class="system-container">
-                    <table class="system-layout">
+                    <table class="system-cards-grid">
                         <tr>
                             <td class="system-cards-col">
-                                {metric_cards}
+                                {cards_col_left}
                             </td>
-                            <td class="system-image-col">
-                                <div class="system-image-wrap">
-                                    {f'<img src="{system_image_data}" alt="" class="system-image">' if system_image_data else ''}
-                                    <div class="system-image-fade"></div>
-                                </div>
+                            <td class="system-cards-col">
+                                {cards_col_right}
                             </td>
                         </tr>
                     </table>
+                    {f'<div class="system-image-wrap"><img src="{system_image_data}" alt="" class="system-image"></div>' if system_image_data else ''}
                 </div>
             </div>
         </div>
@@ -742,7 +746,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         /* ===================================================
            PAGE 3 – METRIC CARDS + PRODUCTION
            =================================================== */
-        /* Two-column system layout */
+        /* Two-column cards + image below */
         .system-container {
             border-radius: 12px;
             margin: 2mm 0 0 0;
@@ -750,46 +754,29 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             page-break-inside: avoid;
         }
 
-        .system-layout {
+        .system-cards-grid {
             width: 100%;
             table-layout: fixed;
             border-collapse: collapse;
-            height: 1px;
         }
 
         .system-cards-col {
-            width: 45%;
+            width: 50%;
             vertical-align: top;
-            padding: 3mm 3mm 3mm 4mm;
-        }
-
-        .system-image-col {
-            width: 55%;
-            vertical-align: top;
-            padding: 0;
-            height: 100%;
+            padding: 2mm;
         }
 
         .system-image-wrap {
             overflow: hidden;
-            height: 100%;
+            border-radius: 0 0 12px 12px;
+            max-height: 35mm;
         }
 
         .system-image {
             width: 100%;
-            height: 100%;
+            height: 35mm;
             object-fit: cover;
             display: block;
-            border-radius: 0 12px 12px 0;
-        }
-
-        .system-image-fade {
-            position: absolute;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            width: 25mm;
-            background: linear-gradient(to right, #F1F9F1 0%, rgba(241, 249, 241, 0) 100%);
         }
 
         .card {
