@@ -765,13 +765,16 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             width: 55%;
             vertical-align: top;
             padding: 0;
-            height: 1px;
+            position: relative;
         }
 
         .system-image-wrap {
-            position: relative;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             overflow: hidden;
-            height: 100%;
         }
 
         .system-image {
