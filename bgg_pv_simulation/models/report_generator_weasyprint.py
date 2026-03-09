@@ -768,13 +768,14 @@ class PvSimulationWeasyPrint(models.AbstractModel):
 
         .system-image-wrap {
             overflow: hidden;
-            border-radius: 0 0 12px 12px;
-            max-height: 35mm;
+            border-radius: 12px;
+            margin: 3mm 2mm 2mm 2mm;
+            max-height: 42mm;
         }
 
         .system-image {
             width: 100%;
-            height: 35mm;
+            height: 42mm;
             object-fit: cover;
             display: block;
         }
