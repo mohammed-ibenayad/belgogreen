@@ -287,10 +287,10 @@ class PvSimulation(models.Model):
         }
 
     def action_generate_report(self):
-        """Generate PDF report using WeasyPrint"""
+        """Generate PDF report via external report service (Node.js + Puppeteer)"""
         self.ensure_one()
 
-        generator = self.env['pv.simulation.weasyprint.generator']
+        generator = self.env['pv.simulation.report.service']
         pdf_content = generator.generate_report(self.id)
 
         # Create attachment

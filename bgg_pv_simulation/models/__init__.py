@@ -12,3 +12,4 @@ from . import pv_simulation
 from . import sale_order
 
 from . import report_generator_weasyprint
+from . import report_generator_service
