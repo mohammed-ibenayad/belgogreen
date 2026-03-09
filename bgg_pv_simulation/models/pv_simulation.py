@@ -107,6 +107,11 @@ class PvSimulation(models.Model):
         default='PRODUCTION ESTIMÉE',
         help='Page 3: Production section'
     )
+    section_title_consumption = fields.Char(
+        string='Consumption Data Section Title',
+        default='DONNÉES DE CONSOMMATION',
+        help='Page 4: Consumption data and energy balance section'
+    )
     section_title_bilan = fields.Char(
         string='Energy Balance Section Title',
         default='BILAN ÉNERGÉTIQUE',
