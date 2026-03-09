@@ -293,9 +293,8 @@ class PvSimulationWeasyPrint(models.AbstractModel):
     <!-- ============================================ -->
     <!-- PAGE 2: LOCALISATION                         -->
     <!-- ============================================ -->
-    <div class="page content-page" style="position: relative;">
-        <div class="location-page-bg"></div>
-        <div class="section">
+    <div class="page content-page">
+        <div class="location-page-bg">
             <div class="section-number">01</div>
             <h2 class="section-title">{title_location}</h2>
 
@@ -316,10 +315,10 @@ class PvSimulationWeasyPrint(models.AbstractModel):
                     </div>
                 </div>""" if simulation.roof_surface_m2 else ''}
             </div>
+        </div>
 
-            <div class="location-image-container">
-                {f'<img src="{location_image_data}" alt="Localisation" class="location-image">' if location_image_data else ''}
-            </div>
+        <div class="location-image-container">
+            {f'<img src="{location_image_data}" alt="Localisation" class="location-image">' if location_image_data else ''}
         </div>
     </div>
 
@@ -687,13 +686,9 @@ class PvSimulationWeasyPrint(models.AbstractModel):
            PAGE 2 – LOCALISATION
            =================================================== */
         .location-page-bg {
-            position: absolute;
-            top: 0;
-            left: -20mm;
-            right: -20mm;
-            height: 55%;
             background: #F1F9F1;
-            z-index: -1;
+            margin: -25mm -20mm 0 -20mm;
+            padding: 25mm 20mm 8mm 20mm;
         }
 
         .location-cards-row {
@@ -709,15 +704,14 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         }
 
         .location-image-container {
-            position: relative;
             text-align: center;
-            margin: 4mm auto 0 auto;
+            margin: 0 auto;
             page-break-inside: avoid;
         }
 
         .location-image {
-            width: 100%;
-            max-height: 140mm;
+            width: 70%;
+            max-height: 110mm;
             object-fit: cover;
             border-radius: 15px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
