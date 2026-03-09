@@ -33,6 +33,16 @@ SVG_ICON_COMPASS = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="2
 SVG_ICON_TILT = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 20L2 20"/><path d="M4 20L18 6"/><path d="M18 6L18 14"/><path d="M14 10L18 6" stroke-dasharray="2 2"/></svg>'
 SVG_ICON_PIN = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="#4A9B5D" stroke="#FFFFFF" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3" fill="#FFFFFF"/></svg>'
 
+# Bilan page SVG icons
+SVG_ICON_BOLT = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>'
+SVG_ICON_HOME = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>'
+SVG_ICON_MOON = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>'
+SVG_ICON_BATTERY = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="18" height="12" rx="2" ry="2"/><line x1="23" y1="13" x2="23" y2="11"/><line x1="7" y1="10" x2="7" y2="14"/><line x1="5" y1="12" x2="9" y2="12"/></svg>'
+SVG_ICON_RECYCLE = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>'
+SVG_ICON_EURO = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.2 7A6 6 0 0 0 7 12a6 6 0 0 0 10.2 5"/><line x1="4" y1="10" x2="14" y2="10"/><line x1="4" y1="14" x2="14" y2="14"/></svg>'
+SVG_ICON_PIGGY = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2v-4h-2c0-1-.5-1.5-1-2"/><path d="M2 9.5a1 1 0 0 1 1-1h.01"/><circle cx="12.5" cy="9.5" r=".5" fill="#FFFFFF"/></svg>'
+SVG_ICON_WALLET = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/><circle cx="18" cy="15" r="1.5"/></svg>'
+
 
 class PvSimulationWeasyPrint(models.AbstractModel):
     """WeasyPrint-based PDF Report Generator — Design System v4.0"""
@@ -240,6 +250,17 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         eco_rows = _bilan_row_if('&#9788;', '\u00c9conomies li\u00e9es aux panneaux', savings_panels, '&euro;')
         eco_rows += _bilan_row_if('&#9107;', '\u00c9conomies li\u00e9es \u00e0 la batterie', savings_battery, '&euro;')
         eco_rows += _bilan_row_if('&#8364;', 'Revenus de revente', savings_resale, '&euro;')
+
+        # Build bilan card helper (uses same .card design as system section)
+        def _bilan_card(icon_svg, label, value, unit):
+            return f'''<div class="card">
+                    <div class="card-icon">{icon_svg}</div>
+                    <div class="card-text">
+                        <div class="card-value">{_fmt(value)}</div>
+                        <div class="card-unit">{unit}</div>
+                        <div class="card-label">{label}</div>
+                    </div>
+                </div>'''
 
         # Monthly data table rows
         month_names = {
@@ -455,31 +476,73 @@ class PvSimulationWeasyPrint(models.AbstractModel):
     <!-- ============================================ -->
     <!-- PAGE 5: BILAN ÉNERGÉTIQUE                    -->
     <!-- ============================================ -->
-    <div class="page content-page">
+    <div class="page content-page bilan-bg">
         <div class="section">
             <div class="section-number">04</div>
             <h2 class="section-title">{title_bilan}</h2>
         </div>
 
-        <!-- Production (always shown) -->
-        <div class="bilan-section">
-            <div class="bilan-section-header">Production</div>
-            <table class="bilan-table">
-                {_bilan_row('&#9788;', 'Production totale annuelle', prod_total, 'kWh')}
+        <div class="bilan-content">
+            <!-- Production -->
+            <h3 class="section-subtitle">Production</h3>
+            <table class="bilan-cards-grid">
+                <tr>
+                    <td class="bilan-cards-col">{_bilan_card(SVG_ICON_SUN, 'Production totale', prod_total, 'kWh')}</td>
+                    <td class="bilan-cards-col"></td>
+                    <td class="bilan-cards-col"></td>
+                </tr>
+            </table>
+
+            <!-- Consommation -->
+            <h3 class="section-subtitle">Consommation</h3>
+            <table class="bilan-cards-grid">
+                <tr>
+                    <td class="bilan-cards-col">{_bilan_card(SVG_ICON_HOME, 'Jour', conso_day, 'kWh')}</td>
+                    <td class="bilan-cards-col">{_bilan_card(SVG_ICON_MOON, 'Nuit', conso_night, 'kWh')}</td>
+                    <td class="bilan-cards-col">{_bilan_card(SVG_ICON_BOLT, 'Totale', conso_total, 'kWh')}</td>
+                </tr>
+            </table>
+
+            <!-- Auto Consommation -->
+            <h3 class="section-subtitle">Auto Consommation</h3>
+            <table class="bilan-cards-grid">
+                <tr>
+                    <td class="bilan-cards-col">{_bilan_card(SVG_ICON_RECYCLE, 'Consomm\u00e9 la journ\u00e9e', autocons_day, 'kWh')}</td>
+                    <td class="bilan-cards-col">{_bilan_card(SVG_ICON_BATTERY, 'Stock\u00e9 dans la batterie', battery_charge, 'kWh')}</td>
+                    <td class="bilan-cards-col">{_bilan_card(SVG_ICON_BOLT, 'Total', autocons_total, 'kWh')}</td>
+                </tr>
+            </table>
+
+            <!-- \u00c9conomies -->
+            <h3 class="section-subtitle">\u00c9conomies</h3>
+            <table class="bilan-cards-grid">
+                <tr>
+                    <td class="bilan-cards-col">{_bilan_card(SVG_ICON_PANELS, 'Li\u00e9es aux panneaux', savings_panels, '\u20ac')}</td>
+                    <td class="bilan-cards-col">{_bilan_card(SVG_ICON_BATTERY, 'Li\u00e9es \u00e0 la batterie', savings_battery, '\u20ac')}</td>
+                    <td class="bilan-cards-col">{_bilan_card(SVG_ICON_EURO, 'Li\u00e9es \u00e0 la revente', savings_resale, '\u20ac')}</td>
+                </tr>
+            </table>
+
+            <!-- Bottom summary -->
+            <table class="bilan-summary-row">
+                <tr>
+                    <td class="bilan-summary-savings">
+                        <div class="bilan-summary-savings-inner">
+                            <span class="bts-icon">{SVG_ICON_PIGGY}</span>
+                            <span class="bts-label">Total \u00e9conomies</span>
+                            <span class="bts-value">{_fmt(savings_total)} &euro;</span>
+                        </div>
+                    </td>
+                    <td class="bilan-summary-purchase">
+                        <div class="bilan-summary-purchase-inner">
+                            <span class="btp-icon">{SVG_ICON_WALLET}</span>
+                            <span class="btp-label">Achat</span>
+                            <span class="btp-value">{_fmt(purchase_total)} &euro;</span>
+                        </div>
+                    </td>
+                </tr>
             </table>
         </div>
-
-        <!-- Consommation (only if data exists) -->
-        {'<div class="bilan-section"><div class="bilan-section-header">Consommation</div><table class="bilan-table">' + _bilan_row('&#9788;', 'Consommation jour', conso_day, 'kWh') + _bilan_row('&#9790;', 'Consommation nuit', conso_night, 'kWh') + _bilan_row('&#9751;', 'Consommation totale', conso_total, 'kWh', 'bilan-row-total') + '</table></div>' if conso_total else ''}
-
-        <!-- Autoconsommation (only if data exists) -->
-        {'<div class="bilan-section"><div class="bilan-section-header">Autoconsommation</div><table class="bilan-table">' + autocons_rows + '</table></div>' if autocons_total else ''}
-
-        <!-- Economies (only if data exists) -->
-        {'<div class="bilan-section"><div class="bilan-section-header">' + '\u00c9conomies' + '</div><table class="bilan-table">' + eco_rows + '</table></div>' if savings_total else ''}
-
-        <!-- Bottom summary (only if data exists) -->
-        {'<div class="bilan-bottom"><div class="bilan-total-savings"><span class="bts-label">Total \u00e9conomies annuelles</span><span class="bts-value">' + _fmt(savings_total) + ' &euro;</span></div><div class="bilan-total-purchase"><span class="btp-label">Co\u00fbt d\u2019achat r\u00e9seau</span><span class="btp-value">' + _fmt(purchase_total) + ' &euro;</span></div></div>' if savings_total or purchase_total else ''}
     </div>
 </body>
 </html>"""
@@ -1043,133 +1106,131 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         }
 
         /* ===================================================
-           PAGE 5 – BILAN ÉNERGÉTIQUE
+           PAGE 5 – BILAN ÉNERGÉTIQUE (Card-based design)
            =================================================== */
-        .bilan-section {
-            margin-bottom: 4mm;
-            border: 1px solid #E0E0E0;
-            border-radius: 8px;
-            overflow: hidden;
-            page-break-inside: avoid;
+        .bilan-bg {
+            background: #F1F9F1;
         }
 
-        .bilan-section-header {
-            background: #212121;
-            color: #FFFFFF;
-            font-size: 9pt;
-            font-weight: 600;
-            padding: 2mm 5mm;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+        .bilan-bg .section-subtitle {
+            margin: 5mm 0 4mm 0;
+            padding-bottom: 1.5mm;
+            border-bottom: 1px solid #C8E6C9;
         }
 
-        .bilan-table {
+        .bilan-bg .section-subtitle:first-child {
+            margin-top: 0;
+        }
+
+        .bilan-cards-grid {
             width: 100%;
-            border-collapse: collapse;
+            table-layout: fixed;
+            border-collapse: separate;
+            border-spacing: 2mm 0;
         }
 
-        .bilan-table tr {
-            border-bottom: none;
-        }
-
-        /* Zebra striping */
-        .bilan-table tr:nth-child(even) {
-            background: #F9F9F9;
-        }
-
-        .bilan-icon {
-            width: 10mm;
-            text-align: center;
-            font-size: 12pt;
-            color: #616161;
-            padding: 2.5mm 2mm;
-        }
-
-        .bilan-label {
-            padding: 2.5mm 4mm;
-            font-size: 10pt;
-            color: #212121;
-        }
-
-        .bilan-value {
-            text-align: right;
-            padding: 2.5mm 5mm;
-            font-size: 10pt;
-            font-weight: 600;
-            color: #212121;
-            white-space: nowrap;
-            font-variant-numeric: tabular-nums;
-        }
-
-        .bilan-row-total {
-            background: #E8F5E9 !important;
-        }
-
-        .bilan-row-total .bilan-label {
-            font-weight: 600;
-        }
-
-        .bilan-row-total .bilan-value {
-            font-weight: 700;
-            color: #388E3C;
+        .bilan-cards-col {
+            width: 33.33%;
+            vertical-align: top;
         }
 
         /* Bottom summary */
-        .bilan-bottom {
+        .bilan-summary-row {
+            width: 100%;
+            table-layout: fixed;
+            border-collapse: separate;
+            border-spacing: 2mm 0;
             margin-top: 5mm;
             page-break-inside: avoid;
         }
 
-        .bilan-total-savings {
-            display: inline-block;
-            width: 48%;
-            background: linear-gradient(135deg, #4A9B5D 0%, #388E3C 100%);
+        .bilan-summary-savings {
+            width: 60%;
+            vertical-align: top;
+        }
+
+        .bilan-summary-savings-inner {
+            background: linear-gradient(135deg, #81C784 0%, #66BB6A 100%);
             color: #FFFFFF;
             border-radius: 10px;
-            padding: 5mm 6mm;
-            text-align: center;
-            vertical-align: top;
+            padding: 4mm 5mm;
+            page-break-inside: avoid;
+        }
+
+        .bilan-summary-savings-inner::after {
+            content: '';
+            display: table;
+            clear: both;
+        }
+
+        .bts-icon {
+            float: left;
+            width: 8mm;
+            margin-right: 2mm;
+            margin-top: 0.5mm;
+        }
+
+        .bts-icon svg {
+            width: 24px;
+            height: 24px;
         }
 
         .bts-label {
             display: block;
-            font-size: 8pt;
+            font-size: 7pt;
             text-transform: uppercase;
             letter-spacing: 0.3px;
             opacity: 0.9;
-            margin-bottom: 2mm;
         }
 
         .bts-value {
             display: block;
-            font-size: 18pt;
+            font-size: 14pt;
             font-weight: 700;
         }
 
-        .bilan-total-purchase {
-            display: inline-block;
-            width: 48%;
-            margin-left: 2%;
+        .bilan-summary-purchase {
+            width: 40%;
+            vertical-align: top;
+        }
+
+        .bilan-summary-purchase-inner {
             background: #F9F9F9;
             border: 1.5px solid #E0E0E0;
             border-radius: 10px;
-            padding: 5mm 6mm;
-            text-align: center;
-            vertical-align: top;
+            padding: 4mm 5mm;
+            page-break-inside: avoid;
+        }
+
+        .bilan-summary-purchase-inner::after {
+            content: '';
+            display: table;
+            clear: both;
+        }
+
+        .btp-icon {
+            float: left;
+            width: 8mm;
+            margin-right: 2mm;
+            margin-top: 0.5mm;
+        }
+
+        .btp-icon svg {
+            width: 24px;
+            height: 24px;
         }
 
         .btp-label {
             display: block;
-            font-size: 8pt;
+            font-size: 7pt;
             text-transform: uppercase;
             letter-spacing: 0.3px;
             color: #616161;
-            margin-bottom: 2mm;
         }
 
         .btp-value {
             display: block;
-            font-size: 18pt;
+            font-size: 14pt;
             font-weight: 700;
             color: #212121;
         }
