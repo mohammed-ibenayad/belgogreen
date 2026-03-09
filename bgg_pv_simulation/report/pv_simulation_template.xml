@@ -390,6 +390,12 @@
                                     margin-top: 2mm;
                                 }
 
+                                .pv-consumption-bg {
+                                    background: #F1F9F1;
+                                    margin: -25mm -20mm -22mm -20mm;
+                                    padding: 25mm 20mm 22mm 20mm;
+                                }
+
                                 /* --- Data tables (consumption page) --- */
                                 .pv-data-table {
                                     width: 100%;
@@ -453,6 +459,8 @@
                                 /* --- Bilan page (card-based design) --- */
                                 .pv-bilan-bg {
                                     background: #F1F9F1;
+                                    margin: -25mm -20mm -22mm -20mm;
+                                    padding: 25mm 20mm 22mm 20mm;
                                 }
 
                                 .pv-bilan-bg .pv-section-subtitle {
@@ -598,7 +606,7 @@
                             </div>
 
                             <!-- Page 4: Données de Consommation -->
-                            <div class="page" style="page-break-before: always;">
+                            <div class="page pv-consumption-bg" style="page-break-before: always;">
                                 <t t-call="bgg_pv_simulation.report_pv_simulation_page_consumption"/>
                             </div>
 
