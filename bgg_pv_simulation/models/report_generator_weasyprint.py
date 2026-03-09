@@ -764,16 +764,18 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             vertical-align: top;
             padding: 0;
             position: relative;
+            height: 1px;
         }
 
         .system-image-wrap {
             position: relative;
             overflow: hidden;
+            height: 100%;
         }
 
         .system-image {
             width: 100%;
-            max-height: 45mm;
+            height: 100%;
             object-fit: cover;
             display: block;
             border-radius: 0 12px 12px 0;
