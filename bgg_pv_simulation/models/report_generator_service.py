@@ -142,6 +142,11 @@ class PvSimulationServiceGenerator(models.AbstractModel):
             if partner.country_id and partner.country_id.name:
                 address_parts.append(partner.country_id.name)
 
+        logo_uri = _b64_to_data_uri(company.pv_report_logo or company.logo)
+        tagline = company.pv_report_tagline or ''
+        partner_name = partner.name if partner else ''
+        installation_address = '\n'.join(address_parts)
+
         payload = {
             'name': simulation.name or '',
             'report_date': simulation.report_date.strftime('%d/%m/%Y') if simulation.report_date else '',
@@ -151,8 +156,8 @@ class PvSimulationServiceGenerator(models.AbstractModel):
                 'name': company.name or '',
                 'phone': company.pv_report_phone or company.phone or '',
                 'email': company.pv_report_email or company.email or '',
-                'logo': _b64_to_data_uri(company.pv_report_logo or company.logo),
-                'tagline': company.pv_report_tagline or '',
+                'logo': logo_uri,
+                'tagline': tagline,
             },
 
             # Salesperson
@@ -164,9 +169,15 @@ class PvSimulationServiceGenerator(models.AbstractModel):
 
             # Customer
             'customer': {
-                'name': partner.name if partner else '',
-                'address': '\n'.join(address_parts),
+                'name': partner_name,
+                'address': installation_address,
             },
+
+            # Top-level fields expected by report templates
+            'logo': logo_uri,
+            'tagline': tagline,
+            'partner_name': partner_name,
+            'installation_address': installation_address,
 
             # Images (as data URIs)
             'cover_photo': _b64_to_data_uri(simulation.cover_photo),
