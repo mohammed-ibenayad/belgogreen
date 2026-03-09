@@ -1,0 +1,118 @@
+<div class="page content-page">
+  <div class="section">
+    <div class="section-header">
+      <span class="section-number">03</span>
+      <h2 class="section-title">{{ data.section_titles.bilan or 'BILAN ÉNERGÉTIQUE' }}</h2>
+    </div>
+  </div>
+
+  {# Production (always shown) #}
+  <div class="bilan-section">
+    <div class="bilan-section-header">Production</div>
+    <table class="bilan-table">
+      <tr>
+        <td class="bilan-icon">☼</td>
+        <td class="bilan-label">Production totale annuelle</td>
+        <td class="bilan-value">{{ data.bilan.production_total | formatNumber }} kWh</td>
+      </tr>
+    </table>
+  </div>
+
+  {# Consommation #}
+  {% if data.bilan.consumption_total %}
+  <div class="bilan-section">
+    <div class="bilan-section-header">Consommation</div>
+    <table class="bilan-table">
+      <tr>
+        <td class="bilan-icon">☼</td>
+        <td class="bilan-label">Consommation jour</td>
+        <td class="bilan-value">{{ data.bilan.consumption_day | formatNumber }} kWh</td>
+      </tr>
+      <tr>
+        <td class="bilan-icon">☾</td>
+        <td class="bilan-label">Consommation nuit</td>
+        <td class="bilan-value">{{ data.bilan.consumption_night | formatNumber }} kWh</td>
+      </tr>
+      <tr class="bilan-row-total">
+        <td class="bilan-icon">♧</td>
+        <td class="bilan-label">Consommation totale</td>
+        <td class="bilan-value">{{ data.bilan.consumption_total | formatNumber }} kWh</td>
+      </tr>
+    </table>
+  </div>
+  {% endif %}
+
+  {# Autoconsommation #}
+  {% if data.bilan.autoconsumption_total %}
+  <div class="bilan-section">
+    <div class="bilan-section-header">Autoconsommation</div>
+    <table class="bilan-table">
+      <tr>
+        <td class="bilan-icon">⚡</td>
+        <td class="bilan-label">Consommé directement</td>
+        <td class="bilan-value">{{ data.bilan.autoconsumption_direct | formatNumber }} kWh</td>
+      </tr>
+      {% if data.bilan.battery_charge %}
+      <tr>
+        <td class="bilan-icon">⏳</td>
+        <td class="bilan-label">Stocké dans la batterie</td>
+        <td class="bilan-value">{{ data.bilan.battery_charge | formatNumber }} kWh</td>
+      </tr>
+      {% endif %}
+      <tr class="bilan-row-total">
+        <td class="bilan-icon">♧</td>
+        <td class="bilan-label">Total autoconsommation</td>
+        <td class="bilan-value">{{ data.bilan.autoconsumption_total | formatNumber }} kWh</td>
+      </tr>
+    </table>
+  </div>
+  {% endif %}
+
+  {# Économies #}
+  {% if data.bilan.savings_total %}
+  <div class="bilan-section">
+    <div class="bilan-section-header">Économies</div>
+    <table class="bilan-table">
+      {% if data.bilan.savings_panels %}
+      <tr>
+        <td class="bilan-icon">☼</td>
+        <td class="bilan-label">Économies liées aux panneaux</td>
+        <td class="bilan-value">{{ data.bilan.savings_panels | formatNumber }} €</td>
+      </tr>
+      {% endif %}
+      {% if data.bilan.savings_battery %}
+      <tr>
+        <td class="bilan-icon">⏳</td>
+        <td class="bilan-label">Économies liées à la batterie</td>
+        <td class="bilan-value">{{ data.bilan.savings_battery | formatNumber }} €</td>
+      </tr>
+      {% endif %}
+      {% if data.bilan.savings_resale %}
+      <tr>
+        <td class="bilan-icon">€</td>
+        <td class="bilan-label">Revenus de revente</td>
+        <td class="bilan-value">{{ data.bilan.savings_resale | formatNumber }} €</td>
+      </tr>
+      {% endif %}
+    </table>
+  </div>
+  {% endif %}
+
+  {# Bottom summary #}
+  {% if data.bilan.savings_total or data.bilan.purchase_total %}
+  <div class="bilan-bottom">
+    {% if data.bilan.savings_total %}
+    <div class="bilan-total-savings">
+      <span class="bts-label">Total économies annuelles</span>
+      <span class="bts-value">{{ data.bilan.savings_total | formatNumber }} €</span>
+    </div>
+    {% endif %}
+    {% if data.bilan.purchase_total %}
+    <div class="bilan-total-purchase">
+      <span class="btp-label">Coût d'achat réseau</span>
+      <span class="btp-value">{{ data.bilan.purchase_total | formatNumber }} €</span>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>

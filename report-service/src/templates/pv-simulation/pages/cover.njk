@@ -1,0 +1,51 @@
+<div class="page cover-page">
+  {# Full-bleed hero photo with dark overlay #}
+  <div class="cover-photo-wrap">
+    {% if data.cover_photo %}
+      <img src="{{ data.cover_photo }}" alt="" class="cover-photo">
+    {% endif %}
+    <div class="cover-overlay"></div>
+    <div class="cover-fade"></div>
+  </div>
+
+  {# Logo overlaid top-left #}
+  <div class="cover-logo">
+    {% if data.logo %}
+      <img src="{{ data.logo }}" alt="Logo" class="logo-img">
+    {% endif %}
+  </div>
+
+  {# Green accent line + title block #}
+  <div class="cover-title-area">
+    <div class="cover-accent-line"></div>
+    <div class="cover-title-block">
+      <h1 class="cover-title">{{ data.cover_title or 'Votre installation' }}</h1>
+      <h1 class="cover-title-accent">{{ data.cover_subtitle or 'Photovoltaïque' }}</h1>
+      {% if data.tagline %}
+        <p class="cover-tagline">{{ data.tagline }}</p>
+      {% endif %}
+    </div>
+  </div>
+
+  {# Client name (prominent) #}
+  <div class="cover-client-area">
+    {% if data.partner_name %}
+      <p class="cover-client-name">{{ data.partner_name }}</p>
+    {% endif %}
+    {% if data.installation_address %}
+      <p class="cover-client-addr">{{ data.installation_address | replace("\n", "<br/>") | safe }}</p>
+    {% endif %}
+  </div>
+
+  {# Metadata box bottom-right #}
+  <div class="cover-meta-box">
+    {% if data.name %}
+      <p class="cover-meta-line">Référence</p>
+      <p class="cover-meta-val">{{ data.name }}</p>
+    {% endif %}
+    {% if data.report_date %}
+      <p class="cover-meta-line">Date</p>
+      <p class="cover-meta-val">{{ data.report_date }}</p>
+    {% endif %}
+  </div>
+</div>

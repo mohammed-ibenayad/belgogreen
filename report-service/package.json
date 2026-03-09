@@ -1,0 +1,18 @@
+{
+  "name": "belgogreen-report-service",
+  "version": "1.0.0",
+  "description": "PDF report generation service for BelGoGreen PV simulations",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "nunjucks": "^3.2.4",
+    "puppeteer": "^23.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
