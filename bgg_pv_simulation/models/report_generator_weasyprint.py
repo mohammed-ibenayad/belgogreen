@@ -294,59 +294,65 @@ class PvSimulationWeasyPrint(models.AbstractModel):
     <!-- PAGE 2: LOCALISATION                         -->
     <!-- ============================================ -->
     <div class="page content-page">
-        <div class="section">
+        <div class="location-page-bg">
             <div class="section-number">01</div>
             <h2 class="section-title">{title_location}</h2>
 
-            <div class="location-block">
-                {f'<p class="address-text">{address.replace(chr(10), "<br/>")}</p>' if address else ''}
-            </div>
-
             <div class="location-image-container">
                 {f'<img src="{location_image_data}" alt="Localisation" class="location-image">' if location_image_data else ''}
-                <div class="location-pin">{SVG_ICON_PIN}</div>
-                {roof_badge}
             </div>
+
+            <table class="location-cards-row">
+                <tr>
+                    {f"""<td><div class="card">
+                        <div class="card-icon">{SVG_ICON_PIN}</div>
+                        <div class="card-text">
+                            <div class="card-value" style="font-size:11pt;">{address.replace(chr(10), '<br/>')}</div>
+                            <div class="card-label">Adresse d'installation</div>
+                        </div>
+                    </div></td>""" if address else ''}
+                    {f"""<td><div class="card">
+                        <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="12" y1="3" x2="12" y2="21"/></svg></div>
+                        <div class="card-text">
+                            <div class="card-value">{simulation.roof_surface_m2:.0f}</div>
+                            <div class="card-unit">m\u00b2</div>
+                            <div class="card-label">Surface de toiture</div>
+                        </div>
+                    </div></td>""" if simulation.roof_surface_m2 else ''}
+                </tr>
+            </table>
         </div>
     </div>
 
     <!-- ============================================ -->
-    <!-- PAGE 3: CARACTÉRISTIQUES + PRODUCTION        -->
+    <!-- PAGE 3: PRODUCTION (System + Chart)           -->
     <!-- ============================================ -->
-    <div class="page content-page">
+    <div class="page content-page production-page">
         <div class="section">
             <div class="section-number">02</div>
-            <h2 class="section-title">{title_system}</h2>
-
-            <div class="system-container">
-                <table class="system-layout">
-                    <tr>
-                        <td class="system-cards-col">
-                            {metric_cards}
-                        </td>
-                        <td class="system-image-col">
-                            <div class="system-image-wrap">
-                                {f'<img src="{system_image_data}" alt="" class="system-image">' if system_image_data else ''}
-                                <div class="system-image-fade"></div>
-                            </div>
-                        </td>
-                    </tr>
-                </table>
-            </div>
-        </div>
-
-        <div class="section">
-            <div class="section-number">03</div>
             <h2 class="section-title">{title_production}</h2>
 
             {f'<div class="chart-container"><img src="{chart_data}" alt="Production mensuelle" class="chart-img"></div>' if chart_data else ''}
+            <p class="chart-source">Production annuelle : {simulation.annual_production_kwh:,.0f} kWh/an — Source : {'PVGIS (EU Science Hub)' if simulation.pvgis_annual_production_kwh else 'Google Solar API'}</p>
 
-            <div class="hero-metric">
-                <div class="hero-metric-inner">
-                    <span class="hero-metric-value">{simulation.annual_production_kwh:,.0f}</span>
-                    <span class="hero-metric-unit">kWh/an</span>
+            <div class="production-system-bg">
+                <h3 class="section-subtitle">{title_system}</h3>
+
+                <div class="system-container">
+                    <table class="system-layout">
+                        <tr>
+                            <td class="system-cards-col">
+                                {metric_cards}
+                            </td>
+                            <td class="system-image-col">
+                                <div class="system-image-wrap">
+                                    {f'<img src="{system_image_data}" alt="" class="system-image">' if system_image_data else ''}
+                                    <div class="system-image-fade"></div>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
                 </div>
-                <span class="hero-metric-label">Production totale annuelle</span>
             </div>
         </div>
     </div>
@@ -356,7 +362,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
     <!-- ============================================ -->
     <div class="page content-page">
         <div class="section">
-            <div class="section-number">04</div>
+            <div class="section-number">03</div>
             <h2 class="section-title">{title_bilan}</h2>
         </div>
 
@@ -639,8 +645,12 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             padding: 0;
         }
 
+        .production-page {
+            padding: 0;
+        }
+
         .section {
-            margin-bottom: 10mm;
+            margin-bottom: 4mm;
             page-break-inside: avoid;
         }
 
@@ -661,61 +671,71 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             text-transform: uppercase;
             border-bottom: 2px solid #4A9B5D;
             padding-bottom: 3mm;
-            margin-bottom: 8mm;
+            margin-bottom: 4mm;
             overflow: hidden;
             page-break-after: avoid;
+        }
+
+        .section-subtitle {
+            font-size: 10pt;
+            font-weight: 600;
+            color: #212121;
+            text-transform: uppercase;
+            letter-spacing: 0.3mm;
+            margin: 4mm 0 3mm 0;
+        }
+
+        .chart-source {
+            text-align: center;
+            font-size: 7pt;
+            color: #9E9E9E;
+            font-style: italic;
+            margin: 1mm 0 2mm 0;
+        }
+
+        .production-system-bg {
+            background: #F1F9F1;
+            margin: 0 -20mm -25mm -20mm;
+            padding: 4mm 20mm 25mm 20mm;
         }
 
         /* ===================================================
            PAGE 2 – LOCALISATION
            =================================================== */
-        .location-block {
-            margin-bottom: 6mm;
-        }
-
-        .address-text {
-            font-size: 11pt;
-            color: #212121;
-            margin-bottom: 3mm;
+        .location-page-bg {
+            background: #F1F9F1;
+            margin: -25mm -20mm 0 -20mm;
+            padding: 25mm 20mm 6mm 20mm;
         }
 
         .location-image-container {
-            position: relative;
             text-align: center;
-            margin: 6mm auto;
+            margin: 4mm 0 6mm 0;
             page-break-inside: avoid;
         }
 
         .location-image {
             width: 100%;
-            max-height: 130mm;
+            height: 80mm;
             object-fit: cover;
-            border-radius: 15px;
+            border-radius: 12px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
         }
 
-        /* Location pin overlay */
-        .location-pin {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            margin-top: -16px;
-            margin-left: -16px;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        .location-cards-row {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 3mm 0;
+            margin: 0;
         }
 
-        /* Roof surface badge */
-        .location-badge {
-            position: absolute;
-            bottom: 12px;
-            right: 12px;
-            background: #4A9B5D;
-            color: #FFFFFF;
-            font-size: 9pt;
-            font-weight: 600;
-            padding: 2mm 4mm;
-            border-radius: 20px;
-            letter-spacing: 0.2mm;
+        .location-cards-row td {
+            width: 50%;
+            vertical-align: top;
+        }
+
+        .location-cards-row .card {
+            margin-bottom: 0;
         }
 
         /* ===================================================
@@ -723,9 +743,8 @@ class PvSimulationWeasyPrint(models.AbstractModel):
            =================================================== */
         /* Two-column system layout */
         .system-container {
-            background: #E8F5E9;
-            border-radius: 16px;
-            margin: 4mm 0 8mm 0;
+            border-radius: 12px;
+            margin: 2mm 0 0 0;
             overflow: hidden;
         }
 
@@ -737,7 +756,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         .system-cards-col {
             width: 45%;
             vertical-align: top;
-            padding: 5mm 4mm 5mm 5mm;
+            padding: 3mm 3mm 3mm 4mm;
         }
 
         .system-image-col {
@@ -745,19 +764,21 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             vertical-align: top;
             padding: 0;
             position: relative;
+            height: 1px;
         }
 
         .system-image-wrap {
             position: relative;
             overflow: hidden;
+            height: 100%;
         }
 
         .system-image {
             width: 100%;
             height: 100%;
-            min-height: 60mm;
             object-fit: cover;
             display: block;
+            border-radius: 0 12px 12px 0;
         }
 
         .system-image-fade {
@@ -766,17 +787,17 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             left: 0;
             bottom: 0;
             width: 25mm;
-            background: linear-gradient(to right, #E8F5E9 0%, rgba(232, 245, 233, 0) 100%);
+            background: linear-gradient(to right, #F1F9F1 0%, rgba(241, 249, 241, 0) 100%);
         }
 
         .card {
             display: block;
             width: 100%;
-            margin-bottom: 3mm;
-            padding: 3.5mm 4mm;
+            margin-bottom: 2mm;
+            padding: 2.5mm 3mm;
             background: rgba(255, 255, 255, 0.92);
             border: 1px solid rgba(255, 255, 255, 0.6);
-            border-radius: 10px;
+            border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
             page-break-inside: avoid;
         }
@@ -793,9 +814,14 @@ class PvSimulationWeasyPrint(models.AbstractModel):
 
         .card-icon {
             float: left;
-            width: 10mm;
-            margin-right: 3mm;
-            margin-top: 1mm;
+            width: 8mm;
+            margin-right: 2mm;
+            margin-top: 0.5mm;
+        }
+
+        .card-icon svg {
+            width: 20px;
+            height: 20px;
         }
 
         .card-text {
@@ -803,15 +829,15 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         }
 
         .card-value {
-            font-size: 16pt;
+            font-size: 13pt;
             font-weight: 700;
             color: #212121;
-            line-height: 1.2;
+            line-height: 1.1;
             display: inline;
         }
 
         .card-unit {
-            font-size: 9pt;
+            font-size: 8pt;
             color: #616161;
             display: inline;
             margin-left: 1mm;
@@ -819,7 +845,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
 
         .card-label {
             display: block;
-            font-size: 7.5pt;
+            font-size: 7pt;
             color: #616161;
             text-transform: uppercase;
             letter-spacing: 0.3px;
@@ -828,12 +854,12 @@ class PvSimulationWeasyPrint(models.AbstractModel):
 
         .chart-container {
             text-align: center;
-            margin: 6mm auto;
+            margin: 2mm auto 0 auto;
             page-break-inside: avoid;
         }
 
         .chart-img {
-            max-width: 165mm;
+            max-width: 160mm;
             height: auto;
             border-radius: 6px;
         }
