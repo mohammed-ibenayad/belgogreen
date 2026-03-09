@@ -606,7 +606,7 @@
                             </div>
 
                             <!-- Page 4: Données de Consommation -->
-                            <div class="page pv-consumption-bg" style="page-break-before: always;">
+                            <div class="page" style="page-break-before: always;">
                                 <t t-call="bgg_pv_simulation.report_pv_simulation_page_consumption"/>
                             </div>
 
