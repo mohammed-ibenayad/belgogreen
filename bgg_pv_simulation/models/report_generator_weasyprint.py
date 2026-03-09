@@ -773,10 +773,10 @@ class PvSimulationWeasyPrint(models.AbstractModel):
 
         .system-image {
             width: 100%;
-            height: 100%;
-            min-height: 50mm;
+            max-height: 45mm;
             object-fit: cover;
             display: block;
+            border-radius: 0 12px 12px 0;
         }
 
         .system-image-fade {
