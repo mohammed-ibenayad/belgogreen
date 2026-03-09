@@ -752,6 +752,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
 
         .system-layout {
             width: 100%;
+            table-layout: fixed;
             border-collapse: collapse;
             height: 1px;
         }
@@ -766,6 +767,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             width: 55%;
             vertical-align: top;
             padding: 0;
+            height: 100%;
         }
 
         .system-image-wrap {
