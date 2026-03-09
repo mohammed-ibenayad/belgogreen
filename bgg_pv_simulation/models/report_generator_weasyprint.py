@@ -370,54 +370,41 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         <div class="bilan-bg">
             <!-- Production -->
             <h3 class="section-subtitle">Production</h3>
-            <table class="system-cards-grid">
+            <table class="bilan-cards-grid">
                 <tr>
-                    <td class="system-cards-col">
-                        {_bilan_card(SVG_ICON_SUN, 'Production totale', prod_total, 'kWh')}
-                    </td>
-                    <td class="system-cards-col"></td>
+                    <td class="bilan-cards-col">{_bilan_card(SVG_ICON_SUN, 'Production totale', prod_total, 'kWh')}</td>
+                    <td class="bilan-cards-col"></td>
+                    <td class="bilan-cards-col"></td>
                 </tr>
             </table>
 
             <!-- Consommation -->
             <h3 class="section-subtitle">Consommation</h3>
-            <table class="system-cards-grid">
+            <table class="bilan-cards-grid">
                 <tr>
-                    <td class="system-cards-col">
-                        {_bilan_card(SVG_ICON_HOME, 'Jour', conso_day, 'kWh')}
-                        {_bilan_card(SVG_ICON_BOLT, 'Totale', conso_total, 'kWh')}
-                    </td>
-                    <td class="system-cards-col">
-                        {_bilan_card(SVG_ICON_MOON, 'Nuit', conso_night, 'kWh')}
-                    </td>
+                    <td class="bilan-cards-col">{_bilan_card(SVG_ICON_HOME, 'Jour', conso_day, 'kWh')}</td>
+                    <td class="bilan-cards-col">{_bilan_card(SVG_ICON_MOON, 'Nuit', conso_night, 'kWh')}</td>
+                    <td class="bilan-cards-col">{_bilan_card(SVG_ICON_BOLT, 'Totale', conso_total, 'kWh')}</td>
                 </tr>
             </table>
 
             <!-- Auto Consommation -->
             <h3 class="section-subtitle">Auto Consommation</h3>
-            <table class="system-cards-grid">
+            <table class="bilan-cards-grid">
                 <tr>
-                    <td class="system-cards-col">
-                        {_bilan_card(SVG_ICON_RECYCLE, 'Consomm\u00e9 la journ\u00e9e', autocons_day, 'kWh')}
-                        {_bilan_card(SVG_ICON_BOLT, 'Total', autocons_total, 'kWh')}
-                    </td>
-                    <td class="system-cards-col">
-                        {_bilan_card(SVG_ICON_BATTERY, 'Stock\u00e9 dans la batterie', battery_charge, 'kWh')}
-                    </td>
+                    <td class="bilan-cards-col">{_bilan_card(SVG_ICON_RECYCLE, 'Consomm\u00e9 la journ\u00e9e', autocons_day, 'kWh')}</td>
+                    <td class="bilan-cards-col">{_bilan_card(SVG_ICON_BATTERY, 'Stock\u00e9 dans la batterie', battery_charge, 'kWh')}</td>
+                    <td class="bilan-cards-col">{_bilan_card(SVG_ICON_BOLT, 'Total', autocons_total, 'kWh')}</td>
                 </tr>
             </table>
 
             <!-- Économies -->
             <h3 class="section-subtitle">\u00c9conomies</h3>
-            <table class="system-cards-grid">
+            <table class="bilan-cards-grid">
                 <tr>
-                    <td class="system-cards-col">
-                        {_bilan_card(SVG_ICON_PANELS, 'Li\u00e9es aux panneaux', savings_panels, '\u20ac')}
-                        {_bilan_card(SVG_ICON_EURO, 'Li\u00e9es \u00e0 la revente', savings_resale, '\u20ac')}
-                    </td>
-                    <td class="system-cards-col">
-                        {_bilan_card(SVG_ICON_BATTERY, 'Li\u00e9es \u00e0 la batterie', savings_battery, '\u20ac')}
-                    </td>
+                    <td class="bilan-cards-col">{_bilan_card(SVG_ICON_PANELS, 'Li\u00e9es aux panneaux', savings_panels, '\u20ac')}</td>
+                    <td class="bilan-cards-col">{_bilan_card(SVG_ICON_BATTERY, 'Li\u00e9es \u00e0 la batterie', savings_battery, '\u20ac')}</td>
+                    <td class="bilan-cards-col">{_bilan_card(SVG_ICON_EURO, 'Li\u00e9es \u00e0 la revente', savings_resale, '\u20ac')}</td>
                 </tr>
             </table>
 
@@ -960,6 +947,18 @@ class PvSimulationWeasyPrint(models.AbstractModel):
 
         .bilan-bg .section-subtitle:first-child {
             margin-top: 0;
+        }
+
+        .bilan-cards-grid {
+            width: 100%;
+            table-layout: fixed;
+            border-collapse: separate;
+            border-spacing: 2mm 0;
+        }
+
+        .bilan-cards-col {
+            width: 33.33%;
+            vertical-align: top;
         }
 
         /* Bottom summary */
