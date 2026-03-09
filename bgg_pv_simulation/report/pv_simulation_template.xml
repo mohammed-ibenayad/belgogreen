@@ -390,127 +390,120 @@
                                     margin-top: 2mm;
                                 }
 
-                                /* --- Bilan card-based sections --- */
-                                .pv-bilan-bg {
-                                    background: #F1F9F1;
+                                /* --- Bilan table sections --- */
+                                .pv-bilan-section {
+                                    margin-bottom: 4mm;
+                                    border: 1px solid #E0E0E0;
+                                    border-radius: 8px;
+                                    overflow: hidden;
                                 }
 
-                                .pv-bilan-bg .pv-section-subtitle {
-                                    margin: 5mm 0 4mm 0;
-                                    padding-bottom: 1.5mm;
-                                    border-bottom: 1px solid #C8E6C9;
-                                }
-
-                                .pv-bilan-bg .pv-section-subtitle:first-child {
-                                    margin-top: 0;
-                                }
-
-                                .pv-bilan-cards-grid {
-                                    width: 100%;
-                                    table-layout: fixed;
-                                    border-collapse: separate;
-                                    border-spacing: 2mm 0;
-                                }
-
-                                .pv-bilan-cards-col {
-                                    width: 33.33%;
-                                    vertical-align: top;
-                                }
-
-                                /* Bottom summary */
-                                .pv-bilan-summary-row {
-                                    width: 100%;
-                                    table-layout: fixed;
-                                    border-collapse: separate;
-                                    border-spacing: 2mm 0;
-                                    margin-top: 5mm;
-                                }
-
-                                .pv-bilan-summary-savings {
-                                    width: 60%;
-                                    vertical-align: top;
-                                }
-
-                                .pv-bilan-summary-savings-inner {
-                                    background: linear-gradient(135deg, #81C784 0%, #66BB6A 100%);
+                                .pv-bilan-header {
+                                    background: #212121;
                                     color: #FFFFFF;
-                                    border-radius: 10px;
-                                    padding: 4mm 5mm;
-                                }
-
-                                .pv-bilan-summary-savings-inner::after {
-                                    content: '';
-                                    display: table;
-                                    clear: both;
-                                }
-
-                                .pv-bts-icon {
-                                    float: left;
-                                    width: 8mm;
-                                    margin-right: 2mm;
-                                    margin-top: 0.5mm;
-                                }
-
-                                .pv-bts-icon svg {
-                                    width: 24px;
-                                    height: 24px;
-                                }
-
-                                .pv-bts-label {
-                                    display: block;
-                                    font-size: 7pt;
+                                    font-size: 9pt;
+                                    font-weight: 600;
+                                    padding: 2mm 5mm;
                                     text-transform: uppercase;
-                                    letter-spacing: 0.3px;
-                                    opacity: 0.9;
+                                    letter-spacing: 0.5px;
                                 }
 
-                                .pv-bts-value {
-                                    display: block;
-                                    font-size: 14pt;
-                                    font-weight: 700;
+                                .pv-bilan-table {
+                                    width: 100%;
+                                    border-collapse: collapse;
                                 }
 
-                                .pv-bilan-summary-purchase {
-                                    width: 40%;
-                                    vertical-align: top;
+                                .pv-bilan-table td {
+                                    padding: 2.5mm 4mm;
+                                    font-size: 10pt;
                                 }
 
-                                .pv-bilan-summary-purchase-inner {
+                                .pv-bilan-table tr:nth-child(even) {
                                     background: #F9F9F9;
-                                    border: 1.5px solid #E0E0E0;
-                                    border-radius: 10px;
-                                    padding: 4mm 5mm;
                                 }
 
-                                .pv-bilan-summary-purchase-inner::after {
-                                    content: '';
-                                    display: table;
-                                    clear: both;
-                                }
-
-                                .pv-btp-icon {
-                                    float: left;
-                                    width: 8mm;
-                                    margin-right: 2mm;
-                                    margin-top: 0.5mm;
-                                }
-
-                                .pv-btp-icon svg {
-                                    width: 24px;
-                                    height: 24px;
-                                }
-
-                                .pv-btp-label {
-                                    display: block;
-                                    font-size: 7pt;
-                                    text-transform: uppercase;
-                                    letter-spacing: 0.3px;
+                                .pv-bilan-icon {
+                                    width: 10mm;
+                                    text-align: center;
+                                    font-size: 12pt;
                                     color: #616161;
                                 }
 
-                                .pv-btp-value {
+                                .pv-bilan-val {
+                                    text-align: right;
+                                    font-weight: 600;
+                                    color: #212121;
+                                    white-space: nowrap;
+                                    padding-right: 5mm;
+                                    font-variant-numeric: tabular-nums;
+                                }
+
+                                .pv-bilan-total td {
+                                    background: #E8F5E9 !important;
+                                    font-weight: 600;
+                                }
+
+                                .pv-bilan-total .pv-bilan-val {
+                                    font-weight: 700;
+                                    color: #388E3C;
+                                }
+
+                                /* Bottom summary blocks */
+                                .pv-bilan-bottom {
+                                    margin-top: 5mm;
+                                    text-align: center;
+                                }
+
+                                .pv-savings-block {
+                                    display: inline-block;
+                                    width: 48%;
+                                    background: linear-gradient(135deg, #4A9B5D 0%, #388E3C 100%);
+                                    color: #FFFFFF;
+                                    border-radius: 10px;
+                                    padding: 5mm 6mm;
+                                    text-align: center;
+                                    vertical-align: top;
+                                }
+
+                                .pv-savings-label {
                                     display: block;
-                                    font-size: 14pt;
+                                    font-size: 8pt;
+                                    text-transform: uppercase;
+                                    letter-spacing: 0.3px;
+                                    opacity: 0.9;
+                                    margin-bottom: 2mm;
+                                }
+
+                                .pv-savings-value {
+                                    display: block;
+                                    font-size: 18pt;
+                                    font-weight: 700;
+                                }
+
+                                .pv-purchase-block {
+                                    display: inline-block;
+                                    width: 48%;
+                                    margin-left: 2%;
+                                    background: #F9F9F9;
+                                    border: 1.5px solid #E0E0E0;
+                                    border-radius: 10px;
+                                    padding: 5mm 6mm;
+                                    text-align: center;
+                                    vertical-align: top;
+                                }
+
+                                .pv-purchase-label {
+                                    display: block;
+                                    font-size: 8pt;
+                                    text-transform: uppercase;
+                                    letter-spacing: 0.3px;
+                                    color: #616161;
+                                    margin-bottom: 2mm;
+                                }
+
+                                .pv-purchase-value {
+                                    display: block;
+                                    font-size: 18pt;
                                     font-weight: 700;
                                     color: #212121;
                                 }
@@ -539,7 +532,7 @@
                             </div>
 
                             <!-- Page 4: Bilan Énergétique -->
-                            <div class="page pv-bilan-bg" style="page-break-before: always;">
+                            <div class="page" style="page-break-before: always;">
                                 <t t-call="bgg_pv_simulation.report_pv_simulation_page_bilan"/>
                             </div>
                         </div>
@@ -749,157 +742,103 @@
             <div class="pv-section-number">03</div>
             <h2 class="pv-section-title"><t t-esc="o.section_title_bilan or 'BILAN ÉNERGÉTIQUE'"/></h2>
 
-            <div class="pv-bilan-content">
-                <!-- Production -->
-                <h3 class="pv-section-subtitle">Production</h3>
-                <table class="pv-bilan-cards-grid">
+            <!-- Production (always shown) -->
+            <div class="pv-bilan-section">
+                <div class="pv-bilan-header">Production</div>
+                <table class="pv-bilan-table">
                     <tr>
-                        <td class="pv-bilan-cards-col">
-                            <div class="pv-card">
-                                <div class="pv-card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></div>
-                                <div class="pv-card-text">
-                                    <div class="pv-card-value"><t t-esc="'{:,.2f}'.format(prod_total)"/></div>
-                                    <div class="pv-card-unit">kWh</div>
-                                    <div class="pv-card-label">Production totale</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="pv-bilan-cards-col"/>
-                        <td class="pv-bilan-cards-col"/>
-                    </tr>
-                </table>
-
-                <!-- Consommation -->
-                <h3 class="pv-section-subtitle">Consommation</h3>
-                <table class="pv-bilan-cards-grid">
-                    <tr>
-                        <td class="pv-bilan-cards-col">
-                            <div class="pv-card">
-                                <div class="pv-card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
-                                <div class="pv-card-text">
-                                    <div class="pv-card-value"><t t-esc="'{:,.2f}'.format(conso_day)"/></div>
-                                    <div class="pv-card-unit">kWh</div>
-                                    <div class="pv-card-label">Jour</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="pv-bilan-cards-col">
-                            <div class="pv-card">
-                                <div class="pv-card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></div>
-                                <div class="pv-card-text">
-                                    <div class="pv-card-value"><t t-esc="'{:,.2f}'.format(conso_night)"/></div>
-                                    <div class="pv-card-unit">kWh</div>
-                                    <div class="pv-card-label">Nuit</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="pv-bilan-cards-col">
-                            <div class="pv-card">
-                                <div class="pv-card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
-                                <div class="pv-card-text">
-                                    <div class="pv-card-value"><t t-esc="'{:,.2f}'.format(conso_total)"/></div>
-                                    <div class="pv-card-unit">kWh</div>
-                                    <div class="pv-card-label">Totale</div>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                </table>
-
-                <!-- Auto Consommation -->
-                <h3 class="pv-section-subtitle">Auto Consommation</h3>
-                <table class="pv-bilan-cards-grid">
-                    <tr>
-                        <td class="pv-bilan-cards-col">
-                            <div class="pv-card">
-                                <div class="pv-card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></div>
-                                <div class="pv-card-text">
-                                    <div class="pv-card-value"><t t-esc="'{:,.2f}'.format(autocons_day)"/></div>
-                                    <div class="pv-card-unit">kWh</div>
-                                    <div class="pv-card-label">Consommé la journée</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="pv-bilan-cards-col">
-                            <div class="pv-card">
-                                <div class="pv-card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="18" height="12" rx="2" ry="2"/><line x1="23" y1="13" x2="23" y2="11"/><line x1="7" y1="10" x2="7" y2="14"/><line x1="5" y1="12" x2="9" y2="12"/></svg></div>
-                                <div class="pv-card-text">
-                                    <div class="pv-card-value"><t t-esc="'{:,.2f}'.format(battery_charge)"/></div>
-                                    <div class="pv-card-unit">kWh</div>
-                                    <div class="pv-card-label">Stocké dans la batterie</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="pv-bilan-cards-col">
-                            <div class="pv-card">
-                                <div class="pv-card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
-                                <div class="pv-card-text">
-                                    <div class="pv-card-value"><t t-esc="'{:,.2f}'.format(autocons_total)"/></div>
-                                    <div class="pv-card-unit">kWh</div>
-                                    <div class="pv-card-label">Total</div>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                </table>
-
-                <!-- Économies -->
-                <h3 class="pv-section-subtitle">Économies</h3>
-                <table class="pv-bilan-cards-grid">
-                    <tr>
-                        <td class="pv-bilan-cards-col">
-                            <div class="pv-card">
-                                <div class="pv-card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="12" y1="3" x2="12" y2="17"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
-                                <div class="pv-card-text">
-                                    <div class="pv-card-value"><t t-esc="'{:,.2f}'.format(savings_panels)"/></div>
-                                    <div class="pv-card-unit">€</div>
-                                    <div class="pv-card-label">Liées aux panneaux</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="pv-bilan-cards-col">
-                            <div class="pv-card">
-                                <div class="pv-card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="18" height="12" rx="2" ry="2"/><line x1="23" y1="13" x2="23" y2="11"/><line x1="7" y1="10" x2="7" y2="14"/><line x1="5" y1="12" x2="9" y2="12"/></svg></div>
-                                <div class="pv-card-text">
-                                    <div class="pv-card-value"><t t-esc="'{:,.2f}'.format(savings_battery)"/></div>
-                                    <div class="pv-card-unit">€</div>
-                                    <div class="pv-card-label">Liées à la batterie</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="pv-bilan-cards-col">
-                            <div class="pv-card">
-                                <div class="pv-card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.2 7A6 6 0 0 0 7 12a6 6 0 0 0 10.2 5"/><line x1="4" y1="10" x2="14" y2="10"/><line x1="4" y1="14" x2="14" y2="14"/></svg></div>
-                                <div class="pv-card-text">
-                                    <div class="pv-card-value"><t t-esc="'{:,.2f}'.format(savings_resale)"/></div>
-                                    <div class="pv-card-unit">€</div>
-                                    <div class="pv-card-label">Liées à la revente</div>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                </table>
-
-                <!-- Bottom summary -->
-                <table class="pv-bilan-summary-row">
-                    <tr>
-                        <td class="pv-bilan-summary-savings">
-                            <div class="pv-bilan-summary-savings-inner">
-                                <span class="pv-bts-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2v-4h-2c0-1-.5-1.5-1-2"/><path d="M2 9.5a1 1 0 0 1 1-1h.01"/><circle cx="12.5" cy="9.5" r=".5" fill="#FFFFFF"/></svg></span>
-                                <span class="pv-bts-label">Total économies</span>
-                                <span class="pv-bts-value"><t t-esc="'{:,.2f}'.format(savings_total)"/> €</span>
-                            </div>
-                        </td>
-                        <td class="pv-bilan-summary-purchase">
-                            <div class="pv-bilan-summary-purchase-inner">
-                                <span class="pv-btp-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/><circle cx="18" cy="15" r="1.5"/></svg></span>
-                                <span class="pv-btp-label">Achat</span>
-                                <span class="pv-btp-value"><t t-esc="'{:,.2f}'.format(purchase_total)"/> €</span>
-                            </div>
-                        </td>
+                        <td class="pv-bilan-icon">&#9788;</td>
+                        <td>Production totale annuelle</td>
+                        <td class="pv-bilan-val"><t t-esc="'{:,.2f}'.format(prod_total)"/> kWh</td>
                     </tr>
                 </table>
             </div>
+
+            <!-- Consommation (only if data exists) -->
+            <t t-if="conso_total">
+                <div class="pv-bilan-section">
+                    <div class="pv-bilan-header">Consommation</div>
+                    <table class="pv-bilan-table">
+                        <tr>
+                            <td class="pv-bilan-icon">&#9788;</td>
+                            <td>Consommation jour</td>
+                            <td class="pv-bilan-val"><t t-esc="'{:,.2f}'.format(conso_day)"/> kWh</td>
+                        </tr>
+                        <tr>
+                            <td class="pv-bilan-icon">&#9790;</td>
+                            <td>Consommation nuit</td>
+                            <td class="pv-bilan-val"><t t-esc="'{:,.2f}'.format(conso_night)"/> kWh</td>
+                        </tr>
+                        <tr class="pv-bilan-total">
+                            <td class="pv-bilan-icon">&#9751;</td>
+                            <td>Consommation totale</td>
+                            <td class="pv-bilan-val"><t t-esc="'{:,.2f}'.format(conso_total)"/> kWh</td>
+                        </tr>
+                    </table>
+                </div>
+            </t>
+
+            <!-- Autoconsommation (only if data exists) -->
+            <t t-if="autocons_total">
+                <div class="pv-bilan-section">
+                    <div class="pv-bilan-header">Autoconsommation</div>
+                    <table class="pv-bilan-table">
+                        <tr>
+                            <td class="pv-bilan-icon">&#9889;</td>
+                            <td>Consommé directement</td>
+                            <td class="pv-bilan-val"><t t-esc="'{:,.2f}'.format(autocons_day)"/> kWh</td>
+                        </tr>
+                        <tr t-if="battery_charge">
+                            <td class="pv-bilan-icon">&#9107;</td>
+                            <td>Stocké dans la batterie</td>
+                            <td class="pv-bilan-val"><t t-esc="'{:,.2f}'.format(battery_charge)"/> kWh</td>
+                        </tr>
+                        <tr class="pv-bilan-total">
+                            <td class="pv-bilan-icon">&#9751;</td>
+                            <td>Total autoconsommation</td>
+                            <td class="pv-bilan-val"><t t-esc="'{:,.2f}'.format(autocons_total)"/> kWh</td>
+                        </tr>
+                    </table>
+                </div>
+            </t>
+
+            <!-- Économies (only if data exists) -->
+            <t t-if="savings_total">
+                <div class="pv-bilan-section">
+                    <div class="pv-bilan-header">Économies</div>
+                    <table class="pv-bilan-table">
+                        <tr t-if="savings_panels">
+                            <td class="pv-bilan-icon">&#9788;</td>
+                            <td>Économies liées aux panneaux</td>
+                            <td class="pv-bilan-val"><t t-esc="'{:,.2f}'.format(savings_panels)"/> €</td>
+                        </tr>
+                        <tr t-if="savings_battery">
+                            <td class="pv-bilan-icon">&#9107;</td>
+                            <td>Économies liées à la batterie</td>
+                            <td class="pv-bilan-val"><t t-esc="'{:,.2f}'.format(savings_battery)"/> €</td>
+                        </tr>
+                        <tr t-if="savings_resale">
+                            <td class="pv-bilan-icon">&#8364;</td>
+                            <td>Revenus de revente</td>
+                            <td class="pv-bilan-val"><t t-esc="'{:,.2f}'.format(savings_resale)"/> €</td>
+                        </tr>
+                    </table>
+                </div>
+            </t>
+
+            <!-- Bottom summary (only if data exists) -->
+            <t t-if="savings_total or purchase_total">
+                <div class="pv-bilan-bottom">
+                    <div class="pv-savings-block">
+                        <span class="pv-savings-label">Total économies annuelles</span>
+                        <span class="pv-savings-value"><t t-esc="'{:,.2f}'.format(savings_total)"/> €</span>
+                    </div>
+                    <div class="pv-purchase-block">
+                        <span class="pv-purchase-label">Coût d'achat réseau</span>
+                        <span class="pv-purchase-value"><t t-esc="'{:,.2f}'.format(purchase_total)"/> €</span>
+                    </div>
+                </div>
+            </t>
         </template>
     </data>
 </odoo>
