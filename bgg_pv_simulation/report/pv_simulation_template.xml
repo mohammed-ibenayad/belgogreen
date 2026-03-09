@@ -252,7 +252,7 @@
                                     page-break-inside: avoid;
                                 }
 
-                                /* --- Two-column system layout --- */
+                                /* --- Two-column cards + image below --- */
                                 .pv-system-container {
                                     border-radius: 12px;
                                     margin: 2mm 0 0 0;
@@ -260,46 +260,29 @@
                                     page-break-inside: avoid;
                                 }
 
-                                .pv-system-layout {
+                                .pv-system-cards-grid {
                                     width: 100%;
                                     table-layout: fixed;
                                     border-collapse: collapse;
-                                    height: 1px;
                                 }
 
                                 .pv-system-cards-col {
-                                    width: 45%;
+                                    width: 50%;
                                     vertical-align: top;
-                                    padding: 3mm 3mm 3mm 4mm;
-                                }
-
-                                .pv-system-image-col {
-                                    width: 55%;
-                                    vertical-align: top;
-                                    padding: 0;
-                                    height: 100%;
+                                    padding: 2mm;
                                 }
 
                                 .pv-system-image-wrap {
                                     overflow: hidden;
-                                    height: 100%;
+                                    border-radius: 0 0 12px 12px;
+                                    max-height: 35mm;
                                 }
 
                                 .pv-system-image {
                                     width: 100%;
-                                    height: 100%;
+                                    height: 35mm;
                                     object-fit: cover;
                                     display: block;
-                                    border-radius: 0 12px 12px 0;
-                                }
-
-                                .pv-system-image-fade {
-                                    position: absolute;
-                                    top: 0;
-                                    left: 0;
-                                    bottom: 0;
-                                    width: 25mm;
-                                    background: linear-gradient(to right, #F1F9F1 0%, rgba(241, 249, 241, 0) 100%);
                                 }
 
                                 .pv-card {
@@ -681,7 +664,7 @@
                 </h3>
 
                 <div class="pv-system-container">
-                <table class="pv-system-layout">
+                <table class="pv-system-cards-grid">
                     <tr>
                         <td class="pv-system-cards-col">
                             <div class="pv-card">
@@ -704,6 +687,8 @@
                                     <div class="pv-card-label">Nombre de panneaux</div>
                                 </div>
                             </div>
+                        </td>
+                        <td class="pv-system-cards-col">
                             <div t-if="o.orientation_deg" class="pv-card">
                                 <div class="pv-card-icon">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" fill="#4A9B5D" opacity="0.3"/></svg>
@@ -725,16 +710,12 @@
                                 </div>
                             </div>
                         </td>
-                        <td class="pv-system-image-col">
-                            <div class="pv-system-image-wrap">
-                                <img t-if="o.system_image"
-                                     t-att-src="'data:image/png;base64,%s' % o.system_image.decode()"
-                                     class="pv-system-image"/>
-                                <div class="pv-system-image-fade"/>
-                            </div>
-                        </td>
                     </tr>
                 </table>
+                <div t-if="o.system_image" class="pv-system-image-wrap">
+                    <img t-att-src="'data:image/png;base64,%s' % o.system_image.decode()"
+                         class="pv-system-image"/>
+                </div>
             </div>
             </div>
         </template>
