@@ -120,6 +120,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         title_system = _esc(simulation.section_title_system or 'CARACTÉRISTIQUES DU SYSTÈME')
         title_production = _esc(simulation.section_title_production or 'PRODUCTION ESTIMÉE')
         title_bilan = _esc(simulation.section_title_bilan or 'BILAN ÉNERGÉTIQUE')
+        title_consumption = _esc(simulation.section_title_consumption or 'DONNÉES DE CONSOMMATION')
 
         # Footer
         company_name = _esc(company.name or '')
@@ -239,6 +240,38 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         eco_rows = _bilan_row_if('&#9788;', '\u00c9conomies li\u00e9es aux panneaux', savings_panels, '&euro;')
         eco_rows += _bilan_row_if('&#9107;', '\u00c9conomies li\u00e9es \u00e0 la batterie', savings_battery, '&euro;')
         eco_rows += _bilan_row_if('&#8364;', 'Revenus de revente', savings_resale, '&euro;')
+
+        # Monthly data table rows
+        month_names = {
+            '1': 'Janvier', '2': 'Février', '3': 'Mars', '4': 'Avril',
+            '5': 'Mai', '6': 'Juin', '7': 'Juillet', '8': 'Août',
+            '9': 'Septembre', '10': 'Octobre', '11': 'Novembre', '12': 'Décembre'
+        }
+
+        monthly_data_rows = ''
+        daily_balance_rows = ''
+        if results:
+            sorted_results = results.sorted(key=lambda r: int(r.month))
+            for r in sorted_results:
+                mname = month_names.get(r.month, r.month)
+                monthly_data_rows += f'''<tr>
+                    <td>{mname}</td>
+                    <td class="data-val">{r.monthly_production_kwh:,.2f}</td>
+                    <td class="data-val">{r.monthly_consumption_kwh:,.2f}</td>
+                    <td class="data-val">{r.daily_production_kwh:,.2f}</td>
+                    <td class="data-val">{r.daily_day_consumption_kwh:,.2f}</td>
+                    <td class="data-val">{r.daily_night_consumption_kwh:,.2f}</td>
+                </tr>'''
+
+                daily_balance_rows += f'''<tr>
+                    <td>{mname}</td>
+                    <td class="data-val">{r.daily_production_kwh:,.2f}</td>
+                    <td class="data-val">{r.daily_day_consumption_kwh:,.2f}</td>
+                    <td class="data-val">{r.daily_night_consumption_kwh:,.2f}</td>
+                    <td class="data-val">{r.daily_battery_charge_kwh:,.2f}</td>
+                    <td class="data-val">{r.daily_energy_sold_kwh:,.2f}</td>
+                    <td class="data-val">{r.daily_energy_bought_kwh:,.2f}</td>
+                </tr>'''
 
         # Location badge
         roof_badge = ''
@@ -362,11 +395,69 @@ class PvSimulationWeasyPrint(models.AbstractModel):
     </div>
 
     <!-- ============================================ -->
-    <!-- PAGE 4: BILAN ÉNERGÉTIQUE                    -->
+    <!-- PAGE 4: DONNÉES DE CONSOMMATION              -->
     <!-- ============================================ -->
     <div class="page content-page">
         <div class="section">
             <div class="section-number">03</div>
+            <h2 class="section-title">{title_consumption}</h2>
+        </div>
+
+        <!-- Section 1: Monthly/Daily Data Table -->
+        <h3 class="section-subtitle">Données mensuelles</h3>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Mois</th>
+                    <th>Production (kWh)</th>
+                    <th>Consommation (kWh)</th>
+                    <th>Prod. jour. (kWh)</th>
+                    <th>Conso jour (kWh)</th>
+                    <th>Conso nuit (kWh)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {monthly_data_rows}
+            </tbody>
+        </table>
+
+        <!-- Explanation box -->
+        <div class="explanation-box">
+            <p>La <strong>charge</strong> est l\u2019\u00e9nergie disponible dans la batterie. Elle d\u00e9pend de la capacit\u00e9
+            de la batterie et du surplus de production par rapport \u00e0 la consommation de jour.
+            Elle tient \u00e9galement compte du pourcentage de batterie utilisable et de sa performance.</p>
+            <p>La <strong>vente</strong> est l\u2019\u00e9nergie produite qui ne peut pas \u00eatre auto-consomm\u00e9e (ni en
+            consommation de jour, ni pour charger la batterie). Elle sera alors revendue sur le r\u00e9seau.</p>
+            <p>L\u2019<strong>achat</strong> correspond \u00e0 l\u2019\u00e9nergie qu\u2019il faut acheter sur le r\u00e9seau, en d\u00e9duisant
+            la partie auto-consommation.</p>
+        </div>
+
+        <!-- Section 3: Daily Energy Balance Table -->
+        <h3 class="section-subtitle">Bilan \u00e9nerg\u00e9tique quotidien</h3>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Mois</th>
+                    <th>Production (kWh)</th>
+                    <th>Conso jour (kWh)</th>
+                    <th>Conso nuit (kWh)</th>
+                    <th>Charge (kWh)</th>
+                    <th>Vente (kWh)</th>
+                    <th>Achat (kWh)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {daily_balance_rows}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- PAGE 5: BILAN ÉNERGÉTIQUE                    -->
+    <!-- ============================================ -->
+    <div class="page content-page">
+        <div class="section">
+            <div class="section-number">04</div>
             <h2 class="section-title">{title_bilan}</h2>
         </div>
 
@@ -891,7 +982,68 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         }
 
         /* ===================================================
-           PAGE 4 – BILAN ÉNERGÉTIQUE
+           PAGE 4 – DONNÉES DE CONSOMMATION
+           =================================================== */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 4mm;
+            font-size: 8pt;
+        }
+
+        .data-table thead tr {
+            background: #212121;
+            color: #FFFFFF;
+        }
+
+        .data-table th {
+            padding: 2mm 2.5mm;
+            font-weight: 600;
+            font-size: 7.5pt;
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        .data-table th:first-child {
+            text-align: left;
+        }
+
+        .data-table td {
+            padding: 1.5mm 2.5mm;
+            border-bottom: 0.5px solid #E0E0E0;
+            font-size: 8pt;
+        }
+
+        .data-table tbody tr:nth-child(even) {
+            background: #F9F9F9;
+        }
+
+        .data-val {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .explanation-box {
+            background: #F1F9F1;
+            border-left: 3px solid #4A9B5D;
+            border-radius: 4px;
+            padding: 3mm 4mm;
+            margin: 4mm 0;
+            font-size: 8pt;
+            line-height: 1.5;
+            color: #424242;
+        }
+
+        .explanation-box p {
+            margin: 0 0 1.5mm 0;
+        }
+
+        .explanation-box p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* ===================================================
+           PAGE 5 – BILAN ÉNERGÉTIQUE
            =================================================== */
         .bilan-section {
             margin-bottom: 4mm;

@@ -390,6 +390,65 @@
                                     margin-top: 2mm;
                                 }
 
+                                /* --- Data tables (consumption page) --- */
+                                .pv-data-table {
+                                    width: 100%;
+                                    border-collapse: collapse;
+                                    margin-bottom: 4mm;
+                                    font-size: 8pt;
+                                }
+
+                                .pv-data-table thead tr {
+                                    background: #212121;
+                                    color: #FFFFFF;
+                                }
+
+                                .pv-data-table th {
+                                    padding: 2mm 2.5mm;
+                                    font-weight: 600;
+                                    font-size: 7.5pt;
+                                    text-align: right;
+                                    white-space: nowrap;
+                                }
+
+                                .pv-data-table th:first-child {
+                                    text-align: left;
+                                }
+
+                                .pv-data-table td {
+                                    padding: 1.5mm 2.5mm;
+                                    border-bottom: 0.5px solid #E0E0E0;
+                                    font-size: 8pt;
+                                }
+
+                                .pv-data-table tbody tr:nth-child(even) {
+                                    background: #F9F9F9;
+                                }
+
+                                .pv-data-val {
+                                    text-align: right;
+                                    font-variant-numeric: tabular-nums;
+                                }
+
+                                .pv-explanation-box {
+                                    background: #F1F9F1;
+                                    border-left: 3px solid #4A9B5D;
+                                    border-radius: 4px;
+                                    padding: 3mm 4mm;
+                                    margin: 4mm 0;
+                                    font-size: 8pt;
+                                    line-height: 1.5;
+                                    color: #424242;
+                                }
+
+                                .pv-explanation-box p {
+                                    margin: 0 0 1.5mm 0;
+                                }
+
+                                .pv-explanation-box p:last-child {
+                                    margin-bottom: 0;
+                                }
+
                                 /* --- Bilan table sections --- */
                                 .pv-bilan-section {
                                     margin-bottom: 4mm;
@@ -531,7 +590,12 @@
                                 <t t-call="bgg_pv_simulation.report_pv_simulation_page_production"/>
                             </div>
 
-                            <!-- Page 4: Bilan Énergétique -->
+                            <!-- Page 4: Données de Consommation -->
+                            <div class="page" style="page-break-before: always;">
+                                <t t-call="bgg_pv_simulation.report_pv_simulation_page_consumption"/>
+                            </div>
+
+                            <!-- Page 5: Bilan Énergétique -->
                             <div class="page" style="page-break-before: always;">
                                 <t t-call="bgg_pv_simulation.report_pv_simulation_page_bilan"/>
                             </div>
@@ -722,7 +786,85 @@
         </template>
 
         <!-- ============================================ -->
-        <!-- Page 4: Bilan Énergétique                    -->
+        <!-- Page 4: Données de Consommation              -->
+        <!-- ============================================ -->
+        <template id="report_pv_simulation_page_consumption">
+            <t t-set="results" t-value="o.monthly_result_ids.sorted(key=lambda r: int(r.month))"/>
+            <t t-set="month_names" t-value="{'1': 'Janvier', '2': 'Février', '3': 'Mars', '4': 'Avril', '5': 'Mai', '6': 'Juin', '7': 'Juillet', '8': 'Août', '9': 'Septembre', '10': 'Octobre', '11': 'Novembre', '12': 'Décembre'}"/>
+
+            <div class="pv-section-number">03</div>
+            <h2 class="pv-section-title"><t t-esc="o.section_title_consumption or 'DONNÉES DE CONSOMMATION'"/></h2>
+
+            <!-- Section 1: Monthly/Daily Data Table -->
+            <h3 class="pv-section-subtitle">Données mensuelles</h3>
+            <table class="pv-data-table">
+                <thead>
+                    <tr>
+                        <th>Mois</th>
+                        <th>Production (kWh)</th>
+                        <th>Consommation (kWh)</th>
+                        <th>Prod. jour. (kWh)</th>
+                        <th>Conso jour (kWh)</th>
+                        <th>Conso nuit (kWh)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <t t-foreach="results" t-as="r">
+                        <tr>
+                            <td><t t-esc="month_names.get(r.month, r.month)"/></td>
+                            <td class="pv-data-val"><t t-esc="'{:,.2f}'.format(r.monthly_production_kwh)"/></td>
+                            <td class="pv-data-val"><t t-esc="'{:,.2f}'.format(r.monthly_consumption_kwh)"/></td>
+                            <td class="pv-data-val"><t t-esc="'{:,.2f}'.format(r.daily_production_kwh)"/></td>
+                            <td class="pv-data-val"><t t-esc="'{:,.2f}'.format(r.daily_day_consumption_kwh)"/></td>
+                            <td class="pv-data-val"><t t-esc="'{:,.2f}'.format(r.daily_night_consumption_kwh)"/></td>
+                        </tr>
+                    </t>
+                </tbody>
+            </table>
+
+            <!-- Explanation box -->
+            <div class="pv-explanation-box">
+                <p>La <b>charge</b> est l'énergie disponible dans la batterie. Elle dépend de la capacité
+                de la batterie et du surplus de production par rapport à la consommation de jour.
+                Elle tient également compte du pourcentage de batterie utilisable et de sa performance.</p>
+                <p>La <b>vente</b> est l'énergie produite qui ne peut pas être auto-consommée (ni en
+                consommation de jour, ni pour charger la batterie). Elle sera alors revendue sur le réseau.</p>
+                <p>L'<b>achat</b> correspond à l'énergie qu'il faut acheter sur le réseau, en déduisant
+                la partie auto-consommation.</p>
+            </div>
+
+            <!-- Section 3: Daily Energy Balance Table -->
+            <h3 class="pv-section-subtitle">Bilan énergétique quotidien</h3>
+            <table class="pv-data-table">
+                <thead>
+                    <tr>
+                        <th>Mois</th>
+                        <th>Production (kWh)</th>
+                        <th>Conso jour (kWh)</th>
+                        <th>Conso nuit (kWh)</th>
+                        <th>Charge (kWh)</th>
+                        <th>Vente (kWh)</th>
+                        <th>Achat (kWh)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <t t-foreach="results" t-as="r">
+                        <tr>
+                            <td><t t-esc="month_names.get(r.month, r.month)"/></td>
+                            <td class="pv-data-val"><t t-esc="'{:,.2f}'.format(r.daily_production_kwh)"/></td>
+                            <td class="pv-data-val"><t t-esc="'{:,.2f}'.format(r.daily_day_consumption_kwh)"/></td>
+                            <td class="pv-data-val"><t t-esc="'{:,.2f}'.format(r.daily_night_consumption_kwh)"/></td>
+                            <td class="pv-data-val"><t t-esc="'{:,.2f}'.format(r.daily_battery_charge_kwh)"/></td>
+                            <td class="pv-data-val"><t t-esc="'{:,.2f}'.format(r.daily_energy_sold_kwh)"/></td>
+                            <td class="pv-data-val"><t t-esc="'{:,.2f}'.format(r.daily_energy_bought_kwh)"/></td>
+                        </tr>
+                    </t>
+                </tbody>
+            </table>
+        </template>
+
+        <!-- ============================================ -->
+        <!-- Page 5: Bilan Énergétique                    -->
         <!-- ============================================ -->
         <template id="report_pv_simulation_page_bilan">
             <t t-set="results" t-value="o.monthly_result_ids"/>
@@ -739,7 +881,7 @@
             <t t-set="savings_total" t-value="savings_panels + savings_battery + savings_resale"/>
             <t t-set="purchase_total" t-value="sum(results.mapped('purchase_cost')) if results else 0.0"/>
 
-            <div class="pv-section-number">03</div>
+            <div class="pv-section-number">04</div>
             <h2 class="pv-section-title"><t t-esc="o.section_title_bilan or 'BILAN ÉNERGÉTIQUE'"/></h2>
 
             <!-- Production (always shown) -->
