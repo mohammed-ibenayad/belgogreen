@@ -699,8 +699,8 @@ class PvSimulationWeasyPrint(models.AbstractModel):
 
         .production-system-bg {
             background: #F1F9F1;
-            margin: 0 -20mm -25mm -20mm;
-            padding: 4mm 20mm 4mm 20mm;
+            margin: 3mm -20mm -25mm -20mm;
+            padding: 4mm 20mm 10mm 20mm;
             page-break-inside: avoid;
         }
 
@@ -844,7 +844,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
 
         .chart-container {
             text-align: center;
-            margin: 2mm auto 0 auto;
+            margin: 8mm auto 0 auto;
             page-break-inside: avoid;
         }
 
