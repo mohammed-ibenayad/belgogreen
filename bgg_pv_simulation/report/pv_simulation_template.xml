@@ -263,6 +263,7 @@
                                 .pv-system-layout {
                                     width: 100%;
                                     border-collapse: collapse;
+                                    height: 1px;
                                 }
 
                                 .pv-system-cards-col {
@@ -275,16 +276,11 @@
                                     width: 55%;
                                     vertical-align: top;
                                     padding: 0;
-                                    position: relative;
                                 }
 
                                 .pv-system-image-wrap {
-                                    position: absolute;
-                                    top: 0;
-                                    left: 0;
-                                    right: 0;
-                                    bottom: 0;
                                     overflow: hidden;
+                                    height: 100%;
                                 }
 
                                 .pv-system-image {

@@ -753,6 +753,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         .system-layout {
             width: 100%;
             border-collapse: collapse;
+            height: 1px;
         }
 
         .system-cards-col {
@@ -765,16 +766,11 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             width: 55%;
             vertical-align: top;
             padding: 0;
-            position: relative;
         }
 
         .system-image-wrap {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
             overflow: hidden;
+            height: 100%;
         }
 
         .system-image {
