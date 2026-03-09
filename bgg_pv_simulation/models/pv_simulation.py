@@ -287,10 +287,10 @@ class PvSimulation(models.Model):
         }
 
     def action_generate_report(self):
-        """Generate PDF report via external report service (Node.js + Puppeteer)"""
+        """Generate PDF report via external report service (Puppeteer on VPS)"""
         self.ensure_one()
 
-        generator = self.env['pv.simulation.report.service']
+        generator = self.env['pv.simulation.service.generator']
         pdf_content = generator.generate_report(self.id)
 
         # Create attachment
