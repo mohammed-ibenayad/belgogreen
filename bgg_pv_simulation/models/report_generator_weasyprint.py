@@ -298,6 +298,10 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             <div class="section-number">01</div>
             <h2 class="section-title">{title_location}</h2>
 
+            <div class="location-image-container">
+                {f'<img src="{location_image_data}" alt="Localisation" class="location-image">' if location_image_data else ''}
+            </div>
+
             <table class="location-cards-row">
                 <tr>
                     {f"""<td><div class="card">
@@ -317,10 +321,6 @@ class PvSimulationWeasyPrint(models.AbstractModel):
                     </div></td>""" if simulation.roof_surface_m2 else ''}
                 </tr>
             </table>
-        </div>
-
-        <div class="location-image-container">
-            {f'<img src="{location_image_data}" alt="Localisation" class="location-image">' if location_image_data else ''}
         </div>
     </div>
 
@@ -690,14 +690,28 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         .location-page-bg {
             background: #F1F9F1;
             margin: -25mm -20mm 0 -20mm;
-            padding: 25mm 20mm 8mm 20mm;
+            padding: 25mm 20mm 6mm 20mm;
+        }
+
+        .location-image-container {
+            text-align: center;
+            margin: 4mm 0 6mm 0;
+            page-break-inside: avoid;
+        }
+
+        .location-image {
+            width: 100%;
+            height: 80mm;
+            object-fit: cover;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
         }
 
         .location-cards-row {
             width: 100%;
             border-collapse: separate;
             border-spacing: 3mm 0;
-            margin-bottom: 5mm;
+            margin: 0;
         }
 
         .location-cards-row td {
@@ -707,20 +721,6 @@ class PvSimulationWeasyPrint(models.AbstractModel):
 
         .location-cards-row .card {
             margin-bottom: 0;
-        }
-
-        .location-image-container {
-            text-align: center;
-            margin: 0 auto;
-            page-break-inside: avoid;
-        }
-
-        .location-image {
-            width: 70%;
-            max-height: 110mm;
-            object-fit: cover;
-            border-radius: 15px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
         }
 
         /* ===================================================
