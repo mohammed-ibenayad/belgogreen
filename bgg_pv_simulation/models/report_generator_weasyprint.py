@@ -650,7 +650,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         }
 
         .section {
-            margin-bottom: 10mm;
+            margin-bottom: 4mm;
             page-break-inside: avoid;
         }
 
@@ -671,7 +671,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             text-transform: uppercase;
             border-bottom: 2px solid #4A9B5D;
             padding-bottom: 3mm;
-            margin-bottom: 8mm;
+            margin-bottom: 4mm;
             overflow: hidden;
             page-break-after: avoid;
         }
@@ -791,11 +791,11 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         .card {
             display: block;
             width: 100%;
-            margin-bottom: 3mm;
-            padding: 3.5mm 4mm;
+            margin-bottom: 2mm;
+            padding: 2.5mm 3mm;
             background: rgba(255, 255, 255, 0.92);
             border: 1px solid rgba(255, 255, 255, 0.6);
-            border-radius: 10px;
+            border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
             page-break-inside: avoid;
         }
@@ -812,9 +812,14 @@ class PvSimulationWeasyPrint(models.AbstractModel):
 
         .card-icon {
             float: left;
-            width: 10mm;
-            margin-right: 3mm;
-            margin-top: 1mm;
+            width: 8mm;
+            margin-right: 2mm;
+            margin-top: 0.5mm;
+        }
+
+        .card-icon svg {
+            width: 20px;
+            height: 20px;
         }
 
         .card-text {
@@ -822,15 +827,15 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         }
 
         .card-value {
-            font-size: 16pt;
+            font-size: 13pt;
             font-weight: 700;
             color: #212121;
-            line-height: 1.2;
+            line-height: 1.1;
             display: inline;
         }
 
         .card-unit {
-            font-size: 9pt;
+            font-size: 8pt;
             color: #616161;
             display: inline;
             margin-left: 1mm;
@@ -838,7 +843,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
 
         .card-label {
             display: block;
-            font-size: 7.5pt;
+            font-size: 7pt;
             color: #616161;
             text-transform: uppercase;
             letter-spacing: 0.3px;
@@ -847,12 +852,12 @@ class PvSimulationWeasyPrint(models.AbstractModel):
 
         .chart-container {
             text-align: center;
-            margin: 6mm auto;
+            margin: 2mm auto 0 auto;
             page-break-inside: avoid;
         }
 
         .chart-img {
-            max-width: 165mm;
+            max-width: 160mm;
             height: auto;
             border-radius: 6px;
         }
