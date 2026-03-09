@@ -333,23 +333,26 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             <h2 class="section-title">{title_production}</h2>
 
             {f'<div class="chart-container"><img src="{chart_data}" alt="Production mensuelle" class="chart-img"></div>' if chart_data else ''}
+            <p class="chart-source">Production annuelle : {simulation.annual_production_kwh:,.0f} kWh/an — Source : {'PVGIS (EU Science Hub)' if simulation.pvgis_annual_production_kwh else 'Google Solar API'}</p>
 
-            <h3 class="section-subtitle">{title_system}</h3>
+            <div class="production-system-bg">
+                <h3 class="section-subtitle">{title_system}</h3>
 
-            <div class="system-container">
-                <table class="system-layout">
-                    <tr>
-                        <td class="system-cards-col">
-                            {metric_cards}
-                        </td>
-                        <td class="system-image-col">
-                            <div class="system-image-wrap">
-                                {f'<img src="{system_image_data}" alt="" class="system-image">' if system_image_data else ''}
-                                <div class="system-image-fade"></div>
-                            </div>
-                        </td>
-                    </tr>
-                </table>
+                <div class="system-container">
+                    <table class="system-layout">
+                        <tr>
+                            <td class="system-cards-col">
+                                {metric_cards}
+                            </td>
+                            <td class="system-image-col">
+                                <div class="system-image-wrap">
+                                    {f'<img src="{system_image_data}" alt="" class="system-image">' if system_image_data else ''}
+                                    <div class="system-image-fade"></div>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -643,9 +646,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         }
 
         .production-page {
-            background: #F1F9F1;
-            margin: -25mm -20mm;
-            padding: 25mm 20mm;
+            padding: 0;
         }
 
         .section {
@@ -676,12 +677,26 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         }
 
         .section-subtitle {
-            font-size: 12pt;
+            font-size: 10pt;
             font-weight: 600;
-            color: #4A9B5D;
+            color: #212121;
             text-transform: uppercase;
-            letter-spacing: 0.5mm;
-            margin: 6mm 0 4mm 0;
+            letter-spacing: 0.3mm;
+            margin: 4mm 0 3mm 0;
+        }
+
+        .chart-source {
+            text-align: center;
+            font-size: 7pt;
+            color: #9E9E9E;
+            font-style: italic;
+            margin: 1mm 0 2mm 0;
+        }
+
+        .production-system-bg {
+            background: #F1F9F1;
+            margin: 0 -20mm -25mm -20mm;
+            padding: 4mm 20mm 25mm 20mm;
         }
 
         /* ===================================================
@@ -728,9 +743,8 @@ class PvSimulationWeasyPrint(models.AbstractModel):
            =================================================== */
         /* Two-column system layout */
         .system-container {
-            background: #DCF0DC;
-            border-radius: 16px;
-            margin: 4mm 0 8mm 0;
+            border-radius: 12px;
+            margin: 2mm 0 0 0;
             overflow: hidden;
         }
 
@@ -742,7 +756,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         .system-cards-col {
             width: 45%;
             vertical-align: top;
-            padding: 5mm 4mm 5mm 5mm;
+            padding: 3mm 3mm 3mm 4mm;
         }
 
         .system-image-col {
@@ -760,7 +774,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         .system-image {
             width: 100%;
             height: 100%;
-            min-height: 60mm;
+            min-height: 50mm;
             object-fit: cover;
             display: block;
         }
@@ -771,7 +785,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             left: 0;
             bottom: 0;
             width: 25mm;
-            background: linear-gradient(to right, #DCF0DC 0%, rgba(220, 240, 220, 0) 100%);
+            background: linear-gradient(to right, #F1F9F1 0%, rgba(241, 249, 241, 0) 100%);
         }
 
         .card {
