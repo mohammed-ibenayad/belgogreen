@@ -1049,6 +1049,8 @@ class PvSimulationWeasyPrint(models.AbstractModel):
            =================================================== */
         .consumption-bg {
             background: #F1F9F1;
+            margin: -25mm -20mm -22mm -20mm;
+            padding: 25mm 20mm 22mm 20mm;
         }
 
         .data-table {
@@ -1114,6 +1116,8 @@ class PvSimulationWeasyPrint(models.AbstractModel):
            =================================================== */
         .bilan-bg {
             background: #F1F9F1;
+            margin: -25mm -20mm -22mm -20mm;
+            padding: 25mm 20mm 22mm 20mm;
         }
 
         .bilan-bg .section-subtitle {

@@ -392,6 +392,8 @@
 
                                 .pv-consumption-bg {
                                     background: #F1F9F1;
+                                    margin: -25mm -20mm -22mm -20mm;
+                                    padding: 25mm 20mm 22mm 20mm;
                                 }
 
                                 /* --- Data tables (consumption page) --- */
@@ -457,6 +459,8 @@
                                 /* --- Bilan page (card-based design) --- */
                                 .pv-bilan-bg {
                                     background: #F1F9F1;
+                                    margin: -25mm -20mm -22mm -20mm;
+                                    padding: 25mm 20mm 22mm 20mm;
                                 }
 
                                 .pv-bilan-bg .pv-section-subtitle {
