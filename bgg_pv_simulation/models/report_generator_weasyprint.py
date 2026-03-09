@@ -418,7 +418,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
     <!-- ============================================ -->
     <!-- PAGE 4: DONNÉES DE CONSOMMATION              -->
     <!-- ============================================ -->
-    <div class="page content-page">
+    <div class="page content-page consumption-bg">
         <div class="section">
             <div class="section-number">03</div>
             <h2 class="section-title">{title_consumption}</h2>
@@ -1047,6 +1047,10 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         /* ===================================================
            PAGE 4 – DONNÉES DE CONSOMMATION
            =================================================== */
+        .consumption-bg {
+            background: #F1F9F1;
+        }
+
         .data-table {
             width: 100%;
             border-collapse: collapse;
