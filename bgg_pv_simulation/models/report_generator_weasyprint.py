@@ -697,6 +697,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             background: #F1F9F1;
             margin: 0 -20mm -25mm -20mm;
             padding: 4mm 20mm 25mm 20mm;
+            page-break-inside: avoid;
         }
 
         /* ===================================================
@@ -746,6 +747,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             border-radius: 12px;
             margin: 2mm 0 0 0;
             overflow: hidden;
+            page-break-inside: avoid;
         }
 
         .system-layout {
@@ -763,19 +765,16 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             width: 55%;
             vertical-align: top;
             padding: 0;
-            position: relative;
-            height: 1px;
         }
 
         .system-image-wrap {
             position: relative;
             overflow: hidden;
-            height: 100%;
         }
 
         .system-image {
             width: 100%;
-            height: 100%;
+            max-height: 50mm;
             object-fit: cover;
             display: block;
             border-radius: 0 12px 12px 0;
