@@ -361,13 +361,13 @@ class PvSimulationWeasyPrint(models.AbstractModel):
     <!-- ============================================ -->
     <!-- PAGE 4: BILAN ÉNERGÉTIQUE                    -->
     <!-- ============================================ -->
-    <div class="page content-page">
+    <div class="page content-page bilan-bg">
         <div class="section">
             <div class="section-number">03</div>
             <h2 class="section-title">{title_bilan}</h2>
         </div>
 
-        <div class="bilan-bg">
+        <div class="bilan-content">
             <!-- Production -->
             <h3 class="section-subtitle">Production</h3>
             <table class="bilan-cards-grid">
@@ -934,13 +934,10 @@ class PvSimulationWeasyPrint(models.AbstractModel):
            =================================================== */
         .bilan-bg {
             background: #F1F9F1;
-            margin: 3mm -20mm -25mm -20mm;
-            padding: 4mm 20mm 10mm 20mm;
-            page-break-inside: avoid;
         }
 
         .bilan-bg .section-subtitle {
-            margin: 5mm 0 2mm 0;
+            margin: 5mm 0 4mm 0;
             padding-bottom: 1.5mm;
             border-bottom: 1px solid #C8E6C9;
         }
@@ -977,7 +974,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         }
 
         .bilan-summary-savings-inner {
-            background: linear-gradient(135deg, #4A9B5D 0%, #388E3C 100%);
+            background: linear-gradient(135deg, #81C784 0%, #66BB6A 100%);
             color: #FFFFFF;
             border-radius: 10px;
             padding: 4mm 5mm;
