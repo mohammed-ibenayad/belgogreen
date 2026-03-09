@@ -700,7 +700,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         .production-system-bg {
             background: #F1F9F1;
             margin: 0 -20mm -25mm -20mm;
-            padding: 4mm 20mm 25mm 20mm;
+            padding: 4mm 20mm 4mm 20mm;
             page-break-inside: avoid;
         }
 
@@ -769,13 +769,13 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         .system-image-wrap {
             overflow: hidden;
             border-radius: 12px;
-            margin: 3mm 2mm 2mm 2mm;
-            max-height: 42mm;
+            margin: 3mm 0 0 0;
+            max-height: 45mm;
         }
 
         .system-image {
             width: 100%;
-            height: 42mm;
+            height: 45mm;
             object-fit: cover;
             display: block;
         }
