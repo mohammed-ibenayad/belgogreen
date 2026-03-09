@@ -393,12 +393,10 @@
                                 /* --- Bilan card-based sections --- */
                                 .pv-bilan-bg {
                                     background: #F1F9F1;
-                                    margin: 3mm -20mm -25mm -20mm;
-                                    padding: 4mm 20mm 10mm 20mm;
                                 }
 
                                 .pv-bilan-bg .pv-section-subtitle {
-                                    margin: 5mm 0 2mm 0;
+                                    margin: 5mm 0 4mm 0;
                                     padding-bottom: 1.5mm;
                                     border-bottom: 1px solid #C8E6C9;
                                 }
@@ -434,7 +432,7 @@
                                 }
 
                                 .pv-bilan-summary-savings-inner {
-                                    background: linear-gradient(135deg, #4A9B5D 0%, #388E3C 100%);
+                                    background: linear-gradient(135deg, #81C784 0%, #66BB6A 100%);
                                     color: #FFFFFF;
                                     border-radius: 10px;
                                     padding: 4mm 5mm;
@@ -541,7 +539,7 @@
                             </div>
 
                             <!-- Page 4: Bilan Énergétique -->
-                            <div class="page" style="page-break-before: always;">
+                            <div class="page pv-bilan-bg" style="page-break-before: always;">
                                 <t t-call="bgg_pv_simulation.report_pv_simulation_page_bilan"/>
                             </div>
                         </div>
@@ -751,7 +749,7 @@
             <div class="pv-section-number">03</div>
             <h2 class="pv-section-title"><t t-esc="o.section_title_bilan or 'BILAN ÉNERGÉTIQUE'"/></h2>
 
-            <div class="pv-bilan-bg">
+            <div class="pv-bilan-content">
                 <!-- Production -->
                 <h3 class="pv-section-subtitle">Production</h3>
                 <table class="pv-bilan-cards-grid">
