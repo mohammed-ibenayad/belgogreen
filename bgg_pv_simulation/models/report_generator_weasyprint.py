@@ -844,7 +844,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
 
         .chart-container {
             text-align: center;
-            margin: 2mm auto 0 auto;
+            margin: 8mm auto 0 auto;
             page-break-inside: avoid;
         }
 

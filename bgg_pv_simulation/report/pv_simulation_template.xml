@@ -351,7 +351,7 @@
                                 /* --- Chart / Production --- */
                                 .pv-chart-wrap {
                                     text-align: center;
-                                    margin: 2mm auto 0 auto;
+                                    margin: 8mm auto 0 auto;
                                 }
 
                                 .pv-chart-wrap img {
