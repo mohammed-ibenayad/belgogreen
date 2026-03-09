@@ -298,23 +298,25 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             <div class="section-number">01</div>
             <h2 class="section-title">{title_location}</h2>
 
-            <div class="location-cards-row">
-                {f"""<div class="card">
-                    <div class="card-icon">{SVG_ICON_PIN}</div>
-                    <div class="card-text">
-                        <div class="card-value" style="font-size:11pt;">{address.replace(chr(10), '<br/>')}</div>
-                        <div class="card-label">Adresse d'installation</div>
-                    </div>
-                </div>""" if address else ''}
-                {f"""<div class="card">
-                    <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="12" y1="3" x2="12" y2="21"/></svg></div>
-                    <div class="card-text">
-                        <div class="card-value">{simulation.roof_surface_m2:.0f}</div>
-                        <div class="card-unit">m\u00b2</div>
-                        <div class="card-label">Surface de toiture</div>
-                    </div>
-                </div>""" if simulation.roof_surface_m2 else ''}
-            </div>
+            <table class="location-cards-row">
+                <tr>
+                    {f"""<td><div class="card">
+                        <div class="card-icon">{SVG_ICON_PIN}</div>
+                        <div class="card-text">
+                            <div class="card-value" style="font-size:11pt;">{address.replace(chr(10), '<br/>')}</div>
+                            <div class="card-label">Adresse d'installation</div>
+                        </div>
+                    </div></td>""" if address else ''}
+                    {f"""<td><div class="card">
+                        <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="12" y1="3" x2="12" y2="21"/></svg></div>
+                        <div class="card-text">
+                            <div class="card-value">{simulation.roof_surface_m2:.0f}</div>
+                            <div class="card-unit">m\u00b2</div>
+                            <div class="card-label">Surface de toiture</div>
+                        </div>
+                    </div></td>""" if simulation.roof_surface_m2 else ''}
+                </tr>
+            </table>
         </div>
 
         <div class="location-image-container">
@@ -692,14 +694,18 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         }
 
         .location-cards-row {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 3mm 0;
             margin-bottom: 5mm;
         }
 
-        .location-cards-row .card {
-            display: inline-block;
+        .location-cards-row td {
+            width: 50%;
             vertical-align: top;
-            width: 48%;
-            margin-right: 2%;
+        }
+
+        .location-cards-row .card {
             margin-bottom: 0;
         }
 
