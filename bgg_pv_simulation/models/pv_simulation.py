@@ -246,21 +246,11 @@ class PvSimulation(models.Model):
         help='Set to True when simulation-impacting data has changed since last generation'
     )
 
-    # Pricing parameters for financial calculations
-    price_buy_kwh = fields.Float(
-        string='Prix électricité achat (€/kWh)',
-        default=0.31,
-        help='Prix d\'achat du kWh réseau (P_buy)'
-    )
-    price_sell_kwh = fields.Float(
-        string='Prix revente (€/kWh)',
-        default=0.21,
-        help='Tarif de rachat du surplus injecté (P_sell)'
-    )
-    price_battery_kwh = fields.Float(
-        string='Coût usage batterie (€/kWh)',
-        default=0.02,
-        help='Coût par kWh cyclé dans la batterie (P_batt)'
+    # Tariff profile for financial calculations
+    tariff_profile_id = fields.Many2one(
+        'pv.tariff.profile',
+        string='Profil tarifaire',
+        help='Profil tarifaire utilisé pour le bilan financier (P_buy, P_sell, P_batt)'
     )
 
     # Report section title for financial page
@@ -398,10 +388,11 @@ class PvSimulation(models.Model):
         ren_bat = (self.battery_efficiency or 0.0) / 100.0  # stored as percentage
         cap_bat_effective = cap_bat * ren_bat  # CapBat × RenBat
 
-        # Pricing
-        p_buy = self.price_buy_kwh or 0.0
-        p_sell = self.price_sell_kwh or 0.0
-        p_batt = self.price_battery_kwh or 0.0
+        # Pricing from tariff profile
+        tariff = self.tariff_profile_id
+        p_buy = tariff.purchase_price_kwh if tariff else 0.0
+        p_sell = tariff.feed_in_tariff_kwh if tariff else 0.0
+        p_batt = tariff.battery_cost_kwh if tariff else 0.0
 
         # Process months in order (1-12)
         results = self.monthly_result_ids.sorted(key=lambda r: int(r.month))

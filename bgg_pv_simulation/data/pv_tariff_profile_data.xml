@@ -5,8 +5,9 @@
         <!-- Belgian Standard Tariff 2024 -->
         <record id="tariff_profile_belgium_2024" model="pv.tariff.profile">
             <field name="name">Tarif Standard Belgique 2024</field>
-            <field name="purchase_price_kwh">0.25</field>
-            <field name="feed_in_tariff_kwh">0.07</field>
+            <field name="purchase_price_kwh">0.31</field>
+            <field name="feed_in_tariff_kwh">0.21</field>
+            <field name="battery_cost_kwh">0.02</field>
             <field name="currency_id" ref="base.EUR"/>
         </record>
 
