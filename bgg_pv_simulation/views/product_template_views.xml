@@ -6,24 +6,24 @@
         <field name="model">product.template</field>
         <field name="inherit_id" ref="product.product_template_only_form_view"/>
         <field name="arch" type="xml">
-            <!-- Add solar panel fields in the General Information tab -->
+            <!-- Add solar panel / battery specification fields in the General Information tab -->
             <xpath expr="//page[@name='general_information']" position="inside">
+                <field name="is_solar_panel" invisible="1"/>
+                <field name="is_battery" invisible="1"/>
                 <group string="Solar Panel Specifications" invisible="not is_solar_panel">
-                    <field name="is_solar_panel" invisible="1"/>
-                    <field name="panel_unit_power_wc" invisible="not is_solar_panel"/>
+                    <div class="alert alert-info mb-3" role="status" colspan="2">
+                        Ce produit est détecté comme <strong>Panneau solaire</strong> car il appartient à la catégorie
+                        <em>All / Saleable / Panneaux</em>.
+                    </div>
+                    <field name="panel_unit_power_wc"/>
                 </group>
                 <group string="Battery Specifications" invisible="not is_battery">
-                    <field name="is_battery" invisible="1"/>
-                    <field name="battery_capacity_kwh" invisible="not is_battery"/>
-                    <field name="battery_efficiency_percent" invisible="not is_battery"/>
-                </group>
-            </xpath>
-
-            <!-- Add checkboxes in Attributes -->
-            <xpath expr="//group[@name='group_general']" position="after">
-                <group>
-                    <field name="is_solar_panel"/>
-                    <field name="is_battery"/>
+                    <div class="alert alert-info mb-3" role="status" colspan="2">
+                        Ce produit est détecté comme <strong>Batterie</strong> car il appartient à la catégorie
+                        <em>All / Saleable / Batteries</em>.
+                    </div>
+                    <field name="battery_capacity_kwh"/>
+                    <field name="battery_efficiency_percent"/>
                 </group>
             </xpath>
         </field>

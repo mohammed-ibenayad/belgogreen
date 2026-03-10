@@ -185,6 +185,13 @@ class PvSimulation(models.Model):
         help='PNG: Monthly daily production bar chart'
     )
 
+    # Regeneration tracking
+    simulation_needs_regeneration = fields.Boolean(
+        string='Simulation Needs Regeneration',
+        default=False,
+        help='Set to True when simulation-impacting data has changed since last generation'
+    )
+
     # Default consumption (to prefill monthly results)
     default_monthly_consumption_kwh = fields.Float(
         string='Consommation mensuelle par défaut (kWh)',
@@ -198,6 +205,24 @@ class PvSimulation(models.Model):
         string='Consommation nuit quotidienne par défaut (kWh)',
         help='Consommation de nuit quotidienne par défaut. Utilisez le bouton pour copier cette valeur sur tous les mois.'
     )
+
+    # Fields whose change should flag the simulation for regeneration
+    SIMULATION_IMPACTING_FIELDS = {
+        'annual_production_kwh',
+        'orientation_deg',
+        'tilt_deg',
+        'production_profile_id',
+        'latitude',
+        'longitude',
+        'roof_surface_m2',
+    }
+
+    def write(self, vals):
+        res = super().write(vals)
+        # If any simulation-impacting field changed, flag regeneration needed
+        if self.SIMULATION_IMPACTING_FIELDS & set(vals.keys()):
+            super().write({'simulation_needs_regeneration': True})
+        return res
 
     @api.model
     def create(self, vals_list):
@@ -279,40 +304,48 @@ class PvSimulation(models.Model):
                 record.installation_address = '\n'.join(address_parts)
 
     @api.depends('sale_order_id', 'sale_order_id.order_line', 'sale_order_id.order_line.product_id',
-                 'sale_order_id.order_line.product_id.is_solar_panel',
+                 'sale_order_id.order_line.product_id.categ_id',
                  'sale_order_id.order_line.product_id.panel_unit_power_wc',
                  'sale_order_id.order_line.product_uom_qty')
     def _compute_panel_data(self):
-        """Calculate panel data from sale order line items"""
+        """Calculate panel data from sale order line items.
+
+        Panels are detected by product category: products under
+        "All / Saleable / Panneaux" are considered solar panels.
+        """
         for record in self:
+            old_total = record.total_pv_power_wc
+
             if not record.sale_order_id:
                 record.number_of_panels = 0
                 record.panel_unit_power_wc = 0.0
                 record.total_pv_power_wc = 0.0
-                continue
+            else:
+                # Find all solar panel products by category
+                panel_lines = record.sale_order_id.order_line.filtered(
+                    lambda l: l.product_id.is_solar_panel
+                )
 
-            # Find all solar panel products in the sale order
-            panel_lines = record.sale_order_id.order_line.filtered(
-                lambda l: l.product_id.is_solar_panel
-            )
+                if not panel_lines:
+                    record.number_of_panels = 0
+                    record.panel_unit_power_wc = 0.0
+                    record.total_pv_power_wc = 0.0
+                else:
+                    # Sum quantities for total number of panels
+                    total_qty = sum(line.product_uom_qty for line in panel_lines)
+                    record.number_of_panels = int(total_qty)
 
-            if not panel_lines:
-                record.number_of_panels = 0
-                record.panel_unit_power_wc = 0.0
-                record.total_pv_power_wc = 0.0
-                continue
+                    # Get unit power from the first panel product
+                    # (assumes all panels have the same unit power)
+                    first_panel = panel_lines[0]
+                    record.panel_unit_power_wc = first_panel.product_id.panel_unit_power_wc
 
-            # Sum quantities for total number of panels
-            total_qty = sum(line.product_uom_qty for line in panel_lines)
-            record.number_of_panels = int(total_qty)
+                    # Calculate total power
+                    record.total_pv_power_wc = record.number_of_panels * record.panel_unit_power_wc
 
-            # Get unit power from the first panel product
-            # (assumes all panels have the same unit power)
-            first_panel = panel_lines[0]
-            record.panel_unit_power_wc = first_panel.product_id.panel_unit_power_wc
-
-            # Calculate total power
-            record.total_pv_power_wc = record.number_of_panels * record.panel_unit_power_wc
+            # Flag regeneration needed if total power changed
+            if record.id and old_total and record.total_pv_power_wc != old_total:
+                record.simulation_needs_regeneration = True
 
     def action_regenerate_simulation(self):
         """Button action to fetch API data and recalculate everything"""
@@ -324,6 +357,9 @@ class PvSimulation(models.Model):
         # Recalculate monthly results and charts
         self._compute_monthly_results()
         self._generate_charts()
+
+        # Clear regeneration flag
+        self.simulation_needs_regeneration = False
 
         # Reload the page to show updated data
         return {
@@ -514,14 +550,15 @@ class PvSimulation(models.Model):
         if not self.number_of_panels or not self.panel_unit_power_wc:
             missing = []
             if not self.number_of_panels:
-                missing.append(_("- No solar panel products found on the sale order (products must have 'Is Solar Panel' checked)"))
+                missing.append(_("- No solar panel products found on the sale order "
+                                 "(products must belong to the category 'All / Saleable / Panneaux')"))
             if not self.panel_unit_power_wc:
-                missing.append(_("- Solar panel product has no power (Wc) specified"))
+                missing.append(_("- Solar panel product has no 'Panel Unit Power (Wc)' specified"))
             raise UserError(_(
                 "Cannot fetch solar data: the sale order is missing required solar panel information.\n\n"
                 "%s\n\n"
-                "Please ensure the sale order has at least one product marked as a solar panel "
-                "with the power rating (Wc) properly configured."
+                "Please ensure the sale order has at least one product in the category "
+                "'All / Saleable / Panneaux' with the 'Panel Unit Power (Wc)' properly configured."
             ) % '\n'.join(missing))
 
         # Get Solar API client
