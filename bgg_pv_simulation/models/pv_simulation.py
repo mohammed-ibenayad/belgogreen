@@ -156,13 +156,12 @@ class PvSimulation(models.Model):
 
     # Production Configuration
     annual_production_kwh = fields.Float(
-        string='Annual Production (kWh)',
-        required=True,
-        help='Total yearly PV production in kWh (from Google Solar API, scaled to actual panel wattage)'
+        string='Google Solar Annual Production (kWh)',
+        help='Yearly PV production from Google Solar API (read-only reference value)'
     )
     pvgis_annual_production_kwh = fields.Float(
-        string='PVGIS Annual Production (kWh)',
-        help='PVGIS calculated yearly production for comparison with Google Solar API'
+        string='Annual Production (kWh)',
+        help='Yearly PV production from PVGIS — reference value used in the report'
     )
     production_profile_id = fields.Many2one(
         'pv.production.profile',
@@ -208,7 +207,7 @@ class PvSimulation(models.Model):
 
     # Fields whose change should flag the simulation for regeneration
     SIMULATION_IMPACTING_FIELDS = {
-        'annual_production_kwh',
+        'pvgis_annual_production_kwh',
         'orientation_deg',
         'tilt_deg',
         'production_profile_id',
@@ -834,7 +833,8 @@ class PvSimulation(models.Model):
 
         for month_num in range(1, 13):
             month_pct = self.production_profile_id.get_month_pct(month_num)
-            monthly_production_kwh = self.annual_production_kwh * (month_pct / 100.0)
+            annual = self.pvgis_annual_production_kwh or self.annual_production_kwh or 0.0
+            monthly_production_kwh = annual * (month_pct / 100.0)
             days = days_in_months[month_num - 1]
             daily_production_kwh = monthly_production_kwh / days
 

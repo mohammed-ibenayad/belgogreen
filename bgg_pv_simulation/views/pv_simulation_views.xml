@@ -113,18 +113,18 @@
                                     </div>
                                 </group>
                                 <group string="Production">
-                                    <label for="annual_production_kwh" string="Production annuelle (GSA)"/>
-                                    <div class="o_row">
-                                        <field name="annual_production_kwh"/>
-                                        <span>kWh</span>
-                                    </div>
-                                    <field name="max_panels_count" readonly="1" string="Panneaux max (GSA)"/>
                                     <label for="pvgis_annual_production_kwh" string="Production annuelle (PVGIS)"/>
                                     <div class="o_row">
-                                        <field name="pvgis_annual_production_kwh" readonly="1"/>
+                                        <field name="pvgis_annual_production_kwh"/>
                                         <span>kWh</span>
                                     </div>
                                     <field name="production_profile_id" string="Profil de production"/>
+                                    <label for="annual_production_kwh" string="Production annuelle (GSA)"/>
+                                    <div class="o_row">
+                                        <field name="annual_production_kwh" readonly="1"/>
+                                        <span>kWh</span>
+                                    </div>
+                                    <field name="max_panels_count" readonly="1" string="Panneaux max (GSA)"/>
                                 </group>
                             </group>
                         </page>

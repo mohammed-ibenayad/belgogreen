@@ -12,7 +12,6 @@ class ProductTemplate(models.Model):
     is_solar_panel = fields.Boolean(
         string='Is Solar Panel',
         compute='_compute_is_solar_panel',
-        store=True,
         help='Automatically set when the product belongs to the "Panneaux" category (All / Saleable / Panneaux)'
     )
     panel_unit_power_wc = fields.Float(
@@ -23,7 +22,6 @@ class ProductTemplate(models.Model):
     is_battery = fields.Boolean(
         string='Is Battery',
         compute='_compute_is_battery',
-        store=True,
         help='Automatically set when the product belongs to the "Batteries" category (All / Saleable / Batteries)'
     )
     battery_capacity_kwh = fields.Float(

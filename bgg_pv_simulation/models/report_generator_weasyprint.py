@@ -157,7 +157,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
 
         # Bilan data
         results = simulation.monthly_result_ids
-        prod_total = simulation.annual_production_kwh or 0.0
+        prod_total = simulation.pvgis_annual_production_kwh or simulation.annual_production_kwh or 0.0
         conso_day = sum(results.mapped('monthly_day_consumption_kwh')) if results else 0.0
         conso_night = sum(results.mapped('monthly_night_consumption_kwh')) if results else 0.0
         conso_total = sum(results.mapped('monthly_consumption_kwh')) if results else 0.0
@@ -393,7 +393,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             <h2 class="section-title">{title_production}</h2>
 
             {f'<div class="chart-container"><img src="{chart_data}" alt="Production mensuelle" class="chart-img"></div>' if chart_data else ''}
-            <p class="chart-source">Production annuelle : {simulation.annual_production_kwh:,.0f} kWh/an — Source : {'PVGIS (EU Science Hub)' if simulation.pvgis_annual_production_kwh else 'Google Solar API'}</p>
+            <p class="chart-source">Production annuelle : {prod_total:,.0f} kWh/an — Source : {'PVGIS (EU Science Hub)' if simulation.pvgis_annual_production_kwh else 'Google Solar API'}</p>
 
             <div class="production-system-bg">
                 <h3 class="section-subtitle">{title_system}</h3>
