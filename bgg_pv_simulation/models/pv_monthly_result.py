@@ -117,6 +117,12 @@ class PvMonthlyResult(models.Model):
         string='Daily Energy Bought (kWh)',
         help='Daily energy bought'
     )
+    battery_charge_level = fields.Integer(
+        string='Battery Level',
+        compute='_compute_battery_charge_level',
+        store=False,
+        help='Battery charge level 0-7 for icon display'
+    )
 
     # Monthly Financial Totals
     panel_savings = fields.Monetary(
@@ -166,3 +172,24 @@ class PvMonthlyResult(models.Model):
                 record.days_in_month = days.get(month_int, 30)
             else:
                 record.days_in_month = 30
+
+    @api.depends('daily_battery_charge_kwh', 'simulation_id.battery_capacity_kwh',
+                 'simulation_id.battery_efficiency')
+    def _compute_battery_charge_level(self):
+        """Compute battery icon level (0-7) from charge ratio.
+
+        0 = empty (no battery or 0 charge)
+        1-7 = proportional to daily_charge / (capacity * efficiency)
+        """
+        for record in self:
+            cap = record.simulation_id.battery_capacity_kwh or 0.0
+            eff = (record.simulation_id.battery_efficiency or 0.0) / 100.0
+            max_charge = cap * eff
+            charge = record.daily_battery_charge_kwh or 0.0
+
+            if max_charge <= 0 or charge <= 0:
+                record.battery_charge_level = 0
+            else:
+                ratio = min(charge / max_charge, 1.0)
+                # Map ratio to 1-7 (ceil so any charge > 0 shows at least level 1)
+                record.battery_charge_level = max(1, min(7, int(ratio * 7 + 0.5)))

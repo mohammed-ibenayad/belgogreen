@@ -9,4 +9,24 @@
             <p class="text-muted">Récupération des données depuis les API et recalcul des résultats.</p>
         </div>
     </t>
+    <!-- Battery icon widget -->
+    <t t-name="bgg_pv_simulation.BatteryIcon">
+        <div class="d-flex align-items-center justify-content-center" t-att-title="title"
+             style="cursor: default;">
+            <svg width="20" height="36" viewBox="0 0 20 36">
+                <!-- Battery tip (top nub) -->
+                <rect x="6" y="0" width="8" height="4" rx="1"
+                      stroke="#555" stroke-width="1.2" fill="none"/>
+                <!-- Battery body -->
+                <rect x="1" y="4" width="18" height="30" rx="2"
+                      stroke="#555" stroke-width="1.5" fill="none"/>
+                <!-- Fill bar (grows upward) -->
+                <t t-if="level > 0">
+                    <rect x="3" t-att-y="fillY + 1" width="14"
+                          t-att-height="fillHeight - 2"
+                          rx="1" t-att-fill="fillColor"/>
+                </t>
+            </svg>
+        </div>
+    </t>
 </templates>
