@@ -114,6 +114,18 @@
                                         <span>°</span>
                                     </div>
                                 </group>
+                                <group string="Configuration batterie">
+                                    <label for="battery_capacity_kwh" string="Capacité utile"/>
+                                    <div class="o_row">
+                                        <field name="battery_capacity_kwh" readonly="1"/>
+                                        <span>kWh</span>
+                                    </div>
+                                    <label for="battery_efficiency" string="Rendement"/>
+                                    <div class="o_row">
+                                        <field name="battery_efficiency" readonly="1"/>
+                                        <span>%</span>
+                                    </div>
+                                </group>
                                 <group string="Production">
                                     <label for="pvgis_annual_production_kwh" string="Production annuelle (PVGIS)"/>
                                     <div class="o_row">
@@ -247,6 +259,12 @@
                                             class="btn-primary"
                                             invisible="not id"
                                             confirm="Ceci va écraser les valeurs de consommation pour tous les mois. Continuer ?"/>
+                                    <button name="action_compute_daily_balance"
+                                            string="Calculer le bilan quotidien"
+                                            type="object"
+                                            class="btn-secondary"
+                                            invisible="not id"
+                                            help="Calcule Charge, Vente et Achat pour tous les mois à partir de la production, consommation et batterie"/>
                                 </group>
                             </group>
                             <group string="Titres de section">
