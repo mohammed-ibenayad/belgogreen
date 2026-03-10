@@ -20,17 +20,22 @@
                     </group>
                     <group string="Electricity Prices">
                         <group>
-                            <label for="purchase_price_kwh" string="Purchase Price"/>
+                            <label for="purchase_price_kwh" string="Prix achat réseau (P_buy)"/>
                             <div class="o_row">
                                 <field name="purchase_price_kwh"/>
-                                <span>/kWh</span>
+                                <span>€/kWh</span>
+                            </div>
+                            <label for="feed_in_tariff_kwh" string="Prix revente surplus (P_sell)"/>
+                            <div class="o_row">
+                                <field name="feed_in_tariff_kwh"/>
+                                <span>€/kWh</span>
                             </div>
                         </group>
                         <group>
-                            <label for="feed_in_tariff_kwh" string="Feed-in Tariff"/>
+                            <label for="battery_cost_kwh" string="Coût usage batterie (P_batt)"/>
                             <div class="o_row">
-                                <field name="feed_in_tariff_kwh"/>
-                                <span>/kWh</span>
+                                <field name="battery_cost_kwh"/>
+                                <span>€/kWh</span>
                             </div>
                         </group>
                     </group>

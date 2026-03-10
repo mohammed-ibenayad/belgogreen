@@ -26,6 +26,12 @@ class PvTariffProfile(models.Model):
         currency_field='currency_id',
         help='Grid sale price per kWh'
     )
+    battery_cost_kwh = fields.Monetary(
+        string='Battery Cost (€/kWh)',
+        currency_field='currency_id',
+        default=0.02,
+        help='Cost per kWh cycled through battery (P_batt)'
+    )
     currency_id = fields.Many2one(
         'res.currency',
         string='Currency',
