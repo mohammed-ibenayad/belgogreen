@@ -91,4 +91,28 @@
             </form>
         </field>
     </record>
+    <record id="view_pv_production_profile_list" model="ir.ui.view">
+        <field name="name">pv.production.profile.list</field>
+        <field name="model">pv.production.profile</field>
+        <field name="arch" type="xml">
+            <list string="Production Profiles">
+                <field name="name"/>
+                <field name="january_pct"/>
+                <field name="february_pct"/>
+                <field name="march_pct"/>
+                <field name="april_pct"/>
+                <field name="may_pct"/>
+                <field name="june_pct"/>
+                <field name="july_pct"/>
+                <field name="august_pct"/>
+                <field name="september_pct"/>
+                <field name="october_pct"/>
+                <field name="november_pct"/>
+                <field name="december_pct"/>
+                <field name="total_pct"
+                       decoration-danger="total_pct &lt; 99.9 or total_pct &gt; 100.1"
+                       decoration-success="total_pct &gt;= 99.9 and total_pct &lt;= 100.1"/>
+            </list>
+        </field>
+    </record>
 </odoo>

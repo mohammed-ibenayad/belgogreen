@@ -4,8 +4,6 @@ access_pv_simulation_manager,pv.simulation.manager,model_pv_simulation,group_pv_
 access_pv_simulation_admin,pv.simulation.admin,model_pv_simulation,group_pv_admin,1,1,1,1
 access_pv_monthly_result_user,pv.monthly.result.user,model_pv_monthly_result,group_pv_user,1,1,1,1
 access_pv_monthly_result_manager,pv.monthly.result.manager,model_pv_monthly_result,group_pv_manager,1,1,1,1
-access_pv_consumption_profile_user,pv.consumption.profile.user,model_pv_consumption_profile,group_pv_user,1,0,0,0
-access_pv_consumption_profile_admin,pv.consumption.profile.admin,model_pv_consumption_profile,group_pv_admin,1,1,1,1
 access_pv_production_profile_user,pv.production.profile.user,model_pv_production_profile,group_pv_user,1,0,0,0
 access_pv_production_profile_admin,pv.production.profile.admin,model_pv_production_profile,group_pv_admin,1,1,1,1
 access_pv_battery_config_user,pv.battery.config.user,model_pv_battery_config,group_pv_user,1,0,0,0

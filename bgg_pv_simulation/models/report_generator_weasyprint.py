@@ -163,8 +163,6 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         conso_day = sum(results.mapped('monthly_day_consumption_kwh')) if results else 0.0
         conso_night = sum(results.mapped('monthly_night_consumption_kwh')) if results else 0.0
         conso_total = sum(results.mapped('monthly_consumption_kwh')) if results else 0.0
-        if not conso_total and hasattr(simulation, 'consumption_profile_id') and simulation.consumption_profile_id:
-            conso_total = simulation.consumption_profile_id.annual_consumption_kwh or 0.0
         autocons_total = sum(results.mapped('monthly_autoconsumption_kwh')) if results else 0.0
         battery_charge = sum(results.mapped('monthly_battery_charge_kwh')) if results else 0.0
         autocons_day = autocons_total - battery_charge
