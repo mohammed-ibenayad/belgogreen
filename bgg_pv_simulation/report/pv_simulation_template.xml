@@ -185,11 +185,19 @@
                                     font-weight: 600;
                                     color: #212121;
                                     text-transform: uppercase;
-                                    border-bottom: 2px solid #4A9B5D;
+                                    border-bottom: none;
                                     padding-bottom: 3mm;
                                     margin-top: 0;
                                     margin-bottom: 4mm;
-                                    overflow: hidden;
+                                    overflow: visible;
+                                }
+                                .pv-section-title::after {
+                                    content: '';
+                                    display: block;
+                                    width: 40mm;
+                                    height: 2px;
+                                    background: #4A9B5D;
+                                    margin-top: 3mm;
                                 }
 
                                 /* --- Location --- */
