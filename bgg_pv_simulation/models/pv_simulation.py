@@ -5,7 +5,7 @@ import logging
 
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, UserError
-from .product_template import _is_panel_category
+from .product_template import _is_panel_category, _is_battery_category
 
 _logger = logging.getLogger(__name__)
 
@@ -167,6 +167,20 @@ class PvSimulation(models.Model):
     tilt_deg = fields.Float(
         string='Inclination (°)',
         help='Panel inclination in degrees (0-90)'
+    )
+
+    # Battery Parameters (auto-detected from sale order)
+    battery_capacity_kwh = fields.Float(
+        string='Battery Capacity (kWh)',
+        compute='_compute_battery_data',
+        store=True,
+        help='Usable battery capacity in kWh (from product specification)'
+    )
+    battery_efficiency = fields.Float(
+        string='Battery Efficiency (%)',
+        compute='_compute_battery_data',
+        store=True,
+        help='Battery round-trip efficiency percentage (from product specification)'
     )
 
     # Production Configuration
@@ -338,6 +352,65 @@ class PvSimulation(models.Model):
             if vals:
                 result.write(vals)
 
+    def action_compute_daily_balance(self):
+        """Compute the daily energy balance (Charge, Vente, Achat) for all months.
+
+        Uses the formulas:
+        - SurplusPV = max(0, Production - Conso jour)
+        - Autoconso jour = min(Production, Conso jour)
+        - Charge = min(SurplusPV, CapBat × RenBat)
+        - Vente = SurplusPV - Charge
+        - CapDebutBat(M) = max(0, min(CapBat × RenBat, CapDebutBat(M-1) + Charge(M-1) - ConsoNuit(M-1)))
+        - Énergie_batterie_nuit = min(CapDebutBat + Charge, CapBat × RenBat)
+        - Achat = max(0, ConsoNuit - Énergie_batterie_nuit)
+        """
+        self.ensure_one()
+        if not self.monthly_result_ids:
+            raise UserError(_("Aucun résultat mensuel trouvé. Veuillez d'abord générer la simulation."))
+
+        cap_bat = self.battery_capacity_kwh or 0.0
+        ren_bat = (self.battery_efficiency or 0.0) / 100.0  # stored as percentage
+        cap_bat_effective = cap_bat * ren_bat  # CapBat × RenBat
+
+        # Process months in order (1-12)
+        results = self.monthly_result_ids.sorted(key=lambda r: int(r.month))
+        cap_debut_bat = 0.0  # Battery starts empty
+
+        for result in results:
+            prod = result.daily_production_kwh or 0.0
+            conso_jour = result.daily_day_consumption_kwh or 0.0
+            conso_nuit = result.daily_night_consumption_kwh or 0.0
+            days = result.days_in_month or 30
+
+            # SurplusPV
+            surplus_pv = max(0.0, prod - conso_jour)
+            # Autoconsommation jour
+            autocons_jour = min(prod, conso_jour)
+            # Charge batterie
+            charge = min(surplus_pv, cap_bat_effective) if cap_bat > 0 else 0.0
+            # Vente (surplus that can't be stored)
+            vente = surplus_pv - charge
+            # Énergie batterie disponible la nuit
+            energie_bat_nuit = min(cap_debut_bat + charge, cap_bat_effective) if cap_bat > 0 else 0.0
+            # Achat
+            achat = max(0.0, conso_nuit - energie_bat_nuit)
+
+            result.write({
+                'daily_surplus_pv_kwh': round(surplus_pv, 2),
+                'daily_day_autoconsumption_kwh': round(autocons_jour, 2),
+                'daily_battery_charge_kwh': round(charge, 2),
+                'daily_energy_sold_kwh': round(vente, 2),
+                'daily_energy_bought_kwh': round(achat, 2),
+                # Monthly totals
+                'monthly_battery_charge_kwh': round(charge * days, 2),
+                'monthly_energy_sold_kwh': round(vente * days, 2),
+                'monthly_energy_bought_kwh': round(achat * days, 2),
+                'monthly_autoconsumption_kwh': round((autocons_jour + charge) * days, 2),
+            })
+
+            # CapDebutBat for next month
+            cap_debut_bat = max(0.0, min(cap_bat_effective, cap_debut_bat + charge - conso_nuit))
+
     @api.depends('sale_order_id.partner_id',
                  'sale_order_id.partner_id.street',
                  'sale_order_id.partner_id.street2',
@@ -416,6 +489,37 @@ class PvSimulation(models.Model):
             # Flag regeneration needed if total power changed
             if record.id and old_total and record.total_pv_power_wc != old_total:
                 record.simulation_needs_regeneration = True
+
+    @api.depends('sale_order_id', 'sale_order_id.order_line', 'sale_order_id.order_line.product_id',
+                 'sale_order_id.order_line.product_id.categ_id',
+                 'sale_order_id.order_line.product_id.battery_capacity_kwh',
+                 'sale_order_id.order_line.product_id.battery_efficiency_percent')
+    def _compute_battery_data(self):
+        """Calculate battery data from sale order line items.
+
+        Batteries are detected by product category: products under
+        "All / Saleable / Batteries" are considered batteries.
+        """
+        for record in self:
+            if not record.sale_order_id:
+                record.battery_capacity_kwh = 0.0
+                record.battery_efficiency = 0.0
+            else:
+                battery_lines = record.sale_order_id.order_line.filtered(
+                    lambda l: _is_battery_category(l.product_id)
+                )
+                if not battery_lines:
+                    record.battery_capacity_kwh = 0.0
+                    record.battery_efficiency = 0.0
+                else:
+                    # Sum capacity across all battery products × quantity
+                    total_capacity = sum(
+                        line.product_id.battery_capacity_kwh * line.product_uom_qty
+                        for line in battery_lines
+                    )
+                    record.battery_capacity_kwh = total_capacity
+                    # Use efficiency from the first battery product
+                    record.battery_efficiency = battery_lines[0].product_id.battery_efficiency_percent
 
     def action_regenerate_simulation(self):
         """Button action: show loading screen then regenerate"""
