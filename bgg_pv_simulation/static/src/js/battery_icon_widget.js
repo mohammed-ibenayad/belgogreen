@@ -19,11 +19,7 @@ class BatteryIconWidget extends Component {
     }
 
     get fillColor() {
-        const lvl = this.level;
-        if (lvl === 0) return "none";
-        if (lvl <= 2) return "#e74c3c";   // red — low
-        if (lvl <= 4) return "#f39c12";   // orange — medium
-        return "#27ae60";                  // green — high
+        return this.level === 0 ? "none" : "#27ae60";
     }
 
     /**
