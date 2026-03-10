@@ -352,6 +352,9 @@ class PvSimulation(models.Model):
             if vals:
                 result.write(vals)
 
+        # Auto-compute daily energy balance after applying consumption
+        self.action_compute_daily_balance()
+
     def action_compute_daily_balance(self):
         """Compute the daily energy balance (Charge, Vente, Achat) for all months.
 
@@ -545,6 +548,9 @@ class PvSimulation(models.Model):
         # Recalculate monthly results and charts
         self._compute_monthly_results()
         self._generate_charts()
+
+        # Compute daily energy balance (Charge, Vente, Achat)
+        self.action_compute_daily_balance()
 
         # Clear regeneration flag
         self.simulation_needs_regeneration = False
