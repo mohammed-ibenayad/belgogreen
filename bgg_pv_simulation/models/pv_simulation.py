@@ -232,7 +232,7 @@ class PvSimulation(models.Model):
         # If any simulation-impacting field changed, flag regeneration needed
         # Skip if we're already inside a regeneration to avoid re-flagging
         if self.SIMULATION_IMPACTING_FIELDS & set(vals.keys()):
-            if not getattr(self, '_regenerating', False):
+            if not self.env.context.get('skip_regeneration_flag'):
                 super().write({'simulation_needs_regeneration': True})
         return res
 
@@ -372,20 +372,18 @@ class PvSimulation(models.Model):
         """Actual regeneration logic called from the JS client action"""
         self.ensure_one()
 
-        # Set flag to prevent write hook from re-flagging during regeneration
-        self._regenerating = True
-        try:
-            # Fetch solar data from APIs (force update to replace existing values)
-            self.action_fetch_solar_data(force_update=True)
+        # Use context flag to prevent write hook from re-flagging during regeneration
+        self = self.with_context(skip_regeneration_flag=True)
 
-            # Recalculate monthly results and charts
-            self._compute_monthly_results()
-            self._generate_charts()
+        # Fetch solar data from APIs (force update to replace existing values)
+        self.action_fetch_solar_data(force_update=True)
 
-            # Clear regeneration flag
-            self.simulation_needs_regeneration = False
-        finally:
-            self._regenerating = False
+        # Recalculate monthly results and charts
+        self._compute_monthly_results()
+        self._generate_charts()
+
+        # Clear regeneration flag
+        self.simulation_needs_regeneration = False
 
     def action_generate_report(self):
         """Generate PDF report using WeasyPrint"""
