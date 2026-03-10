@@ -133,6 +133,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         title_consumption = _esc(simulation.section_title_consumption or 'DONNÉES DE CONSOMMATION')
         title_monthly_data = _esc(simulation.section_title_monthly_data or 'DONNÉES MENSUELLES')
         title_daily_balance = _esc(simulation.section_title_daily_balance or 'BILAN ÉNERGÉTIQUE QUOTIDIEN')
+        title_financial = _esc(simulation.section_title_financial or 'BILAN FINANCIER MENSUEL')
 
         # Footer
         company_name = _esc(company.name or '')
@@ -271,6 +272,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
 
         monthly_data_rows = ''
         daily_balance_rows = ''
+        financial_rows = ''
         if results:
             sorted_results = results.sorted(key=lambda r: int(r.month))
             for r in sorted_results:
@@ -312,6 +314,25 @@ class PvSimulationWeasyPrint(models.AbstractModel):
                     <td style="text-align:center;vertical-align:middle;">{batt_svg}</td>
                     <td class="data-val">{r.daily_energy_sold_kwh:,.2f}</td>
                     <td class="data-val">{r.daily_energy_bought_kwh:,.2f}</td>
+                </tr>'''
+
+                # Financial rows
+                ps = r.panel_savings or 0.0
+                bs = r.battery_savings or 0.0
+                sr = r.sale_revenue or 0.0
+                pc = r.purchase_cost or 0.0
+                bilan_val = ps + bs + sr - pc
+                if bilan_val >= 0:
+                    bilan_cell = f'<td class="data-val" style="font-weight:600;color:#4A9B5D;"><span style="color:#4A9B5D;">&euro;</span>{bilan_val:,.2f} &euro;</td>'
+                else:
+                    bilan_cell = f'<td class="data-val" style="font-weight:600;color:#e74c3c;"><span style="color:#e74c3c;">&euro;</span>{abs(bilan_val):,.2f} &euro;</td>'
+                financial_rows += f'''<tr>
+                    <td>{mname}</td>
+                    <td class="data-val">{ps:,.2f} &euro;</td>
+                    <td class="data-val">{bs:,.2f} &euro;</td>
+                    <td class="data-val">{sr:,.2f} &euro;</td>
+                    <td class="data-val">{pc:,.2f} &euro;</td>
+                    {bilan_cell}
                 </tr>'''
 
         # Location badge
@@ -495,11 +516,45 @@ class PvSimulationWeasyPrint(models.AbstractModel):
     </div>
 
     <!-- ============================================ -->
-    <!-- PAGE 5: BILAN ÉNERGÉTIQUE                    -->
+    <!-- PAGE 5: BILAN FINANCIER MENSUEL              -->
+    <!-- ============================================ -->
+    <div class="page content-page">
+        <div class="section">
+            <div class="section-number">04</div>
+            <h2 class="section-title">{title_financial}</h2>
+        </div>
+
+        <div class="explanation-box">
+            <p>L\u2019<strong>\u00e9conomie panneaux</strong> repr\u00e9sente l\u2019argent \u00e9conomis\u00e9 en utilisant la production des panneaux pour sa consommation de jour.</p>
+            <p>L\u2019<strong>\u00e9conomie batterie</strong> repr\u00e9sente l\u2019argent \u00e9conomis\u00e9 gr\u00e2ce \u00e0 l\u2019\u00e9nergie stock\u00e9e dans la batterie qui sera utilis\u00e9e pour la consommation de nuit. Le calcul tient compte du co\u00fbt d\u2019utilisation de la batterie.</p>
+            <p>La <strong>vente</strong> correspond aux b\u00e9n\u00e9fices engendr\u00e9s en revendant le surplus de production.</p>
+            <p>L\u2019<strong>achat</strong> est le montant \u00e0 payer pour la partie de la consommation qui n\u2019est pas couverte par la production.</p>
+            <p>Le <strong>bilan</strong> est la diff\u00e9rence entre le montant \u00e0 payer pour l\u2019achat et le profit de la revente.</p>
+        </div>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Mois</th>
+                    <th>\u00c9conomie panneaux</th>
+                    <th>\u00c9conomie batterie</th>
+                    <th>Vente</th>
+                    <th>Achat</th>
+                    <th>Bilan</th>
+                </tr>
+            </thead>
+            <tbody>
+                {financial_rows}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- PAGE 6: BILAN ÉNERGÉTIQUE                    -->
     <!-- ============================================ -->
     <div class="page content-page bilan-bg">
         <div class="section">
-            <div class="section-number">04</div>
+            <div class="section-number">05</div>
             <h2 class="section-title">{title_bilan}</h2>
         </div>
 

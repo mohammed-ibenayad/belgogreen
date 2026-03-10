@@ -246,6 +246,29 @@ class PvSimulation(models.Model):
         help='Set to True when simulation-impacting data has changed since last generation'
     )
 
+    # Pricing parameters for financial calculations
+    price_buy_kwh = fields.Float(
+        string='Prix électricité achat (€/kWh)',
+        default=0.31,
+        help='Prix d\'achat du kWh réseau (P_buy)'
+    )
+    price_sell_kwh = fields.Float(
+        string='Prix revente (€/kWh)',
+        default=0.21,
+        help='Tarif de rachat du surplus injecté (P_sell)'
+    )
+    price_battery_kwh = fields.Float(
+        string='Coût usage batterie (€/kWh)',
+        default=0.02,
+        help='Coût par kWh cyclé dans la batterie (P_batt)'
+    )
+
+    # Report section title for financial page
+    section_title_financial = fields.Char(
+        string='Titre page bilan financier',
+        help='Title for the monthly financial balance page in the PDF report'
+    )
+
     # Default consumption (to prefill monthly results)
     default_monthly_consumption_kwh = fields.Float(
         string='Consommation mensuelle par défaut (kWh)',
@@ -375,6 +398,11 @@ class PvSimulation(models.Model):
         ren_bat = (self.battery_efficiency or 0.0) / 100.0  # stored as percentage
         cap_bat_effective = cap_bat * ren_bat  # CapBat × RenBat
 
+        # Pricing
+        p_buy = self.price_buy_kwh or 0.0
+        p_sell = self.price_sell_kwh or 0.0
+        p_batt = self.price_battery_kwh or 0.0
+
         # Process months in order (1-12)
         results = self.monthly_result_ids.sorted(key=lambda r: int(r.month))
         cap_debut_bat = 0.0  # Battery starts empty
@@ -398,6 +426,17 @@ class PvSimulation(models.Model):
             # Achat
             achat = max(0.0, conso_nuit - energie_bat_nuit)
 
+            # Financial calculations
+            # Économie panneaux = Auto_jour_day * days * P_buy
+            eco_panneaux = round(autocons_jour * days * p_buy, 2)
+            # Vente surplus = vente * days * P_sell
+            revenu_vente = round(vente * days * p_sell, 2)
+            # Économie batterie = min(CapDebutBat, ConsoNuit) * days * (P_buy - P_batt)
+            batt_use = min(cap_debut_bat, conso_nuit) if cap_bat > 0 else 0.0
+            eco_batterie = round(batt_use * days * (p_buy - p_batt), 2)
+            # Achat réseau = achat * days * P_buy
+            cout_achat = round(achat * days * p_buy, 2)
+
             result.write({
                 'daily_surplus_pv_kwh': round(surplus_pv, 2),
                 'daily_day_autoconsumption_kwh': round(autocons_jour, 2),
@@ -409,6 +448,12 @@ class PvSimulation(models.Model):
                 'monthly_energy_sold_kwh': round(vente * days, 2),
                 'monthly_energy_bought_kwh': round(achat * days, 2),
                 'monthly_autoconsumption_kwh': round((autocons_jour + charge) * days, 2),
+                # Financial
+                'panel_savings': eco_panneaux,
+                'sale_revenue': revenu_vente,
+                'battery_savings': eco_batterie,
+                'purchase_cost': cout_achat,
+                'net_balance': cout_achat - revenu_vente,
             })
 
             # CapDebutBat for next month

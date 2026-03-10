@@ -126,6 +126,23 @@
                                         <span>%</span>
                                     </div>
                                 </group>
+                                <group string="Tarifs électricité">
+                                    <label for="price_buy_kwh" string="Prix achat réseau (P_buy)"/>
+                                    <div class="o_row">
+                                        <field name="price_buy_kwh"/>
+                                        <span>€/kWh</span>
+                                    </div>
+                                    <label for="price_sell_kwh" string="Prix revente surplus (P_sell)"/>
+                                    <div class="o_row">
+                                        <field name="price_sell_kwh"/>
+                                        <span>€/kWh</span>
+                                    </div>
+                                    <label for="price_battery_kwh" string="Coût usage batterie (P_batt)"/>
+                                    <div class="o_row">
+                                        <field name="price_battery_kwh"/>
+                                        <span>€/kWh</span>
+                                    </div>
+                                </group>
                                 <group string="Production">
                                     <label for="pvgis_annual_production_kwh" string="Production annuelle (PVGIS)"/>
                                     <div class="o_row">
@@ -289,8 +306,19 @@
                             </div>
                         </page>
 
-                        <!-- ==================== Bilan (Page 5) ==================== -->
-                        <page string="Bilan (Page 5)" name="page_bilan">
+                        <!-- ==================== Bilan Financier (Page 5) ==================== -->
+                        <page string="Bilan Financier (Page 5)" name="page_financial">
+                            <group string="Titre de section">
+                                <field name="section_title_financial" placeholder="BILAN FINANCIER MENSUEL" string="Titre"/>
+                            </group>
+                            <div class="alert alert-info" role="status">
+                                Le bilan financier mensuel est calculé automatiquement à partir des résultats mensuels
+                                et des tarifs configurés dans l'onglet Système PV (P_buy, P_sell, P_batt).
+                            </div>
+                        </page>
+
+                        <!-- ==================== Bilan (Page 6) ==================== -->
+                        <page string="Bilan (Page 6)" name="page_bilan">
                             <group string="Titre de section">
                                 <field name="section_title_bilan" placeholder="BILAN ÉNERGÉTIQUE" string="Titre"/>
                             </group>
