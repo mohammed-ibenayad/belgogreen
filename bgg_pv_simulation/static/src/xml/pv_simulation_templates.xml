@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="bgg_pv_simulation.RegenerateLoading">
+        <div class="d-flex flex-column align-items-center justify-content-center" style="min-height: 300px;">
+            <div class="o_spinner mb-3">
+                <i class="fa fa-spinner fa-spin fa-3x text-primary"/>
+            </div>
+            <h3 class="text-muted">Régénération de la simulation en cours...</h3>
+            <p class="text-muted">Récupération des données depuis les API et recalcul des résultats.</p>
+        </div>
+    </t>
+</templates>

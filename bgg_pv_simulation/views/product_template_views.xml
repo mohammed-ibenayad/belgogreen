@@ -8,16 +8,14 @@
         <field name="arch" type="xml">
             <!-- Add solar panel / battery specification fields in the General Information tab -->
             <xpath expr="//page[@name='general_information']" position="inside">
-                <field name="is_solar_panel" invisible="1"/>
-                <field name="is_battery" invisible="1"/>
-                <group string="Solar Panel Specifications" invisible="not is_solar_panel">
+                <group string="Solar Panel Specifications" invisible="categ_id.complete_name not in ['All / Saleable / Panneaux'] and not categ_id.complete_name.startswith('All / Saleable / Panneaux / ')">
                     <div class="alert alert-info mb-3" role="status" colspan="2">
                         Ce produit est détecté comme <strong>Panneau solaire</strong> car il appartient à la catégorie
                         <em>All / Saleable / Panneaux</em>.
                     </div>
                     <field name="panel_unit_power_wc"/>
                 </group>
-                <group string="Battery Specifications" invisible="not is_battery">
+                <group string="Battery Specifications" invisible="categ_id.complete_name not in ['All / Saleable / Batteries'] and not categ_id.complete_name.startswith('All / Saleable / Batteries / ')">
                     <div class="alert alert-info mb-3" role="status" colspan="2">
                         Ce produit est détecté comme <strong>Batterie</strong> car il appartient à la catégorie
                         <em>All / Saleable / Batteries</em>.

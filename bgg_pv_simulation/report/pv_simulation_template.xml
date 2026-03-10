@@ -734,7 +734,7 @@
                 <img t-att-src="'data:image/png;base64,%s' % o.chart_monthly_production.decode()"/>
             </div>
             <p class="pv-chart-source">
-                Production annuelle : <t t-esc="'{:,.0f}'.format(o.annual_production_kwh)"/> kWh/an
+                Production annuelle : <t t-esc="'{:,.0f}'.format(o.pvgis_annual_production_kwh or o.annual_production_kwh)"/> kWh/an
                 — Source : <t t-if="o.pvgis_annual_production_kwh">PVGIS (EU Science Hub)</t><t t-else="">Google Solar API</t>
             </p>
 
@@ -811,13 +811,13 @@
             <h2 class="pv-section-title"><t t-esc="o.section_title_consumption or 'DONNÉES DE CONSOMMATION'"/></h2>
 
             <!-- Section 1: Monthly/Daily Data Table -->
-            <h3 class="pv-section-subtitle">Données mensuelles</h3>
+            <h3 class="pv-section-subtitle"><t t-esc="o.section_title_monthly_data or 'DONNÉES MENSUELLES'"/></h3>
             <table class="pv-data-table">
                 <thead>
                     <tr>
                         <th>Mois</th>
-                        <th>Production (kWh)</th>
-                        <th>Consommation (kWh)</th>
+                        <th>Prod. Mois (kWh)</th>
+                        <th>Conso. Mois (kWh)</th>
                         <th>Prod. jour. (kWh)</th>
                         <th>Conso jour (kWh)</th>
                         <th>Conso nuit (kWh)</th>
@@ -849,12 +849,12 @@
             </div>
 
             <!-- Section 3: Daily Energy Balance Table -->
-            <h3 class="pv-section-subtitle">Bilan énergétique quotidien</h3>
+            <h3 class="pv-section-subtitle"><t t-esc="o.section_title_daily_balance or 'BILAN ÉNERGÉTIQUE QUOTIDIEN'"/></h3>
             <table class="pv-data-table">
                 <thead>
                     <tr>
                         <th>Mois</th>
-                        <th>Production (kWh)</th>
+                        <th>Prod. Mois (kWh)</th>
                         <th>Conso jour (kWh)</th>
                         <th>Conso nuit (kWh)</th>
                         <th>Charge (kWh)</th>
@@ -883,7 +883,7 @@
         <!-- ============================================ -->
         <template id="report_pv_simulation_page_bilan">
             <t t-set="results" t-value="o.monthly_result_ids"/>
-            <t t-set="prod_total" t-value="o.annual_production_kwh or 0.0"/>
+            <t t-set="prod_total" t-value="o.pvgis_annual_production_kwh or o.annual_production_kwh or 0.0"/>
             <t t-set="conso_day" t-value="sum(results.mapped('monthly_day_consumption_kwh')) if results else 0.0"/>
             <t t-set="conso_night" t-value="sum(results.mapped('monthly_night_consumption_kwh')) if results else 0.0"/>
             <t t-set="conso_total" t-value="sum(results.mapped('monthly_consumption_kwh')) if results else 0.0"/>
