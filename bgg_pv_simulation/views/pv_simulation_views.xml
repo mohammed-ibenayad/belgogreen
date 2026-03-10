@@ -214,7 +214,7 @@
                                 <ul class="mb-0">
                                     <li><strong>Prod. (kWh)</strong> — Production mensuelle : calculée automatiquement (jours du mois × production journalière moyenne). Source : PVGIS ou profil de production.</li>
                                     <li><strong>Conso. (kWh)</strong> — Consommation mensuelle : saisie manuelle (estimation ou historique facture client).</li>
-                                    <li><strong>Prod. jour. (kWh)</strong> — Production journalière moyenne : calculée via API PVGIS ou profil de production.</li>
+                                    <li><strong>Prod. jour. (kWh)</strong> — Production journalière moyenne : calculée en divisant la production mensuelle par le nombre de jours du mois.</li>
                                     <li><strong>Conso jour / nuit (kWh)</strong> — Consommation quotidienne jour/nuit : saisie manuelle par mois, ou appliquée depuis les valeurs par défaut ci-dessus.</li>
                                     <li><strong>Charge (kWh)</strong> — Énergie stockée dans la batterie : calculée automatiquement à partir du surplus PV, de la capacité et du rendement de la batterie.</li>
                                     <li><strong>Vente (kWh)</strong> — Surplus revendu au réseau : calculé automatiquement (surplus PV − charge batterie).</li>
