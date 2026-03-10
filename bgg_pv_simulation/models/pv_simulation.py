@@ -291,6 +291,7 @@ class PvSimulation(models.Model):
         """Auto-populate installation address from customer address"""
         for record in self:
             if not record.sale_order_id or not record.sale_order_id.partner_id:
+                record.installation_address = False
                 continue
 
             partner = record.sale_order_id.partner_id

@@ -9,7 +9,7 @@ class SaleOrder(models.Model):
     pv_simulation_id = fields.Many2one(
         'pv.simulation',
         string='PV Simulation',
-        ondelete='restrict',
+        ondelete='set null',
         copy=False
     )
     pv_simulation_count = fields.Integer(
