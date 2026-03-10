@@ -10,7 +10,7 @@
                 <field name="days_in_month" readonly="1" string="Jours"/>
                 <field name="monthly_production_kwh" readonly="1" string="Prod. (kWh)"/>
                 <field name="monthly_consumption_kwh" string="Conso. (kWh)"/>
-                <field name="daily_production_kwh" readonly="1" string="Prod. jour. (kWh)"/>
+                <field name="daily_production_kwh" readonly="1" string="Prod. quot. (kWh)"/>
                 <field name="daily_day_consumption_kwh" string="Conso jour (kWh)"/>
                 <field name="daily_night_consumption_kwh" string="Conso nuit (kWh)"/>
                 <field name="daily_battery_charge_kwh" readonly="1" string="Charge (kWh)"/>
