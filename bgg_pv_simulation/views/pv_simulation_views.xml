@@ -279,6 +279,96 @@
                             <div class="alert alert-info" role="status">
                                 Le bilan énergétique annuel est calculé automatiquement à partir des résultats mensuels de l'onglet Consommation (Page 4).
                             </div>
+
+                            <!-- Production -->
+                            <group string="Production">
+                                <group>
+                                    <label for="bilan_production_total" string="Production totale"/>
+                                    <div class="o_row">
+                                        <field name="bilan_production_total" readonly="1"/>
+                                        <span>kWh</span>
+                                    </div>
+                                </group>
+                            </group>
+
+                            <!-- Consommation -->
+                            <group string="Consommation">
+                                <group>
+                                    <label for="bilan_conso_day" string="Jour"/>
+                                    <div class="o_row">
+                                        <field name="bilan_conso_day" readonly="1"/>
+                                        <span>kWh</span>
+                                    </div>
+                                    <label for="bilan_conso_night" string="Nuit"/>
+                                    <div class="o_row">
+                                        <field name="bilan_conso_night" readonly="1"/>
+                                        <span>kWh</span>
+                                    </div>
+                                </group>
+                                <group>
+                                    <label for="bilan_conso_total" string="Totale"/>
+                                    <div class="o_row">
+                                        <field name="bilan_conso_total" readonly="1"/>
+                                        <span>kWh</span>
+                                    </div>
+                                </group>
+                            </group>
+
+                            <!-- Auto Consommation -->
+                            <group string="Auto Consommation">
+                                <group>
+                                    <label for="bilan_autocons_day" string="Consommé la journée"/>
+                                    <div class="o_row">
+                                        <field name="bilan_autocons_day" readonly="1"/>
+                                        <span>kWh</span>
+                                    </div>
+                                    <label for="bilan_battery_charge" string="Stocké dans la batterie"/>
+                                    <div class="o_row">
+                                        <field name="bilan_battery_charge" readonly="1"/>
+                                        <span>kWh</span>
+                                    </div>
+                                </group>
+                                <group>
+                                    <label for="bilan_autocons_total" string="Total"/>
+                                    <div class="o_row">
+                                        <field name="bilan_autocons_total" readonly="1"/>
+                                        <span>kWh</span>
+                                    </div>
+                                </group>
+                            </group>
+
+                            <!-- Économies -->
+                            <group string="Économies">
+                                <group>
+                                    <label for="bilan_savings_panels" string="Liées aux panneaux"/>
+                                    <div class="o_row">
+                                        <field name="bilan_savings_panels" readonly="1"/>
+                                        <span>€</span>
+                                    </div>
+                                    <label for="bilan_savings_battery" string="Liées à la batterie"/>
+                                    <div class="o_row">
+                                        <field name="bilan_savings_battery" readonly="1"/>
+                                        <span>€</span>
+                                    </div>
+                                    <label for="bilan_savings_resale" string="Liées à la revente"/>
+                                    <div class="o_row">
+                                        <field name="bilan_savings_resale" readonly="1"/>
+                                        <span>€</span>
+                                    </div>
+                                </group>
+                                <group>
+                                    <label for="bilan_savings_total" string="Total économies"/>
+                                    <div class="o_row">
+                                        <field name="bilan_savings_total" readonly="1"/>
+                                        <span>€</span>
+                                    </div>
+                                    <label for="bilan_purchase_total" string="Coût d'achat réseau"/>
+                                    <div class="o_row">
+                                        <field name="bilan_purchase_total" readonly="1"/>
+                                        <span>€</span>
+                                    </div>
+                                </group>
+                            </group>
                         </page>
                     </notebook>
                 </sheet>
