@@ -201,7 +201,9 @@
 
                                 .pv-location-image-wrap {
                                     text-align: center;
-                                    margin: 4mm 0 6mm 0;
+                                    background: #FFFFFF;
+                                    margin: -25mm -20mm 0 -20mm;
+                                    padding: 20mm 20mm 0 20mm;
                                 }
 
                                 .pv-location-image-wrap img {
@@ -677,15 +679,15 @@
         <!-- Page 2: Localisation                         -->
         <!-- ============================================ -->
         <template id="report_pv_simulation_page_location">
-            <div class="pv-location-page-bg">
+            <div t-if="o.location_image" class="pv-location-image-wrap">
+                <img t-att-src="'data:image/png;base64,%s' % o.location_image.decode()"/>
+            </div>
+
+            <div class="pv-location-page-bg" t-attf-style="#{o.location_image and 'margin-top: 0;' or ''}">
                 <div class="pv-section-number">01</div>
-                <h2 class="pv-section-title">
+                <h2 class="pv-section-title" t-attf-style="#{o.location_image and 'margin-top: 10mm;' or ''}">
                     <t t-esc="o.section_title_location or 'LOCALISATION DE L\'INSTALLATION'"/>
                 </h2>
-
-                <div t-if="o.location_image" class="pv-location-image-wrap">
-                    <img t-att-src="'data:image/png;base64,%s' % o.location_image.decode()"/>
-                </div>
 
                 <table class="pv-location-cards-row">
                     <tr>
