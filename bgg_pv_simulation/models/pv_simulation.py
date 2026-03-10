@@ -498,7 +498,7 @@ class PvSimulation(models.Model):
 
         # Validate required profile
         if not self.production_profile_id:
-            raise ValidationError(_('Production profile is required for chart generation'))
+            raise ValidationError(_('Un profil de production est requis pour la génération du graphique'))
 
         # Use the production profile method
         self._compute_monthly_from_profile()
@@ -616,23 +616,24 @@ class PvSimulation(models.Model):
         # Check if we have coordinates
         if not self.latitude or not self.longitude:
             raise UserError(_(
-                "Please provide latitude and longitude coordinates first.\n"
-                "You can get these from the installation address using a geocoding service."
+                "Veuillez d'abord renseigner les coordonnées (latitude et longitude).\n"
+                "Vous pouvez les obtenir à partir de l'adresse d'installation via un service de géocodage."
             ))
 
         # Check if sale order has solar panels configured
         if not self.number_of_panels or not self.panel_unit_power_wc:
             missing = []
             if not self.number_of_panels:
-                missing.append(_("- No solar panel products found on the sale order "
-                                 "(products must belong to the category 'All / Saleable / Panneaux')"))
+                missing.append(_("- Aucun produit panneau solaire trouvé sur le bon de commande "
+                                 "(les produits doivent appartenir à la catégorie 'All / Saleable / Panneaux')"))
             if not self.panel_unit_power_wc:
-                missing.append(_("- Solar panel product has no 'Panel Unit Power (Wc)' specified"))
+                missing.append(_("- Le produit panneau solaire n'a pas de 'Puissance unitaire (Wc)' renseignée"))
             raise UserError(_(
-                "Cannot fetch solar data: the sale order is missing required solar panel information.\n\n"
+                "Impossible de récupérer les données solaires : le bon de commande ne contient pas "
+                "les informations requises sur les panneaux solaires.\n\n"
                 "%s\n\n"
-                "Please ensure the sale order has at least one product in the category "
-                "'All / Saleable / Panneaux' with the 'Panel Unit Power (Wc)' properly configured."
+                "Veuillez vous assurer que le bon de commande contient au moins un produit dans la catégorie "
+                "'All / Saleable / Panneaux' avec la 'Puissance unitaire (Wc)' correctement configurée."
             ) % '\n'.join(missing))
 
         # Get Solar API client
@@ -672,13 +673,13 @@ class PvSimulation(models.Model):
         except Exception as e:
             _logger.error(f"Failed to fetch solar data: {e}", exc_info=True)
             raise UserError(_(
-                "Failed to fetch solar data from Google Solar API.\n"
-                "Error: %s\n\n"
-                "Please check:\n"
-                "1. Your API key is configured correctly\n"
-                "2. The Solar API is enabled in Google Cloud Console\n"
-                "3. The coordinates are valid\n"
-                "4. You have internet connectivity"
+                "Erreur lors de la récupération des données solaires depuis Google Solar API.\n"
+                "Erreur : %s\n\n"
+                "Veuillez vérifier :\n"
+                "1. Votre clé API est correctement configurée\n"
+                "2. L'API Solar est activée dans la console Google Cloud\n"
+                "3. Les coordonnées sont valides\n"
+                "4. Vous avez une connexion internet"
             ) % str(e))
 
     def _apply_solar_api_data(self, parsed_data, force_update=False):
