@@ -422,8 +422,8 @@ class PvSimulation(models.Model):
             eco_panneaux = round(autocons_jour * days * p_buy, 2)
             # Vente surplus = vente * days * P_sell
             revenu_vente = round(vente * days * p_sell, 2)
-            # Économie batterie = min(CapDebutBat, ConsoNuit) * days * (P_buy - P_batt)
-            batt_use = min(cap_debut_bat, conso_nuit) if cap_bat > 0 else 0.0
+            # Économie batterie = min(énergie_bat_nuit, ConsoNuit) * days * (P_buy - P_batt)
+            batt_use = min(energie_bat_nuit, conso_nuit) if cap_bat > 0 else 0.0
             eco_batterie = round(batt_use * days * (p_buy - p_batt), 2)
             # Achat réseau = achat * days * P_buy
             cout_achat = round(achat * days * p_buy, 2)

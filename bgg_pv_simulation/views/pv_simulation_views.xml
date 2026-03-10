@@ -259,12 +259,15 @@
                                             class="btn-primary"
                                             invisible="not id"
                                             confirm="Ceci va écraser les valeurs de consommation pour tous les mois. Continuer ?"/>
-                                    <button name="action_compute_daily_balance"
-                                            string="Calculer le bilan quotidien"
-                                            type="object"
-                                            class="btn-secondary"
-                                            invisible="not id"
-                                            help="Calcule Charge, Vente et Achat pour tous les mois à partir de la production, consommation et batterie"/>
+                                </group>
+                            </group>
+                            <group>
+                                <group string="Profil tarifaire">
+                                    <field name="tariff_profile_id" string="Profil tarifaire"
+                                           options="{'no_create': False, 'no_open': False}"/>
+                                </group>
+                                <group string="Titre bilan financier">
+                                    <field name="section_title_financial" placeholder="BILAN FINANCIER MENSUEL" string="Titre"/>
                                 </group>
                             </group>
                             <group string="Titres de section">
@@ -289,26 +292,8 @@
                             </div>
                         </page>
 
-                        <!-- ==================== Bilan Financier (Page 5) ==================== -->
-                        <page string="Bilan Financier (Page 5)" name="page_financial">
-                            <group>
-                                <group string="Profil tarifaire">
-                                    <field name="tariff_profile_id" string="Profil tarifaire"
-                                           options="{'no_create': False, 'no_open': False}"/>
-                                </group>
-                                <group string="Titre de section">
-                                    <field name="section_title_financial" placeholder="BILAN FINANCIER MENSUEL" string="Titre"/>
-                                </group>
-                            </group>
-                            <div class="alert alert-info" role="status">
-                                Le bilan financier mensuel est calculé automatiquement à partir des résultats mensuels
-                                et du profil tarifaire sélectionné ci-dessus. Cliquez sur « Calculer le bilan quotidien »
-                                dans l'onglet Consommation pour recalculer après un changement de profil.
-                            </div>
-                        </page>
-
-                        <!-- ==================== Bilan (Page 6) ==================== -->
-                        <page string="Bilan (Page 6)" name="page_bilan">
+                        <!-- ==================== Bilan (Page 5) ==================== -->
+                        <page string="Bilan (Page 5)" name="page_bilan">
                             <group string="Titre de section">
                                 <field name="section_title_bilan" placeholder="BILAN ÉNERGÉTIQUE" string="Titre"/>
                             </group>
