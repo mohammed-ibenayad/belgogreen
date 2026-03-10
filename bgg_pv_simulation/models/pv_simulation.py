@@ -185,6 +185,12 @@ class PvSimulation(models.Model):
         help='PNG: Monthly daily production bar chart'
     )
 
+    # Default consumption (to prefill monthly results)
+    default_monthly_consumption_kwh = fields.Float(
+        string='Default Monthly Consumption (kWh)',
+        help='Default monthly consumption value. Use the button to copy this to all months.'
+    )
+
     @api.model
     def create(self, vals_list):
         # Handle both single dict and list of dicts for backward compatibility
@@ -203,6 +209,29 @@ class PvSimulation(models.Model):
                 record.sale_order_id.pv_simulation_id = record.id
 
         return records
+
+    def action_apply_default_consumption(self):
+        """Copy default_monthly_consumption_kwh to all monthly results"""
+        self.ensure_one()
+        if not self.default_monthly_consumption_kwh:
+            raise UserError(_("Please set a default monthly consumption value first."))
+        if not self.monthly_result_ids:
+            raise UserError(_("No monthly results found. Please generate the simulation first."))
+
+        days_in_months = {
+            '1': 31, '2': 29, '3': 31, '4': 30, '5': 31, '6': 30,
+            '7': 31, '8': 31, '9': 30, '10': 31, '11': 30, '12': 31
+        }
+        for result in self.monthly_result_ids:
+            days = days_in_months.get(result.month, 30)
+            daily_total = self.default_monthly_consumption_kwh / days
+            result.write({
+                'monthly_consumption_kwh': self.default_monthly_consumption_kwh,
+                'monthly_day_consumption_kwh': self.default_monthly_consumption_kwh * 0.6,
+                'monthly_night_consumption_kwh': self.default_monthly_consumption_kwh * 0.4,
+                'daily_day_consumption_kwh': daily_total * 0.6,
+                'daily_night_consumption_kwh': daily_total * 0.4,
+            })
 
     @api.depends('sale_order_id.partner_id',
                  'sale_order_id.partner_id.street',
@@ -716,8 +745,8 @@ class PvSimulation(models.Model):
         # Delete existing monthly results
         self.monthly_result_ids.unlink()
 
-        # Days in each month
-        days_in_months = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+        # Days in each month (Feb = 29)
+        days_in_months = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 
         # Create new monthly results
         monthly_results = []
@@ -729,6 +758,7 @@ class PvSimulation(models.Model):
             monthly_result_vals = {
                 'simulation_id': self.id,
                 'month': str(month_num),
+                'monthly_production_kwh': monthly_kwh,
                 'daily_production_kwh': daily_kwh,
             }
             monthly_results.append((0, 0, monthly_result_vals))
@@ -751,7 +781,7 @@ class PvSimulation(models.Model):
         # Delete existing monthly results
         self.monthly_result_ids.unlink()
 
-        days_in_months = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+        days_in_months = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
         monthly_results = []
 
         for month_num in range(1, 13):
@@ -763,6 +793,7 @@ class PvSimulation(models.Model):
             monthly_result_vals = {
                 'simulation_id': self.id,
                 'month': str(month_num),
+                'monthly_production_kwh': monthly_production_kwh,
                 'daily_production_kwh': daily_production_kwh,
             }
             monthly_results.append((0, 0, monthly_result_vals))
