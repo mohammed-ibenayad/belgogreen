@@ -6,8 +6,8 @@
         <field name="arch" type="xml">
             <list editable="bottom" create="0" delete="0">
                 <field name="month_sequence" column_invisible="1"/>
-                <field name="month" readonly="1"/>
-                <field name="days_in_month" readonly="1"/>
+                <field name="month" readonly="1" string="Mois"/>
+                <field name="days_in_month" readonly="1" string="Jours"/>
                 <field name="monthly_production_kwh" readonly="1" string="Prod. (kWh)"/>
                 <field name="monthly_consumption_kwh" string="Conso. (kWh)"/>
                 <field name="daily_production_kwh" readonly="1" string="Prod. jour. (kWh)"/>
@@ -16,9 +16,9 @@
                 <field name="daily_battery_charge_kwh" readonly="1" string="Charge (kWh)"/>
                 <field name="daily_energy_sold_kwh" readonly="1" string="Vente (kWh)"/>
                 <field name="daily_energy_bought_kwh" readonly="1" string="Achat (kWh)"/>
-                <field name="panel_savings" readonly="1"/>
-                <field name="battery_savings" readonly="1"/>
-                <field name="net_balance" readonly="1"/>
+                <field name="panel_savings" readonly="1" string="Éco. panneaux"/>
+                <field name="battery_savings" readonly="1" string="Éco. batterie"/>
+                <field name="net_balance" readonly="1" string="Bilan net"/>
             </list>
         </field>
     </record>

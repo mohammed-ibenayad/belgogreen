@@ -187,8 +187,16 @@ class PvSimulation(models.Model):
 
     # Default consumption (to prefill monthly results)
     default_monthly_consumption_kwh = fields.Float(
-        string='Default Monthly Consumption (kWh)',
-        help='Default monthly consumption value. Use the button to copy this to all months.'
+        string='Consommation mensuelle par défaut (kWh)',
+        help='Valeur de consommation mensuelle par défaut. Utilisez le bouton pour copier cette valeur sur tous les mois.'
+    )
+    default_daily_day_consumption_kwh = fields.Float(
+        string='Consommation jour quotidienne par défaut (kWh)',
+        help='Consommation de jour quotidienne par défaut. Utilisez le bouton pour copier cette valeur sur tous les mois.'
+    )
+    default_daily_night_consumption_kwh = fields.Float(
+        string='Consommation nuit quotidienne par défaut (kWh)',
+        help='Consommation de nuit quotidienne par défaut. Utilisez le bouton pour copier cette valeur sur tous les mois.'
     )
 
     @api.model
@@ -211,12 +219,12 @@ class PvSimulation(models.Model):
         return records
 
     def action_apply_default_consumption(self):
-        """Copy default_monthly_consumption_kwh to all monthly results"""
+        """Copy default consumption values to all monthly results"""
         self.ensure_one()
-        if not self.default_monthly_consumption_kwh:
-            raise UserError(_("Please set a default monthly consumption value first."))
+        if not self.default_monthly_consumption_kwh and not self.default_daily_day_consumption_kwh and not self.default_daily_night_consumption_kwh:
+            raise UserError(_("Veuillez saisir au moins une valeur de consommation par défaut."))
         if not self.monthly_result_ids:
-            raise UserError(_("No monthly results found. Please generate the simulation first."))
+            raise UserError(_("Aucun résultat mensuel trouvé. Veuillez d'abord générer la simulation."))
 
         days_in_months = {
             '1': 31, '2': 29, '3': 31, '4': 30, '5': 31, '6': 30,
@@ -224,14 +232,17 @@ class PvSimulation(models.Model):
         }
         for result in self.monthly_result_ids:
             days = days_in_months.get(result.month, 30)
-            daily_total = self.default_monthly_consumption_kwh / days
-            result.write({
-                'monthly_consumption_kwh': self.default_monthly_consumption_kwh,
-                'monthly_day_consumption_kwh': self.default_monthly_consumption_kwh * 0.6,
-                'monthly_night_consumption_kwh': self.default_monthly_consumption_kwh * 0.4,
-                'daily_day_consumption_kwh': daily_total * 0.6,
-                'daily_night_consumption_kwh': daily_total * 0.4,
-            })
+            vals = {}
+            if self.default_monthly_consumption_kwh:
+                vals['monthly_consumption_kwh'] = self.default_monthly_consumption_kwh
+            if self.default_daily_day_consumption_kwh:
+                vals['daily_day_consumption_kwh'] = self.default_daily_day_consumption_kwh
+                vals['monthly_day_consumption_kwh'] = self.default_daily_day_consumption_kwh * days
+            if self.default_daily_night_consumption_kwh:
+                vals['daily_night_consumption_kwh'] = self.default_daily_night_consumption_kwh
+                vals['monthly_night_consumption_kwh'] = self.default_daily_night_consumption_kwh * days
+            if vals:
+                result.write(vals)
 
     @api.depends('sale_order_id.partner_id',
                  'sale_order_id.partner_id.street',

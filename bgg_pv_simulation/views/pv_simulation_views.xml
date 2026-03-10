@@ -5,15 +5,15 @@
         <field name="name">pv.simulation.list</field>
         <field name="model">pv.simulation</field>
         <field name="arch" type="xml">
-            <list string="PV Simulations">
-                <field name="name" string="Reference"/>
-                <field name="sale_order_id"/>
-                <field name="installation_address"/>
-                <field name="total_pv_power_wc" string="PV Power (Wc)"/>
-                <field name="annual_production_kwh" string="Annual Production (kWh)"/>
+            <list string="Simulations PV">
+                <field name="name" string="Référence"/>
+                <field name="sale_order_id" string="Devis"/>
+                <field name="installation_address" string="Adresse"/>
+                <field name="total_pv_power_wc" string="Puissance PV (Wc)"/>
+                <field name="annual_production_kwh" string="Production annuelle (kWh)"/>
                 <field name="currency_id" column_invisible="1"/>
-                <field name="report_date"/>
-                <field name="create_date" string="Created"/>
+                <field name="report_date" string="Date du rapport"/>
+                <field name="create_date" string="Créé le"/>
             </list>
         </field>
     </record>
@@ -35,20 +35,20 @@
         <field name="name">pv.simulation.form</field>
         <field name="model">pv.simulation</field>
         <field name="arch" type="xml">
-            <form string="PV Simulation">
+            <form string="Simulation PV">
                 <header>
                     <button name="action_regenerate_simulation"
-                            string="Regenerate Simulation"
+                            string="Régénérer la simulation"
                             type="object"
                             class="oe_highlight"
                             invisible="not id"
-                            confirm="This will fetch fresh data from APIs and recalculate the simulation. Existing values will be replaced. Continue?"/>
+                            confirm="Ceci va récupérer les données fraîches depuis les API et recalculer la simulation. Les valeurs existantes seront remplacées. Continuer ?"/>
                     <button name="action_generate_report"
-                            string="PDF Report"
+                            string="Rapport PDF"
                             type="object"
                             class="btn-primary"
                             invisible="not id"
-                            help="Generate professional PDF report"/>
+                            help="Générer le rapport PDF professionnel"/>
                 </header>
                 <sheet>
                     <field name="currency_id" invisible="1"/>
@@ -59,24 +59,28 @@
                         </h1>
                     </div>
                     <group>
-                        <group string="Quotation">
-                            <field name="sale_order_id" readonly="1"/>
-                            <field name="report_date"/>
+                        <group string="Devis">
+                            <field name="sale_order_id" readonly="1" string="Devis"/>
+                            <field name="report_date" string="Date du rapport"/>
                         </group>
                     </group>
 
                     <notebook>
-                        <!-- ==================== PV System ==================== -->
-                        <page string="PV System" name="pv_system">
+                        <!-- ==================== Système PV ==================== -->
+                        <page string="Système PV" name="pv_system">
+                            <div class="alert alert-info" role="status">
+                                <strong>Données du système :</strong> La configuration des panneaux est détectée automatiquement à partir des lignes du devis.
+                                La production est calculée via Google Solar API et/ou PVGIS. Le profil de production distribue la production annuelle sur les 12 mois.
+                            </div>
                             <group>
-                                <group string="Panel Configuration (Auto-detected from Sale Order)">
-                                    <field name="number_of_panels" readonly="1"/>
-                                    <label for="panel_unit_power_wc" string="Panel Unit Power"/>
+                                <group string="Configuration des panneaux">
+                                    <field name="number_of_panels" readonly="1" string="Nombre de panneaux"/>
+                                    <label for="panel_unit_power_wc" string="Puissance unitaire"/>
                                     <div class="o_row">
                                         <field name="panel_unit_power_wc" readonly="1"/>
                                         <span>Wc</span>
                                     </div>
-                                    <label for="total_pv_power_wc" string="Total PV Power"/>
+                                    <label for="total_pv_power_wc" string="Puissance totale"/>
                                     <div class="o_row">
                                         <field name="total_pv_power_wc" readonly="1"/>
                                         <span>Wc</span>
@@ -84,109 +88,149 @@
                                     <label for="orientation_deg" string="Orientation"/>
                                     <div class="o_row">
                                         <field name="orientation_deg"/>
-                                        <span>° (0=South)</span>
+                                        <span>° (0=Sud)</span>
                                     </div>
-                                    <label for="tilt_deg" string="Inclination"/>
+                                    <label for="tilt_deg" string="Inclinaison"/>
                                     <div class="o_row">
                                         <field name="tilt_deg"/>
                                         <span>°</span>
                                     </div>
                                 </group>
                                 <group string="Production">
-                                    <label for="annual_production_kwh" string="Annual Production (GSA)"/>
+                                    <label for="annual_production_kwh" string="Production annuelle (GSA)"/>
                                     <div class="o_row">
                                         <field name="annual_production_kwh"/>
                                         <span>kWh</span>
                                     </div>
-                                    <field name="max_panels_count" readonly="1" string="Max Panels (GSA)"/>
-                                    <label for="pvgis_annual_production_kwh" string="Annual Production (PVGIS)"/>
+                                    <field name="max_panels_count" readonly="1" string="Panneaux max (GSA)"/>
+                                    <label for="pvgis_annual_production_kwh" string="Production annuelle (PVGIS)"/>
                                     <div class="o_row">
                                         <field name="pvgis_annual_production_kwh" readonly="1"/>
                                         <span>kWh</span>
                                     </div>
-                                    <field name="production_profile_id"/>
+                                    <field name="production_profile_id" string="Profil de production"/>
                                 </group>
                             </group>
                         </page>
 
-                        <!-- ==================== Cover (Page 1) ==================== -->
-                        <page string="Cover (Page 1)" name="page_cover">
+                        <!-- ==================== Couverture (Page 1) ==================== -->
+                        <page string="Couverture (Page 1)" name="page_cover">
+                            <div class="alert alert-info" role="status">
+                                <strong>Données à saisir :</strong> Photo de couverture et titres affichés sur la première page du rapport.
+                            </div>
                             <group>
-                                <group string="Cover Photo">
-                                    <field name="cover_photo" widget="image" class="oe_avatar"/>
+                                <group string="Photo de couverture">
+                                    <field name="cover_photo" widget="image" class="oe_avatar" string="Photo"/>
                                 </group>
-                                <group string="Title">
-                                    <field name="cover_title"/>
-                                    <field name="cover_subtitle"/>
+                                <group string="Titre">
+                                    <field name="cover_title" string="Titre (ligne 1)"/>
+                                    <field name="cover_subtitle" string="Titre (ligne 2)"/>
                                 </group>
                             </group>
                         </page>
 
                         <!-- ==================== Localisation (Page 2) ==================== -->
                         <page string="Localisation (Page 2)" name="page_localisation">
+                            <div class="alert alert-info" role="status">
+                                <strong>Données à saisir :</strong> Adresse, coordonnées GPS et image satellite de l'installation.
+                                L'adresse est pré-remplie depuis la fiche client du devis.
+                            </div>
                             <group>
-                                <group string="Location">
-                                    <field name="installation_address"/>
-                                    <field name="roof_surface_m2"/>
+                                <group string="Emplacement">
+                                    <field name="installation_address" string="Adresse d'installation"/>
+                                    <field name="roof_surface_m2" string="Surface de toiture (m²)"/>
                                     <field name="latitude"/>
                                     <field name="longitude"/>
                                 </group>
-                                <group string="Location Image">
-                                    <field name="location_image" widget="image" class="oe_avatar"/>
+                                <group string="Image de localisation">
+                                    <field name="location_image" widget="image" class="oe_avatar" string="Image satellite"/>
                                 </group>
                             </group>
-                            <group string="Section Title">
-                                <field name="section_title_location" placeholder="LOCALISATION DE L'INSTALLATION"/>
+                            <group string="Titre de section">
+                                <field name="section_title_location" placeholder="LOCALISATION DE L'INSTALLATION" string="Titre"/>
                             </group>
                         </page>
 
                         <!-- ==================== Production (Page 3) ==================== -->
                         <page string="Production (Page 3)" name="page_production">
+                            <div class="alert alert-info" role="status">
+                                <strong>Données à saisir :</strong> Image du système (photo des panneaux, schéma d'implantation).
+                                Le graphique de production est généré automatiquement à partir des données PVGIS ou du profil de production.
+                            </div>
                             <group>
-                                <group string="System Image">
-                                    <field name="system_image" widget="image" class="oe_avatar"/>
-                                </group>
-                                <group string="Chart Preview">
-                                    <field name="chart_monthly_production" widget="image" nolabel="1"/>
+                                <group string="Image du système">
+                                    <field name="system_image" widget="image" class="oe_avatar" string="Image"/>
                                 </group>
                             </group>
-                            <group string="Section Titles">
-                                <field name="section_title_production" placeholder="PRODUCTION ESTIMÉE"/>
-                                <field name="section_title_system" placeholder="CARACTÉRISTIQUES DU SYSTÈME"/>
+                            <group string="Titres de section">
+                                <field name="section_title_production" placeholder="PRODUCTION ESTIMÉE" string="Titre production"/>
+                                <field name="section_title_system" placeholder="CARACTÉRISTIQUES DU SYSTÈME" string="Titre système"/>
                             </group>
+                            <separator string="Aperçu du graphique"/>
+                            <field name="chart_monthly_production" widget="image" nolabel="1"
+                                   style="max-width: 100%; width: 800px;"/>
                         </page>
 
                         <!-- ==================== Consommation (Page 4) ==================== -->
                         <page string="Consommation (Page 4)" name="page_consumption">
+                            <div class="alert alert-warning" role="status">
+                                <strong>Données à saisir :</strong> Saisissez les valeurs par défaut ci-dessous puis cliquez sur
+                                « Appliquer à tous les mois ». Vous pouvez ensuite modifier chaque mois individuellement dans le tableau.
+                            </div>
                             <group>
-                                <group string="Default Consumption">
-                                    <label for="default_monthly_consumption_kwh" string="Monthly Consumption"/>
+                                <group string="Valeurs par défaut">
+                                    <label for="default_monthly_consumption_kwh" string="Consommation mensuelle"/>
                                     <div class="o_row">
                                         <field name="default_monthly_consumption_kwh"/>
-                                        <span>kWh</span>
-                                        <button name="action_apply_default_consumption"
-                                                string="Apply to All Months"
-                                                type="object"
-                                                class="btn-secondary"
-                                                invisible="not id"
-                                                confirm="This will overwrite day/night consumption for all months (60/40 split). Continue?"/>
+                                        <span>kWh/mois</span>
+                                    </div>
+                                    <label for="default_daily_day_consumption_kwh" string="Consommation jour quotidienne"/>
+                                    <div class="o_row">
+                                        <field name="default_daily_day_consumption_kwh"/>
+                                        <span>kWh/jour</span>
+                                    </div>
+                                    <label for="default_daily_night_consumption_kwh" string="Consommation nuit quotidienne"/>
+                                    <div class="o_row">
+                                        <field name="default_daily_night_consumption_kwh"/>
+                                        <span>kWh/jour</span>
                                     </div>
                                 </group>
+                                <group string="Actions">
+                                    <button name="action_apply_default_consumption"
+                                            string="Appliquer à tous les mois"
+                                            type="object"
+                                            class="btn-primary"
+                                            invisible="not id"
+                                            confirm="Ceci va écraser les valeurs de consommation pour tous les mois. Continuer ?"/>
+                                </group>
                             </group>
-                            <group string="Section Title">
-                                <field name="section_title_consumption" placeholder="DONNÉES DE CONSOMMATION"/>
+                            <group string="Titre de section">
+                                <field name="section_title_consumption" placeholder="DONNÉES DE CONSOMMATION" string="Titre"/>
                             </group>
-                            <separator string="Monthly Results"/>
+                            <separator string="Résultats mensuels"/>
                             <field name="monthly_result_ids" nolabel="1"/>
+                            <div class="alert alert-secondary mt-3" role="status">
+                                <strong>Légende des données :</strong>
+                                <ul class="mb-0">
+                                    <li><strong>Prod. (kWh)</strong> — Production mensuelle : calculée automatiquement (jours du mois × production journalière moyenne). Source : PVGIS ou profil de production.</li>
+                                    <li><strong>Conso. (kWh)</strong> — Consommation mensuelle : saisie manuelle (estimation ou historique facture client).</li>
+                                    <li><strong>Prod. jour. (kWh)</strong> — Production journalière moyenne : calculée via API PVGIS ou profil de production.</li>
+                                    <li><strong>Conso jour / nuit (kWh)</strong> — Consommation quotidienne jour/nuit : saisie manuelle par mois, ou appliquée depuis les valeurs par défaut ci-dessus.</li>
+                                    <li><strong>Charge (kWh)</strong> — Énergie stockée dans la batterie : calculée automatiquement à partir du surplus PV, de la capacité et du rendement de la batterie.</li>
+                                    <li><strong>Vente (kWh)</strong> — Surplus revendu au réseau : calculé automatiquement (surplus PV − charge batterie).</li>
+                                    <li><strong>Achat (kWh)</strong> — Énergie achetée au réseau : calculé automatiquement (consommation nuit − énergie batterie disponible).</li>
+                                    <li><strong>Économies panneaux / batterie</strong> — Calculées automatiquement à partir des tarifs d'achat/vente et de la configuration batterie.</li>
+                                </ul>
+                            </div>
                         </page>
 
                         <!-- ==================== Bilan (Page 5) ==================== -->
                         <page string="Bilan (Page 5)" name="page_bilan">
-                            <group string="Section Title">
-                                <field name="section_title_bilan" placeholder="BILAN ÉNERGÉTIQUE"/>
+                            <group string="Titre de section">
+                                <field name="section_title_bilan" placeholder="BILAN ÉNERGÉTIQUE" string="Titre"/>
                             </group>
                             <div class="alert alert-info" role="status">
-                                The annual energy balance is computed automatically from the monthly results on Page 4.
+                                Le bilan énergétique annuel est calculé automatiquement à partir des résultats mensuels de l'onglet Consommation (Page 4).
                             </div>
                         </page>
                     </notebook>
