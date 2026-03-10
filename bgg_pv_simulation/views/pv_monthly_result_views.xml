@@ -14,6 +14,7 @@
                 <field name="daily_day_consumption_kwh" string="Conso jour (kWh)"/>
                 <field name="daily_night_consumption_kwh" string="Conso nuit (kWh)"/>
                 <field name="daily_battery_charge_kwh" readonly="1" string="Charge (kWh)"/>
+                <field name="battery_charge_level" widget="battery_icon" string="" width="40px" readonly="1" nolabel="1"/>
                 <field name="daily_energy_sold_kwh" readonly="1" string="Vente (kWh)"/>
                 <field name="daily_energy_bought_kwh" readonly="1" string="Achat (kWh)"/>
                 <field name="panel_savings" readonly="1" string="Éco. panneaux"/>

@@ -55,6 +55,7 @@
     'assets': {
         'web.assets_backend': [
             'bgg_pv_simulation/static/src/js/pv_simulation_regenerate.js',
+            'bgg_pv_simulation/static/src/js/battery_icon_widget.js',
             'bgg_pv_simulation/static/src/xml/pv_simulation_templates.xml',
         ],
     },
