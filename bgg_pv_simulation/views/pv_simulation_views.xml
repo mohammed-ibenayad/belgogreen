@@ -75,6 +75,10 @@
                             <field name="sale_order_id" readonly="1" string="Devis"/>
                             <field name="report_date" string="Date du rapport"/>
                         </group>
+                        <group string="Coordonnées GPS">
+                            <field name="latitude" readonly="1"/>
+                            <field name="longitude" readonly="1"/>
+                        </group>
                     </group>
 
                     <notebook>
@@ -153,8 +157,6 @@
                                 <group string="Emplacement">
                                     <field name="installation_address" string="Adresse d'installation"/>
                                     <field name="roof_surface_m2" string="Surface de toiture (m²)"/>
-                                    <field name="latitude"/>
-                                    <field name="longitude"/>
                                 </group>
                                 <group string="Image de localisation">
                                     <field name="location_image" widget="image" class="oe_avatar" string="Image satellite"/>
@@ -192,7 +194,7 @@
                                 « Appliquer à tous les mois ». Vous pouvez ensuite modifier chaque mois individuellement dans le tableau.
                             </div>
                             <group>
-                                <group string="Valeurs par défaut">
+                                <group string="Consommation Client">
                                     <label for="default_monthly_consumption_kwh" string="Consommation mensuelle"/>
                                     <div class="o_row">
                                         <field name="default_monthly_consumption_kwh"/>

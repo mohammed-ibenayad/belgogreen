@@ -665,9 +665,9 @@
 
                 <!-- Metadata box bottom-right -->
                 <div class="pv-cover-meta-box">
-                    <t t-if="o.name">
-                        <p class="pv-cover-meta-line">Référence</p>
-                        <p class="pv-cover-meta-val"><t t-esc="o.name"/></p>
+                    <t t-if="o.sale_order_id">
+                        <p class="pv-cover-meta-line">Référence Devis</p>
+                        <p class="pv-cover-meta-val"><t t-esc="o.sale_order_id.name"/></p>
                     </t>
                     <t t-if="o.report_date">
                         <p class="pv-cover-meta-line">Date</p>

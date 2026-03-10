@@ -155,7 +155,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         # Partner
         partner_name = _esc(partner.name) if partner else ''
         report_date = simulation.report_date.strftime('%d/%m/%Y') if simulation.report_date else ''
-        project_ref = _esc(simulation.name or '')
+        project_ref = _esc(simulation.sale_order_id.name or simulation.name or '')
 
         # Bilan data
         results = simulation.monthly_result_ids
@@ -347,7 +347,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
 
         <!-- Metadata box bottom-right -->
         <div class="cover-meta-box">
-            {f'<p class="cover-meta-line">R\u00e9f\u00e9rence</p><p class="cover-meta-val">{project_ref}</p>' if project_ref else ''}
+            {f'<p class="cover-meta-line">R\u00e9f\u00e9rence Devis</p><p class="cover-meta-val">{project_ref}</p>' if project_ref else ''}
             {f'<p class="cover-meta-line">Date</p><p class="cover-meta-val">{report_date}</p>' if report_date else ''}
         </div>
     </div>
