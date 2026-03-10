@@ -17,9 +17,6 @@
                 <field name="battery_charge_level" widget="battery_icon" string="" width="40px" readonly="1" nolabel="1"/>
                 <field name="daily_energy_sold_kwh" readonly="1" string="Vente (kWh)"/>
                 <field name="daily_energy_bought_kwh" readonly="1" string="Achat (kWh)"/>
-                <field name="panel_savings" readonly="1" string="Éco. panneaux"/>
-                <field name="battery_savings" readonly="1" string="Éco. batterie"/>
-                <field name="net_balance" readonly="1" string="Bilan net"/>
             </list>
         </field>
     </record>
