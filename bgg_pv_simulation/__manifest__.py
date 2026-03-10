@@ -31,14 +31,12 @@
         # Data
         'data/solar_api_config.xml',
         'data/pv_production_profile_data.xml',
-        'data/pv_consumption_profile_data.xml',
         'data/pv_battery_config_data.xml',
         'data/pv_tariff_profile_data.xml',
 
         # Views
         'views/res_company_views.xml',
         'views/product_template_views.xml',
-        'views/pv_consumption_profile_views.xml',
         'views/pv_production_profile_views.xml',
         'views/pv_battery_config_views.xml',
         'views/pv_tariff_profile_views.xml',
