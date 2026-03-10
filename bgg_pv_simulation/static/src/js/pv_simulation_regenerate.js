@@ -16,13 +16,25 @@ class PvSimulationRegenerate extends Component {
 
     async _doRegenerate() {
         const simulationId = this.props.action.context.simulation_id;
+        if (!simulationId) {
+            this.notification.add("Erreur: simulation introuvable.", { type: "danger" });
+            this.action.doAction({ type: "ir.actions.act_window_close" });
+            return;
+        }
         try {
             await this.orm.call("pv.simulation", "action_do_regenerate", [[simulationId]]);
             this.notification.add("Simulation régénérée avec succès.", { type: "success" });
         } catch (e) {
-            this.notification.add("Erreur lors de la régénération.", { type: "danger" });
+            this.notification.add("Erreur lors de la régénération: " + (e.data?.message || e.message || "erreur inconnue"), { type: "danger" });
         }
-        this.action.doAction({ type: "ir.actions.client", tag: "reload" });
+        // Navigate back to the simulation form instead of reloading (which would re-trigger regeneration)
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            res_model: "pv.simulation",
+            res_id: simulationId,
+            views: [[false, "form"]],
+            target: "current",
+        });
     }
 }
 
