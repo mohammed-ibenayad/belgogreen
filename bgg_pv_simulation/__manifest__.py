@@ -54,7 +54,12 @@
     'demo': [
         'demo/pv_simulation_demo.xml',
     ],
-    'assets': {},
+    'assets': {
+        'web.assets_backend': [
+            'bgg_pv_simulation/static/src/js/pv_simulation_regenerate.js',
+            'bgg_pv_simulation/static/src/xml/pv_simulation_templates.xml',
+        ],
+    },
     'installable': True,
     'application': False,
     'auto_install': False,

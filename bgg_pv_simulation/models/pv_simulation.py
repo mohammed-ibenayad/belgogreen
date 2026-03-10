@@ -5,6 +5,7 @@ import logging
 
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, UserError
+from .product_template import _is_panel_category
 
 _logger = logging.getLogger(__name__)
 
@@ -116,6 +117,16 @@ class PvSimulation(models.Model):
         string='Energy Balance Section Title',
         default='BILAN ÉNERGÉTIQUE',
         help='Page 4: Annual energy balance section'
+    )
+    section_title_monthly_data = fields.Char(
+        string='Monthly Data Subtitle',
+        default='DONNÉES MENSUELLES',
+        help='Page 4: Monthly data table subtitle'
+    )
+    section_title_daily_balance = fields.Char(
+        string='Daily Energy Balance Subtitle',
+        default='BILAN ÉNERGÉTIQUE QUOTIDIEN',
+        help='Page 4: Daily energy balance table subtitle'
     )
 
     # PV System Parameters
@@ -322,7 +333,7 @@ class PvSimulation(models.Model):
             else:
                 # Find all solar panel products by category
                 panel_lines = record.sale_order_id.order_line.filtered(
-                    lambda l: l.product_id.is_solar_panel
+                    lambda l: _is_panel_category(l.product_id)
                 )
 
                 if not panel_lines:
@@ -347,7 +358,16 @@ class PvSimulation(models.Model):
                 record.simulation_needs_regeneration = True
 
     def action_regenerate_simulation(self):
-        """Button action to fetch API data and recalculate everything"""
+        """Button action: show loading screen then regenerate"""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'pv_simulation_regenerate',
+            'context': {'simulation_id': self.id},
+        }
+
+    def action_do_regenerate(self):
+        """Actual regeneration logic called from the JS client action"""
         self.ensure_one()
 
         # Fetch solar data from APIs (force update to replace existing values)
@@ -359,12 +379,6 @@ class PvSimulation(models.Model):
 
         # Clear regeneration flag
         self.simulation_needs_regeneration = False
-
-        # Reload the page to show updated data
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'reload',
-        }
 
     def action_generate_report(self):
         """Generate PDF report using WeasyPrint"""
@@ -808,6 +822,15 @@ class PvSimulation(models.Model):
                 'monthly_production_kwh': monthly_kwh,
                 'daily_production_kwh': daily_kwh,
             }
+            # Auto-apply default consumption values
+            if self.default_monthly_consumption_kwh:
+                monthly_result_vals['monthly_consumption_kwh'] = self.default_monthly_consumption_kwh
+            if self.default_daily_day_consumption_kwh:
+                monthly_result_vals['daily_day_consumption_kwh'] = self.default_daily_day_consumption_kwh
+                monthly_result_vals['monthly_day_consumption_kwh'] = self.default_daily_day_consumption_kwh * days
+            if self.default_daily_night_consumption_kwh:
+                monthly_result_vals['daily_night_consumption_kwh'] = self.default_daily_night_consumption_kwh
+                monthly_result_vals['monthly_night_consumption_kwh'] = self.default_daily_night_consumption_kwh * days
             monthly_results.append((0, 0, monthly_result_vals))
 
         self.monthly_result_ids = monthly_results
@@ -844,6 +867,15 @@ class PvSimulation(models.Model):
                 'monthly_production_kwh': monthly_production_kwh,
                 'daily_production_kwh': daily_production_kwh,
             }
+            # Auto-apply default consumption values
+            if self.default_monthly_consumption_kwh:
+                monthly_result_vals['monthly_consumption_kwh'] = self.default_monthly_consumption_kwh
+            if self.default_daily_day_consumption_kwh:
+                monthly_result_vals['daily_day_consumption_kwh'] = self.default_daily_day_consumption_kwh
+                monthly_result_vals['monthly_day_consumption_kwh'] = self.default_daily_day_consumption_kwh * days
+            if self.default_daily_night_consumption_kwh:
+                monthly_result_vals['daily_night_consumption_kwh'] = self.default_daily_night_consumption_kwh
+                monthly_result_vals['monthly_night_consumption_kwh'] = self.default_daily_night_consumption_kwh * days
             monthly_results.append((0, 0, monthly_result_vals))
 
         self.monthly_result_ids = monthly_results

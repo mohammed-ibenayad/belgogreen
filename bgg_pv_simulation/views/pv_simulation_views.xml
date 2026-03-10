@@ -41,8 +41,7 @@
                             string="Régénérer la simulation"
                             type="object"
                             class="oe_highlight"
-                            invisible="not id"
-                            confirm="Ceci va récupérer les données fraîches depuis les API et recalculer la simulation. Les valeurs existantes seront remplacées. Continuer ?"/>
+                            invisible="not id"/>
                     <button name="action_generate_report"
                             string="Rapport PDF"
                             type="object"
@@ -64,8 +63,7 @@
                         <button name="action_regenerate_simulation"
                                 string="Régénérer la simulation"
                                 type="object"
-                                class="btn btn-primary btn-sm ms-3"
-                                confirm="Ceci va récupérer les données fraîches depuis les API et recalculer la simulation. Les valeurs existantes seront remplacées. Continuer ?"/>
+                                class="btn btn-primary btn-sm ms-3"/>
                     </div>
                     <div class="oe_title">
                         <h1>
@@ -220,8 +218,10 @@
                                             confirm="Ceci va écraser les valeurs de consommation pour tous les mois. Continuer ?"/>
                                 </group>
                             </group>
-                            <group string="Titre de section">
-                                <field name="section_title_consumption" placeholder="DONNÉES DE CONSOMMATION" string="Titre"/>
+                            <group string="Titres de section">
+                                <field name="section_title_consumption" placeholder="DONNÉES DE CONSOMMATION" string="Titre principal"/>
+                                <field name="section_title_monthly_data" placeholder="DONNÉES MENSUELLES" string="Sous-titre données mensuelles"/>
+                                <field name="section_title_daily_balance" placeholder="BILAN ÉNERGÉTIQUE QUOTIDIEN" string="Sous-titre bilan quotidien"/>
                             </group>
                             <separator string="Résultats mensuels"/>
                             <field name="monthly_result_ids" nolabel="1"/>

@@ -131,6 +131,8 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         title_production = _esc(simulation.section_title_production or 'PRODUCTION ESTIMÉE')
         title_bilan = _esc(simulation.section_title_bilan or 'BILAN ÉNERGÉTIQUE')
         title_consumption = _esc(simulation.section_title_consumption or 'DONNÉES DE CONSOMMATION')
+        title_monthly_data = _esc(simulation.section_title_monthly_data or 'DONNÉES MENSUELLES')
+        title_daily_balance = _esc(simulation.section_title_daily_balance or 'BILAN ÉNERGÉTIQUE QUOTIDIEN')
 
         # Footer
         company_name = _esc(company.name or '')
@@ -425,13 +427,13 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         </div>
 
         <!-- Section 1: Monthly/Daily Data Table -->
-        <h3 class="section-subtitle">Données mensuelles</h3>
+        <h3 class="section-subtitle">{title_monthly_data}</h3>
         <table class="data-table">
             <thead>
                 <tr>
                     <th>Mois</th>
-                    <th>Production (kWh)</th>
-                    <th>Consommation (kWh)</th>
+                    <th>Prod. Mois (kWh)</th>
+                    <th>Conso. Mois (kWh)</th>
                     <th>Prod. jour. (kWh)</th>
                     <th>Conso jour (kWh)</th>
                     <th>Conso nuit (kWh)</th>
@@ -454,12 +456,12 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         </div>
 
         <!-- Section 3: Daily Energy Balance Table -->
-        <h3 class="section-subtitle">Bilan \u00e9nerg\u00e9tique quotidien</h3>
+        <h3 class="section-subtitle">{title_daily_balance}</h3>
         <table class="data-table">
             <thead>
                 <tr>
                     <th>Mois</th>
-                    <th>Production (kWh)</th>
+                    <th>Prod. Mois (kWh)</th>
                     <th>Conso jour (kWh)</th>
                     <th>Conso nuit (kWh)</th>
                     <th>Charge (kWh)</th>
