@@ -40,4 +40,18 @@
             </form>
         </field>
     </record>
+    <record id="view_pv_consumption_profile_list" model="ir.ui.view">
+        <field name="name">pv.consumption.profile.list</field>
+        <field name="model">pv.consumption.profile</field>
+        <field name="arch" type="xml">
+            <list string="Consumption Profiles">
+                <field name="name"/>
+                <field name="annual_consumption_kwh"/>
+                <field name="monthly_consumption_kwh"/>
+                <field name="daily_day_consumption_kwh"/>
+                <field name="daily_night_consumption_kwh"/>
+                <field name="daily_total_consumption_kwh"/>
+            </list>
+        </field>
+    </record>
 </odoo>
