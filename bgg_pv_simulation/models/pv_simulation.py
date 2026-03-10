@@ -189,6 +189,32 @@ class PvSimulation(models.Model):
         help='Monthly production values needed for chart on page 2'
     )
 
+    # Bilan (computed from monthly results)
+    bilan_production_total = fields.Float(
+        string='Production totale', compute='_compute_bilan', store=False)
+    bilan_conso_day = fields.Float(
+        string='Consommation jour', compute='_compute_bilan', store=False)
+    bilan_conso_night = fields.Float(
+        string='Consommation nuit', compute='_compute_bilan', store=False)
+    bilan_conso_total = fields.Float(
+        string='Consommation totale', compute='_compute_bilan', store=False)
+    bilan_autocons_day = fields.Float(
+        string='Autoconsommation jour', compute='_compute_bilan', store=False)
+    bilan_battery_charge = fields.Float(
+        string='Stocké batterie', compute='_compute_bilan', store=False)
+    bilan_autocons_total = fields.Float(
+        string='Autoconsommation totale', compute='_compute_bilan', store=False)
+    bilan_savings_panels = fields.Float(
+        string='Économies panneaux', compute='_compute_bilan', store=False)
+    bilan_savings_battery = fields.Float(
+        string='Économies batterie', compute='_compute_bilan', store=False)
+    bilan_savings_resale = fields.Float(
+        string='Économies revente', compute='_compute_bilan', store=False)
+    bilan_savings_total = fields.Float(
+        string='Total économies', compute='_compute_bilan', store=False)
+    bilan_purchase_total = fields.Float(
+        string='Coût achat', compute='_compute_bilan', store=False)
+
     # Chart Images
     chart_monthly_production = fields.Binary(
         string='Monthly Production Chart',
@@ -254,6 +280,33 @@ class PvSimulation(models.Model):
                 record.sale_order_id.pv_simulation_id = record.id
 
         return records
+
+    @api.depends('monthly_result_ids', 'monthly_result_ids.monthly_production_kwh',
+                 'monthly_result_ids.monthly_day_consumption_kwh',
+                 'monthly_result_ids.monthly_night_consumption_kwh',
+                 'monthly_result_ids.monthly_consumption_kwh',
+                 'monthly_result_ids.monthly_autoconsumption_kwh',
+                 'monthly_result_ids.monthly_battery_charge_kwh',
+                 'monthly_result_ids.panel_savings',
+                 'monthly_result_ids.battery_savings',
+                 'monthly_result_ids.sale_revenue',
+                 'monthly_result_ids.purchase_cost',
+                 'pvgis_annual_production_kwh', 'annual_production_kwh')
+    def _compute_bilan(self):
+        for rec in self:
+            results = rec.monthly_result_ids
+            rec.bilan_production_total = rec.pvgis_annual_production_kwh or rec.annual_production_kwh or 0.0
+            rec.bilan_conso_day = sum(results.mapped('monthly_day_consumption_kwh'))
+            rec.bilan_conso_night = sum(results.mapped('monthly_night_consumption_kwh'))
+            rec.bilan_conso_total = sum(results.mapped('monthly_consumption_kwh'))
+            rec.bilan_autocons_total = sum(results.mapped('monthly_autoconsumption_kwh'))
+            rec.bilan_battery_charge = sum(results.mapped('monthly_battery_charge_kwh'))
+            rec.bilan_autocons_day = rec.bilan_autocons_total - rec.bilan_battery_charge
+            rec.bilan_savings_panels = sum(results.mapped('panel_savings'))
+            rec.bilan_savings_battery = sum(results.mapped('battery_savings'))
+            rec.bilan_savings_resale = sum(results.mapped('sale_revenue'))
+            rec.bilan_savings_total = rec.bilan_savings_panels + rec.bilan_savings_battery + rec.bilan_savings_resale
+            rec.bilan_purchase_total = sum(results.mapped('purchase_cost'))
 
     def action_apply_default_consumption(self):
         """Copy default consumption values to all monthly results"""
