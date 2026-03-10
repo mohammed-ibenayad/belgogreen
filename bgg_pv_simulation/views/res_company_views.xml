@@ -17,6 +17,16 @@
                             <field name="pv_report_email" widget="email" placeholder="e.g., info@company.com"/>
                         </group>
                     </group>
+                    <group>
+                        <group string="Default Cover Photo">
+                            <field name="pv_default_cover_photo" widget="image" class="oe_avatar"/>
+                            <field name="pv_default_cover_photo_filename" invisible="1"/>
+                        </group>
+                        <group string="Default System Image">
+                            <field name="pv_default_system_image" widget="image" class="oe_avatar"/>
+                            <field name="pv_default_system_image_filename" invisible="1"/>
+                        </group>
+                    </group>
                     <separator string="Information"/>
                     <div class="text-muted">
                         <p>These settings customize the branding and contact information displayed on PV simulation PDF reports.</p>
