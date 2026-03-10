@@ -365,6 +365,8 @@ class PvSimulation(models.Model):
         return {
             'type': 'ir.actions.client',
             'tag': 'pv_simulation_regenerate',
+            'name': 'Régénération',
+            'target': 'current',
             'context': {'simulation_id': self.id},
         }
 

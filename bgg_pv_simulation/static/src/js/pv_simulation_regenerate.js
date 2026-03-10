@@ -27,14 +27,8 @@ class PvSimulationRegenerate extends Component {
         } catch (e) {
             this.notification.add("Erreur lors de la régénération: " + (e.data?.message || e.message || "erreur inconnue"), { type: "danger" });
         }
-        // Navigate back to the simulation form instead of reloading (which would re-trigger regeneration)
-        this.action.doAction({
-            type: "ir.actions.act_window",
-            res_model: "pv.simulation",
-            res_id: simulationId,
-            views: [[false, "form"]],
-            target: "current",
-        });
+        // Navigate back to the simulation form (restore previous breadcrumb)
+        this.action.restore();
     }
 }
 
