@@ -354,13 +354,10 @@ class PvSimulationWeasyPrint(models.AbstractModel):
     <!-- PAGE 2: LOCALISATION                         -->
     <!-- ============================================ -->
     <div class="page content-page">
-        <div class="location-page-bg">
+        {f'<div class="location-image-wrap"><img src="{location_image_data}" alt="Localisation" class="location-image"></div>' if location_image_data else ''}
+        <div class="location-page-bg {'has-image' if location_image_data else ''}">
             <div class="section-number">01</div>
             <h2 class="section-title">{title_location}</h2>
-
-            <div class="location-image-container">
-                {f'<img src="{location_image_data}" alt="Localisation" class="location-image">' if location_image_data else ''}
-            </div>
 
             <table class="location-cards-row">
                 <tr>
@@ -827,11 +824,19 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             font-weight: 600;
             color: #212121;
             text-transform: uppercase;
-            border-bottom: 2px solid #4A9B5D;
+            border-bottom: none;
             padding-bottom: 3mm;
             margin-bottom: 4mm;
-            overflow: hidden;
+            overflow: visible;
             page-break-after: avoid;
+        }
+        .section-title::after {
+            content: '';
+            display: block;
+            width: 40mm;
+            height: 2px;
+            background: #4A9B5D;
+            margin-top: 3mm;
         }
 
         .section-subtitle {
@@ -866,10 +871,16 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             margin: -25mm -20mm 0 -20mm;
             padding: 25mm 20mm 6mm 20mm;
         }
+        .location-page-bg.has-image {
+            margin-top: 0;
+            padding-top: 8mm;
+        }
 
-        .location-image-container {
+        .location-image-wrap {
             text-align: center;
-            margin: 4mm 0 6mm 0;
+            margin: -25mm -20mm 0 -20mm;
+            padding: 18mm 20mm 0 20mm;
+            background: #FFFFFF;
             page-break-inside: avoid;
         }
 
