@@ -284,12 +284,32 @@ class PvSimulationWeasyPrint(models.AbstractModel):
                     <td class="data-val">{r.daily_night_consumption_kwh:,.2f}</td>
                 </tr>'''
 
+                bl = r.battery_charge_level
+                if bl > 0:
+                    fh = round(bl / 7.0 * 28)
+                    fy = 32 - fh
+                    batt_svg = (
+                        '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="30" viewBox="0 0 20 36">'
+                        '<rect x="6" y="0" width="8" height="4" rx="1" stroke="#555" stroke-width="1.2" fill="none"/>'
+                        '<rect x="1" y="4" width="18" height="30" rx="2" stroke="#555" stroke-width="1.5" fill="none"/>'
+                        f'<rect x="3" y="{fy + 1}" width="14" height="{fh - 2}" rx="1" fill="#27ae60"/>'
+                        '</svg>'
+                    )
+                else:
+                    batt_svg = (
+                        '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="30" viewBox="0 0 20 36">'
+                        '<rect x="6" y="0" width="8" height="4" rx="1" stroke="#555" stroke-width="1.2" fill="none"/>'
+                        '<rect x="1" y="4" width="18" height="30" rx="2" stroke="#555" stroke-width="1.5" fill="none"/>'
+                        '</svg>'
+                    )
+
                 daily_balance_rows += f'''<tr>
                     <td>{mname}</td>
                     <td class="data-val">{r.daily_production_kwh:,.2f}</td>
                     <td class="data-val">{r.daily_day_consumption_kwh:,.2f}</td>
                     <td class="data-val">{r.daily_night_consumption_kwh:,.2f}</td>
                     <td class="data-val">{r.daily_battery_charge_kwh:,.2f}</td>
+                    <td style="text-align:center;vertical-align:middle;">{batt_svg}</td>
                     <td class="data-val">{r.daily_energy_sold_kwh:,.2f}</td>
                     <td class="data-val">{r.daily_energy_bought_kwh:,.2f}</td>
                 </tr>'''
@@ -463,6 +483,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
                     <th>Conso jour (kWh)</th>
                     <th>Conso nuit (kWh)</th>
                     <th>Charge (kWh)</th>
+                    <th style="width:30px;"></th>
                     <th>Vente (kWh)</th>
                     <th>Achat (kWh)</th>
                 </tr>

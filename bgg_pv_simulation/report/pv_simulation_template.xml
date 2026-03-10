@@ -869,6 +869,7 @@
                         <th>Conso jour (kWh)</th>
                         <th>Conso nuit (kWh)</th>
                         <th>Charge (kWh)</th>
+                        <th style="width:30px;"></th>
                         <th>Vente (kWh)</th>
                         <th>Achat (kWh)</th>
                     </tr>
@@ -881,6 +882,24 @@
                             <td class="pv-data-val"><t t-esc="'{:,.2f}'.format(r.daily_day_consumption_kwh)"/></td>
                             <td class="pv-data-val"><t t-esc="'{:,.2f}'.format(r.daily_night_consumption_kwh)"/></td>
                             <td class="pv-data-val"><t t-esc="'{:,.2f}'.format(r.daily_battery_charge_kwh)"/></td>
+                            <td style="text-align:center; vertical-align:middle;">
+                                <t t-set="bl" t-value="r.battery_charge_level"/>
+                                <t t-if="bl > 0">
+                                    <t t-set="fh" t-value="int(round(bl / 7.0 * 28))"/>
+                                    <t t-set="fy" t-value="32 - fh"/>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="30" viewBox="0 0 20 36">
+                                        <rect x="6" y="0" width="8" height="4" rx="1" stroke="#555" stroke-width="1.2" fill="none"/>
+                                        <rect x="1" y="4" width="18" height="30" rx="2" stroke="#555" stroke-width="1.5" fill="none"/>
+                                        <rect x="3" t-att-y="fy + 1" width="14" t-att-height="fh - 2" rx="1" fill="#27ae60"/>
+                                    </svg>
+                                </t>
+                                <t t-else="">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="30" viewBox="0 0 20 36">
+                                        <rect x="6" y="0" width="8" height="4" rx="1" stroke="#555" stroke-width="1.2" fill="none"/>
+                                        <rect x="1" y="4" width="18" height="30" rx="2" stroke="#555" stroke-width="1.5" fill="none"/>
+                                    </svg>
+                                </t>
+                            </td>
                             <td class="pv-data-val"><t t-esc="'{:,.2f}'.format(r.daily_energy_sold_kwh)"/></td>
                             <td class="pv-data-val"><t t-esc="'{:,.2f}'.format(r.daily_energy_bought_kwh)"/></td>
                         </tr>
