@@ -53,6 +53,20 @@
                 <sheet>
                     <field name="currency_id" invisible="1"/>
                     <field name="company_id" invisible="1"/>
+                    <field name="simulation_needs_regeneration" invisible="1"/>
+                    <div class="alert alert-warning d-flex align-items-center" role="alert"
+                         invisible="not simulation_needs_regeneration">
+                        <i class="fa fa-exclamation-triangle me-2"/>
+                        <span class="flex-grow-1">
+                            <strong>Les données de simulation ont été modifiées.</strong>
+                            Veuillez régénérer la simulation pour mettre à jour les résultats et le rapport.
+                        </span>
+                        <button name="action_regenerate_simulation"
+                                string="Régénérer la simulation"
+                                type="object"
+                                class="btn btn-primary btn-sm ms-3"
+                                confirm="Ceci va récupérer les données fraîches depuis les API et recalculer la simulation. Les valeurs existantes seront remplacées. Continuer ?"/>
+                    </div>
                     <div class="oe_title">
                         <h1>
                             <field name="name" readonly="1"/>
@@ -69,7 +83,9 @@
                         <!-- ==================== Système PV ==================== -->
                         <page string="Système PV" name="pv_system">
                             <div class="alert alert-info" role="status">
-                                <strong>Données du système :</strong> La configuration des panneaux est détectée automatiquement à partir des lignes du devis.
+                                <strong>Données du système :</strong> Les panneaux sont détectés automatiquement à partir des produits du devis
+                                appartenant à la catégorie <em>All / Saleable / Panneaux</em>.
+                                Les batteries sont détectées via la catégorie <em>All / Saleable / Batteries</em>.
                                 La production est calculée via Google Solar API et/ou PVGIS. Le profil de production distribue la production annuelle sur les 12 mois.
                             </div>
                             <group>
