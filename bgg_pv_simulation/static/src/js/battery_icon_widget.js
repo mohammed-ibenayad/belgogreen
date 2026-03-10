@@ -50,4 +50,6 @@ class BatteryIconWidget extends Component {
     }
 }
 
-registry.category("fields").add("battery_icon", BatteryIconWidget);
+registry.category("fields").add("battery_icon", {
+    component: BatteryIconWidget,
+});
