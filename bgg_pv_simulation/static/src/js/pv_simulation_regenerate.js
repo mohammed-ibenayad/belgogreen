@@ -17,7 +17,7 @@ class PvSimulationRegenerate extends Component {
     async _doRegenerate() {
         const simulationId = this.props.action.context.simulation_id;
         try {
-            await this.orm.call("pv.simulation", "action_do_regenerate", [simulationId]);
+            await this.orm.call("pv.simulation", "action_do_regenerate", [[simulationId]]);
             this.notification.add("Simulation régénérée avec succès.", { type: "success" });
         } catch (e) {
             this.notification.add("Erreur lors de la régénération.", { type: "danger" });
