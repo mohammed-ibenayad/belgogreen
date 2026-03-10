@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from odoo import models, fields
+from odoo import models, fields, api
 
 PANEL_CATEGORY = 'All / Saleable / Panneaux'
 BATTERY_CATEGORY = 'All / Saleable / Batteries'
@@ -40,3 +40,21 @@ class ProductTemplate(models.Model):
         default=90.0,
         help='Battery round-trip efficiency percentage (default: 90%)'
     )
+    is_panel_category = fields.Boolean(
+        compute='_compute_is_panel_category',
+        store=False,
+    )
+    is_battery_category = fields.Boolean(
+        compute='_compute_is_battery_category',
+        store=False,
+    )
+
+    @api.depends('categ_id', 'categ_id.complete_name')
+    def _compute_is_panel_category(self):
+        for rec in self:
+            rec.is_panel_category = _is_panel_category(rec)
+
+    @api.depends('categ_id', 'categ_id.complete_name')
+    def _compute_is_battery_category(self):
+        for rec in self:
+            rec.is_battery_category = _is_battery_category(rec)
