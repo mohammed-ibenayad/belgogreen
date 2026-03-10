@@ -261,15 +261,6 @@
                                             confirm="Ceci va écraser les valeurs de consommation pour tous les mois. Continuer ?"/>
                                 </group>
                             </group>
-                            <group>
-                                <group string="Profil tarifaire">
-                                    <field name="tariff_profile_id" string="Profil tarifaire"
-                                           options="{'no_create': False, 'no_open': False}"/>
-                                </group>
-                                <group string="Titre bilan financier">
-                                    <field name="section_title_financial" placeholder="BILAN FINANCIER MENSUEL" string="Titre"/>
-                                </group>
-                            </group>
                             <group string="Titres de section">
                                 <field name="section_title_consumption" placeholder="DONNÉES DE CONSOMMATION" string="Titre principal"/>
                                 <field name="section_title_monthly_data" placeholder="DONNÉES MENSUELLES" string="Sous-titre données mensuelles"/>
@@ -287,13 +278,41 @@
                                     <li><strong>Charge (kWh)</strong> — Énergie stockée dans la batterie : calculée automatiquement à partir du surplus PV, de la capacité et du rendement de la batterie.</li>
                                     <li><strong>Vente (kWh)</strong> — Surplus revendu au réseau : calculé automatiquement (surplus PV − charge batterie).</li>
                                     <li><strong>Achat (kWh)</strong> — Énergie achetée au réseau : calculé automatiquement (consommation nuit − énergie batterie disponible).</li>
-                                    <li><strong>Économies panneaux / batterie</strong> — Calculées automatiquement à partir des tarifs d'achat/vente et de la configuration batterie.</li>
                                 </ul>
                             </div>
                         </page>
 
-                        <!-- ==================== Bilan (Page 5) ==================== -->
-                        <page string="Bilan (Page 5)" name="page_bilan">
+                        <!-- ==================== Bilan Financier (Page 5) ==================== -->
+                        <page string="Bilan Financier (Page 5)" name="page_financial">
+                            <group>
+                                <group string="Profil tarifaire">
+                                    <field name="tariff_profile_id" string="Profil tarifaire"
+                                           options="{'no_create': False, 'no_open': False}"/>
+                                </group>
+                                <group string="Titre de section">
+                                    <field name="section_title_financial" placeholder="BILAN FINANCIER MENSUEL" string="Titre"/>
+                                </group>
+                            </group>
+                            <div class="alert alert-info" role="status">
+                                Le bilan financier mensuel est calculé automatiquement à partir des résultats mensuels
+                                et du profil tarifaire sélectionné ci-dessus.
+                            </div>
+                            <separator string="Bilan financier mensuel"/>
+                            <field name="monthly_result_ids" nolabel="1">
+                                <list editable="bottom" create="0" delete="0">
+                                    <field name="month_sequence" column_invisible="1"/>
+                                    <field name="month" readonly="1" string="Mois"/>
+                                    <field name="panel_savings" readonly="1" string="Économie panneaux (€)"/>
+                                    <field name="battery_savings" readonly="1" string="Économie batterie (€)"/>
+                                    <field name="sale_revenue" readonly="1" string="Vente (€)"/>
+                                    <field name="purchase_cost" readonly="1" string="Achat (€)"/>
+                                    <field name="net_balance" readonly="1" string="Bilan (€)"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <!-- ==================== Bilan (Page 6) ==================== -->
+                        <page string="Bilan (Page 6)" name="page_bilan">
                             <group string="Titre de section">
                                 <field name="section_title_bilan" placeholder="BILAN ÉNERGÉTIQUE" string="Titre"/>
                             </group>
