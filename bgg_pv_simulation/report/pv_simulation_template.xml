@@ -637,9 +637,7 @@
 
                 <!-- Logo overlaid top-left -->
                 <div class="pv-cover-logo">
-                    <img t-if="o.company_id.pv_report_logo"
-                         t-att-src="'data:image/png;base64,%s' % o.company_id.pv_report_logo.decode()"/>
-                    <img t-elif="o.company_id.logo"
+                    <img t-if="o.company_id.logo"
                          t-att-src="'data:image/png;base64,%s' % o.company_id.logo.decode()"/>
                 </div>
 
@@ -648,9 +646,6 @@
                     <div class="pv-cover-accent-line"/>
                     <h1 class="pv-cover-title-line1"><t t-esc="o.cover_title or 'Votre installation'"/></h1>
                     <h1 class="pv-cover-title-accent"><t t-esc="o.cover_subtitle or 'Photovoltaïque'"/></h1>
-                    <p t-if="o.company_id.pv_report_tagline" class="pv-cover-tagline">
-                        <t t-esc="o.company_id.pv_report_tagline"/>
-                    </p>
                 </div>
 
                 <!-- Client name (prominent) -->

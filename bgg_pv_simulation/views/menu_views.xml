@@ -40,6 +40,13 @@
               sequence="90"
               groups="bgg_pv_simulation.group_pv_admin"/>
 
+    <!-- Report Defaults -->
+    <menuitem id="menu_pv_report_defaults"
+              name="Report Defaults"
+              parent="menu_pv_simulation_config"
+              action="action_pv_report_defaults"
+              sequence="5"/>
+
     <!-- Production Profiles -->
     <record id="action_pv_production_profile" model="ir.actions.act_window">
         <field name="name">Production Profiles</field>

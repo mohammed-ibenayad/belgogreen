@@ -108,7 +108,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             return str(escape(str(value)))
 
         # Encode images
-        logo_data = _make_data_uri(company.pv_report_logo or company.logo)
+        logo_data = _make_data_uri(company.logo)
         cover_photo_data = _make_data_uri(simulation.cover_photo)
         location_image_data = _make_data_uri(simulation.location_image)
         system_image_data = _make_data_uri(simulation.system_image)
@@ -125,7 +125,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         # Text fields
         cover_title = _esc(simulation.cover_title or 'Votre installation')
         cover_subtitle = _esc(simulation.cover_subtitle or 'Photovoltaïque')
-        tagline = _esc(company.pv_report_tagline or '')
+        tagline = ''
         title_location = _esc(simulation.section_title_location or "LOCALISATION DE L'INSTALLATION")
         title_system = _esc(simulation.section_title_system or 'CARACTÉRISTIQUES DU SYSTÈME')
         title_production = _esc(simulation.section_title_production or 'PRODUCTION ESTIMÉE')
@@ -136,8 +136,8 @@ class PvSimulationWeasyPrint(models.AbstractModel):
 
         # Footer
         company_name = _esc(company.name or '')
-        company_phone = _esc(company.pv_report_phone or company.phone or '')
-        company_email = _esc(company.pv_report_email or company.email or '')
+        company_phone = _esc(company.phone or '')
+        company_email = _esc(company.email or '')
         address = _esc(simulation.installation_address or '')
         sp_name = _esc(user.name) if user else ''
         sp_phone = _esc(user.phone or company.phone or '') if user else company_phone
