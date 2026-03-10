@@ -61,18 +61,12 @@
                     <group>
                         <group string="Quotation">
                             <field name="sale_order_id" readonly="1"/>
-                            <field name="installation_address"/>
                             <field name="report_date"/>
-                        </group>
-                        <group string="Location">
-                            <field name="roof_surface_m2"/>
-                            <field name="latitude"/>
-                            <field name="longitude"/>
-                            <field name="location_image" widget="image" class="oe_avatar"/>
                         </group>
                     </group>
 
                     <notebook>
+                        <!-- ==================== PV System ==================== -->
                         <page string="PV System" name="pv_system">
                             <group>
                                 <group string="Panel Configuration (Auto-detected from Sale Order)">
@@ -115,41 +109,85 @@
                             </group>
                         </page>
 
-                        <page string="Monthly Results (Backend Data)" name="monthly_results">
-                            <div class="alert alert-info" role="status">
-                                Monthly calculation results used for chart generation on Page 2.
-                                This data is computed but not directly displayed in the PDF.
-                            </div>
-                            <field name="monthly_result_ids" nolabel="1"/>
-                        </page>
-
-                        <page string="Charts Preview" name="charts">
+                        <!-- ==================== Cover (Page 1) ==================== -->
+                        <page string="Cover (Page 1)" name="page_cover">
                             <group>
-                                <field name="chart_monthly_production" widget="image" nolabel="1"/>
-                            </group>
-                        </page>
-
-                        <page string="Report Customization" name="customization">
-                            <group string="Cover Page">
-                                <group>
+                                <group string="Cover Photo">
                                     <field name="cover_photo" widget="image" class="oe_avatar"/>
+                                </group>
+                                <group string="Title">
                                     <field name="cover_title"/>
                                     <field name="cover_subtitle"/>
                                 </group>
                             </group>
-                            <group string="System Characteristics">
-                                <group>
+                        </page>
+
+                        <!-- ==================== Localisation (Page 2) ==================== -->
+                        <page string="Localisation (Page 2)" name="page_localisation">
+                            <group>
+                                <group string="Location">
+                                    <field name="installation_address"/>
+                                    <field name="roof_surface_m2"/>
+                                    <field name="latitude"/>
+                                    <field name="longitude"/>
+                                </group>
+                                <group string="Location Image">
+                                    <field name="location_image" widget="image" class="oe_avatar"/>
+                                </group>
+                            </group>
+                            <group string="Section Title">
+                                <field name="section_title_location" placeholder="LOCALISATION DE L'INSTALLATION"/>
+                            </group>
+                        </page>
+
+                        <!-- ==================== Production (Page 3) ==================== -->
+                        <page string="Production (Page 3)" name="page_production">
+                            <group>
+                                <group string="System Image">
                                     <field name="system_image" widget="image" class="oe_avatar"/>
                                 </group>
-                            </group>
-                            <group string="Section Titles (Leave empty to use defaults)">
-                                <group>
-                                    <field name="section_title_location"/>
-                                    <field name="section_title_system"/>
-                                    <field name="section_title_production"/>
-                                    <field name="section_title_bilan"/>
+                                <group string="Chart Preview">
+                                    <field name="chart_monthly_production" widget="image" nolabel="1"/>
                                 </group>
                             </group>
+                            <group string="Section Titles">
+                                <field name="section_title_production" placeholder="PRODUCTION ESTIMÉE"/>
+                                <field name="section_title_system" placeholder="CARACTÉRISTIQUES DU SYSTÈME"/>
+                            </group>
+                        </page>
+
+                        <!-- ==================== Consommation (Page 4) ==================== -->
+                        <page string="Consommation (Page 4)" name="page_consumption">
+                            <group>
+                                <group string="Default Consumption">
+                                    <label for="default_monthly_consumption_kwh" string="Monthly Consumption"/>
+                                    <div class="o_row">
+                                        <field name="default_monthly_consumption_kwh"/>
+                                        <span>kWh</span>
+                                        <button name="action_apply_default_consumption"
+                                                string="Apply to All Months"
+                                                type="object"
+                                                class="btn-secondary"
+                                                invisible="not id"
+                                                confirm="This will overwrite day/night consumption for all months (60/40 split). Continue?"/>
+                                    </div>
+                                </group>
+                            </group>
+                            <group string="Section Title">
+                                <field name="section_title_consumption" placeholder="DONNÉES DE CONSOMMATION"/>
+                            </group>
+                            <separator string="Monthly Results"/>
+                            <field name="monthly_result_ids" nolabel="1"/>
+                        </page>
+
+                        <!-- ==================== Bilan (Page 5) ==================== -->
+                        <page string="Bilan (Page 5)" name="page_bilan">
+                            <group string="Section Title">
+                                <field name="section_title_bilan" placeholder="BILAN ÉNERGÉTIQUE"/>
+                            </group>
+                            <div class="alert alert-info" role="status">
+                                The annual energy balance is computed automatically from the monthly results on Page 4.
+                            </div>
                         </page>
                     </notebook>
                 </sheet>

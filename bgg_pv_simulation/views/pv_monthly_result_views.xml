@@ -8,12 +8,14 @@
                 <field name="month_sequence" column_invisible="1"/>
                 <field name="month" readonly="1"/>
                 <field name="days_in_month" readonly="1"/>
-                <field name="daily_production_kwh" readonly="1"/>
-                <field name="daily_day_consumption_kwh" readonly="1"/>
-                <field name="daily_night_consumption_kwh" readonly="1"/>
-                <field name="daily_battery_charge_kwh" readonly="1"/>
-                <field name="daily_energy_sold_kwh" readonly="1"/>
-                <field name="daily_energy_bought_kwh" readonly="1"/>
+                <field name="monthly_production_kwh" readonly="1" string="Prod. (kWh)"/>
+                <field name="monthly_consumption_kwh" string="Conso. (kWh)"/>
+                <field name="daily_production_kwh" readonly="1" string="Prod. jour. (kWh)"/>
+                <field name="daily_day_consumption_kwh" string="Conso jour (kWh)"/>
+                <field name="daily_night_consumption_kwh" string="Conso nuit (kWh)"/>
+                <field name="daily_battery_charge_kwh" readonly="1" string="Charge (kWh)"/>
+                <field name="daily_energy_sold_kwh" readonly="1" string="Vente (kWh)"/>
+                <field name="daily_energy_bought_kwh" readonly="1" string="Achat (kWh)"/>
                 <field name="panel_savings" readonly="1"/>
                 <field name="battery_savings" readonly="1"/>
                 <field name="net_balance" readonly="1"/>
