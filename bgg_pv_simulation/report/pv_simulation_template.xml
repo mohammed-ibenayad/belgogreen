@@ -624,7 +624,12 @@
                                 <t t-call="bgg_pv_simulation.report_pv_simulation_page_consumption"/>
                             </div>
 
-                            <!-- Page 5: Bilan Énergétique -->
+                            <!-- Page 5: Bilan Financier Mensuel -->
+                            <div class="page" style="page-break-before: always;">
+                                <t t-call="bgg_pv_simulation.report_pv_simulation_page_financial"/>
+                            </div>
+
+                            <!-- Page 6: Bilan Énergétique -->
                             <div class="page pv-bilan-bg" style="page-break-before: always;">
                                 <t t-call="bgg_pv_simulation.report_pv_simulation_page_bilan"/>
                             </div>
@@ -909,7 +914,60 @@
         </template>
 
         <!-- ============================================ -->
-        <!-- Page 5: Bilan Énergétique                    -->
+        <!-- Page 5: Bilan Financier Mensuel              -->
+        <!-- ============================================ -->
+        <template id="report_pv_simulation_page_financial">
+            <t t-set="results" t-value="o.monthly_result_ids.sorted(key=lambda r: int(r.month))"/>
+            <t t-set="month_names" t-value="{'1': 'Janvier', '2': 'Février', '3': 'Mars', '4': 'Avril', '5': 'Mai', '6': 'Juin', '7': 'Juillet', '8': 'Août', '9': 'Septembre', '10': 'Octobre', '11': 'Novembre', '12': 'Décembre'}"/>
+
+            <div class="pv-section-number">04</div>
+            <h2 class="pv-section-title"><t t-esc="o.section_title_financial or 'BILAN FINANCIER MENSUEL'"/></h2>
+
+            <!-- Explanation box -->
+            <div class="pv-explanation-box">
+                <p>L'<b>économie panneaux</b> représente l'argent économisé en utilisant la production des panneaux pour sa consommation de jour.</p>
+                <p>L'<b>économie batterie</b> représente l'argent économisé grâce à l'énergie stockée dans la batterie qui sera utilisée pour la consommation de nuit. Le calcul tient compte du coût d'utilisation de la batterie.</p>
+                <p>La <b>vente</b> correspond aux bénéfices engendrés en revendant le surplus de production.</p>
+                <p>L'<b>achat</b> est le montant à payer pour la partie de la consommation qui n'est pas couverte par la production.</p>
+                <p>Le <b>bilan</b> est la différence entre le montant à payer pour l'achat et le profit de la revente.</p>
+            </div>
+
+            <table class="pv-data-table">
+                <thead>
+                    <tr>
+                        <th>Mois</th>
+                        <th>Économie panneaux</th>
+                        <th>Économie batterie</th>
+                        <th>Vente</th>
+                        <th>Achat</th>
+                        <th>Bilan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <t t-foreach="results" t-as="r">
+                        <t t-set="bilan_row" t-value="(r.panel_savings or 0) + (r.battery_savings or 0) + (r.sale_revenue or 0) - (r.purchase_cost or 0)"/>
+                        <tr>
+                            <td><t t-esc="month_names.get(r.month, r.month)"/></td>
+                            <td class="pv-data-val"><t t-esc="'{:,.2f}'.format(r.panel_savings or 0)"/> €</td>
+                            <td class="pv-data-val"><t t-esc="'{:,.2f}'.format(r.battery_savings or 0)"/> €</td>
+                            <td class="pv-data-val"><t t-esc="'{:,.2f}'.format(r.sale_revenue or 0)"/> €</td>
+                            <td class="pv-data-val"><t t-esc="'{:,.2f}'.format(r.purchase_cost or 0)"/> €</td>
+                            <td class="pv-data-val" t-attf-style="font-weight:600; color:{{ bilan_row >= 0 and '#4A9B5D' or '#e74c3c' }};">
+                                <t t-if="bilan_row &lt; 0">
+                                    <span style="color:#e74c3c;">€</span><t t-esc="'{:,.2f}'.format(abs(bilan_row))"/> €
+                                </t>
+                                <t t-else="">
+                                    <span style="color:#4A9B5D;">€</span><t t-esc="'{:,.2f}'.format(bilan_row)"/> €
+                                </t>
+                            </td>
+                        </tr>
+                    </t>
+                </tbody>
+            </table>
+        </template>
+
+        <!-- ============================================ -->
+        <!-- Page 6: Bilan Énergétique                    -->
         <!-- ============================================ -->
         <template id="report_pv_simulation_page_bilan">
             <t t-set="results" t-value="o.monthly_result_ids"/>
@@ -926,7 +984,7 @@
             <t t-set="savings_total" t-value="savings_panels + savings_battery + savings_resale"/>
             <t t-set="purchase_total" t-value="sum(results.mapped('purchase_cost')) if results else 0.0"/>
 
-            <div class="pv-section-number">04</div>
+            <div class="pv-section-number">05</div>
             <h2 class="pv-section-title"><t t-esc="o.section_title_bilan or 'BILAN ÉNERGÉTIQUE'"/></h2>
 
             <!-- Production -->
