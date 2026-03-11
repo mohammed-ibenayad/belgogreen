@@ -10,3 +10,5 @@ access_pv_battery_config_user,pv.battery.config.user,model_pv_battery_config,gro
 access_pv_battery_config_admin,pv.battery.config.admin,model_pv_battery_config,group_pv_admin,1,1,1,1
 access_pv_tariff_profile_user,pv.tariff.profile.user,model_pv_tariff_profile,group_pv_user,1,0,0,0
 access_pv_tariff_profile_admin,pv.tariff.profile.admin,model_pv_tariff_profile,group_pv_admin,1,1,1,1
+access_pv_simulation_wizard_user,pv.simulation.wizard.user,model_pv_simulation_wizard,group_pv_user,1,1,1,1
+access_pv_simulation_wizard_manager,pv.simulation.wizard.manager,model_pv_simulation_wizard,group_pv_manager,1,1,1,1
