@@ -124,7 +124,7 @@ class PvSimulation(models.Model):
     )
     section_title_monthly_data = fields.Char(
         string='Monthly Data Subtitle',
-        default='DONNÉES MENSUELLES',
+        default='DONNÉES MENSUELLES / QUOTIDIENNES',
         help='Page 4: Monthly data table subtitle'
     )
     section_title_daily_balance = fields.Char(
@@ -196,6 +196,7 @@ class PvSimulation(models.Model):
         'pv.production.profile',
         string='Production Profile',
         required=True,
+        default=lambda self: self.env['pv.production.profile'].search([], limit=1),
         help='Monthly percentage distribution profile for chart generation'
     )
 
@@ -250,12 +251,14 @@ class PvSimulation(models.Model):
     tariff_profile_id = fields.Many2one(
         'pv.tariff.profile',
         string='Profil tarifaire',
+        default=lambda self: self.env['pv.tariff.profile'].search([], limit=1),
         help='Profil tarifaire utilisé pour le bilan financier (P_buy, P_sell, P_batt)'
     )
 
     # Report section title for financial page
     section_title_financial = fields.Char(
         string='Titre page bilan financier',
+        default='BILAN FINANCIER MENSUEL',
         help='Title for the monthly financial balance page in the PDF report'
     )
 

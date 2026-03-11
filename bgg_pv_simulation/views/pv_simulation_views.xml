@@ -113,14 +113,12 @@
                                         <field name="tilt_deg"/>
                                         <span>°</span>
                                     </div>
-                                </group>
-                                <group string="Configuration batterie">
-                                    <label for="battery_capacity_kwh" string="Capacité utile"/>
+                                    <label for="battery_capacity_kwh" string="Capacité batterie"/>
                                     <div class="o_row">
                                         <field name="battery_capacity_kwh" readonly="1"/>
                                         <span>kWh</span>
                                     </div>
-                                    <label for="battery_efficiency" string="Rendement"/>
+                                    <label for="battery_efficiency" string="Rendement batterie"/>
                                     <div class="o_row">
                                         <field name="battery_efficiency" readonly="1"/>
                                         <span>%</span>
@@ -132,7 +130,6 @@
                                         <field name="pvgis_annual_production_kwh"/>
                                         <span>kWh</span>
                                     </div>
-
                                     <label for="annual_production_kwh" string="Production annuelle (GSA)"/>
                                     <div class="o_row">
                                         <field name="annual_production_kwh" readonly="1"/>
@@ -217,6 +214,10 @@
                                 </group>
                                 <group string="Configuration">
                                     <field name="production_profile_id" string="Profil de production"/>
+                                    <div class="text-muted small">
+                                        Le profil de production définit la répartition mensuelle (%) de la production annuelle sur 12 mois.
+                                        Il est utilisé pour générer le graphique de production et calculer les données mensuelles du rapport.
+                                    </div>
                                 </group>
                             </group>
                             <group string="Titres de section">
@@ -260,7 +261,7 @@
                                 </group>
                                 <group string="Titres de section">
                                     <field name="section_title_consumption" placeholder="DONNÉES DE CONSOMMATION" string="Titre principal"/>
-                                    <field name="section_title_monthly_data" placeholder="DONNÉES MENSUELLES" string="Sous-titre données mensuelles"/>
+                                    <field name="section_title_monthly_data" placeholder="DONNÉES MENSUELLES / QUOTIDIENNES" string="Sous-titre données mensuelles"/>
                                     <field name="section_title_daily_balance" placeholder="BILAN ÉNERGÉTIQUE QUOTIDIEN" string="Sous-titre bilan quotidien"/>
                                 </group>
                             </group>
