@@ -1234,7 +1234,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         }
 
         .bilan-summary-savings-inner {
-            background: linear-gradient(135deg, #81C784 0%, #66BB6A 100%);
+            background: #212121;
             color: #FFFFFF;
             border-radius: 10px;
             padding: 4mm 5mm;
