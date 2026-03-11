@@ -86,24 +86,21 @@ class PvSimulationWizard(models.TransientModel):
         }
 
     def action_create_and_generate(self):
-        """Create the simulation and immediately regenerate it."""
+        """Create the simulation and launch generation with loading screen."""
         self.ensure_one()
         self._validate_inputs()
 
         simulation = self.env['pv.simulation'].create(
             self._prepare_simulation_vals()
         )
-        simulation.action_do_regenerate()
-        simulation.action_apply_default_consumption()
-        simulation.action_compute_daily_balance()
 
+        # Return client action that shows loading screen during generation
         return {
-            'type': 'ir.actions.act_window',
-            'name': _('PV Simulation'),
-            'res_model': 'pv.simulation',
-            'res_id': simulation.id,
-            'view_mode': 'form',
+            'type': 'ir.actions.client',
+            'tag': 'pv_simulation_generate',
+            'name': 'Génération',
             'target': 'current',
+            'context': {'simulation_id': simulation.id},
         }
 
     def _validate_inputs(self):
