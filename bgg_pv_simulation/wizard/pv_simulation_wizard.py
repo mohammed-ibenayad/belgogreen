@@ -93,8 +93,9 @@ class PvSimulationWizard(models.TransientModel):
         simulation = self.env['pv.simulation'].create(
             self._prepare_simulation_vals()
         )
-        simulation.action_apply_default_consumption()
         simulation.action_do_regenerate()
+        simulation.action_apply_default_consumption()
+        simulation.action_compute_daily_balance()
 
         return {
             'type': 'ir.actions.act_window',
