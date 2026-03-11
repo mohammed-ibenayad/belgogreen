@@ -106,6 +106,10 @@ class PvSimulationWizard(models.TransientModel):
     def _validate_inputs(self):
         if not self.latitude or not self.longitude:
             raise UserError(_('Veuillez saisir les coordonnées GPS (latitude et longitude).'))
+        if not (-90 <= self.latitude <= 90):
+            raise UserError(_('La latitude doit être comprise entre -90 et 90. Valeur actuelle: %s') % self.latitude)
+        if not (-180 <= self.longitude <= 180):
+            raise UserError(_('La longitude doit être comprise entre -180 et 180. Valeur actuelle: %s') % self.longitude)
 
     def _prepare_simulation_vals(self):
         return {

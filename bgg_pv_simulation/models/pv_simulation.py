@@ -782,6 +782,11 @@ class PvSimulation(models.Model):
                 "Veuillez d'abord renseigner les coordonnées (latitude et longitude).\n"
                 "Vous pouvez les obtenir à partir de l'adresse d'installation via un service de géocodage."
             ))
+        if not (-90 <= self.latitude <= 90) or not (-180 <= self.longitude <= 180):
+            raise UserError(_(
+                "Coordonnées GPS invalides (latitude: %s, longitude: %s).\n"
+                "La latitude doit être entre -90 et 90, la longitude entre -180 et 180."
+            ) % (self.latitude, self.longitude))
 
         # Check if sale order has solar panels configured
         if not self.number_of_panels or not self.panel_unit_power_wc:
