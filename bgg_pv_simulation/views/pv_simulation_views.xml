@@ -182,52 +182,13 @@
                             </group>
                         </page>
 
-                        <!-- ==================== Bilan Financier (Page 5) ==================== -->
-                        <page string="Bilan Financier (Page 5)" name="page_financial">
-                            <group string="Configuration">
-                                <group>
-                                    <field name="tariff_profile_id" string="Profil tarifaire"
-                                           options="{'no_create': False, 'no_open': False}"/>
-                                </group>
-                                <group>
-                                    <field name="section_title_financial" placeholder="BILAN FINANCIER MENSUEL" string="Titre de section"/>
-                                </group>
-                            </group>
-                            <div class="alert alert-info" role="status">
-                                Le bilan financier mensuel est calculé automatiquement à partir des résultats mensuels
-                                et du profil tarifaire sélectionné ci-dessus.
-                            </div>
-                            <separator string="Bilan financier mensuel"/>
-                            <field name="monthly_result_ids" nolabel="1">
-                                <list editable="bottom" create="0" delete="0">
-                                    <field name="month_sequence" column_invisible="1"/>
-                                    <field name="month" readonly="1" string="Mois"/>
-                                    <field name="panel_savings" readonly="1" string="Économie panneaux (€)"/>
-                                    <field name="battery_savings" readonly="1" string="Économie batterie (€)"/>
-                                    <field name="sale_revenue" readonly="1" string="Vente (€)"/>
-                                    <field name="purchase_cost" readonly="1" string="Achat (€)"/>
-                                    <field name="net_balance" readonly="1" string="Bilan (€)"/>
-                                </list>
-                            </field>
-                            <div class="alert alert-secondary mt-3" role="status">
-                                <strong>Légende des données :</strong>
-                                <ul class="mb-0">
-                                    <li><strong>Économie panneaux (€)</strong> — Argent économisé en utilisant la production des panneaux pour la consommation de jour.</li>
-                                    <li><strong>Économie batterie (€)</strong> — Argent économisé grâce à l'énergie stockée dans la batterie utilisée pour la consommation de nuit. Tient compte du coût d'utilisation de la batterie.</li>
-                                    <li><strong>Vente (€)</strong> — Bénéfices engendrés en revendant le surplus de production au réseau.</li>
-                                    <li><strong>Achat (€)</strong> — Montant à payer pour la consommation non couverte par la production.</li>
-                                    <li><strong>Bilan (€)</strong> — Différence entre le coût d'achat réseau et le profit de la revente.</li>
-                                </ul>
-                            </div>
-                        </page>
-
-                        <!-- ==================== Bilan (Page 6) ==================== -->
-                        <page string="Bilan (Page 6)" name="page_bilan">
+                        <!-- ==================== Bilan Énergétique (Page 2) ==================== -->
+                        <page string="Bilan Énergétique (Page 2)" name="page_bilan">
                             <group string="Titre de section">
                                 <field name="section_title_bilan" placeholder="BILAN ÉNERGÉTIQUE" string="Titre"/>
                             </group>
                             <div class="alert alert-info" role="status">
-                                Le bilan énergétique annuel est calculé automatiquement à partir des résultats mensuels de l'onglet Consommation (Page 4).
+                                Le bilan énergétique annuel est calculé automatiquement à partir des résultats mensuels de l'onglet Consommation.
                             </div>
 
                             <!-- Production -->
@@ -321,8 +282,8 @@
                             </group>
                         </page>
 
-                        <!-- ==================== Localisation (Page 2) ==================== -->
-                        <page string="Localisation (Page 2)" name="page_localisation">
+                        <!-- ==================== Localisation (Page 3) ==================== -->
+                        <page string="Localisation (Page 3)" name="page_localisation">
                             <div class="alert alert-info" role="status">
                                 <strong>Données à saisir :</strong> Adresse, coordonnées GPS et image satellite de l'installation.
                                 L'adresse est pré-remplie depuis la fiche client du devis.
@@ -341,8 +302,8 @@
                             </group>
                         </page>
 
-                        <!-- ==================== Production (Page 3) ==================== -->
-                        <page string="Production (Page 3)" name="page_production">
+                        <!-- ==================== Production (Page 4) ==================== -->
+                        <page string="Production (Page 4)" name="page_production">
                             <div class="alert alert-info" role="status">
                                 <strong>Données à saisir :</strong> Image du système (photo des panneaux, schéma d'implantation).
                                 Le graphique de production est généré automatiquement à partir des données PVGIS ou du profil de production.
@@ -368,8 +329,8 @@
                                    style="max-width: 100%; width: 800px;"/>
                         </page>
 
-                        <!-- ==================== Consommation (Page 4) ==================== -->
-                        <page string="Consommation (Page 4)" name="page_consumption">
+                        <!-- ==================== Consommation (Page 5) ==================== -->
+                        <page string="Consommation (Page 5)" name="page_consumption">
                             <div class="alert alert-warning" role="status">
                                 <strong>Données à saisir :</strong> Saisissez les valeurs par défaut ci-dessous puis cliquez sur
                                 « Appliquer à tous les mois ». Vous pouvez ensuite modifier chaque mois individuellement dans le tableau.
@@ -416,6 +377,45 @@
                                     <li><strong>Charge (kWh)</strong> — Énergie stockée dans la batterie : calculée automatiquement à partir du surplus PV, de la capacité et du rendement de la batterie.</li>
                                     <li><strong>Vente (kWh)</strong> — Surplus revendu au réseau : calculé automatiquement (surplus PV − charge batterie).</li>
                                     <li><strong>Achat (kWh)</strong> — Énergie achetée au réseau : calculé automatiquement (consommation nuit − énergie batterie disponible).</li>
+                                </ul>
+                            </div>
+                        </page>
+
+                        <!-- ==================== Bilan Financier (Page 6) ==================== -->
+                        <page string="Bilan Financier (Page 6)" name="page_financial">
+                            <group string="Configuration">
+                                <group>
+                                    <field name="tariff_profile_id" string="Profil tarifaire"
+                                           options="{'no_create': False, 'no_open': False}"/>
+                                </group>
+                                <group>
+                                    <field name="section_title_financial" placeholder="BILAN FINANCIER MENSUEL" string="Titre de section"/>
+                                </group>
+                            </group>
+                            <div class="alert alert-info" role="status">
+                                Le bilan financier mensuel est calculé automatiquement à partir des résultats mensuels
+                                et du profil tarifaire sélectionné ci-dessus.
+                            </div>
+                            <separator string="Bilan financier mensuel"/>
+                            <field name="monthly_result_ids" nolabel="1">
+                                <list editable="bottom" create="0" delete="0">
+                                    <field name="month_sequence" column_invisible="1"/>
+                                    <field name="month" readonly="1" string="Mois"/>
+                                    <field name="panel_savings" readonly="1" string="Économie panneaux (€)"/>
+                                    <field name="battery_savings" readonly="1" string="Économie batterie (€)"/>
+                                    <field name="sale_revenue" readonly="1" string="Vente (€)"/>
+                                    <field name="purchase_cost" readonly="1" string="Achat (€)"/>
+                                    <field name="net_balance" readonly="1" string="Bilan (€)"/>
+                                </list>
+                            </field>
+                            <div class="alert alert-secondary mt-3" role="status">
+                                <strong>Légende des données :</strong>
+                                <ul class="mb-0">
+                                    <li><strong>Économie panneaux (€)</strong> — Argent économisé en utilisant la production des panneaux pour la consommation de jour.</li>
+                                    <li><strong>Économie batterie (€)</strong> — Argent économisé grâce à l'énergie stockée dans la batterie utilisée pour la consommation de nuit. Tient compte du coût d'utilisation de la batterie.</li>
+                                    <li><strong>Vente (€)</strong> — Bénéfices engendrés en revendant le surplus de production au réseau.</li>
+                                    <li><strong>Achat (€)</strong> — Montant à payer pour la consommation non couverte par la production.</li>
+                                    <li><strong>Bilan (€)</strong> — Différence entre le coût d'achat réseau et le profit de la revente.</li>
                                 </ul>
                             </div>
                         </page>

@@ -392,45 +392,11 @@ class PvSimulationWeasyPrint(models.AbstractModel):
     </div>
 
     <!-- ============================================ -->
-    <!-- PAGE 2: BILAN FINANCIER MENSUEL              -->
-    <!-- ============================================ -->
-    <div class="page content-page">
-        <div class="section">
-            <div class="section-number">01</div>
-            <h2 class="section-title">{title_financial}</h2>
-        </div>
-
-        <div class="explanation-box">
-            <p>L\u2019<strong>\u00e9conomie panneaux</strong> repr\u00e9sente l\u2019argent \u00e9conomis\u00e9 en utilisant la production des panneaux pour sa consommation de jour.</p>
-            <p>L\u2019<strong>\u00e9conomie batterie</strong> repr\u00e9sente l\u2019argent \u00e9conomis\u00e9 gr\u00e2ce \u00e0 l\u2019\u00e9nergie stock\u00e9e dans la batterie qui sera utilis\u00e9e pour la consommation de nuit. Le calcul tient compte du co\u00fbt d\u2019utilisation de la batterie.</p>
-            <p>La <strong>vente</strong> correspond aux b\u00e9n\u00e9fices engendr\u00e9s en revendant le surplus de production.</p>
-            <p>L\u2019<strong>achat</strong> est le montant \u00e0 payer pour la partie de la consommation qui n\u2019est pas couverte par la production.</p>
-            <p>Le <strong>bilan</strong> est la diff\u00e9rence entre le montant \u00e0 payer pour l\u2019achat et le profit de la revente.</p>
-        </div>
-
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Mois</th>
-                    <th>\u00c9conomie panneaux</th>
-                    <th>\u00c9conomie batterie</th>
-                    <th>Vente</th>
-                    <th>Achat</th>
-                    <th>Bilan</th>
-                </tr>
-            </thead>
-            <tbody>
-                {financial_rows}
-            </tbody>
-        </table>
-    </div>
-
-    <!-- ============================================ -->
-    <!-- PAGE 3: BILAN ÉNERGÉTIQUE                    -->
+    <!-- PAGE 2: BILAN ÉNERGÉTIQUE                    -->
     <!-- ============================================ -->
     <div class="page content-page bilan-bg">
         <div class="section">
-            <div class="section-number">02</div>
+            <div class="section-number">01</div>
             <h2 class="section-title">{title_bilan}</h2>
         </div>
 
@@ -498,11 +464,11 @@ class PvSimulationWeasyPrint(models.AbstractModel):
     </div>
 
     <!-- ============================================ -->
-    <!-- PAGE 4: LOCALISATION                         -->
+    <!-- PAGE 3: LOCALISATION                         -->
     <!-- ============================================ -->
     <div class="page content-page">
         <div class="location-page-bg">
-            <div class="section-number">03</div>
+            <div class="section-number">02</div>
             <h2 class="section-title">{title_location}</h2>
 
             <div class="location-image-container">
@@ -532,11 +498,11 @@ class PvSimulationWeasyPrint(models.AbstractModel):
     </div>
 
     <!-- ============================================ -->
-    <!-- PAGE 5: PRODUCTION (System + Chart)           -->
+    <!-- PAGE 4: PRODUCTION (System + Chart)           -->
     <!-- ============================================ -->
     <div class="page content-page production-page">
         <div class="section">
-            <div class="section-number">04</div>
+            <div class="section-number">03</div>
             <h2 class="section-title">{title_production}</h2>
 
             {f'<div class="chart-container"><img src="{chart_data}" alt="Production mensuelle" class="chart-img"></div>' if chart_data else ''}
@@ -563,11 +529,11 @@ class PvSimulationWeasyPrint(models.AbstractModel):
     </div>
 
     <!-- ============================================ -->
-    <!-- PAGE 6: DONNÉES DE CONSOMMATION              -->
+    <!-- PAGE 5: DONNÉES DE CONSOMMATION              -->
     <!-- ============================================ -->
     <div class="page content-page">
         <div class="section">
-            <div class="section-number">05</div>
+            <div class="section-number">04</div>
             <h2 class="section-title">{title_consumption}</h2>
         </div>
 
@@ -617,6 +583,40 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             </thead>
             <tbody>
                 {daily_balance_rows}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- PAGE 6: BILAN FINANCIER MENSUEL              -->
+    <!-- ============================================ -->
+    <div class="page content-page">
+        <div class="section">
+            <div class="section-number">05</div>
+            <h2 class="section-title">{title_financial}</h2>
+        </div>
+
+        <div class="explanation-box">
+            <p>L\u2019<strong>\u00e9conomie panneaux</strong> repr\u00e9sente l\u2019argent \u00e9conomis\u00e9 en utilisant la production des panneaux pour sa consommation de jour.</p>
+            <p>L\u2019<strong>\u00e9conomie batterie</strong> repr\u00e9sente l\u2019argent \u00e9conomis\u00e9 gr\u00e2ce \u00e0 l\u2019\u00e9nergie stock\u00e9e dans la batterie qui sera utilis\u00e9e pour la consommation de nuit. Le calcul tient compte du co\u00fbt d\u2019utilisation de la batterie.</p>
+            <p>La <strong>vente</strong> correspond aux b\u00e9n\u00e9fices engendr\u00e9s en revendant le surplus de production.</p>
+            <p>L\u2019<strong>achat</strong> est le montant \u00e0 payer pour la partie de la consommation qui n\u2019est pas couverte par la production.</p>
+            <p>Le <strong>bilan</strong> est la diff\u00e9rence entre le montant \u00e0 payer pour l\u2019achat et le profit de la revente.</p>
+        </div>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Mois</th>
+                    <th>\u00c9conomie panneaux</th>
+                    <th>\u00c9conomie batterie</th>
+                    <th>Vente</th>
+                    <th>Achat</th>
+                    <th>Bilan</th>
+                </tr>
+            </thead>
+            <tbody>
+                {financial_rows}
             </tbody>
         </table>
     </div>
