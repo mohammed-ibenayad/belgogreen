@@ -392,169 +392,11 @@ class PvSimulationWeasyPrint(models.AbstractModel):
     </div>
 
     <!-- ============================================ -->
-    <!-- PAGE 2: LOCALISATION                         -->
-    <!-- ============================================ -->
-    <div class="page content-page">
-        <div class="location-page-bg">
-            <div class="section-number">01</div>
-            <h2 class="section-title">{title_location}</h2>
-
-            <div class="location-image-container">
-                {f'<img src="{location_image_data}" alt="Localisation" class="location-image">' if location_image_data else ''}
-            </div>
-
-            <table class="location-cards-row">
-                <tr>
-                    {f"""<td><div class="card">
-                        <div class="card-icon">{SVG_ICON_PIN}</div>
-                        <div class="card-text">
-                            <div class="card-value" style="font-size:11pt;">{address.replace(chr(10), '<br/>')}</div>
-                            <div class="card-label">Adresse d'installation</div>
-                        </div>
-                    </div></td>""" if address else ''}
-                    {f"""<td><div class="card">
-                        <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="12" y1="3" x2="12" y2="21"/></svg></div>
-                        <div class="card-text">
-                            <div class="card-value">{simulation.roof_surface_m2:.0f}</div>
-                            <div class="card-unit">m\u00b2</div>
-                            <div class="card-label">Surface de toiture</div>
-                        </div>
-                    </div></td>""" if simulation.roof_surface_m2 else ''}
-                </tr>
-            </table>
-        </div>
-    </div>
-
-    <!-- ============================================ -->
-    <!-- PAGE 3: PRODUCTION (System + Chart)           -->
-    <!-- ============================================ -->
-    <div class="page content-page production-page">
-        <div class="section">
-            <div class="section-number">02</div>
-            <h2 class="section-title">{title_production}</h2>
-
-            {f'<div class="chart-container"><img src="{chart_data}" alt="Production mensuelle" class="chart-img"></div>' if chart_data else ''}
-            <p class="chart-source">Production annuelle : {prod_total:,.0f} kWh/an — Source : {'PVGIS (EU Science Hub)' if simulation.pvgis_annual_production_kwh else 'Google Solar API'}</p>
-
-            <div class="production-system-bg">
-                <h3 class="section-subtitle">{title_system}</h3>
-
-                <div class="system-container">
-                    <table class="system-cards-grid">
-                        <tr>
-                            <td class="system-cards-col">
-                                {cards_col_left}
-                            </td>
-                            <td class="system-cards-col">
-                                {cards_col_right}
-                            </td>
-                        </tr>
-                    </table>
-                    {f'<div class="system-image-wrap"><img src="{system_image_data}" alt="" class="system-image"></div>' if system_image_data else ''}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ============================================ -->
-    <!-- PAGE 4: DONNÉES DE CONSOMMATION              -->
-    <!-- ============================================ -->
-    <div class="page content-page">
-        <div class="section">
-            <div class="section-number">03</div>
-            <h2 class="section-title">{title_consumption}</h2>
-        </div>
-
-        <!-- Section 1: Monthly/Daily Data Table -->
-        <h3 class="section-subtitle">{title_monthly_data}</h3>
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Mois</th>
-                    <th>Prod. Mois (kWh)</th>
-                    <th>Conso. Mois (kWh)</th>
-                    <th>Prod. quot. (kWh)</th>
-                    <th>Conso jour (kWh)</th>
-                    <th>Conso nuit (kWh)</th>
-                </tr>
-            </thead>
-            <tbody>
-                {monthly_data_rows}
-            </tbody>
-        </table>
-
-        <!-- Explanation box -->
-        <div class="explanation-box">
-            <p>La <strong>charge</strong> est l\u2019\u00e9nergie disponible dans la batterie. Elle d\u00e9pend de la capacit\u00e9
-            de la batterie et du surplus de production par rapport \u00e0 la consommation de jour.
-            Elle tient \u00e9galement compte du pourcentage de batterie utilisable et de sa performance.</p>
-            <p>La <strong>vente</strong> est l\u2019\u00e9nergie produite qui ne peut pas \u00eatre auto-consomm\u00e9e (ni en
-            consommation de jour, ni pour charger la batterie). Elle sera alors revendue sur le r\u00e9seau.</p>
-            <p>L\u2019<strong>achat</strong> correspond \u00e0 l\u2019\u00e9nergie qu\u2019il faut acheter sur le r\u00e9seau, en d\u00e9duisant
-            la partie auto-consommation.</p>
-        </div>
-
-        <!-- Section 3: Daily Energy Balance Table -->
-        <h3 class="section-subtitle">{title_daily_balance}</h3>
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Mois</th>
-                    <th>Prod. Mois (kWh)</th>
-                    <th>Conso jour (kWh)</th>
-                    <th>Conso nuit (kWh)</th>
-                    <th>Charge (kWh)</th>
-                    <th style="width:30px;"></th>
-                    <th>Vente (kWh)</th>
-                    <th>Achat (kWh)</th>
-                </tr>
-            </thead>
-            <tbody>
-                {daily_balance_rows}
-            </tbody>
-        </table>
-    </div>
-
-    <!-- ============================================ -->
-    <!-- PAGE 5: BILAN FINANCIER MENSUEL              -->
-    <!-- ============================================ -->
-    <div class="page content-page">
-        <div class="section">
-            <div class="section-number">04</div>
-            <h2 class="section-title">{title_financial}</h2>
-        </div>
-
-        <div class="explanation-box">
-            <p>L\u2019<strong>\u00e9conomie panneaux</strong> repr\u00e9sente l\u2019argent \u00e9conomis\u00e9 en utilisant la production des panneaux pour sa consommation de jour.</p>
-            <p>L\u2019<strong>\u00e9conomie batterie</strong> repr\u00e9sente l\u2019argent \u00e9conomis\u00e9 gr\u00e2ce \u00e0 l\u2019\u00e9nergie stock\u00e9e dans la batterie qui sera utilis\u00e9e pour la consommation de nuit. Le calcul tient compte du co\u00fbt d\u2019utilisation de la batterie.</p>
-            <p>La <strong>vente</strong> correspond aux b\u00e9n\u00e9fices engendr\u00e9s en revendant le surplus de production.</p>
-            <p>L\u2019<strong>achat</strong> est le montant \u00e0 payer pour la partie de la consommation qui n\u2019est pas couverte par la production.</p>
-            <p>Le <strong>bilan</strong> est la diff\u00e9rence entre le montant \u00e0 payer pour l\u2019achat et le profit de la revente.</p>
-        </div>
-
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Mois</th>
-                    <th>\u00c9conomie panneaux</th>
-                    <th>\u00c9conomie batterie</th>
-                    <th>Vente</th>
-                    <th>Achat</th>
-                    <th>Bilan</th>
-                </tr>
-            </thead>
-            <tbody>
-                {financial_rows}
-            </tbody>
-        </table>
-    </div>
-
-    <!-- ============================================ -->
-    <!-- PAGE 6: BILAN ÉNERGÉTIQUE                    -->
+    <!-- PAGE 2: BILAN ÉNERGÉTIQUE                    -->
     <!-- ============================================ -->
     <div class="page content-page bilan-bg">
         <div class="section">
-            <div class="section-number">05</div>
+            <div class="section-number">01</div>
             <h2 class="section-title">{title_bilan}</h2>
         </div>
 
@@ -619,6 +461,164 @@ class PvSimulationWeasyPrint(models.AbstractModel):
                 </tr>
             </table>
         </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- PAGE 3: LOCALISATION                         -->
+    <!-- ============================================ -->
+    <div class="page content-page">
+        <div class="location-page-bg">
+            <div class="section-number">02</div>
+            <h2 class="section-title">{title_location}</h2>
+
+            <div class="location-image-container">
+                {f'<img src="{location_image_data}" alt="Localisation" class="location-image">' if location_image_data else ''}
+            </div>
+
+            <table class="location-cards-row">
+                <tr>
+                    {f"""<td><div class="card">
+                        <div class="card-icon">{SVG_ICON_PIN}</div>
+                        <div class="card-text">
+                            <div class="card-value" style="font-size:11pt;">{address.replace(chr(10), '<br/>')}</div>
+                            <div class="card-label">Adresse d'installation</div>
+                        </div>
+                    </div></td>""" if address else ''}
+                    {f"""<td><div class="card">
+                        <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="12" y1="3" x2="12" y2="21"/></svg></div>
+                        <div class="card-text">
+                            <div class="card-value">{simulation.roof_surface_m2:.0f}</div>
+                            <div class="card-unit">m\u00b2</div>
+                            <div class="card-label">Surface de toiture</div>
+                        </div>
+                    </div></td>""" if simulation.roof_surface_m2 else ''}
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- PAGE 4: PRODUCTION (System + Chart)           -->
+    <!-- ============================================ -->
+    <div class="page content-page production-page">
+        <div class="section">
+            <div class="section-number">03</div>
+            <h2 class="section-title">{title_production}</h2>
+
+            {f'<div class="chart-container"><img src="{chart_data}" alt="Production mensuelle" class="chart-img"></div>' if chart_data else ''}
+            <p class="chart-source">Production annuelle : {prod_total:,.0f} kWh/an — Source : {'PVGIS (EU Science Hub)' if simulation.pvgis_annual_production_kwh else 'Google Solar API'}</p>
+
+            <div class="production-system-bg">
+                <h3 class="section-subtitle">{title_system}</h3>
+
+                <div class="system-container">
+                    <table class="system-cards-grid">
+                        <tr>
+                            <td class="system-cards-col">
+                                {cards_col_left}
+                            </td>
+                            <td class="system-cards-col">
+                                {cards_col_right}
+                            </td>
+                        </tr>
+                    </table>
+                    {f'<div class="system-image-wrap"><img src="{system_image_data}" alt="" class="system-image"></div>' if system_image_data else ''}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- PAGE 5: DONNÉES DE CONSOMMATION              -->
+    <!-- ============================================ -->
+    <div class="page content-page">
+        <div class="section">
+            <div class="section-number">04</div>
+            <h2 class="section-title">{title_consumption}</h2>
+        </div>
+
+        <!-- Section 1: Monthly/Daily Data Table -->
+        <h3 class="section-subtitle">{title_monthly_data}</h3>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Mois</th>
+                    <th>Prod. Mois (kWh)</th>
+                    <th>Conso. Mois (kWh)</th>
+                    <th>Prod. quot. (kWh)</th>
+                    <th>Conso jour (kWh)</th>
+                    <th>Conso nuit (kWh)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {monthly_data_rows}
+            </tbody>
+        </table>
+
+        <!-- Explanation box -->
+        <div class="explanation-box">
+            <p>La <strong>charge</strong> est l\u2019\u00e9nergie disponible dans la batterie. Elle d\u00e9pend de la capacit\u00e9
+            de la batterie et du surplus de production par rapport \u00e0 la consommation de jour.
+            Elle tient \u00e9galement compte du pourcentage de batterie utilisable et de sa performance.</p>
+            <p>La <strong>vente</strong> est l\u2019\u00e9nergie produite qui ne peut pas \u00eatre auto-consomm\u00e9e (ni en
+            consommation de jour, ni pour charger la batterie). Elle sera alors revendue sur le r\u00e9seau.</p>
+            <p>L\u2019<strong>achat</strong> correspond \u00e0 l\u2019\u00e9nergie qu\u2019il faut acheter sur le r\u00e9seau, en d\u00e9duisant
+            la partie auto-consommation.</p>
+        </div>
+
+        <!-- Section 3: Daily Energy Balance Table -->
+        <h3 class="section-subtitle">{title_daily_balance}</h3>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Mois</th>
+                    <th>Prod. Mois (kWh)</th>
+                    <th>Conso jour (kWh)</th>
+                    <th>Conso nuit (kWh)</th>
+                    <th>Charge (kWh)</th>
+                    <th style="width:30px;"></th>
+                    <th>Vente (kWh)</th>
+                    <th>Achat (kWh)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {daily_balance_rows}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- PAGE 6: BILAN FINANCIER MENSUEL              -->
+    <!-- ============================================ -->
+    <div class="page content-page">
+        <div class="section">
+            <div class="section-number">05</div>
+            <h2 class="section-title">{title_financial}</h2>
+        </div>
+
+        <div class="explanation-box">
+            <p>L\u2019<strong>\u00e9conomie panneaux</strong> repr\u00e9sente l\u2019argent \u00e9conomis\u00e9 en utilisant la production des panneaux pour sa consommation de jour.</p>
+            <p>L\u2019<strong>\u00e9conomie batterie</strong> repr\u00e9sente l\u2019argent \u00e9conomis\u00e9 gr\u00e2ce \u00e0 l\u2019\u00e9nergie stock\u00e9e dans la batterie qui sera utilis\u00e9e pour la consommation de nuit. Le calcul tient compte du co\u00fbt d\u2019utilisation de la batterie.</p>
+            <p>La <strong>vente</strong> correspond aux b\u00e9n\u00e9fices engendr\u00e9s en revendant le surplus de production.</p>
+            <p>L\u2019<strong>achat</strong> est le montant \u00e0 payer pour la partie de la consommation qui n\u2019est pas couverte par la production.</p>
+            <p>Le <strong>bilan</strong> est la diff\u00e9rence entre le montant \u00e0 payer pour l\u2019achat et le profit de la revente.</p>
+        </div>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Mois</th>
+                    <th>\u00c9conomie panneaux</th>
+                    <th>\u00c9conomie batterie</th>
+                    <th>Vente</th>
+                    <th>Achat</th>
+                    <th>Bilan</th>
+                </tr>
+            </thead>
+            <tbody>
+                {financial_rows}
+            </tbody>
+        </table>
     </div>
 </body>
 </html>"""

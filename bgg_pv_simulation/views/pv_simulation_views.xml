@@ -182,151 +182,13 @@
                             </group>
                         </page>
 
-                        <!-- ==================== Localisation (Page 2) ==================== -->
-                        <page string="Localisation (Page 2)" name="page_localisation">
-                            <div class="alert alert-info" role="status">
-                                <strong>Données à saisir :</strong> Adresse, coordonnées GPS et image satellite de l'installation.
-                                L'adresse est pré-remplie depuis la fiche client du devis.
-                            </div>
-                            <group>
-                                <group string="Emplacement">
-                                    <field name="installation_address" string="Adresse d'installation"/>
-                                    <field name="roof_surface_m2" string="Surface de toiture (m²)"/>
-                                </group>
-                                <group string="Image de localisation">
-                                    <field name="location_image" widget="image" class="oe_avatar" string="Image satellite"/>
-                                </group>
-                            </group>
-                            <group string="Titre de section">
-                                <field name="section_title_location" placeholder="LOCALISATION DE L'INSTALLATION" string="Titre"/>
-                            </group>
-                        </page>
-
-                        <!-- ==================== Production (Page 3) ==================== -->
-                        <page string="Production (Page 3)" name="page_production">
-                            <div class="alert alert-info" role="status">
-                                <strong>Données à saisir :</strong> Image du système (photo des panneaux, schéma d'implantation).
-                                Le graphique de production est généré automatiquement à partir des données PVGIS ou du profil de production.
-                            </div>
-                            <group>
-                                <group string="Image du système">
-                                    <field name="system_image" widget="image" class="oe_avatar" string="Image"/>
-                                </group>
-                                <group string="Configuration">
-                                    <field name="production_profile_id" string="Profil de production"/>
-                                    <div class="text-muted small">
-                                        Le profil de production définit la répartition mensuelle (%) de la production annuelle sur 12 mois.
-                                        Il est utilisé pour générer le graphique de production et calculer les données mensuelles du rapport.
-                                    </div>
-                                </group>
-                            </group>
-                            <group string="Titres de section">
-                                <field name="section_title_production" placeholder="PRODUCTION ESTIMÉE" string="Titre production"/>
-                                <field name="section_title_system" placeholder="CARACTÉRISTIQUES DU SYSTÈME" string="Titre système"/>
-                            </group>
-                            <separator string="Aperçu du graphique"/>
-                            <field name="chart_monthly_production" widget="image" nolabel="1"
-                                   style="max-width: 100%; width: 800px;"/>
-                        </page>
-
-                        <!-- ==================== Consommation (Page 4) ==================== -->
-                        <page string="Consommation (Page 4)" name="page_consumption">
-                            <div class="alert alert-warning" role="status">
-                                <strong>Données à saisir :</strong> Saisissez les valeurs par défaut ci-dessous puis cliquez sur
-                                « Appliquer à tous les mois ». Vous pouvez ensuite modifier chaque mois individuellement dans le tableau.
-                            </div>
-                            <group>
-                                <group string="Consommation Client">
-                                    <label for="default_monthly_consumption_kwh" string="Consommation mensuelle"/>
-                                    <div class="o_row">
-                                        <field name="default_monthly_consumption_kwh"/>
-                                        <span>kWh/mois</span>
-                                    </div>
-                                    <label for="default_daily_day_consumption_kwh" string="Consommation jour quotidienne"/>
-                                    <div class="o_row">
-                                        <field name="default_daily_day_consumption_kwh"/>
-                                        <span>kWh/jour</span>
-                                    </div>
-                                    <label for="default_daily_night_consumption_kwh" string="Consommation nuit quotidienne"/>
-                                    <div class="o_row">
-                                        <field name="default_daily_night_consumption_kwh"/>
-                                        <span>kWh/jour</span>
-                                    </div>
-                                    <button name="action_apply_default_consumption"
-                                            string="Appliquer à tous les mois"
-                                            type="object"
-                                            class="btn-primary"
-                                            invisible="not id"
-                                            confirm="Ceci va écraser les valeurs de consommation pour tous les mois. Continuer ?"/>
-                                </group>
-                                <group string="Titres de section">
-                                    <field name="section_title_consumption" placeholder="DONNÉES DE CONSOMMATION" string="Titre principal"/>
-                                    <field name="section_title_monthly_data" placeholder="DONNÉES MENSUELLES / QUOTIDIENNES" string="Sous-titre données mensuelles"/>
-                                    <field name="section_title_daily_balance" placeholder="BILAN ÉNERGÉTIQUE QUOTIDIEN" string="Sous-titre bilan quotidien"/>
-                                </group>
-                            </group>
-                            <separator string="Résultats mensuels"/>
-                            <field name="monthly_result_ids" nolabel="1"/>
-                            <div class="alert alert-secondary mt-3" role="status">
-                                <strong>Légende des données :</strong>
-                                <ul class="mb-0">
-                                    <li><strong>Prod. (kWh)</strong> — Production mensuelle : calculée automatiquement (jours du mois × production quotidienne moyenne). Source : PVGIS ou profil de production.</li>
-                                    <li><strong>Conso. (kWh)</strong> — Consommation mensuelle : saisie manuelle (estimation ou historique facture client).</li>
-                                    <li><strong>Prod. quot. (kWh)</strong> — Production quotidienne moyenne : calculée en divisant la production mensuelle par le nombre de jours du mois.</li>
-                                    <li><strong>Conso jour / nuit (kWh)</strong> — Consommation quotidienne jour/nuit : saisie manuelle par mois, ou appliquée depuis les valeurs par défaut ci-dessus.</li>
-                                    <li><strong>Charge (kWh)</strong> — Énergie stockée dans la batterie : calculée automatiquement à partir du surplus PV, de la capacité et du rendement de la batterie.</li>
-                                    <li><strong>Vente (kWh)</strong> — Surplus revendu au réseau : calculé automatiquement (surplus PV − charge batterie).</li>
-                                    <li><strong>Achat (kWh)</strong> — Énergie achetée au réseau : calculé automatiquement (consommation nuit − énergie batterie disponible).</li>
-                                </ul>
-                            </div>
-                        </page>
-
-                        <!-- ==================== Bilan Financier (Page 5) ==================== -->
-                        <page string="Bilan Financier (Page 5)" name="page_financial">
-                            <group string="Configuration">
-                                <group>
-                                    <field name="tariff_profile_id" string="Profil tarifaire"
-                                           options="{'no_create': False, 'no_open': False}"/>
-                                </group>
-                                <group>
-                                    <field name="section_title_financial" placeholder="BILAN FINANCIER MENSUEL" string="Titre de section"/>
-                                </group>
-                            </group>
-                            <div class="alert alert-info" role="status">
-                                Le bilan financier mensuel est calculé automatiquement à partir des résultats mensuels
-                                et du profil tarifaire sélectionné ci-dessus.
-                            </div>
-                            <separator string="Bilan financier mensuel"/>
-                            <field name="monthly_result_ids" nolabel="1">
-                                <list editable="bottom" create="0" delete="0">
-                                    <field name="month_sequence" column_invisible="1"/>
-                                    <field name="month" readonly="1" string="Mois"/>
-                                    <field name="panel_savings" readonly="1" string="Économie panneaux (€)"/>
-                                    <field name="battery_savings" readonly="1" string="Économie batterie (€)"/>
-                                    <field name="sale_revenue" readonly="1" string="Vente (€)"/>
-                                    <field name="purchase_cost" readonly="1" string="Achat (€)"/>
-                                    <field name="net_balance" readonly="1" string="Bilan (€)"/>
-                                </list>
-                            </field>
-                            <div class="alert alert-secondary mt-3" role="status">
-                                <strong>Légende des données :</strong>
-                                <ul class="mb-0">
-                                    <li><strong>Économie panneaux (€)</strong> — Argent économisé en utilisant la production des panneaux pour la consommation de jour.</li>
-                                    <li><strong>Économie batterie (€)</strong> — Argent économisé grâce à l'énergie stockée dans la batterie utilisée pour la consommation de nuit. Tient compte du coût d'utilisation de la batterie.</li>
-                                    <li><strong>Vente (€)</strong> — Bénéfices engendrés en revendant le surplus de production au réseau.</li>
-                                    <li><strong>Achat (€)</strong> — Montant à payer pour la consommation non couverte par la production.</li>
-                                    <li><strong>Bilan (€)</strong> — Différence entre le coût d'achat réseau et le profit de la revente.</li>
-                                </ul>
-                            </div>
-                        </page>
-
-                        <!-- ==================== Bilan (Page 6) ==================== -->
-                        <page string="Bilan (Page 6)" name="page_bilan">
+                        <!-- ==================== Bilan Énergétique (Page 2) ==================== -->
+                        <page string="Bilan Énergétique (Page 2)" name="page_bilan">
                             <group string="Titre de section">
                                 <field name="section_title_bilan" placeholder="BILAN ÉNERGÉTIQUE" string="Titre"/>
                             </group>
                             <div class="alert alert-info" role="status">
-                                Le bilan énergétique annuel est calculé automatiquement à partir des résultats mensuels de l'onglet Consommation (Page 4).
+                                Le bilan énergétique annuel est calculé automatiquement à partir des résultats mensuels de l'onglet Consommation.
                             </div>
 
                             <!-- Production -->
@@ -419,6 +281,145 @@
                                 </group>
                             </group>
                         </page>
+
+                        <!-- ==================== Localisation (Page 3) ==================== -->
+                        <page string="Localisation (Page 3)" name="page_localisation">
+                            <div class="alert alert-info" role="status">
+                                <strong>Données à saisir :</strong> Adresse, coordonnées GPS et image satellite de l'installation.
+                                L'adresse est pré-remplie depuis la fiche client du devis.
+                            </div>
+                            <group>
+                                <group string="Emplacement">
+                                    <field name="installation_address" string="Adresse d'installation"/>
+                                    <field name="roof_surface_m2" string="Surface de toiture (m²)"/>
+                                </group>
+                                <group string="Image de localisation">
+                                    <field name="location_image" widget="image" class="oe_avatar" string="Image satellite"/>
+                                </group>
+                            </group>
+                            <group string="Titre de section">
+                                <field name="section_title_location" placeholder="LOCALISATION DE L'INSTALLATION" string="Titre"/>
+                            </group>
+                        </page>
+
+                        <!-- ==================== Production (Page 4) ==================== -->
+                        <page string="Production (Page 4)" name="page_production">
+                            <div class="alert alert-info" role="status">
+                                <strong>Données à saisir :</strong> Image du système (photo des panneaux, schéma d'implantation).
+                                Le graphique de production est généré automatiquement à partir des données PVGIS ou du profil de production.
+                            </div>
+                            <group>
+                                <group string="Image du système">
+                                    <field name="system_image" widget="image" class="oe_avatar" string="Image"/>
+                                </group>
+                                <group string="Configuration">
+                                    <field name="production_profile_id" string="Profil de production"/>
+                                    <div class="text-muted small">
+                                        Le profil de production définit la répartition mensuelle (%) de la production annuelle sur 12 mois.
+                                        Il est utilisé pour générer le graphique de production et calculer les données mensuelles du rapport.
+                                    </div>
+                                </group>
+                            </group>
+                            <group string="Titres de section">
+                                <field name="section_title_production" placeholder="PRODUCTION ESTIMÉE" string="Titre production"/>
+                                <field name="section_title_system" placeholder="CARACTÉRISTIQUES DU SYSTÈME" string="Titre système"/>
+                            </group>
+                            <separator string="Aperçu du graphique"/>
+                            <field name="chart_monthly_production" widget="image" nolabel="1"
+                                   style="max-width: 100%; width: 800px;"/>
+                        </page>
+
+                        <!-- ==================== Consommation (Page 5) ==================== -->
+                        <page string="Consommation (Page 5)" name="page_consumption">
+                            <div class="alert alert-warning" role="status">
+                                <strong>Données à saisir :</strong> Saisissez les valeurs par défaut ci-dessous puis cliquez sur
+                                « Appliquer à tous les mois ». Vous pouvez ensuite modifier chaque mois individuellement dans le tableau.
+                            </div>
+                            <group>
+                                <group string="Consommation Client">
+                                    <label for="default_monthly_consumption_kwh" string="Consommation mensuelle"/>
+                                    <div class="o_row">
+                                        <field name="default_monthly_consumption_kwh"/>
+                                        <span>kWh/mois</span>
+                                    </div>
+                                    <label for="default_daily_day_consumption_kwh" string="Consommation jour quotidienne"/>
+                                    <div class="o_row">
+                                        <field name="default_daily_day_consumption_kwh"/>
+                                        <span>kWh/jour</span>
+                                    </div>
+                                    <label for="default_daily_night_consumption_kwh" string="Consommation nuit quotidienne"/>
+                                    <div class="o_row">
+                                        <field name="default_daily_night_consumption_kwh"/>
+                                        <span>kWh/jour</span>
+                                    </div>
+                                    <button name="action_apply_default_consumption"
+                                            string="Appliquer à tous les mois"
+                                            type="object"
+                                            class="btn-primary"
+                                            invisible="not id"
+                                            confirm="Ceci va écraser les valeurs de consommation pour tous les mois. Continuer ?"/>
+                                </group>
+                                <group string="Titres de section">
+                                    <field name="section_title_consumption" placeholder="DONNÉES DE CONSOMMATION" string="Titre principal"/>
+                                    <field name="section_title_monthly_data" placeholder="DONNÉES MENSUELLES / QUOTIDIENNES" string="Sous-titre données mensuelles"/>
+                                    <field name="section_title_daily_balance" placeholder="BILAN ÉNERGÉTIQUE QUOTIDIEN" string="Sous-titre bilan quotidien"/>
+                                </group>
+                            </group>
+                            <separator string="Résultats mensuels"/>
+                            <field name="monthly_result_ids" nolabel="1"/>
+                            <div class="alert alert-secondary mt-3" role="status">
+                                <strong>Légende des données :</strong>
+                                <ul class="mb-0">
+                                    <li><strong>Prod. (kWh)</strong> — Production mensuelle : calculée automatiquement (jours du mois × production quotidienne moyenne). Source : PVGIS ou profil de production.</li>
+                                    <li><strong>Conso. (kWh)</strong> — Consommation mensuelle : saisie manuelle (estimation ou historique facture client).</li>
+                                    <li><strong>Prod. quot. (kWh)</strong> — Production quotidienne moyenne : calculée en divisant la production mensuelle par le nombre de jours du mois.</li>
+                                    <li><strong>Conso jour / nuit (kWh)</strong> — Consommation quotidienne jour/nuit : saisie manuelle par mois, ou appliquée depuis les valeurs par défaut ci-dessus.</li>
+                                    <li><strong>Charge (kWh)</strong> — Énergie stockée dans la batterie : calculée automatiquement à partir du surplus PV, de la capacité et du rendement de la batterie.</li>
+                                    <li><strong>Vente (kWh)</strong> — Surplus revendu au réseau : calculé automatiquement (surplus PV − charge batterie).</li>
+                                    <li><strong>Achat (kWh)</strong> — Énergie achetée au réseau : calculé automatiquement (consommation nuit − énergie batterie disponible).</li>
+                                </ul>
+                            </div>
+                        </page>
+
+                        <!-- ==================== Bilan Financier (Page 6) ==================== -->
+                        <page string="Bilan Financier (Page 6)" name="page_financial">
+                            <group string="Configuration">
+                                <group>
+                                    <field name="tariff_profile_id" string="Profil tarifaire"
+                                           options="{'no_create': False, 'no_open': False}"/>
+                                </group>
+                                <group>
+                                    <field name="section_title_financial" placeholder="BILAN FINANCIER MENSUEL" string="Titre de section"/>
+                                </group>
+                            </group>
+                            <div class="alert alert-info" role="status">
+                                Le bilan financier mensuel est calculé automatiquement à partir des résultats mensuels
+                                et du profil tarifaire sélectionné ci-dessus.
+                            </div>
+                            <separator string="Bilan financier mensuel"/>
+                            <field name="monthly_result_ids" nolabel="1">
+                                <list editable="bottom" create="0" delete="0">
+                                    <field name="month_sequence" column_invisible="1"/>
+                                    <field name="month" readonly="1" string="Mois"/>
+                                    <field name="panel_savings" readonly="1" string="Économie panneaux (€)"/>
+                                    <field name="battery_savings" readonly="1" string="Économie batterie (€)"/>
+                                    <field name="sale_revenue" readonly="1" string="Vente (€)"/>
+                                    <field name="purchase_cost" readonly="1" string="Achat (€)"/>
+                                    <field name="net_balance" readonly="1" string="Bilan (€)"/>
+                                </list>
+                            </field>
+                            <div class="alert alert-secondary mt-3" role="status">
+                                <strong>Légende des données :</strong>
+                                <ul class="mb-0">
+                                    <li><strong>Économie panneaux (€)</strong> — Argent économisé en utilisant la production des panneaux pour la consommation de jour.</li>
+                                    <li><strong>Économie batterie (€)</strong> — Argent économisé grâce à l'énergie stockée dans la batterie utilisée pour la consommation de nuit. Tient compte du coût d'utilisation de la batterie.</li>
+                                    <li><strong>Vente (€)</strong> — Bénéfices engendrés en revendant le surplus de production au réseau.</li>
+                                    <li><strong>Achat (€)</strong> — Montant à payer pour la consommation non couverte par la production.</li>
+                                    <li><strong>Bilan (€)</strong> — Différence entre le coût d'achat réseau et le profit de la revente.</li>
+                                </ul>
+                            </div>
+                        </page>
+
                     </notebook>
                 </sheet>
             </form>

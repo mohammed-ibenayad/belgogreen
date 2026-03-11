@@ -609,29 +609,29 @@
                             <!-- Page 1: Cover Page -->
                             <t t-call="bgg_pv_simulation.report_pv_simulation_page_cover"/>
 
-                            <!-- Page 2: Location -->
+                            <!-- Page 2: Bilan Énergétique -->
+                            <div class="page pv-bilan-bg" style="page-break-before: always;">
+                                <t t-call="bgg_pv_simulation.report_pv_simulation_page_bilan"/>
+                            </div>
+
+                            <!-- Page 3: Localisation -->
                             <div class="page" style="page-break-before: always;">
                                 <t t-call="bgg_pv_simulation.report_pv_simulation_page_location"/>
                             </div>
 
-                            <!-- Page 3: Production -->
+                            <!-- Page 4: Production -->
                             <div class="page pv-production-page" style="page-break-before: always;">
                                 <t t-call="bgg_pv_simulation.report_pv_simulation_page_production"/>
                             </div>
 
-                            <!-- Page 4: Données de Consommation -->
+                            <!-- Page 5: Données de Consommation -->
                             <div class="page" style="page-break-before: always;">
                                 <t t-call="bgg_pv_simulation.report_pv_simulation_page_consumption"/>
                             </div>
 
-                            <!-- Page 5: Bilan Financier Mensuel -->
+                            <!-- Page 6: Bilan Financier Mensuel -->
                             <div class="page" style="page-break-before: always;">
                                 <t t-call="bgg_pv_simulation.report_pv_simulation_page_financial"/>
-                            </div>
-
-                            <!-- Page 6: Bilan Énergétique -->
-                            <div class="page pv-bilan-bg" style="page-break-before: always;">
-                                <t t-call="bgg_pv_simulation.report_pv_simulation_page_bilan"/>
                             </div>
                         </div>
                     </t>
@@ -701,7 +701,7 @@
             </div>
 
             <div t-attf-class="pv-location-page-bg #{o.location_image and 'has-image' or ''}">
-                <div class="pv-section-number">01</div>
+                <div class="pv-section-number">02</div>
                 <h2 class="pv-section-title">
                     <t t-esc="o.section_title_location or 'LOCALISATION DE L\'INSTALLATION'"/>
                 </h2>
@@ -740,7 +740,7 @@
         <!-- Page 3: Production (System + Chart)           -->
         <!-- ============================================ -->
         <template id="report_pv_simulation_page_production">
-            <div class="pv-section-number">02</div>
+            <div class="pv-section-number">03</div>
             <h2 class="pv-section-title">
                 <t t-esc="o.section_title_production or 'PRODUCTION ESTIMÉE'"/>
             </h2>
@@ -823,7 +823,7 @@
             <t t-set="results" t-value="o.monthly_result_ids.sorted(key=lambda r: int(r.month))"/>
             <t t-set="month_names" t-value="{'1': 'Janvier', '2': 'Février', '3': 'Mars', '4': 'Avril', '5': 'Mai', '6': 'Juin', '7': 'Juillet', '8': 'Août', '9': 'Septembre', '10': 'Octobre', '11': 'Novembre', '12': 'Décembre'}"/>
 
-            <div class="pv-section-number">03</div>
+            <div class="pv-section-number">04</div>
             <h2 class="pv-section-title"><t t-esc="o.section_title_consumption or 'DONNÉES DE CONSOMMATION'"/></h2>
 
             <!-- Section 1: Monthly/Daily Data Table -->
@@ -920,7 +920,7 @@
             <t t-set="results" t-value="o.monthly_result_ids.sorted(key=lambda r: int(r.month))"/>
             <t t-set="month_names" t-value="{'1': 'Janvier', '2': 'Février', '3': 'Mars', '4': 'Avril', '5': 'Mai', '6': 'Juin', '7': 'Juillet', '8': 'Août', '9': 'Septembre', '10': 'Octobre', '11': 'Novembre', '12': 'Décembre'}"/>
 
-            <div class="pv-section-number">04</div>
+            <div class="pv-section-number">05</div>
             <h2 class="pv-section-title"><t t-esc="o.section_title_financial or 'BILAN FINANCIER MENSUEL'"/></h2>
 
             <!-- Explanation box -->
@@ -984,7 +984,7 @@
             <t t-set="savings_total" t-value="savings_panels + savings_battery + savings_resale"/>
             <t t-set="purchase_total" t-value="sum(results.mapped('purchase_cost')) if results else 0.0"/>
 
-            <div class="pv-section-number">05</div>
+            <div class="pv-section-number">01</div>
             <h2 class="pv-section-title"><t t-esc="o.section_title_bilan or 'BILAN ÉNERGÉTIQUE'"/></h2>
 
             <!-- Production -->
