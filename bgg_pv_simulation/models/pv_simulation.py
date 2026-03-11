@@ -574,6 +574,16 @@ class PvSimulation(models.Model):
             'context': {'simulation_id': self.id},
         }
 
+    def action_do_generate(self):
+        """Initial generation logic called from the wizard JS client action.
+
+        Creates monthly results, applies default consumption, then computes balance.
+        """
+        self.ensure_one()
+        self.action_do_regenerate()
+        self.action_apply_default_consumption()
+        self.action_compute_daily_balance()
+
     def action_do_regenerate(self):
         """Actual regeneration logic called from the JS client action"""
         self.ensure_one()

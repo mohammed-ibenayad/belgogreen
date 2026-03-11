@@ -33,3 +33,39 @@ class PvSimulationRegenerate extends Component {
 }
 
 registry.category("actions").add("pv_simulation_regenerate", PvSimulationRegenerate);
+
+class PvSimulationGenerate extends Component {
+    static template = "bgg_pv_simulation.GenerateLoading";
+
+    setup() {
+        this.orm = useService("orm");
+        this.action = useService("action");
+        this.notification = useService("notification");
+        this._doGenerate();
+    }
+
+    async _doGenerate() {
+        const simulationId = this.props.action.context.simulation_id;
+        if (!simulationId) {
+            this.notification.add("Erreur: simulation introuvable.", { type: "danger" });
+            this.action.doAction({ type: "ir.actions.act_window_close" });
+            return;
+        }
+        try {
+            await this.orm.call("pv.simulation", "action_do_generate", [[simulationId]]);
+            this.notification.add("Simulation générée avec succès.", { type: "success" });
+        } catch (e) {
+            this.notification.add("Erreur lors de la génération: " + (e.data?.message || e.message || "erreur inconnue"), { type: "danger" });
+        }
+        // Navigate to the simulation form
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            res_model: "pv.simulation",
+            res_id: simulationId,
+            views: [[false, "form"]],
+            target: "current",
+        });
+    }
+}
+
+registry.category("actions").add("pv_simulation_generate", PvSimulationGenerate);

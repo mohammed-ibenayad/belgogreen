@@ -14,7 +14,9 @@
 
                     <group>
                         <group string="Coordonnées GPS">
-                            <field name="installation_address" readonly="1" nolabel="1"/>
+                            <div colspan="2" class="mb-2 text-muted">
+                                <field name="installation_address" readonly="1" nolabel="1"/>
+                            </div>
                             <field name="latitude" placeholder="ex: 50.8503396"/>
                             <field name="longitude" placeholder="ex: 4.3517103"/>
                         </group>
