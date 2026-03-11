@@ -60,10 +60,6 @@
                             string="Créer et Générer"
                             type="object"
                             class="btn-primary"/>
-                    <button name="action_create_simulation"
-                            string="Créer"
-                            type="object"
-                            class="btn-secondary"/>
                     <button string="Annuler" class="btn-secondary" special="cancel"/>
                 </footer>
             </form>
