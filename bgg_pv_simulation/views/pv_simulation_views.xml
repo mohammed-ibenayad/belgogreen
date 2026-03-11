@@ -251,8 +251,6 @@
                                         <field name="default_daily_night_consumption_kwh"/>
                                         <span>kWh/jour</span>
                                     </div>
-                                </group>
-                                <group string="Actions">
                                     <button name="action_apply_default_consumption"
                                             string="Appliquer à tous les mois"
                                             type="object"
@@ -260,11 +258,11 @@
                                             invisible="not id"
                                             confirm="Ceci va écraser les valeurs de consommation pour tous les mois. Continuer ?"/>
                                 </group>
-                            </group>
-                            <group string="Titres de section">
-                                <field name="section_title_consumption" placeholder="DONNÉES DE CONSOMMATION" string="Titre principal"/>
-                                <field name="section_title_monthly_data" placeholder="DONNÉES MENSUELLES" string="Sous-titre données mensuelles"/>
-                                <field name="section_title_daily_balance" placeholder="BILAN ÉNERGÉTIQUE QUOTIDIEN" string="Sous-titre bilan quotidien"/>
+                                <group string="Titres de section">
+                                    <field name="section_title_consumption" placeholder="DONNÉES DE CONSOMMATION" string="Titre principal"/>
+                                    <field name="section_title_monthly_data" placeholder="DONNÉES MENSUELLES" string="Sous-titre données mensuelles"/>
+                                    <field name="section_title_daily_balance" placeholder="BILAN ÉNERGÉTIQUE QUOTIDIEN" string="Sous-titre bilan quotidien"/>
+                                </group>
                             </group>
                             <separator string="Résultats mensuels"/>
                             <field name="monthly_result_ids" nolabel="1"/>
@@ -284,13 +282,13 @@
 
                         <!-- ==================== Bilan Financier (Page 5) ==================== -->
                         <page string="Bilan Financier (Page 5)" name="page_financial">
-                            <group>
-                                <group string="Profil tarifaire">
+                            <group string="Configuration">
+                                <group>
                                     <field name="tariff_profile_id" string="Profil tarifaire"
                                            options="{'no_create': False, 'no_open': False}"/>
                                 </group>
-                                <group string="Titre de section">
-                                    <field name="section_title_financial" placeholder="BILAN FINANCIER MENSUEL" string="Titre"/>
+                                <group>
+                                    <field name="section_title_financial" placeholder="BILAN FINANCIER MENSUEL" string="Titre de section"/>
                                 </group>
                             </group>
                             <div class="alert alert-info" role="status">
@@ -309,6 +307,16 @@
                                     <field name="net_balance" readonly="1" string="Bilan (€)"/>
                                 </list>
                             </field>
+                            <div class="alert alert-secondary mt-3" role="status">
+                                <strong>Légende des données :</strong>
+                                <ul class="mb-0">
+                                    <li><strong>Économie panneaux (€)</strong> — Argent économisé en utilisant la production des panneaux pour la consommation de jour.</li>
+                                    <li><strong>Économie batterie (€)</strong> — Argent économisé grâce à l'énergie stockée dans la batterie utilisée pour la consommation de nuit. Tient compte du coût d'utilisation de la batterie.</li>
+                                    <li><strong>Vente (€)</strong> — Bénéfices engendrés en revendant le surplus de production au réseau.</li>
+                                    <li><strong>Achat (€)</strong> — Montant à payer pour la consommation non couverte par la production.</li>
+                                    <li><strong>Bilan (€)</strong> — Différence entre le coût d'achat réseau et le profit de la revente.</li>
+                                </ul>
+                            </div>
                         </page>
 
                         <!-- ==================== Bilan (Page 6) ==================== -->
