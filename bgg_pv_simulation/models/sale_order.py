@@ -37,17 +37,14 @@ class SaleOrder(models.Model):
                 'target': 'current',
             }
         else:
-            # Open form to create new simulation with pre-filled values
+            # Open wizard to collect GPS & consumption data before creating
             return {
                 'type': 'ir.actions.act_window',
-                'name': _('New PV Simulation'),
-                'res_model': 'pv.simulation',
+                'name': _('Nouvelle Simulation PV'),
+                'res_model': 'pv.simulation.wizard',
                 'view_mode': 'form',
-                'target': 'current',
+                'target': 'new',
                 'context': {
                     'default_sale_order_id': self.id,
-                    'default_currency_id': self.currency_id.id or self.env.company.currency_id.id,
-                    'default_company_id': self.company_id.id or self.env.company.id,
-                    'default_installation_address': self.partner_id.contact_address or self.partner_id.street or '',
-                }
+                },
             }

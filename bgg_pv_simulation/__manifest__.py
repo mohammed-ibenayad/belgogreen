@@ -34,6 +34,9 @@
         'data/pv_battery_config_data.xml',
         'data/pv_tariff_profile_data.xml',
 
+        # Wizard
+        'wizard/pv_simulation_wizard_views.xml',
+
         # Views
         'views/res_company_views.xml',
         'views/product_template_views.xml',
