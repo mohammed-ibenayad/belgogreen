@@ -46,13 +46,11 @@ class PvSimulation(models.Model):
         compute='_compute_installation_address',
         help='Installation address (from customer address, read-only)'
     )
-    latitude = fields.Float(
+    latitude = fields.Char(
         string='Latitude',
-        digits=(10, 7)
     )
-    longitude = fields.Float(
+    longitude = fields.Char(
         string='Longitude',
-        digits=(10, 7)
     )
     location_image = fields.Binary(
         string='Location Image',
@@ -277,6 +275,24 @@ class PvSimulation(models.Model):
     )
 
     # Fields whose change should flag the simulation for regeneration
+    @staticmethod
+    def _parse_coord(value):
+        """Parse a coordinate string to float, accepting both dot and comma as decimal separator."""
+        if not value or not str(value).strip():
+            return 0.0
+        cleaned = str(value).strip().replace(',', '.')
+        parts = cleaned.split('.')
+        if len(parts) > 2:
+            cleaned = ''.join(parts[:-1]) + '.' + parts[-1]
+        try:
+            return float(cleaned)
+        except ValueError:
+            return 0.0
+
+    def _get_lat_lng(self):
+        """Return (latitude, longitude) as floats, parsed from Char fields."""
+        return self._parse_coord(self.latitude), self._parse_coord(self.longitude)
+
     SIMULATION_IMPACTING_FIELDS = {
         'pvgis_annual_production_kwh',
         'orientation_deg',
@@ -636,7 +652,8 @@ class PvSimulation(models.Model):
         self.ensure_one()
 
         # First, try to use PVGIS data if we have the necessary inputs
-        if self.latitude and self.longitude and self.total_pv_power_wc:
+        lat, lng = self._get_lat_lng()
+        if lat and lng and self.total_pv_power_wc:
             _logger.info(f"🔄 Regenerating monthly results for {self.name} - checking for PVGIS data")
 
             # If we already have PVGIS data stored, use it
@@ -777,16 +794,17 @@ class PvSimulation(models.Model):
         self.ensure_one()
 
         # Check if we have coordinates
-        if not self.latitude or not self.longitude:
+        lat, lng = self._get_lat_lng()
+        if not lat or not lng:
             raise UserError(_(
                 "Veuillez d'abord renseigner les coordonnées (latitude et longitude).\n"
                 "Vous pouvez les obtenir à partir de l'adresse d'installation via un service de géocodage."
             ))
-        if not (-90 <= self.latitude <= 90) or not (-180 <= self.longitude <= 180):
+        if not (-90 <= lat <= 90) or not (-180 <= lng <= 180):
             raise UserError(_(
                 "Coordonnées GPS invalides (latitude: %s, longitude: %s).\n"
                 "La latitude doit être entre -90 et 90, la longitude entre -180 et 180."
-            ) % (self.latitude, self.longitude))
+            ) % (lat, lng))
 
         # Check if sale order has solar panels configured
         if not self.number_of_panels or not self.panel_unit_power_wc:
@@ -810,8 +828,8 @@ class PvSimulation(models.Model):
         try:
             # Fetch building insights
             api_response = solar_api.get_building_insights(
-                latitude=self.latitude,
-                longitude=self.longitude
+                latitude=lat,
+                longitude=lng
             )
 
             # Parse the response and match to sale order panels
@@ -819,8 +837,8 @@ class PvSimulation(models.Model):
                 api_response,
                 target_panels=self.number_of_panels,  # Match panel count to sale order
                 target_panel_watts=self.panel_unit_power_wc,  # Scale production to actual panel wattage
-                latitude=self.latitude,  # For Data Layers API fallback
-                longitude=self.longitude  # For Data Layers API fallback
+                latitude=lat,  # For Data Layers API fallback
+                longitude=lng  # For Data Layers API fallback
             )
 
             # Update fields with API data
@@ -971,11 +989,12 @@ class PvSimulation(models.Model):
         self.ensure_one()
 
         # Check if we have required data for PVGIS
-        if not self.latitude or not self.longitude or not self.total_pv_power_wc:
+        lat, lng = self._get_lat_lng()
+        if not lat or not lng or not self.total_pv_power_wc:
             missing_fields = []
-            if not self.latitude:
+            if not lat:
                 missing_fields.append('latitude')
-            if not self.longitude:
+            if not lng:
                 missing_fields.append('longitude')
             if not self.total_pv_power_wc:
                 missing_fields.append('total_pv_power_wc (no solar panel with power rating on sale order)')
@@ -991,8 +1010,8 @@ class PvSimulation(models.Model):
         try:
             # Call PVGIS API
             pvgis_data = solar_api.get_pvgis_monthly(
-                latitude=self.latitude,
-                longitude=self.longitude,
+                latitude=lat,
+                longitude=lng,
                 peakpower_kw=self.total_pv_power_wc / 1000.0,  # Convert Wc to kW
                 angle=self.tilt_deg if self.tilt_deg else None,
                 aspect=self.orientation_deg if self.orientation_deg else None
