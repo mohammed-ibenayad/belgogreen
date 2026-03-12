@@ -76,8 +76,8 @@
                             <field name="report_date" string="Date du rapport"/>
                         </group>
                         <group string="Coordonnées GPS">
-                            <field name="latitude"/>
-                            <field name="longitude"/>
+                            <field name="latitude" placeholder="ex: 50.8503396"/>
+                            <field name="longitude" placeholder="ex: 4.3517103"/>
                         </group>
                     </group>
 
