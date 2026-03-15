@@ -201,17 +201,14 @@ class SaleCommissionPlanUser(models.Model):
                 if len(visited) > 50:
                     raise ValidationError(_('Hierarchy depth exceeds 50 levels. Possible circular reference.'))
 
-    def name_get(self):
-        """Custom display name"""
-        result = []
+    @api.depends('plan_id.name', 'user_id.name', 'role_id.name')
+    def _compute_display_name(self):
         for rec in self:
-            name = '%s - %s (%s)' % (
+            rec.display_name = '%s - %s (%s)' % (
                 rec.plan_id.name or 'Plan',
                 rec.user_id.name or 'User',
                 rec.role_id.name or 'Role'
             )
-            result.append((rec.id, name))
-        return result
 
     @api.model
     def _get_user_role_in_plan(self, user_id, plan_id):

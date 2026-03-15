@@ -180,8 +180,6 @@ class SaleCommissionClaim(models.Model):
                 vals['name'] = self.env['ir.sequence'].next_by_code('sale.commission.claim') or _('New')
 
         results = super(SaleCommissionClaim, self).create(vals_list)
-        for result in results:
-            result._notify_admins()
         return results
 
     @api.depends('commission_ids', 'commission_ids.commission_amount')
@@ -284,7 +282,6 @@ class SaleCommissionClaim(models.Model):
         self.commission_ids.write({'status': 'claimed'})
 
         self.write({'state': 'pending'})
-        self._notify_admins()
         return True
 
     def action_delete_draft(self):
@@ -410,31 +407,6 @@ class SaleCommissionClaim(models.Model):
 
             # Send notification to claimant
             claim._notify_claimant('rejected')
-
-    def _notify_admins(self):
-        """Notify administrators about new claim"""
-        try:
-            admin_group = self.env.ref('sales_team.group_sale_manager')
-            admins = self.env['res.users'].search([
-                ('groups_id', 'in', admin_group.ids),
-                ('company_ids', 'in', self.company_id.ids)
-            ])
-
-            for admin in admins:
-                self.activity_schedule(
-                    'mail.mail_activity_data_todo',
-                    user_id=admin.id,
-                    summary=_('New commission claim: %s') % self.name,
-                    note=_('User %(user)s has claimed %(count)s commission(s) totaling %(amount)s %(currency)s') % {
-                        'user': self.user_id.name,
-                        'count': self.commission_count,
-                        'amount': self.total_amount,
-                        'currency': self.currency_id.name
-                    }
-                )
-        except Exception:
-            # If group doesn't exist or other error, continue without notification
-            pass
 
     def _notify_claimant(self, decision):
         """Notify claimant about claim decision"""

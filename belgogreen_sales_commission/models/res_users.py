@@ -59,7 +59,7 @@ class ResUsers(models.Model):
     def _compute_commission_stats(self):
         """Compute commission statistics for the user"""
         for user in self:
-            commissions = user.my_commission_ids
+            commissions = user.sudo().my_commission_ids
             user.commission_count = len(commissions)
             user.commission_unpaid_total = sum(
                 commissions.filtered(lambda c: c.status == 'unpaid').mapped('commission_amount')
@@ -72,7 +72,7 @@ class ResUsers(models.Model):
     def _compute_active_commissions(self):
         """Compute count of active (unpaid/claimed) commissions"""
         for user in self:
-            active_commissions = user.my_commission_ids.filtered(
+            active_commissions = user.sudo().my_commission_ids.filtered(
                 lambda c: c.status in ['unpaid', 'claimed', 'processing']
             )
             user.active_commission_count = len(active_commissions)

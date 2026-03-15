@@ -42,7 +42,6 @@ Main Features:
         'sale_management',
         'purchase',
         'account',
-        'hr',
         'mail',
         'sale_commission',  # Odoo's commission module
     ],

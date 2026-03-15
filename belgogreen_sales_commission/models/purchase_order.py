@@ -39,12 +39,13 @@ class PurchaseOrder(models.Model):
     def _compute_commission_claim_id(self):
         """Compute single claim for backwards compatibility"""
         for po in self:
-            po.commission_claim_id = po.claim_ids[0] if po.claim_ids else False
+            claims = po.sudo().claim_ids
+            po.commission_claim_id = claims[0] if claims else False
 
     def write(self, vals):
         """Warn about editing commission PO lines, but allow deletion of deduction lines"""
         for po in self:
-            if po.claim_ids and po.state == 'draft' and 'order_line' in vals:
+            if po.sudo().claim_ids and po.state == 'draft' and 'order_line' in vals:
                 # Check if this is a deletion of lines (which is allowed for deductions)
                 is_deletion = False
                 for line_op in vals.get('order_line', []):
@@ -83,18 +84,19 @@ class PurchaseOrder(models.Model):
         res = super(PurchaseOrder, self).button_confirm()
 
         for po in self:
+            po_sudo = po.sudo()
             # Handle claim-based commissions
-            if po.claim_ids:
+            if po_sudo.claim_ids:
                 # Get all commissions from all claims
-                all_commissions = po.claim_ids.mapped('commission_ids')
+                all_commissions = po_sudo.claim_ids.mapped('commission_ids')
                 # Update commission status to processing
                 all_commissions.write({'status': 'processing'})
 
             # Handle direct commissions (no claims)
-            if po.commission_ids:
+            if po_sudo.commission_ids:
                 # Already in processing status from action_create_po_from_commissions
                 # Just ensure consistency
-                po.commission_ids.filtered(lambda c: c.status != 'processing').write({'status': 'processing'})
+                po_sudo.commission_ids.filtered(lambda c: c.status != 'processing').write({'status': 'processing'})
 
         return res
 
@@ -105,19 +107,20 @@ class PurchaseOrder(models.Model):
         direct_commissions_to_reset = {}
 
         for po in self:
+            po_sudo = po.sudo()
             # Handle claim-based commissions
-            if po.claim_ids:
+            if po_sudo.claim_ids:
                 # Store claims and their deductions
                 claims_to_reset[po.id] = {
-                    'claims': po.claim_ids,
-                    'deductions': po.claim_ids.mapped('all_deduction_ids').filtered(
+                    'claims': po_sudo.claim_ids,
+                    'deductions': po_sudo.claim_ids.mapped('all_deduction_ids').filtered(
                         lambda d: d.state == 'applied' and d.purchase_order_id == po
                     )
                 }
 
             # Handle direct commissions (no claims)
-            if po.commission_ids:
-                direct_commissions_to_reset[po.id] = po.commission_ids
+            if po_sudo.commission_ids:
+                direct_commissions_to_reset[po.id] = po_sudo.commission_ids
 
         res = super(PurchaseOrder, self).button_cancel()
 
@@ -179,7 +182,7 @@ class PurchaseOrderLine(models.Model):
             for line in deduction_lines:
                 # Find the corresponding deduction by searching for deductions linked to this PO
                 # and matching the amount (negative in PO line)
-                deductions = self.env['commission.deduction'].search([
+                deductions = self.env['commission.deduction'].sudo().search([
                     ('purchase_order_id', '=', line.order_id.id),
                     ('amount', '=', -line.price_unit),  # Deduction amount is negative in PO
                     ('state', '=', 'applied')
@@ -194,7 +197,7 @@ class PurchaseOrderLine(models.Model):
 
                 # Reset deduction(s) to pending
                 if deductions:
-                    deductions.write({
+                    deductions.sudo().write({
                         'state': 'pending',
                         'claim_id': False,
                         'purchase_order_id': False
@@ -202,7 +205,7 @@ class PurchaseOrderLine(models.Model):
 
                     # Log message
                     for deduction in deductions:
-                        deduction.message_post(
+                        deduction.sudo().message_post(
                             body=_('Deduction removed from Purchase Order %s. Status reset to pending.') % line.order_id.name,
                             subject=_('Deduction Removed from PO'),
                         )
