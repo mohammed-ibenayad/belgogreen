@@ -26,7 +26,7 @@ class AccountMove(models.Model):
     def _compute_commission_count(self):
         """Count commissions for this invoice"""
         for move in self:
-            move.commission_count = len(move.commission_ids)
+            move.commission_count = len(move.sudo().commission_ids)
 
     def write(self, vals):
         """Override write to mark commissions paid when vendor bill is paid"""
@@ -110,13 +110,15 @@ class AccountMove(models.Model):
             )
             return  # Not a commission payment
 
+        po_sudo = po.sudo()
+
         _logger.info(
             "Commission Payment: Found PO %s (ID: %s), Claims: %s, Direct Commissions: %s",
-            po.name, po.id, len(po.claim_ids), len(po.commission_ids)
+            po.name, po.id, len(po_sudo.claim_ids), len(po_sudo.commission_ids)
         )
 
         # Check if this is a commission PO (either claim-based or direct)
-        if not po.claim_ids and not po.commission_ids:
+        if not po_sudo.claim_ids and not po_sudo.commission_ids:
             _logger.info(
                 "Commission Payment: PO %s has no claims or commissions, skipping",
                 po.name
@@ -181,7 +183,7 @@ class AccountMove(models.Model):
             )
 
         # Get ALL commissions (from claims or direct) - unified approach
-        commissions = po.claim_ids.mapped('commission_ids') | po.commission_ids
+        commissions = po_sudo.claim_ids.mapped('commission_ids') | po_sudo.commission_ids
 
         _logger.info(
             "Commission Payment: Found %s commission(s) to mark as paid: %s",
@@ -224,7 +226,7 @@ class AccountMove(models.Model):
         )
 
         # Log success with appropriate message
-        if po.claim_ids:
+        if po_sudo.claim_ids:
             # Claim-based payment
             self.message_post(
                 body=_(
@@ -237,7 +239,7 @@ class AccountMove(models.Model):
                     'count': len(commissions),
                     'amount': self.amount_total,
                     'payment': payments[0].name if payments else 'N/A',
-                    'claims': ', '.join(po.claim_ids.mapped('name')),
+                    'claims': ', '.join(po_sudo.claim_ids.mapped('name')),
                 },
                 subject=_('Commissions Paid'),
             )
@@ -280,7 +282,7 @@ class AccountMove(models.Model):
             ('name', '=', self.invoice_origin)
         ], limit=1)
 
-        if not po or (not po.claim_ids and not po.commission_ids):
+        if not po or (not po.sudo().claim_ids and not po.sudo().commission_ids):
             raise UserError(_('This bill is not linked to a commission purchase order.'))
 
         # Mark commissions paid manually
@@ -317,12 +319,13 @@ class AccountMove(models.Model):
         if self.invoice_origin:
             po = self.env['purchase.order'].search([('name', '=', self.invoice_origin)], limit=1)
             if po:
+                po_sudo = po.sudo()
                 _logger.info("Purchase Order Found:")
                 _logger.info("  - PO: %s (ID: %s)", po.name, po.id)
-                _logger.info("  - Claims: %s", len(po.claim_ids))
-                _logger.info("  - Direct Commissions: %s", len(po.commission_ids))
+                _logger.info("  - Claims: %s", len(po_sudo.claim_ids))
+                _logger.info("  - Direct Commissions: %s", len(po_sudo.commission_ids))
 
-                commissions = po.claim_ids.mapped('commission_ids') | po.commission_ids
+                commissions = po_sudo.claim_ids.mapped('commission_ids') | po_sudo.commission_ids
                 _logger.info("  - Total Commissions: %s", len(commissions))
 
                 for comm in commissions:
