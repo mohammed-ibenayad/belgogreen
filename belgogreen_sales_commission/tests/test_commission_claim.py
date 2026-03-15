@@ -41,7 +41,7 @@ class TestCommissionClaim(TransactionCase):
             'login': 'test_claim_user',
             'company_id': cls.company.id,
             'company_ids': [(6, 0, [cls.company.id])],
-            'groups_id': [(4, cls.env.ref('belgogreen_sales_commission.group_commission_user').id)],
+            'group_ids': [(4, cls.env.ref('belgogreen_sales_commission.group_commission_user').id)],
         })
 
         cls.commission_manager = cls.env['res.users'].create({
@@ -49,7 +49,7 @@ class TestCommissionClaim(TransactionCase):
             'login': 'test_claim_manager',
             'company_id': cls.company.id,
             'company_ids': [(6, 0, [cls.company.id])],
-            'groups_id': [(4, cls.env.ref('belgogreen_sales_commission.group_commission_manager').id)],
+            'group_ids': [(4, cls.env.ref('belgogreen_sales_commission.group_commission_manager').id)],
         })
 
     def _create_commission(self, user=None, amount=1000.0):
