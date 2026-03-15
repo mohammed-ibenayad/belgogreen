@@ -25,7 +25,7 @@ class TestAccessRights(TransactionCase):
             'login': 'test_purchase_only',
             'company_id': cls.company.id,
             'company_ids': [(6, 0, [cls.company.id])],
-            'groups_id': [
+            'group_ids': [
                 (4, cls.env.ref('purchase.group_purchase_user').id),
             ],
         })
@@ -36,7 +36,7 @@ class TestAccessRights(TransactionCase):
             'login': 'test_sales_only',
             'company_id': cls.company.id,
             'company_ids': [(6, 0, [cls.company.id])],
-            'groups_id': [
+            'group_ids': [
                 (4, cls.env.ref('sales_team.group_sale_salesman').id),
             ],
         })

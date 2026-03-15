@@ -416,7 +416,7 @@ class SaleCommissionClaim(models.Model):
         try:
             admin_group = self.env.ref('sales_team.group_sale_manager')
             admins = self.env['res.users'].search([
-                ('groups_id', 'in', admin_group.ids),
+                ('group_ids', 'in', admin_group.ids),
                 ('company_ids', 'in', self.company_id.ids)
             ])
 
