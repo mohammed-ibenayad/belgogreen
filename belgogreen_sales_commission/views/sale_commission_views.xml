@@ -21,6 +21,7 @@
                     <field name="role_id" string="Rôle" width="110px"/>
                     <field name="commission_type" string="Type" width="80px"/>
                     <field name="sale_order_display" string="Commande(s)" width="120px"/>
+                    <field name="customer_id" string="Client" optional="show" width="140px"/>
                     <field name="base_amount" string="Base" sum="Total base" width="100px"/>
                     <field name="commission_percentage" string="%" width="60px"/>
                     <field name="commission_amount" string="Commission" sum="Total commissions" width="110px"/>
@@ -148,6 +149,7 @@
                 <search string="Commissions">
                     <field name="name"/>
                     <field name="user_id"/>
+                    <field name="customer_id" string="Client"/>
                     <field name="sale_order_id"/>
                     <field name="invoice_id"/>
                     <field name="period"/>
