@@ -90,7 +90,7 @@ class SaleCommission(models.Model):
         compute='_compute_commission_percentage',
         store=True,
         digits=(5, 2),
-        group_operator=False,
+        aggregator=False,
         help='The effective commission percentage applied'
     )
 

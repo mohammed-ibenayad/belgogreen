@@ -161,9 +161,7 @@ class CommissionDeduction(models.Model):
             if deduction.amount <= 0:
                 raise ValidationError(_('Deduction amount must be greater than zero.'))
 
-    def name_get(self):
-        result = []
+    @api.depends('name', 'user_id.name', 'amount')
+    def _compute_display_name(self):
         for deduction in self:
-            name = f"{deduction.name} - {deduction.user_id.name} ({deduction.amount})"
-            result.append((deduction.id, name))
-        return result
+            deduction.display_name = f"{deduction.name} - {deduction.user_id.name} ({deduction.amount})"
