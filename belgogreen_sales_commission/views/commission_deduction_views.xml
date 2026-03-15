@@ -62,7 +62,6 @@
                             </group>
                             <group string="Montant">
                                 <field name="amount" string="Montant" class="oe_subtotal_footer_separator"/>
-                                <field name="currency_id" invisible="1"/>
                                 <field name="reference" string="Référence"/>
                             </group>
                         </group>
@@ -76,7 +75,6 @@
                             <field name="purchase_order_id" string="Bon de Commande" readonly="1"/>
                         </group>
 
-                        <field name="company_id" invisible="1"/>
                     </sheet>
                     <!-- Chatter -->
                     <chatter/>

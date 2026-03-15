@@ -9,11 +9,6 @@
             <field name="inherit_id" ref="sale_commission.sale_commission_plan_view_form"/>
             <field name="arch" type="xml">
 
-                <!-- Add is_hierarchical computed field (hidden) -->
-                <xpath expr="//field[@name='name']" position="after">
-                    <field name="is_hierarchical" invisible="1"/>
-                </xpath>
-
                 <!-- Add smart button for hierarchical commissions -->
                 <xpath expr="//div[@name='button_box']" position="inside">
                     <button name="action_view_commissions"
@@ -124,7 +119,6 @@
                                 <field name="override_percentage_display" string="Supervision %" readonly="1" optional="show"/>
                                 <field name="date_from" string="Date Début" optional="show"/>
                                 <field name="date_to" string="Date Fin" optional="show"/>
-                                <field name="company_id" column_invisible="1"/>
                             </list>
                         </field>
                         <group>

@@ -33,7 +33,7 @@ class SaleOrder(models.Model):
     def _compute_commission_count(self):
         """Count commissions for this sale order"""
         for order in self:
-            order.commission_count = len(order.commission_ids)
+            order.commission_count = len(order.sudo().commission_ids)
 
     def action_generate_commissions(self):
         """
@@ -376,7 +376,7 @@ class SaleOrder(models.Model):
         commissions_created = 0
         for user, role, commission_type in users_to_commission:
             # Check if commission already exists for this SO + plan + user + role
-            existing_commission = self.env['sale.commission'].search([
+            existing_commission = self.env['sale.commission'].sudo().search([
                 ('sale_order_id', '=', self.id),
                 ('plan_id', '=', commission_plan.id),
                 ('user_id', '=', user.id),
