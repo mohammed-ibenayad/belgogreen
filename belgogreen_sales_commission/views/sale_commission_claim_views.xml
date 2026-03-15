@@ -69,7 +69,6 @@
                                 <field name="user_id" string="Vendeur" readonly="1"/>
                                 <field name="claim_date" string="Date de Réclamation" readonly="1"/>
                                 <field name="total_amount" string="Montant Total" readonly="1"/>
-                                <field name="currency_id" invisible="1"/>
                             </group>
                             <group string="Résumé Financier">
                                 <field name="total_deductions" string="Total Déductions" readonly="1"/>
@@ -77,7 +76,6 @@
                                        widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                 <field name="processed_by" string="Traité par" readonly="1"/>
                                 <field name="processed_date" string="Date de Traitement" readonly="1"/>
-                                <field name="company_id" groups="base.group_multi_company" invisible="1"/>
                             </group>
                         </group>
                         <notebook>
