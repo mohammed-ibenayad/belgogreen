@@ -414,7 +414,9 @@ class SaleCommissionClaim(models.Model):
     def _notify_admins(self):
         """Notify administrators about new claim"""
         try:
-            admin_group = self.env.ref('sales_team.group_sale_manager')
+            admin_group = self.env['res.groups'].search([('name', '=', 'Admin')], limit=1)
+            if not admin_group:
+                return
             admins = self.env['res.users'].search([
                 ('group_ids', 'in', admin_group.ids),
                 ('company_ids', 'in', self.company_id.ids)
