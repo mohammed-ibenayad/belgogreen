@@ -276,6 +276,47 @@ class TestCalendarEvent(TransactionCase):
         self.assertIn('+32412345678', event.x_studio_customer_phone,
                      "Clickable phone should contain clean phone number")
 
+    def test_clickable_phone_includes_mobile(self):
+        """Test that both phone and mobile are shown in clickable phone field"""
+        # Create partner with both phone and mobile
+        partner_with_mobile = self.env['res.partner'].create({
+            'name': 'Partner With Mobile',
+            'phone': '+32412345678',
+            'mobile': '+32498765432',
+        })
+
+        event = self.env['calendar.event'].create({
+            'name': 'Test Event',
+            'start': datetime.datetime.now(),
+            'stop': datetime.datetime.now() + datetime.timedelta(hours=1),
+            'partner_ids': [(4, partner_with_mobile.id)],
+        })
+
+        # Assert both phone and mobile are in the clickable field
+        self.assertIn('tel:+32412345678', event.x_studio_customer_phone,
+                     "Clickable phone should contain phone number")
+        self.assertIn('tel:+32498765432', event.x_studio_customer_phone,
+                     "Clickable phone should also contain mobile number")
+        self.assertIn(' / ', event.x_studio_customer_phone,
+                     "Phone and mobile should be separated by /")
+
+    def test_clickable_phone_mobile_only(self):
+        """Test that mobile-only partner shows mobile in clickable phone field"""
+        partner_mobile_only = self.env['res.partner'].create({
+            'name': 'Partner Mobile Only',
+            'mobile': '+32498765432',
+        })
+
+        event = self.env['calendar.event'].create({
+            'name': 'Test Event',
+            'start': datetime.datetime.now(),
+            'stop': datetime.datetime.now() + datetime.timedelta(hours=1),
+            'partner_ids': [(4, partner_mobile_only.id)],
+        })
+
+        self.assertIn('tel:+32498765432', event.x_studio_customer_phone,
+                     "Clickable phone should contain mobile number when no phone")
+
     def test_clickable_fields_handle_missing_data(self):
         """Test graceful handling when address/phone is missing"""
         # Create partner without address/phone
@@ -414,6 +455,31 @@ class TestCalendarEvent(TransactionCase):
         attendee_partner_ids = [att.partner_id.id for att in event.attendee_ids]
         self.assertIn(self.customer_partner.id, attendee_partner_ids,
                      f"Existing customer (ID {self.customer_partner.id}) should be added as attendee. Found: {attendee_partner_ids}")
+
+    def test_find_existing_customer_by_mobile(self):
+        """Test that existing customer is found by last 8 digits of mobile number"""
+        if not self.appointment_type_commercial:
+            self.skipTest("Appointment module not installed")
+
+        # Create customer with mobile only
+        customer_mobile = self.env['res.partner'].create({
+            'name': 'Mobile Customer',
+            'mobile': '+32498111222',
+        })
+
+        event = self.env['calendar.event'].create({
+            'name': 'Test Event',
+            'start': datetime.datetime.now(),
+            'stop': datetime.datetime.now() + datetime.timedelta(hours=1),
+            'x_studio_customer_phone': '<a href="tel:0498111222">0498 11 12 22</a>',
+            'appointment_type_id': self.appointment_type_commercial.id,
+        })
+
+        event.invalidate_recordset()
+
+        attendee_partner_ids = [att.partner_id.id for att in event.attendee_ids]
+        self.assertIn(customer_mobile.id, attendee_partner_ids,
+                     "Customer with matching mobile should be added as attendee")
 
     def test_update_opportunity_with_customer(self):
         """Test that related opportunity is updated with found customer"""
