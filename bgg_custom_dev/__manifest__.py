@@ -52,6 +52,7 @@
 
         # Views
         'views/menu_views.xml',
+        'views/res_partner_views.xml',
     ],
     'installable': True,
     'application': False,

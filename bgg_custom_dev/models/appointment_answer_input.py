@@ -251,7 +251,7 @@ class AppointmentAnswerInput(models.Model):
             # Get other components that don't come from questions
             name_parts[4] = record.calendar_event_id.user_id.name or name_parts[4]  # Vendeur
             name_parts[0] = record.partner_id.name or name_parts[0]  # Nom Client
-            name_parts[2] = record.partner_id.phone or name_parts[2]  # Téléphone
+            name_parts[2] = record.partner_id.phone or record.partner_id.phone_2 or name_parts[2]  # Téléphone
 
             # Format the new title, filter out empty strings and add SMS icon if needed
             new_title = sms_icon + '/'.join(filter(None, name_parts))
