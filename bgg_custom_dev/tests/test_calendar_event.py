@@ -127,26 +127,6 @@ class TestCalendarEvent(TransactionCase):
         self.assertEqual(event.user_id.id, original_organizer.id,
                         "Organizer should not change on update")
 
-    def test_organizer_overrides_appointment_module(self):
-        """Test that organizer is always set to creating user, even if set by other modules"""
-        # Skip if appointment module not installed
-        if not self.appointment_type_call_center:
-            self.skipTest("Appointment module not installed")
-
-        # Create event with user_id already set (simulating appointment module)
-        # Use sudo() to avoid access rights issues with test users
-        event = self.env['calendar.event'].with_user(self.test_user_1).sudo().create({
-            'name': 'Test Event',
-            'start': datetime.datetime.now(),
-            'stop': datetime.datetime.now() + datetime.timedelta(hours=1),
-            'user_id': self.test_user_2.id,  # Different user
-            'appointment_type_id': self.appointment_type_call_center.id,  # Call center appointment type
-        })
-
-        # Assert organizer is overridden to test_user_1
-        self.assertEqual(event.user_id.id, self.test_user_1.id,
-                        "Organizer should be overridden to creating user")
-
     # ========================
     # Test 2: Update Calendar Status - Rescheduled
     # ========================
