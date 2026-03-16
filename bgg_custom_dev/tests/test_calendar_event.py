@@ -276,45 +276,6 @@ class TestCalendarEvent(TransactionCase):
         self.assertIn('+32412345678', event.x_studio_customer_phone,
                      "Clickable phone should contain clean phone number")
 
-    def test_clickable_phone_includes_phone_2(self):
-        """Test that both phone and phone_2 are shown in clickable phone field"""
-        partner_with_phone_2 = self.env['res.partner'].create({
-            'name': 'Partner With Phone 2',
-            'phone': '+32412345678',
-            'phone_2': '+32498765432',
-        })
-
-        event = self.env['calendar.event'].create({
-            'name': 'Test Event',
-            'start': datetime.datetime.now(),
-            'stop': datetime.datetime.now() + datetime.timedelta(hours=1),
-            'partner_ids': [(4, partner_with_phone_2.id)],
-        })
-
-        self.assertIn('tel:+32412345678', event.x_studio_customer_phone,
-                     "Clickable phone should contain phone number")
-        self.assertIn('tel:+32498765432', event.x_studio_customer_phone,
-                     "Clickable phone should also contain phone_2 number")
-        self.assertIn(' / ', event.x_studio_customer_phone,
-                     "Phone and phone_2 should be separated by /")
-
-    def test_clickable_phone_phone_2_only(self):
-        """Test that phone_2-only partner shows phone_2 in clickable phone field"""
-        partner_phone_2_only = self.env['res.partner'].create({
-            'name': 'Partner Phone 2 Only',
-            'phone_2': '+32498765432',
-        })
-
-        event = self.env['calendar.event'].create({
-            'name': 'Test Event',
-            'start': datetime.datetime.now(),
-            'stop': datetime.datetime.now() + datetime.timedelta(hours=1),
-            'partner_ids': [(4, partner_phone_2_only.id)],
-        })
-
-        self.assertIn('tel:+32498765432', event.x_studio_customer_phone,
-                     "Clickable phone should contain phone_2 when no phone")
-
     def test_clickable_fields_handle_missing_data(self):
         """Test graceful handling when address/phone is missing"""
         # Create partner without address/phone
@@ -489,30 +450,6 @@ class TestCalendarEvent(TransactionCase):
         # Assert opportunity partner updated
         self.assertEqual(opportunity.partner_id.id, self.customer_partner.id,
                         "Opportunity partner should be updated to found customer")
-
-    def test_find_existing_customer_by_phone_2(self):
-        """Test that existing customer is found by last 8 digits of phone_2"""
-        if not self.appointment_type_commercial:
-            self.skipTest("Appointment module not installed")
-
-        customer_phone_2 = self.env['res.partner'].create({
-            'name': 'Phone 2 Customer',
-            'phone_2': '+32498111222',
-        })
-
-        event = self.env['calendar.event'].create({
-            'name': 'Test Event',
-            'start': datetime.datetime.now(),
-            'stop': datetime.datetime.now() + datetime.timedelta(hours=1),
-            'x_studio_customer_phone': '<a href="tel:0498111222">0498 11 12 22</a>',
-            'appointment_type_id': self.appointment_type_commercial.id,
-        })
-
-        event.invalidate_recordset()
-
-        attendee_partner_ids = [att.partner_id.id for att in event.attendee_ids]
-        self.assertIn(customer_phone_2.id, attendee_partner_ids,
-                     "Customer with matching phone_2 should be added as attendee")
 
     def test_deduplicate_customers(self):
         """Test that duplicate customer attendees are removed"""

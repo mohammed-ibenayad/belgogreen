@@ -265,22 +265,12 @@ class CalendarEvent(models.Model):
                     maps_url = f"https://www.google.com/maps/search/?api=1&query={encoded_addr}"
                     new_address_html = f'<a href="{maps_url}" target="_blank">{full_addr}</a>'
 
-                # --- Build clickable phone(s) ---
-                phone_links = []
+                # --- Build clickable phone ---
                 phone = client_partner.phone
                 if phone:
                     clean_phone = ''.join(c for c in phone if c.isdigit() or c == '+')
                     if clean_phone:
-                        phone_links.append(f'<a href="tel:{clean_phone}">{phone}</a>')
-
-                phone_2 = client_partner.phone_2
-                if phone_2:
-                    clean_phone_2 = ''.join(c for c in phone_2 if c.isdigit() or c == '+')
-                    if clean_phone_2:
-                        phone_links.append(f'<a href="tel:{clean_phone_2}">{phone_2}</a>')
-
-                if phone_links:
-                    new_phone_html = ' / '.join(phone_links)
+                        new_phone_html = f'<a href="tel:{clean_phone}">{phone}</a>'
 
                 # Prepare updates
                 update_vals = {}
@@ -421,12 +411,10 @@ class CalendarEvent(models.Model):
             except:
                 pass
 
-            # Fallback to partner phone or phone_2
+            # Fallback to partner phone
             if not phone and record.partner_id:
                 if record.partner_id.phone:
                     phone = record.partner_id.phone
-                elif record.partner_id.phone_2:
-                    phone = record.partner_id.phone_2
 
             if phone:
                 # Clean phone - keep only digits
@@ -437,11 +425,9 @@ class CalendarEvent(models.Model):
                     _logger.info("Searching for existing customer with last 8 digits: %s for event ID %s",
                                last_8_digits, record.id)
 
-                    # Search for existing customers by phone or phone_2
+                    # Search for existing customers
                     existing_customers = self.env['res.partner'].search([
-                        '|',
-                        ('phone', 'ilike', last_8_digits),
-                        ('phone_2', 'ilike', last_8_digits),
+                        ('phone', 'ilike', last_8_digits)
                     ])
 
                     # Filter out internal users
@@ -467,12 +453,12 @@ class CalendarEvent(models.Model):
                             # If this attendee is not the main customer and has similar phone
                             if attendee_partner.id != customer.id:
                                 # Check if it's a duplicate (same last 8 digits)
-                                for attendee_phone in filter(None, [attendee_partner.phone, attendee_partner.phone_2]):
+                                if attendee_partner.phone:
+                                    attendee_phone = attendee_partner.phone
                                     attendee_clean = ''.join(c for c in attendee_phone if c.isdigit())
                                     if len(attendee_clean) >= 8 and attendee_clean[-8:] == last_8_digits:
                                         if attendee_partner not in potential_duplicates:
                                             potential_duplicates |= attendee_partner
-                                        break
 
                         # Check if customer is already an attendee
                         customer_already_attendee = any(
