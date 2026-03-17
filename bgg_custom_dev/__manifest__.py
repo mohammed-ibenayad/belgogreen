@@ -50,9 +50,6 @@
         # Security
         'security/ir.model.access.csv',
 
-        # Wizard
-        'wizard/appointment_status_wizard_views.xml',
-
         # Views
         'views/calendar_event_views.xml',
 
@@ -63,11 +60,6 @@
         'views/menu_views.xml',
         'views/res_partner_views.xml',
     ],
-    'assets': {
-        'web.assets_backend': [
-            'bgg_custom_dev/static/src/js/appointment_statusbar.js',
-        ],
-    },
     'installable': True,
     'application': False,
     'auto_install': False,
