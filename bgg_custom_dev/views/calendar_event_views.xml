@@ -1,20 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Inherit calendar.event form view to add avis and recommandation fields -->
+    <!-- Inherit calendar.event form view -->
     <record id="view_calendar_event_form_inherit_bgg" model="ir.ui.view">
         <field name="name">calendar.event.form.inherit.bgg</field>
         <field name="model">calendar.event</field>
         <field name="inherit_id" ref="calendar.view_calendar_event_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='appointment_status']" position="after">
-                <field name="x_avis_count"
-                       string="Avis récoltés"
-                       invisible="not appointment_type_id"/>
-                <field name="x_recommandation_count"
-                       string="Recommandations"
-                       invisible="not appointment_type_id"/>
+
+            <!-- Add status change buttons in the header that open the wizard -->
+            <xpath expr="//header" position="inside">
+                <button name="%(bgg_custom_dev.action_appointment_status_attended)d"
+                        string="Effectué"
+                        type="action"
+                        class="btn-primary"
+                        invisible="not appointment_type_id or appointment_status == 'attended'"/>
+                <button name="%(bgg_custom_dev.action_appointment_status_no_show)d"
+                        string="No Show"
+                        type="action"
+                        class="btn-secondary"
+                        invisible="not appointment_type_id or appointment_status == 'no_show'"/>
             </xpath>
+
+            <!-- Add new "Avis &amp; Recommandations" tab in the notebook -->
+            <xpath expr="//notebook" position="inside">
+                <page string="Avis &amp; Recommandations" name="page_avis_recommandations"
+                      invisible="not appointment_type_id">
+                    <group>
+                        <group string="Avis clients">
+                            <field name="x_avis_count"/>
+                        </group>
+                        <group string="Recommandations">
+                            <field name="x_recommandation_count"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+
         </field>
     </record>
 
