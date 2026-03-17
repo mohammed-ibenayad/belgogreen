@@ -18,10 +18,10 @@ class AppointmentKpiReport(models.Model):
     total_avis = fields.Integer(string='Total avis', readonly=True)
     total_recommandations = fields.Integer(string='Total recommandations', readonly=True)
     avg_avis = fields.Float(
-        string='Moy. avis / RDV', readonly=True, group_operator='avg'
+        string='Moy. avis / RDV', readonly=True, aggregator='avg'
     )
     avg_recommandations = fields.Float(
-        string='Moy. recommandations / RDV', readonly=True, group_operator='avg'
+        string='Moy. recommandations / RDV', readonly=True, aggregator='avg'
     )
 
     def init(self):
