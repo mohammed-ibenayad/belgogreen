@@ -4,6 +4,11 @@ import { patch } from "@web/core/utils/patch";
 import { StatusBarField } from "@web/views/fields/statusbar/statusbar_field";
 import { useService } from "@web/core/utils/hooks";
 
+const WIZARD_STATUSES = {
+    attended: "bgg_custom_dev.action_appointment_status_attended",
+    no_show: "bgg_custom_dev.action_appointment_status_no_show",
+};
+
 patch(StatusBarField.prototype, {
     setup() {
         super.setup(...arguments);
@@ -12,19 +17,16 @@ patch(StatusBarField.prototype, {
 
     async selectItem(item) {
         const { name, record } = this.props;
+        const statusValue = item.value;
+        const model = record.resModel || record.model;
 
         // Intercept appointment_status changes on calendar.event
         if (
             name === "appointment_status" &&
-            record.resModel === "calendar.event" &&
-            (item.value === "attended" || item.value === "no_show")
+            model === "calendar.event" &&
+            statusValue in WIZARD_STATUSES
         ) {
-            const actionXmlId =
-                item.value === "attended"
-                    ? "bgg_custom_dev.action_appointment_status_attended"
-                    : "bgg_custom_dev.action_appointment_status_no_show";
-
-            await this.actionService.doAction(actionXmlId, {
+            await this.actionService.doAction(WIZARD_STATUSES[statusValue], {
                 additionalContext: {
                     active_id: record.resId,
                     active_model: "calendar.event",
