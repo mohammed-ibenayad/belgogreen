@@ -5,9 +5,12 @@
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="base.view_partner_form"/>
         <field name="arch" type="xml">
-            <field name="phone" position="after">
-                <field name="phone_2" widget="phone"/>
-            </field>
+            <xpath expr="//sheet//div[hasclass('d-flex','flex-column','flex-grow-1')]/div[descendant::field[@name='phone']]" position="after">
+                <div class="d-flex align-items-baseline w-md-50">
+                    <i class="fa fa-fw me-1 fa-phone text-primary" title="Phone 2"/>
+                    <field name="phone_2" class="w-100" widget="phone" placeholder="Phone 2"/>
+                </div>
+            </xpath>
         </field>
     </record>
 </odoo>
