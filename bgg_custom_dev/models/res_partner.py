@@ -7,6 +7,6 @@ class ResPartner(models.Model):
     _inherit = 'res.partner'
 
     phone_2 = fields.Char(
-        string='Phone 2',
+        string='2nd Phone',
         help='Second phone number for the contact',
     )
