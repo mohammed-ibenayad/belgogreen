@@ -33,6 +33,19 @@ class CalendarEvent(models.Model):
         help='Clickable phone number with tel: protocol'
     )
 
+    # KPI fields for tracking reviews and referrals per appointment
+    x_avis_count = fields.Integer(
+        string="Nombre d'avis",
+        default=0,
+        help="Nombre d'avis clients récoltés lors de ce rendez-vous"
+    )
+
+    x_recommandation_count = fields.Integer(
+        string='Nombre de recommandations',
+        default=0,
+        help="Nombre de recommandations (parrainages) obtenues lors de ce rendez-vous"
+    )
+
     # Custom field for tracking who made the appointment on behalf of customer
     x_studio_rendez_vous_pris_la_place_de = fields.Many2one(
         'res.partner',

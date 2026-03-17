@@ -5,12 +5,16 @@
               name="BelGoGreen Custom Development"
               sequence="100"/>
 
-    <!-- Main Menu Categories -->
-    <!-- Uncomment and customize as needed
-    <menuitem id="menu_bgg_custom_dev_config"
-              name="Configuration"
+    <!-- Suivi Rendez-vous -->
+    <menuitem id="menu_bgg_appointment_tracking"
+              name="Suivi Rendez-vous"
               parent="menu_bgg_custom_dev_root"
-              sequence="99"/>
-    -->
+              sequence="10"/>
+
+    <menuitem id="menu_bgg_appointment_kpi"
+              name="KPI Avis &amp; Recommandations"
+              parent="menu_bgg_appointment_tracking"
+              action="bgg_custom_dev.action_appointment_kpi_report"
+              sequence="10"/>
 
 </odoo>

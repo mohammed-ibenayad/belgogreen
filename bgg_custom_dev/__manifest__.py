@@ -48,10 +48,14 @@
     ],
     'data': [
         # Security
-        # 'security/ir.model.access.csv',
+        'security/ir.model.access.csv',
 
         # Views
+        'views/calendar_event_views.xml',
         'views/menu_views.xml',
+
+        # Reports
+        'report/appointment_kpi_report_views.xml',
     ],
     'installable': True,
     'application': False,
