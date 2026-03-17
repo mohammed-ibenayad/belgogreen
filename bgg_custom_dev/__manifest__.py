@@ -48,9 +48,15 @@
     ],
     'data': [
         # Security
-        # 'security/ir.model.access.csv',
+        'security/ir.model.access.csv',
 
         # Views
+        'views/calendar_event_views.xml',
+
+        # Reports (action must be loaded before menu that references it)
+        'report/appointment_kpi_report_views.xml',
+
+        # Menus
         'views/menu_views.xml',
         'views/res_partner_views.xml',
     ],

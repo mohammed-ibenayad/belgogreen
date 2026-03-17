@@ -657,3 +657,40 @@ class TestCalendarEvent(TransactionCase):
         ])
         self.assertEqual(len(active_activities), 0,
                         "NoShow activity should be done after reschedule")
+
+    # =====================================================
+    # Tests for Avis & Recommandation KPI fields
+    # =====================================================
+
+    def test_avis_recommandation_default_values(self):
+        """Test that x_avis_count and x_recommandation_count default to 0"""
+        event = self.env['calendar.event'].create({
+            'name': 'Test Default KPI',
+            'start': datetime.datetime.now(),
+            'stop': datetime.datetime.now() + datetime.timedelta(hours=1),
+        })
+        self.assertEqual(event.x_avis_count, 0,
+                        "x_avis_count should default to 0")
+        self.assertEqual(event.x_recommandation_count, 0,
+                        "x_recommandation_count should default to 0")
+
+    def test_avis_recommandation_write(self):
+        """Test that x_avis_count and x_recommandation_count are writable and persist"""
+        event = self.env['calendar.event'].create({
+            'name': 'Test KPI Write',
+            'start': datetime.datetime.now(),
+            'stop': datetime.datetime.now() + datetime.timedelta(hours=1),
+            'x_avis_count': 3,
+            'x_recommandation_count': 5,
+        })
+        self.assertEqual(event.x_avis_count, 3,
+                        "x_avis_count should be 3 after creation")
+        self.assertEqual(event.x_recommandation_count, 5,
+                        "x_recommandation_count should be 5 after creation")
+
+        # Test update
+        event.write({'x_avis_count': 7, 'x_recommandation_count': 2})
+        self.assertEqual(event.x_avis_count, 7,
+                        "x_avis_count should be 7 after update")
+        self.assertEqual(event.x_recommandation_count, 2,
+                        "x_recommandation_count should be 2 after update")
