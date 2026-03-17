@@ -50,6 +50,9 @@
         # Security
         'security/ir.model.access.csv',
 
+        # Wizard
+        'wizard/appointment_status_wizard_views.xml',
+
         # Views
         'views/calendar_event_views.xml',
 
