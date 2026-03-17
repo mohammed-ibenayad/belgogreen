@@ -52,10 +52,12 @@
 
         # Views
         'views/calendar_event_views.xml',
-        'views/menu_views.xml',
 
-        # Reports
+        # Reports (action must be loaded before menu that references it)
         'report/appointment_kpi_report_views.xml',
+
+        # Menus
+        'views/menu_views.xml',
     ],
     'installable': True,
     'application': False,
