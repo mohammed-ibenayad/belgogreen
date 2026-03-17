@@ -8,20 +8,6 @@
         <field name="inherit_id" ref="calendar.view_calendar_event_form"/>
         <field name="arch" type="xml">
 
-            <!-- Add status change buttons in the header that open the wizard -->
-            <xpath expr="//header" position="inside">
-                <button name="%(bgg_custom_dev.action_appointment_status_attended)d"
-                        string="Effectué"
-                        type="action"
-                        class="btn-primary"
-                        invisible="not appointment_type_id or appointment_status == 'attended'"/>
-                <button name="%(bgg_custom_dev.action_appointment_status_no_show)d"
-                        string="No Show"
-                        type="action"
-                        class="btn-secondary"
-                        invisible="not appointment_type_id or appointment_status == 'no_show'"/>
-            </xpath>
-
             <!-- Add new "Avis &amp; Recommandations" tab in the notebook -->
             <xpath expr="//notebook" position="inside">
                 <page string="Avis &amp; Recommandations" name="page_avis_recommandations"

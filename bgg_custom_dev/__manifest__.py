@@ -63,6 +63,11 @@
         'views/menu_views.xml',
         'views/res_partner_views.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'bgg_custom_dev/static/src/js/appointment_statusbar.js',
+        ],
+    },
     'installable': True,
     'application': False,
     'auto_install': False,
