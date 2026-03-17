@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Tree View -->
+    <record id="appointment_kpi_report_view_tree" model="ir.ui.view">
+        <field name="name">appointment.kpi.report.tree</field>
+        <field name="model">appointment.kpi.report</field>
+        <field name="arch" type="xml">
+            <list string="KPI Avis &amp; Recommandations">
+                <field name="date"/>
+                <field name="user_id"/>
+                <field name="appointment_type_id" optional="hide"/>
+                <field name="appointment_count" sum="Total"/>
+                <field name="total_avis" sum="Total"/>
+                <field name="total_recommandations" sum="Total"/>
+                <field name="avg_avis" avg="Moyenne"/>
+                <field name="avg_recommandations" avg="Moyenne"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Pivot View -->
+    <record id="appointment_kpi_report_view_pivot" model="ir.ui.view">
+        <field name="name">appointment.kpi.report.pivot</field>
+        <field name="model">appointment.kpi.report</field>
+        <field name="arch" type="xml">
+            <pivot string="KPI Avis &amp; Recommandations">
+                <field name="user_id" type="row"/>
+                <field name="date" interval="month" type="col"/>
+                <field name="appointment_count" type="measure"/>
+                <field name="total_avis" type="measure"/>
+                <field name="total_recommandations" type="measure"/>
+                <field name="avg_avis" type="measure"/>
+                <field name="avg_recommandations" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Graph View -->
+    <record id="appointment_kpi_report_view_graph" model="ir.ui.view">
+        <field name="name">appointment.kpi.report.graph</field>
+        <field name="model">appointment.kpi.report</field>
+        <field name="arch" type="xml">
+            <graph string="KPI Avis &amp; Recommandations" type="bar">
+                <field name="user_id"/>
+                <field name="total_recommandations" type="measure"/>
+                <field name="total_avis" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="appointment_kpi_report_view_search" model="ir.ui.view">
+        <field name="name">appointment.kpi.report.search</field>
+        <field name="model">appointment.kpi.report</field>
+        <field name="arch" type="xml">
+            <search string="Recherche KPI Rendez-vous">
+                <field name="user_id"/>
+                <field name="appointment_type_id"/>
+                <filter name="this_month" string="Ce mois"
+                        domain="[('date', '&gt;=', (context_today() - relativedelta(day=1)).strftime('%%Y-%%m-%%d')),
+                                 ('date', '&lt;', (context_today() + relativedelta(months=1, day=1)).strftime('%%Y-%%m-%%d'))]"/>
+                <filter name="last_month" string="Mois dernier"
+                        domain="[('date', '&gt;=', (context_today() - relativedelta(months=1, day=1)).strftime('%%Y-%%m-%%d')),
+                                 ('date', '&lt;', (context_today() - relativedelta(day=1)).strftime('%%Y-%%m-%%d'))]"/>
+                <filter name="this_quarter" string="Ce trimestre"
+                        domain="[('date', '&gt;=', (context_today() - relativedelta(month=((context_today().month - 1) // 3) * 3 + 1, day=1)).strftime('%%Y-%%m-%%d')),
+                                 ('date', '&lt;', (context_today() + relativedelta(month=((context_today().month - 1) // 3) * 3 + 4, day=1)).strftime('%%Y-%%m-%%d'))]"/>
+                <separator/>
+                <filter name="group_user" string="Par commercial" context="{'group_by': 'user_id'}"/>
+                <filter name="group_month" string="Par mois" context="{'group_by': 'date:month'}"/>
+                <filter name="group_type" string="Par type de RDV" context="{'group_by': 'appointment_type_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_appointment_kpi_report" model="ir.actions.act_window">
+        <field name="name">KPI Avis &amp; Recommandations</field>
+        <field name="res_model">appointment.kpi.report</field>
+        <field name="view_mode">pivot,graph,list</field>
+        <field name="search_view_id" ref="appointment_kpi_report_view_search"/>
+        <field name="context">{'search_default_this_month': 1, 'search_default_group_user': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Aucune donnée de rendez-vous trouvée.
+            </p>
+            <p>
+                Les KPI avis et recommandations apparaîtront ici une fois que les commerciaux
+                auront renseigné ces informations dans leurs rendez-vous.
+            </p>
+        </field>
+    </record>
+
+</odoo>

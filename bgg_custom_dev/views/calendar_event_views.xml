@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Inherit calendar.event form view to add avis and recommandation fields -->
+    <record id="view_calendar_event_form_inherit_bgg" model="ir.ui.view">
+        <field name="name">calendar.event.form.inherit.bgg</field>
+        <field name="model">calendar.event</field>
+        <field name="inherit_id" ref="calendar.view_calendar_event_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='appointment_status']" position="after">
+                <field name="x_avis_count"
+                       string="Avis récoltés"
+                       invisible="not appointment_type_id"/>
+                <field name="x_recommandation_count"
+                       string="Recommandations"
+                       invisible="not appointment_type_id"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
