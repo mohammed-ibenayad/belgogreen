@@ -468,11 +468,16 @@ class CommercialDashboard(models.TransientModel):
         }
 
     def _compute_financial_kpis(self, orders):
-        """Compute financial KPIs from sale orders."""
+        """Compute financial KPIs from sale orders.
+
+        CA BRUT = total of all orders (confirmed + cancelled)
+        CA ANNULE = total of cancelled orders
+        CA NET = CA BRUT - CA ANNULE (computed downstream)
+        """
         confirmed_orders = orders.filtered(lambda o: o.state in ('sale', 'done'))
         cancelled_orders = orders.filtered(lambda o: o.state == 'cancel')
 
-        ca_brut = sum(confirmed_orders.mapped('amount_untaxed'))
+        ca_brut = sum(orders.mapped('amount_untaxed'))
         ca_annule = sum(cancelled_orders.mapped('amount_untaxed'))
         nbre_vies = len(confirmed_orders)
 
