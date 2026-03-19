@@ -49,7 +49,6 @@
     ],
     'data': [
         # Security
-        'security/groups.xml',
         'security/ir.model.access.csv',
 
         # Views
@@ -72,4 +71,5 @@
     'installable': True,
     'application': False,
     'auto_install': False,
+    'post_init_hook': '_assign_admin_group_to_menus',
 }
