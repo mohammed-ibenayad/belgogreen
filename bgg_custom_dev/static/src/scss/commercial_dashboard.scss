@@ -6,7 +6,7 @@
     min-height: 100vh;
     max-height: 100vh;
     overflow-y: auto;
-    overflow-x: hidden;
+    overflow-x: auto;
 
     &::-webkit-scrollbar {
         width: 8px;
@@ -81,11 +81,32 @@
         border-radius: 4px;
         border: 1px solid #dee2e6;
         overflow-x: auto;
+        overflow-y: auto;
+        max-height: calc(100vh - 140px);
+
+        &::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        &::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        &::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+
+            &:hover {
+                background: #555;
+            }
+        }
     }
 
     /* Main Table */
     .cd_table {
-        width: 100%;
+        min-width: 100%;
+        width: max-content;
         border-collapse: collapse;
         font-size: 13px;
 
@@ -96,6 +117,9 @@
                 font-weight: 700;
                 border: 1px solid #dee2e6;
                 white-space: nowrap;
+                position: sticky;
+                top: 0;
+                z-index: 2;
             }
 
             .cd_section_header {
@@ -144,6 +168,9 @@
                 white-space: nowrap;
                 min-width: 36px;
                 max-width: 36px;
+                position: sticky;
+                left: 0;
+                z-index: 1;
 
                 &.cd_section_blue {
                     background: #17a2b8;
@@ -167,6 +194,9 @@
                 border: 1px solid #dee2e6;
                 white-space: nowrap;
                 min-width: 90px;
+                position: sticky;
+                left: 36px;
+                z-index: 1;
 
                 &.cd_status_present {
                     color: #28a745;

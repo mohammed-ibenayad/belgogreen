@@ -1,3 +1,4 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_appointment_kpi_report_user,appointment.kpi.report.user,model_appointment_kpi_report,base.group_user,1,0,0,0
 access_commercial_dashboard_user,commercial.dashboard.user,model_commercial_dashboard,base.group_user,1,1,1,0
+access_commercial_kpi_report_user,commercial.kpi.report.user,model_commercial_kpi_report,base.group_user,1,0,0,0
