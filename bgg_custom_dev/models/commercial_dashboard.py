@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import io
 import logging
 from odoo import api, fields, models
 from dateutil.relativedelta import relativedelta
@@ -15,11 +16,15 @@ class CommercialDashboard(models.TransientModel):
 
     @api.model
     def get_filter_options(self):
-        """Return available users and companies for filters."""
-        users = self.env['res.users'].search([
-            ('share', '=', False),
-            ('active', '=', True),
-        ], order='name')
+        """Return available users (Commercial group) and companies for filters."""
+        commercial_group = self.env.ref('sales_team.group_sale_salesman', raise_if_not_found=False)
+        if commercial_group:
+            users = commercial_group.users.filtered(lambda u: u.active).sorted('name')
+        else:
+            users = self.env['res.users'].search([
+                ('share', '=', False),
+                ('active', '=', True),
+            ], order='name')
         companies = self.env['res.company'].search([], order='name')
         return {
             'users': [{'id': u.id, 'name': u.name} for u in users],
@@ -232,6 +237,211 @@ class CommercialDashboard(models.TransientModel):
             'current_quarter': quarter,
             'currency': currency_info,
         }
+
+    @api.model
+    def export_excel(self, month=None, year=None, period_type='month',
+                     quarter=None, user_id=None, company_id=None):
+        """Generate Excel file from dashboard data and return base64."""
+        import xlsxwriter
+
+        data = self.get_dashboard_data(
+            month=month, year=year, period_type=period_type,
+            quarter=quarter, user_id=user_id, company_id=company_id,
+        )
+
+        output = io.BytesIO()
+        workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+        sheet = workbook.add_worksheet('Suivi Commercial')
+
+        # Formats
+        header_fmt = workbook.add_format({
+            'bold': True, 'bg_color': '#2c3e50', 'font_color': 'white',
+            'border': 1, 'align': 'center', 'valign': 'vcenter',
+            'font_name': 'Arial', 'font_size': 11,
+        })
+        total_header_fmt = workbook.add_format({
+            'bold': True, 'bg_color': '#017e84', 'font_color': 'white',
+            'border': 1, 'align': 'center', 'valign': 'vcenter',
+            'font_name': 'Arial', 'font_size': 11,
+        })
+        section_fmt = workbook.add_format({
+            'bold': True, 'bg_color': '#2c3e50', 'font_color': 'white',
+            'border': 1, 'align': 'center', 'valign': 'vcenter',
+            'font_name': 'Arial', 'font_size': 10,
+        })
+        blue_fmt = workbook.add_format({
+            'bold': True, 'bg_color': '#17a2b8', 'font_color': 'white',
+            'border': 1, 'align': 'center', 'valign': 'vcenter',
+            'font_name': 'Arial', 'font_size': 10,
+        })
+        green_fmt = workbook.add_format({
+            'bold': True, 'bg_color': '#28a745', 'font_color': 'white',
+            'border': 1, 'align': 'center', 'valign': 'vcenter',
+            'font_name': 'Arial', 'font_size': 10,
+        })
+        red_fmt = workbook.add_format({
+            'bold': True, 'bg_color': '#dc3545', 'font_color': 'white',
+            'border': 1, 'align': 'center', 'valign': 'vcenter',
+            'font_name': 'Arial', 'font_size': 10,
+        })
+        label_fmt = workbook.add_format({
+            'bold': True, 'bg_color': '#f8f9fa', 'border': 1,
+            'font_name': 'Arial', 'font_size': 10,
+        })
+        cell_fmt = workbook.add_format({
+            'border': 1, 'align': 'center',
+            'font_name': 'Arial', 'font_size': 10,
+        })
+        total_cell_fmt = workbook.add_format({
+            'bold': True, 'border': 1, 'align': 'center',
+            'bg_color': '#e8f5f5', 'font_color': '#017e84',
+            'font_name': 'Arial', 'font_size': 10,
+        })
+        currency_fmt = workbook.add_format({
+            'border': 1, 'align': 'center', 'num_format': '#,##0.00 €',
+            'font_name': 'Arial', 'font_size': 10,
+        })
+        currency_total_fmt = workbook.add_format({
+            'bold': True, 'border': 1, 'align': 'center',
+            'bg_color': '#e8f5f5', 'font_color': '#017e84',
+            'num_format': '#,##0.00 €',
+            'font_name': 'Arial', 'font_size': 10,
+        })
+        percent_fmt = workbook.add_format({
+            'border': 1, 'align': 'center', 'num_format': '0%',
+            'font_name': 'Arial', 'font_size': 10,
+        })
+        percent_total_fmt = workbook.add_format({
+            'bold': True, 'border': 1, 'align': 'center',
+            'bg_color': '#e8f5f5', 'font_color': '#017e84',
+            'num_format': '0%',
+            'font_name': 'Arial', 'font_size': 10,
+        })
+
+        users = data['users']
+        n_users = len(users)
+
+        # Column widths
+        sheet.set_column(0, 0, 18)
+        sheet.set_column(1, 1, 14)
+        for i in range(n_users + 1):
+            sheet.set_column(2 + i, 2 + i, 14)
+
+        # Header row
+        row = 0
+        sheet.merge_range(row, 0, row, 1, data['period_label'], header_fmt)
+        for i, user in enumerate(users):
+            sheet.write(row, 2 + i, user['name'].split(' ')[0], header_fmt)
+        sheet.write(row, 2 + n_users, 'TOTAL', total_header_fmt)
+
+        def write_section(start_row, section_label, section_fmt_used, rows_data, is_currency=False, is_percent=False):
+            """Write a group of rows. Returns next row index."""
+            r = start_row
+            for idx, (row_label, user_values, total_value) in enumerate(rows_data):
+                if idx == 0 and len(rows_data) > 1:
+                    sheet.merge_range(r, 0, r + len(rows_data) - 1, 0, section_label, section_fmt_used)
+                elif len(rows_data) == 1:
+                    sheet.write(r, 0, section_label, section_fmt_used)
+                sheet.write(r, 1, row_label, label_fmt)
+                for i, val in enumerate(user_values):
+                    if is_currency:
+                        sheet.write_number(r, 2 + i, val, currency_fmt)
+                    elif is_percent:
+                        sheet.write_number(r, 2 + i, val / 100.0 if val else 0, percent_fmt)
+                    else:
+                        sheet.write(r, 2 + i, val, cell_fmt)
+                if is_currency:
+                    sheet.write_number(r, 2 + n_users, total_value, currency_total_fmt)
+                elif is_percent:
+                    sheet.write_number(r, 2 + n_users, total_value / 100.0 if total_value else 0, percent_total_fmt)
+                else:
+                    sheet.write(r, 2 + n_users, total_value, total_cell_fmt)
+                r += 1
+            return r
+
+        rdv_call = data['rdv_call']
+        rdv_call_total = data['rdv_call_total']
+        rdv_com = data['rdv_commercial']
+        rdv_com_total = data['rdv_commercial_total']
+        derived = data['derived']
+        derived_total = data['derived_total']
+
+        def get_user_vals(data_dict, key):
+            return [data_dict.get(str(u['id']), {}).get(key, 0) for u in users]
+
+        # RDV CALL CENTER
+        row = 2
+        call_rows = [
+            ('Total', get_user_vals(rdv_call, 'total'), rdv_call_total.get('total', 0)),
+            ('Présent', get_user_vals(rdv_call, 'attended'), rdv_call_total.get('attended', 0)),
+            ('No-Show', get_user_vals(rdv_call, 'no_show'), rdv_call_total.get('no_show', 0)),
+            ('Refusé', get_user_vals(rdv_call, 'cancelled'), rdv_call_total.get('cancelled', 0)),
+            ('Réservé', get_user_vals(rdv_call, 'booked'), rdv_call_total.get('booked', 0)),
+        ]
+        row = write_section(row, 'RDV CALL CENTER', section_fmt, call_rows)
+
+        # RDV COMMERCIAL
+        row += 1
+        com_rows = [
+            ('Total', get_user_vals(rdv_com, 'total'), rdv_com_total.get('total', 0)),
+            ('Présent', get_user_vals(rdv_com, 'attended'), rdv_com_total.get('attended', 0)),
+            ('No-Show', get_user_vals(rdv_com, 'no_show'), rdv_com_total.get('no_show', 0)),
+            ('Refusé', get_user_vals(rdv_com, 'cancelled'), rdv_com_total.get('cancelled', 0)),
+            ('Réservé', get_user_vals(rdv_com, 'booked'), rdv_com_total.get('booked', 0)),
+        ]
+        row = write_section(row, 'RDV COMMERCIAL', section_fmt, com_rows)
+
+        # TAUX PRÉSENCE
+        row += 1
+        presence_rows = [
+            ('Call', get_user_vals(derived, 'tx_presence_call'), derived_total.get('tx_presence_call', 0)),
+            ('Commercial', get_user_vals(derived, 'tx_presence_com'), derived_total.get('tx_presence_com', 0)),
+        ]
+        row = write_section(row, 'TAUX PRÉSENCE', blue_fmt, presence_rows, is_percent=True)
+
+        # NBRE VENTES
+        row += 1
+        ventes_rows = [
+            ('', get_user_vals(derived, 'nbre_vies'), derived_total.get('nbre_vies', 0)),
+        ]
+        row = write_section(row, 'NBRE VENTES', blue_fmt, ventes_rows)
+
+        # CA BRUT
+        row += 1
+        row = write_section(row, 'CA BRUT', green_fmt, [
+            ('', get_user_vals(derived, 'ca_brut'), derived_total.get('ca_brut', 0)),
+        ], is_currency=True)
+
+        # CA NET
+        row = write_section(row, 'CA NET', green_fmt, [
+            ('', get_user_vals(derived, 'ca_net'), derived_total.get('ca_net', 0)),
+        ], is_currency=True)
+
+        # ANNULÉ
+        row = write_section(row, 'ANNULÉ', red_fmt, [
+            ('', get_user_vals(derived, 'ca_annule'), derived_total.get('ca_annule', 0)),
+        ], is_currency=True)
+
+        # TX ANNULATION
+        row = write_section(row, 'TX ANNULATION', section_fmt, [
+            ('', get_user_vals(derived, 'tx_annulation'), derived_total.get('tx_annulation', 0)),
+        ], is_percent=True)
+
+        # PANIER MOYEN
+        row = write_section(row, 'PANIER MOYEN', section_fmt, [
+            ('', get_user_vals(derived, 'panier_moyen'), derived_total.get('panier_moyen', 0)),
+        ], is_currency=True)
+
+        # TX CONVERSION
+        row = write_section(row, 'TX CONVERSION', section_fmt, [
+            ('', get_user_vals(derived, 'tx_conversion'), derived_total.get('tx_conversion', 0)),
+        ], is_percent=True)
+
+        workbook.close()
+        output.seek(0)
+
+        import base64
+        return base64.b64encode(output.read()).decode('utf-8')
 
     def _count_appointment_statuses(self, events):
         """Count appointments by status."""
