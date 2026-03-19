@@ -27,7 +27,7 @@ class CommercialDashboard(models.TransientModel):
                 ('share', '=', False),
                 ('active', '=', True),
             ], order='name')
-        companies = users.mapped('company_id').sorted('name')
+        companies = self.env['res.company'].sudo().search([], order='name')
         return {
             'users': [{'id': u.id, 'name': u.name} for u in users],
             'companies': [{'id': c.id, 'name': c.name} for c in companies],
