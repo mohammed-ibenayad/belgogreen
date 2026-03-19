@@ -57,6 +57,7 @@
 
         # Reports (action must be loaded before menu that references it)
         'report/appointment_kpi_report_views.xml',
+        'report/commercial_kpi_report_views.xml',
 
         # Menus
         'views/menu_views.xml',
