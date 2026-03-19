@@ -9,6 +9,9 @@ _logger = logging.getLogger(__name__)
 
 QUARTER_NAMES_FR = {1: '1er', 2: '2ème', 3: '3ème', 4: '4ème'}
 
+CALL_CENTER_APPOINTMENT_REFS = ['APT-ENERG-CNT', 'APT-NISOL-CNT']
+COMMERCIAL_APPOINTMENT_REFS = ['APT-ENERG-COM', 'APT-NISOL-COM']
+
 
 class CommercialDashboard(models.TransientModel):
     _name = 'commercial.dashboard'
@@ -79,10 +82,10 @@ class CommercialDashboard(models.TransientModel):
 
         # Get appointment type IDs
         cnt_types = self.env['appointment.type'].search([
-            ('x_appointment_ref', 'like', '%CNT')
+            ('x_appointment_ref', 'in', CALL_CENTER_APPOINTMENT_REFS)
         ])
         com_types = self.env['appointment.type'].search([
-            ('x_appointment_ref', 'like', '%COM')
+            ('x_appointment_ref', 'in', COMMERCIAL_APPOINTMENT_REFS)
         ])
 
         cnt_type_ids = cnt_types.ids

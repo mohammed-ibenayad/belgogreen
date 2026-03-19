@@ -40,8 +40,8 @@ class CommercialKpiReport(models.Model):
                     ce.user_id AS user_id,
                     ce.appointment_type_id,
                     CASE
-                        WHEN apt.x_appointment_ref LIKE '%%CNT' THEN 'call'
-                        WHEN apt.x_appointment_ref LIKE '%%COM' THEN 'commercial'
+                        WHEN apt.x_appointment_ref IN ('APT-ENERG-CNT', 'APT-NISOL-CNT') THEN 'call'
+                        WHEN apt.x_appointment_ref IN ('APT-ENERG-COM', 'APT-NISOL-COM') THEN 'commercial'
                     END AS appointment_category,
                     ce.appointment_status,
                     1 AS appointment_count,
@@ -51,7 +51,7 @@ class CommercialKpiReport(models.Model):
                     CASE WHEN ce.appointment_status = 'booked' THEN 1 ELSE 0 END AS booked_count
                 FROM calendar_event ce
                 JOIN appointment_type apt ON apt.id = ce.appointment_type_id
-                WHERE (apt.x_appointment_ref LIKE '%%CNT' OR apt.x_appointment_ref LIKE '%%COM')
+                WHERE apt.x_appointment_ref IN ('APT-ENERG-CNT', 'APT-NISOL-CNT', 'APT-ENERG-COM', 'APT-NISOL-COM')
                   AND ce.active = TRUE
                   AND ce.user_id IS NOT NULL
             )
