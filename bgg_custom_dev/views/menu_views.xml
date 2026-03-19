@@ -17,4 +17,10 @@
               action="bgg_custom_dev.action_appointment_kpi_report"
               sequence="10"/>
 
+    <menuitem id="menu_bgg_commercial_dashboard"
+              name="Suivi Commercial"
+              parent="menu_bgg_appointment_tracking"
+              action="bgg_custom_dev.action_commercial_dashboard"
+              sequence="20"/>
+
 </odoo>
