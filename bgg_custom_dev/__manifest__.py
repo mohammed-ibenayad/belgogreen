@@ -49,6 +49,7 @@
     ],
     'data': [
         # Security
+        'security/groups.xml',
         'security/ir.model.access.csv',
 
         # Views
