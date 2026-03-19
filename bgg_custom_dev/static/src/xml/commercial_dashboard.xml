@@ -14,18 +14,18 @@
             </div>
 
             <!-- Dashboard Content -->
-            <div t-if="!state.loading and state.data and !state.error">
+            <div t-if="!state.loading and state.data and !state.error" style="display:flex;flex-direction:column;height:100%;">
                 <!-- Header -->
                 <div class="cd_header">
                     <div class="cd_header_left">
                         <h1>Suivi Commercial</h1>
                     </div>
                     <div class="cd_header_center">
-                        <button class="btn btn-sm btn-outline-secondary" t-on-click="onPrevMonth">
+                        <button class="btn btn-sm btn-outline-secondary" t-on-click="onPrevPeriod">
                             <i class="fa fa-chevron-left"/>
                         </button>
-                        <span class="cd_month_label" t-esc="state.data.month_label"/>
-                        <button class="btn btn-sm btn-outline-secondary" t-on-click="onNextMonth">
+                        <span class="cd_month_label" t-esc="state.data.period_label"/>
+                        <button class="btn btn-sm btn-outline-secondary" t-on-click="onNextPeriod">
                             <i class="fa fa-chevron-right"/>
                         </button>
                     </div>
@@ -36,13 +36,49 @@
                     </div>
                 </div>
 
+                <!-- Filters -->
+                <div class="cd_filters">
+                    <div class="cd_filter_group">
+                        <label>Période :</label>
+                        <select t-on-change="onPeriodTypeChange">
+                            <option value="month" t-att-selected="state.periodType === 'month' ? 'selected' : undefined">Mois</option>
+                            <option value="quarter" t-att-selected="state.periodType === 'quarter' ? 'selected' : undefined">Trimestre</option>
+                            <option value="year" t-att-selected="state.periodType === 'year' ? 'selected' : undefined">Année</option>
+                        </select>
+                    </div>
+                    <div class="cd_filter_sep"/>
+                    <div class="cd_filter_group">
+                        <label>Commercial :</label>
+                        <select t-on-change="onUserFilterChange">
+                            <option value="">Tous</option>
+                            <t t-foreach="state.availableUsers" t-as="u" t-key="u.id">
+                                <option t-att-value="u.id" t-att-selected="state.filterUserId === u.id ? 'selected' : undefined">
+                                    <t t-esc="u.name"/>
+                                </option>
+                            </t>
+                        </select>
+                    </div>
+                    <div class="cd_filter_sep"/>
+                    <div class="cd_filter_group">
+                        <label>Société :</label>
+                        <select t-on-change="onCompanyFilterChange">
+                            <option value="">Toutes</option>
+                            <t t-foreach="state.availableCompanies" t-as="c" t-key="c.id">
+                                <option t-att-value="c.id" t-att-selected="state.filterCompanyId === c.id ? 'selected' : undefined">
+                                    <t t-esc="c.name"/>
+                                </option>
+                            </t>
+                        </select>
+                    </div>
+                </div>
+
                 <!-- Main Table -->
                 <div class="cd_table_wrapper">
                     <table class="cd_table">
                         <thead>
                             <tr>
                                 <th class="cd_section_header" colspan="2">
-                                    <t t-esc="state.data.month_label"/>
+                                    <t t-esc="state.data.period_label"/>
                                 </th>
                                 <t t-foreach="state.data.users" t-as="user" t-key="user.id">
                                     <th class="cd_user_header">
@@ -157,7 +193,7 @@
 
                             <!-- Nbre de vies -->
                             <tr class="cd_highlight_row">
-                                <td class="cd_section_label cd_section_blue" colspan="1">Nbre de vies</td>
+                                <td class="cd_section_label cd_section_blue" colspan="1">NBRE DE VIES</td>
                                 <td class="cd_row_label"/>
                                 <t t-foreach="state.data.users" t-as="user" t-key="user.id">
                                     <td class="cd_cell cd_bold"><t t-esc="getUserDerived(user.id).nbre_vies || 0"/></td>
@@ -194,7 +230,7 @@
                                 <td class="cd_cell cd_total_cell cd_currency"><t t-esc="formatCurrency(state.data.derived_total.ca_annule)"/></td>
                             </tr>
                             <tr class="cd_financial_row">
-                                <td class="cd_section_label" colspan="1">TX Annulation</td>
+                                <td class="cd_section_label" colspan="1">TX ANNULATION</td>
                                 <td class="cd_row_label"/>
                                 <t t-foreach="state.data.users" t-as="user" t-key="user.id">
                                     <td class="cd_cell"><t t-esc="formatPercent(getUserDerived(user.id).tx_annulation)"/></td>
@@ -202,7 +238,7 @@
                                 <td class="cd_cell cd_total_cell"><t t-esc="formatPercent(state.data.derived_total.tx_annulation)"/></td>
                             </tr>
                             <tr class="cd_financial_row">
-                                <td class="cd_section_label" colspan="1">Panier Moyen</td>
+                                <td class="cd_section_label" colspan="1">PANIER MOYEN</td>
                                 <td class="cd_row_label"/>
                                 <t t-foreach="state.data.users" t-as="user" t-key="user.id">
                                     <td class="cd_cell cd_currency"><t t-esc="formatCurrency(getUserDerived(user.id).panier_moyen)"/></td>
@@ -210,7 +246,7 @@
                                 <td class="cd_cell cd_total_cell cd_currency"><t t-esc="formatCurrency(state.data.derived_total.panier_moyen)"/></td>
                             </tr>
                             <tr class="cd_financial_row cd_conversion_row">
-                                <td class="cd_section_label" colspan="1">TX Conversion</td>
+                                <td class="cd_section_label" colspan="1">TX CONVERSION</td>
                                 <td class="cd_row_label"/>
                                 <t t-foreach="state.data.users" t-as="user" t-key="user.id">
                                     <td class="cd_cell cd_bold"><t t-esc="formatPercent(getUserDerived(user.id).tx_conversion)"/></td>
