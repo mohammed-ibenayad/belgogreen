@@ -45,6 +45,7 @@
         'project',
         'documents',
         'sale_project',
+        'sale',
     ],
     'data': [
         # Security
@@ -52,6 +53,7 @@
 
         # Views
         'views/calendar_event_views.xml',
+        'views/commercial_dashboard_views.xml',
 
         # Reports (action must be loaded before menu that references it)
         'report/appointment_kpi_report_views.xml',
@@ -59,6 +61,13 @@
         # Menus
         'views/menu_views.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'bgg_custom_dev/static/src/js/commercial_dashboard.js',
+            'bgg_custom_dev/static/src/xml/commercial_dashboard.xml',
+            'bgg_custom_dev/static/src/scss/commercial_dashboard.scss',
+        ],
+    },
     'installable': True,
     'application': False,
     'auto_install': False,

@@ -1,0 +1,284 @@
+/* Commercial Dashboard Styles */
+
+.commercial_dashboard {
+    padding: 20px;
+    background-color: #f0f0f0;
+    min-height: 100vh;
+    max-height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    &::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+
+        &:hover {
+            background: #555;
+        }
+    }
+
+    /* Header */
+    .cd_header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding: 15px 20px;
+        background: white;
+        border-radius: 4px;
+        border: 1px solid #dee2e6;
+
+        h1 {
+            color: #2c3e50;
+            font-weight: 600;
+            margin: 0;
+            font-size: 22px;
+        }
+
+        .cd_header_center {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+
+            .cd_month_label {
+                font-size: 18px;
+                font-weight: 700;
+                color: #2c3e50;
+                min-width: 180px;
+                text-align: center;
+            }
+        }
+
+        .cd_header_right {
+            .btn {
+                background: #017e84;
+                border: none;
+                color: white;
+                font-weight: 500;
+
+                &:hover {
+                    background: #01666b;
+                }
+
+                i {
+                    margin-right: 5px;
+                }
+            }
+        }
+    }
+
+    /* Table Wrapper */
+    .cd_table_wrapper {
+        background: white;
+        border-radius: 4px;
+        border: 1px solid #dee2e6;
+        overflow-x: auto;
+    }
+
+    /* Main Table */
+    .cd_table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+
+        thead {
+            th {
+                padding: 10px 12px;
+                text-align: center;
+                font-weight: 700;
+                border: 1px solid #dee2e6;
+                white-space: nowrap;
+            }
+
+            .cd_section_header {
+                background: #2c3e50;
+                color: white;
+                text-align: left;
+                font-size: 12px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+
+            .cd_user_header {
+                background: #f8f9fa;
+                color: #2c3e50;
+                text-transform: uppercase;
+                font-size: 11px;
+                letter-spacing: 0.5px;
+                min-width: 80px;
+            }
+
+            .cd_total_header {
+                background: #017e84;
+                color: white;
+                text-transform: uppercase;
+                font-size: 11px;
+                letter-spacing: 0.5px;
+                min-width: 80px;
+            }
+        }
+
+        tbody {
+            /* Section labels */
+            .cd_section_label {
+                background: #2c3e50;
+                color: white;
+                font-weight: 700;
+                padding: 8px 12px;
+                text-align: center;
+                font-size: 11px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                border: 1px solid #dee2e6;
+                writing-mode: vertical-lr;
+                text-orientation: mixed;
+                transform: rotate(180deg);
+                white-space: nowrap;
+                min-width: 36px;
+                max-width: 36px;
+
+                &.cd_section_blue {
+                    background: #17a2b8;
+                }
+
+                &.cd_section_green {
+                    background: #28a745;
+                }
+
+                &.cd_section_red {
+                    background: #dc3545;
+                }
+            }
+
+            /* Row labels */
+            .cd_row_label {
+                padding: 6px 12px;
+                font-weight: 600;
+                color: #495057;
+                background: #f8f9fa;
+                border: 1px solid #dee2e6;
+                white-space: nowrap;
+                min-width: 90px;
+
+                &.cd_status_present {
+                    color: #28a745;
+                }
+
+                &.cd_status_noshow {
+                    color: #dc3545;
+                }
+
+                &.cd_status_refused {
+                    color: #fd7e14;
+                }
+
+                &.cd_status_booked {
+                    color: #17a2b8;
+                }
+            }
+
+            /* Data cells */
+            .cd_cell {
+                padding: 6px 12px;
+                text-align: center;
+                border: 1px solid #dee2e6;
+                color: #2c3e50;
+
+                &.cd_total_cell {
+                    background: #e8f5f5;
+                    font-weight: 700;
+                    color: #017e84;
+                }
+
+                &.cd_currency {
+                    font-family: 'Courier New', monospace;
+                    font-size: 12px;
+                }
+
+                &.cd_bold {
+                    font-weight: 700;
+                }
+            }
+
+            /* Section rows */
+            .cd_section_row td {
+                border-top: 2px solid #adb5bd;
+            }
+
+            /* Spacer */
+            .cd_spacer_row {
+                td {
+                    padding: 4px 0;
+                    border: none;
+                    background: #f0f0f0;
+                }
+            }
+
+            /* Financial rows */
+            .cd_financial_row {
+                td {
+                    border-bottom: 1px solid #dee2e6;
+                }
+            }
+
+            .cd_annule_row {
+                .cd_cell {
+                    color: #dc3545;
+                }
+            }
+
+            .cd_conversion_row {
+                td {
+                    border-bottom: 2px solid #adb5bd;
+                }
+
+                .cd_cell {
+                    background: #f8f9fa;
+                }
+
+                .cd_total_cell {
+                    background: #d4edda;
+                    color: #155724;
+                }
+            }
+
+            .cd_highlight_row {
+                .cd_cell {
+                    background: #fff3cd;
+                }
+
+                .cd_total_cell {
+                    background: #ffc107;
+                    color: #2c3e50;
+                }
+            }
+        }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        padding: 10px;
+
+        .cd_header {
+            flex-direction: column;
+            gap: 10px;
+            text-align: center;
+        }
+
+        .cd_table {
+            font-size: 11px;
+
+            .cd_section_label {
+                font-size: 9px;
+            }
+        }
+    }
+}

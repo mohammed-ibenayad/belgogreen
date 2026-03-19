@@ -2,7 +2,7 @@
 <odoo>
     <!-- Root Menu -->
     <menuitem id="menu_bgg_custom_dev_root"
-              name="BelGoGreen Custom Development"
+              name="BGG Dashboards"
               sequence="100"/>
 
     <!-- Suivi Rendez-vous -->
@@ -16,5 +16,11 @@
               parent="menu_bgg_appointment_tracking"
               action="bgg_custom_dev.action_appointment_kpi_report"
               sequence="10"/>
+
+    <menuitem id="menu_bgg_commercial_dashboard"
+              name="Suivi Commercial"
+              parent="menu_bgg_appointment_tracking"
+              action="bgg_custom_dev.action_commercial_dashboard"
+              sequence="20"/>
 
 </odoo>
