@@ -16,12 +16,12 @@ class CommercialDashboard(models.TransientModel):
 
     @api.model
     def get_filter_options(self):
-        """Return available users (Commercial group) and companies for filters."""
-        commercial_group = self.env['res.groups'].search([
-            ('name', '=', 'Commercial'),
-        ], limit=1)
-        if commercial_group:
-            users = commercial_group.users.filtered(lambda u: u.active).sorted('name')
+        """Return available users (Commercial group ID 59) and companies for filters."""
+        commercial_group = self.env['res.groups'].browse(59)
+        if commercial_group.exists():
+            users = self.env['res.users'].browse(commercial_group.user_ids.ids).filtered(
+                lambda u: u.active
+            ).sorted('name')
         else:
             users = self.env['res.users'].search([
                 ('share', '=', False),
