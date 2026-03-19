@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_partner_form_inherit_phone_2" model="ir.ui.view">
+        <field name="name">res.partner.form.inherit.phone2</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet//div[hasclass('d-flex','flex-column','flex-grow-1')]/div[descendant::field[@name='phone']]" position="after">
+                <div class="d-flex align-items-baseline w-md-50">
+                    <i class="fa fa-fw me-1 fa-phone text-primary" title="2ᵉ téléphone"/>
+                    <field name="phone_2" class="w-100" widget="phone" placeholder="2ᵉ téléphone"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

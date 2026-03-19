@@ -67,7 +67,7 @@ class ProjectProject(models.Model):
 
             # Check if we have a documents folder created
             if not record.documents_folder_id:
-                _logger.warning("[FOLDER RENAME]   No documents folder found for project ID %s", record.id)
+                _logger.info("[FOLDER RENAME]   Skipping - no documents folder yet for project ID %s", record.id)
                 return
 
             # Create new folder name with SO reference and client name
