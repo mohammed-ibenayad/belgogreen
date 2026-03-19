@@ -24,6 +24,6 @@ def _assign_admin_group_to_menus(env):
     for xmlid in menu_xmlids:
         menu = env.ref(xmlid, raise_if_not_found=False)
         if menu:
-            menu.groups_id = [(4, admin_group.id)]
+            menu.group_ids = [(4, admin_group.id)]
 
     _logger.info("Dashboard menus restricted to Admin group (ID: %s).", admin_group.id)
