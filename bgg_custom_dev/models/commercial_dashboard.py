@@ -102,11 +102,16 @@ class CommercialDashboard(models.TransientModel):
 
         events = self.env['calendar.event'].search(event_domain)
 
-        # Collect unique users from events
+        # Get Commercial group user IDs to filter results
+        commercial_group = self.env['res.groups'].browse(59)
+        commercial_user_ids = set(commercial_group.user_ids.ids) if commercial_group.exists() else None
+
+        # Collect unique users from events (only Commercial members)
         user_ids_set = set()
         for event in events:
             if event.user_id:
-                user_ids_set.add(event.user_id.id)
+                if commercial_user_ids is None or event.user_id.id in commercial_user_ids:
+                    user_ids_set.add(event.user_id.id)
 
         # Build sale order domain
         so_domain = [
@@ -122,7 +127,8 @@ class CommercialDashboard(models.TransientModel):
         sale_orders = self.env['sale.order'].search(so_domain)
         for so in sale_orders:
             if so.user_id:
-                user_ids_set.add(so.user_id.id)
+                if commercial_user_ids is None or so.user_id.id in commercial_user_ids:
+                    user_ids_set.add(so.user_id.id)
 
         # Get user records sorted by name
         users = self.env['res.users'].browse(list(user_ids_set)).sorted('name')
