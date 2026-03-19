@@ -6,40 +6,69 @@ from dateutil.relativedelta import relativedelta
 
 _logger = logging.getLogger(__name__)
 
+QUARTER_NAMES_FR = {1: '1er', 2: '2ème', 3: '3ème', 4: '4ème'}
+
 
 class CommercialDashboard(models.TransientModel):
     _name = 'commercial.dashboard'
     _description = 'Tableau de bord Commercial'
 
     @api.model
-    def get_dashboard_data(self, month=None, year=None):
-        """Get commercial dashboard data for the given month/year.
+    def get_filter_options(self):
+        """Return available users and companies for filters."""
+        users = self.env['res.users'].search([
+            ('share', '=', False),
+            ('active', '=', True),
+        ], order='name')
+        companies = self.env['res.company'].search([], order='name')
+        return {
+            'users': [{'id': u.id, 'name': u.name} for u in users],
+            'companies': [{'id': c.id, 'name': c.name} for c in companies],
+        }
 
-        Returns a dict with:
-        - users: list of user data (name, id)
-        - rdv_call: appointment stats for CNT types per user
-        - rdv_commercial: appointment stats for COM types per user
-        - financial: financial KPIs per user
-        - month_label: display label for the selected month
-        - current_month/current_year: selected period
+    @api.model
+    def get_dashboard_data(self, month=None, year=None, period_type='month',
+                           quarter=None, user_id=None, company_id=None):
+        """Get commercial dashboard data for the given period.
+
+        Args:
+            month: month number (1-12)
+            year: year number
+            period_type: 'month', 'quarter', or 'year'
+            quarter: quarter number (1-4), used when period_type='quarter'
+            user_id: filter by specific user
+            company_id: filter by specific company
         """
         today = fields.Date.today()
-        if not month:
-            month = today.month
         if not year:
             year = today.year
+        if not month:
+            month = today.month
 
-        # Date range for the selected month
-        date_start = fields.Date.to_date(f'{year}-{month:02d}-01')
-        date_end = date_start + relativedelta(months=1)
-
-        # Get month label
-        import locale
-        try:
-            locale.setlocale(locale.LC_TIME, 'fr_FR.UTF-8')
-        except Exception:
-            pass
-        month_label = date_start.strftime('%B %Y').upper()
+        # Compute date range based on period type
+        if period_type == 'quarter':
+            if not quarter:
+                quarter = (month - 1) // 3 + 1
+            q_start_month = (quarter - 1) * 3 + 1
+            date_start = fields.Date.to_date(f'{year}-{q_start_month:02d}-01')
+            date_end = date_start + relativedelta(months=3)
+            period_label = f'{QUARTER_NAMES_FR.get(quarter, quarter)} TRIMESTRE {year}'
+            month = q_start_month
+        elif period_type == 'year':
+            date_start = fields.Date.to_date(f'{year}-01-01')
+            date_end = fields.Date.to_date(f'{year + 1}-01-01')
+            period_label = str(year)
+            quarter = None
+        else:
+            date_start = fields.Date.to_date(f'{year}-{month:02d}-01')
+            date_end = date_start + relativedelta(months=1)
+            quarter = (month - 1) // 3 + 1
+            import locale
+            try:
+                locale.setlocale(locale.LC_TIME, 'fr_FR.UTF-8')
+            except Exception:
+                pass
+            period_label = date_start.strftime('%B %Y').upper()
 
         # Get appointment type IDs
         cnt_types = self.env['appointment.type'].search([
@@ -51,14 +80,20 @@ class CommercialDashboard(models.TransientModel):
 
         cnt_type_ids = cnt_types.ids
         com_type_ids = com_types.ids
-
-        # Get all calendar events for the period with relevant appointment types
         all_type_ids = cnt_type_ids + com_type_ids
-        events = self.env['calendar.event'].search([
+
+        # Build event domain
+        event_domain = [
             ('start', '>=', fields.Datetime.to_string(date_start)),
             ('start', '<', fields.Datetime.to_string(date_end)),
             ('appointment_type_id', 'in', all_type_ids),
-        ])
+        ]
+        if user_id:
+            event_domain.append(('user_id', '=', user_id))
+        if company_id:
+            event_domain.append(('user_id.company_id', '=', company_id))
+
+        events = self.env['calendar.event'].search(event_domain)
 
         # Collect unique users from events
         user_ids_set = set()
@@ -66,17 +101,23 @@ class CommercialDashboard(models.TransientModel):
             if event.user_id:
                 user_ids_set.add(event.user_id.id)
 
-        # Also get users from sale orders in the period
-        sale_orders = self.env['sale.order'].search([
+        # Build sale order domain
+        so_domain = [
             ('date_order', '>=', fields.Datetime.to_string(date_start)),
             ('date_order', '<', fields.Datetime.to_string(date_end)),
             ('state', 'in', ['sale', 'done', 'cancel']),
-        ])
+        ]
+        if user_id:
+            so_domain.append(('user_id', '=', user_id))
+        if company_id:
+            so_domain.append(('company_id', '=', company_id))
+
+        sale_orders = self.env['sale.order'].search(so_domain)
         for so in sale_orders:
             if so.user_id:
                 user_ids_set.add(so.user_id.id)
 
-        # Get user records and sort by name
+        # Get user records sorted by name
         users = self.env['res.users'].browse(list(user_ids_set)).sorted('name')
 
         # Build per-user appointment data
@@ -94,7 +135,7 @@ class CommercialDashboard(models.TransientModel):
             rdv_call_data[user.id] = self._count_appointment_statuses(user_events_cnt)
             rdv_commercial_data[user.id] = self._count_appointment_statuses(user_events_com)
 
-        # Build per-user financial data from sale orders
+        # Build per-user financial data
         financial_data = {}
         for user in users:
             user_orders = sale_orders.filtered(lambda o: o.user_id.id == user.id)
@@ -169,7 +210,7 @@ class CommercialDashboard(models.TransientModel):
             'tx_conversion': round((total_nbre_vies / total_present_all * 100) if total_present_all else 0),
         }
 
-        # Get currency info
+        # Currency info
         company = self.env.user.company_id
         currency_info = {
             'symbol': company.currency_id.symbol,
@@ -185,9 +226,10 @@ class CommercialDashboard(models.TransientModel):
             'rdv_commercial_total': rdv_commercial_total,
             'derived': {str(k): v for k, v in derived_data.items()},
             'derived_total': derived_total,
-            'month_label': month_label,
+            'period_label': period_label,
             'current_month': month,
             'current_year': year,
+            'current_quarter': quarter,
             'currency': currency_info,
         }
 
