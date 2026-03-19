@@ -29,7 +29,10 @@
                             <i class="fa fa-chevron-right"/>
                         </button>
                     </div>
-                    <div class="cd_header_right">
+                    <div class="cd_header_right" style="display:flex;gap:8px;">
+                        <button class="btn btn-success btn-sm" t-on-click="onExportExcel">
+                            <i class="fa fa-file-excel-o"/> Excel
+                        </button>
                         <button class="btn btn-primary btn-sm" t-on-click="onRefresh">
                             <i class="fa fa-refresh"/> Actualiser
                         </button>
@@ -89,9 +92,9 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- RDV CALL Section -->
+                            <!-- RDV CALL CENTER Section -->
                             <tr class="cd_section_row">
-                                <td class="cd_section_label" rowspan="5">RDV CALL</td>
+                                <td class="cd_section_label" rowspan="5">RDV CALL CENTER</td>
                                 <td class="cd_row_label">Total</td>
                                 <t t-foreach="state.data.users" t-as="user" t-key="user.id">
                                     <td class="cd_cell"><t t-esc="getUserCallData(user.id).total || 0"/></td>
@@ -193,7 +196,7 @@
 
                             <!-- Nbre de vies -->
                             <tr class="cd_highlight_row">
-                                <td class="cd_section_label cd_section_blue" colspan="1">NBRE DE VIES</td>
+                                <td class="cd_section_label cd_section_blue" colspan="1">NBRE VENTES</td>
                                 <td class="cd_row_label"/>
                                 <t t-foreach="state.data.users" t-as="user" t-key="user.id">
                                     <td class="cd_cell cd_bold"><t t-esc="getUserDerived(user.id).nbre_vies || 0"/></td>
