@@ -17,7 +17,9 @@ class CommercialDashboard(models.TransientModel):
     @api.model
     def get_filter_options(self):
         """Return available users (Commercial group) and companies for filters."""
-        commercial_group = self.env.ref('sales_team.group_sale_salesman', raise_if_not_found=False)
+        commercial_group = self.env['res.groups'].search([
+            ('name', '=', 'Commercial'),
+        ], limit=1)
         if commercial_group:
             users = commercial_group.users.filtered(lambda u: u.active).sorted('name')
         else:

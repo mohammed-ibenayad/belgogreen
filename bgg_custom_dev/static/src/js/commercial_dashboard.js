@@ -36,9 +36,13 @@ export class CommercialDashboard extends Component {
         onMounted(async () => {
             try {
                 await this.loadFilterOptions();
+            } catch (error) {
+                console.error("Error loading filter options:", error);
+            }
+            try {
                 await this.loadDashboardData();
             } catch (error) {
-                console.error("Error loading dashboard:", error);
+                console.error("Error loading dashboard data:", error);
                 this.state.error = error.message;
                 this.state.loading = false;
             }
@@ -64,8 +68,10 @@ export class CommercialDashboard extends Component {
 
     async loadFilterOptions() {
         const options = await this._rpcCall('/commercial/dashboard/filters', {});
-        this.state.availableUsers = options.users || [];
-        this.state.availableCompanies = options.companies || [];
+        if (options) {
+            this.state.availableUsers = options.users || [];
+            this.state.availableCompanies = options.companies || [];
+        }
     }
 
     async loadDashboardData(month = null, year = null) {
