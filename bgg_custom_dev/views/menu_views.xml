@@ -2,7 +2,7 @@
 <odoo>
     <!-- Root Menu -->
     <menuitem id="menu_bgg_custom_dev_root"
-              name="BelGoGreen Custom Development"
+              name="BGG Dashboards"
               sequence="100"/>
 
     <!-- Suivi Rendez-vous -->
