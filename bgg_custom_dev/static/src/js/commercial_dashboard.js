@@ -147,6 +147,17 @@ export class CommercialDashboard extends Component {
         await this.loadDashboardData(this.state.currentMonth, this.state.currentYear);
     }
 
+    onExportExcel() {
+        const params = new URLSearchParams();
+        if (this.state.currentMonth) params.set('month', this.state.currentMonth);
+        if (this.state.currentYear) params.set('year', this.state.currentYear);
+        params.set('period_type', this.state.periodType);
+        if (this.state.currentQuarter) params.set('quarter', this.state.currentQuarter);
+        if (this.state.filterUserId) params.set('user_id', this.state.filterUserId);
+        if (this.state.filterCompanyId) params.set('company_id', this.state.filterCompanyId);
+        window.open('/commercial/dashboard/export?' + params.toString(), '_blank');
+    }
+
     async onPeriodTypeChange(ev) {
         this.state.periodType = ev.target.value;
         const now = new Date();
