@@ -151,6 +151,21 @@ class PvMonthlyResult(models.Model):
         help='purchase_cost - sale_revenue'
     )
 
+    @api.onchange('monthly_consumption_kwh')
+    def _onchange_monthly_consumption(self):
+        """Auto-derive daily day/night consumption from monthly total using the ratio."""
+        for record in self:
+            monthly = record.monthly_consumption_kwh or 0.0
+            days = record.days_in_month or 30
+            ratio = record.simulation_id.day_consumption_ratio if record.simulation_id else 0.6
+            if ratio <= 0 or ratio >= 1:
+                ratio = 0.6
+            daily_total = monthly / days if days else 0.0
+            record.daily_day_consumption_kwh = round(daily_total * ratio, 2)
+            record.daily_night_consumption_kwh = round(daily_total * (1 - ratio), 2)
+            record.monthly_day_consumption_kwh = round(monthly * ratio, 2)
+            record.monthly_night_consumption_kwh = round(monthly * (1 - ratio), 2)
+
     @api.depends('month')
     def _compute_month_sequence(self):
         """Convert month string to integer for proper sorting"""

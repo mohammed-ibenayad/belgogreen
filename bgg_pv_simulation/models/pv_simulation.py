@@ -273,6 +273,13 @@ class PvSimulation(models.Model):
         string='Consommation nuit quotidienne par défaut (kWh)',
         help='Consommation de nuit quotidienne par défaut. Utilisez le bouton pour copier cette valeur sur tous les mois.'
     )
+    day_consumption_ratio = fields.Float(
+        string='Ratio consommation jour (%)',
+        default=0.6,
+        help='Part de la consommation totale consommée en journée (0.0–1.0). '
+             'Ex: 0.6 = 60 % jour, 40 % nuit. Utilisé pour dériver automatiquement '
+             'les consommations jour/nuit à partir de la consommation mensuelle.'
+    )
 
     # Fields whose change should flag the simulation for regeneration
     @staticmethod
@@ -358,6 +365,24 @@ class PvSimulation(models.Model):
             rec.bilan_savings_total = rec.bilan_savings_panels + rec.bilan_savings_battery + rec.bilan_savings_resale
             rec.bilan_purchase_total = sum(results.mapped('purchase_cost'))
 
+    def _apply_consumption_ratio(self, monthly_kwh, days, ratio=None):
+        """Derive day/night consumption values from a monthly total using the ratio.
+
+        Returns a dict with all consumption fields ready to write on a monthly result.
+        """
+        if ratio is None:
+            ratio = self.day_consumption_ratio or 0.6
+        if ratio <= 0 or ratio >= 1:
+            ratio = 0.6
+        daily_total = monthly_kwh / days if days else 0.0
+        return {
+            'monthly_consumption_kwh': round(monthly_kwh, 2),
+            'daily_day_consumption_kwh': round(daily_total * ratio, 2),
+            'daily_night_consumption_kwh': round(daily_total * (1 - ratio), 2),
+            'monthly_day_consumption_kwh': round(monthly_kwh * ratio, 2),
+            'monthly_night_consumption_kwh': round(monthly_kwh * (1 - ratio), 2),
+        }
+
     def action_apply_default_consumption(self):
         """Copy default consumption values to all monthly results"""
         self.ensure_one()
@@ -374,7 +399,8 @@ class PvSimulation(models.Model):
             days = days_in_months.get(result.month, 30)
             vals = {}
             if self.default_monthly_consumption_kwh:
-                vals['monthly_consumption_kwh'] = self.default_monthly_consumption_kwh
+                # Use monthly consumption + ratio to derive day/night
+                vals = self._apply_consumption_ratio(self.default_monthly_consumption_kwh, days)
             if self.default_daily_day_consumption_kwh:
                 vals['daily_day_consumption_kwh'] = self.default_daily_day_consumption_kwh
                 vals['monthly_day_consumption_kwh'] = self.default_daily_day_consumption_kwh * days
@@ -419,9 +445,15 @@ class PvSimulation(models.Model):
 
         for result in results:
             prod = result.daily_production_kwh or 0.0
+            days = result.days_in_month or 30
+
+            # If monthly consumption is set but day/night not yet derived, apply ratio
+            if result.monthly_consumption_kwh and not result.daily_day_consumption_kwh and not result.daily_night_consumption_kwh:
+                cons_vals = self._apply_consumption_ratio(result.monthly_consumption_kwh, days)
+                result.write(cons_vals)
+
             conso_jour = result.daily_day_consumption_kwh or 0.0
             conso_nuit = result.daily_night_consumption_kwh or 0.0
-            days = result.days_in_month or 30
 
             # SurplusPV
             surplus_pv = max(0.0, prod - conso_jour)
@@ -1089,6 +1121,9 @@ class PvSimulation(models.Model):
                 'monthly_production_kwh': monthly_kwh,
                 'daily_production_kwh': daily_kwh,
             }
+            # Auto-apply default consumption values
+            if self.default_monthly_consumption_kwh:
+                monthly_result_vals.update(self._apply_consumption_ratio(self.default_monthly_consumption_kwh, days))
             monthly_results.append((0, 0, monthly_result_vals))
 
         self.monthly_result_ids = monthly_results
@@ -1125,6 +1160,9 @@ class PvSimulation(models.Model):
                 'monthly_production_kwh': monthly_production_kwh,
                 'daily_production_kwh': daily_production_kwh,
             }
+            # Auto-apply default consumption values
+            if self.default_monthly_consumption_kwh:
+                monthly_result_vals.update(self._apply_consumption_ratio(self.default_monthly_consumption_kwh, days))
             monthly_results.append((0, 0, monthly_result_vals))
 
         self.monthly_result_ids = monthly_results

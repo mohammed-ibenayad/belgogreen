@@ -332,25 +332,21 @@
                         <!-- ==================== Consommation (Page 5) ==================== -->
                         <page string="Consommation (Page 5)" name="page_consumption">
                             <div class="alert alert-warning" role="status">
-                                <strong>Données à saisir :</strong> Saisissez les valeurs par défaut ci-dessous puis cliquez sur
-                                « Appliquer à tous les mois ». Vous pouvez ensuite modifier chaque mois individuellement dans le tableau.
+                                <strong>Données à saisir :</strong> Modifiez la colonne « Conso. (kWh) » de chaque mois dans le tableau ci-dessous.
+                                Les consommations jour/nuit seront calculées automatiquement via le ratio jour/nuit.
+                                Vous pouvez aussi saisir une valeur par défaut et cliquer « Appliquer à tous les mois ».
                             </div>
                             <group>
                                 <group string="Consommation Client">
-                                    <label for="default_monthly_consumption_kwh" string="Consommation mensuelle"/>
+                                    <label for="day_consumption_ratio" string="Ratio jour/nuit"/>
+                                    <div class="o_row">
+                                        <field name="day_consumption_ratio"/>
+                                        <span>(0.6 = 60 % jour, 40 % nuit)</span>
+                                    </div>
+                                    <label for="default_monthly_consumption_kwh" string="Consommation mensuelle par défaut"/>
                                     <div class="o_row">
                                         <field name="default_monthly_consumption_kwh"/>
                                         <span>kWh/mois</span>
-                                    </div>
-                                    <label for="default_daily_day_consumption_kwh" string="Consommation jour quotidienne"/>
-                                    <div class="o_row">
-                                        <field name="default_daily_day_consumption_kwh"/>
-                                        <span>kWh/jour</span>
-                                    </div>
-                                    <label for="default_daily_night_consumption_kwh" string="Consommation nuit quotidienne"/>
-                                    <div class="o_row">
-                                        <field name="default_daily_night_consumption_kwh"/>
-                                        <span>kWh/jour</span>
                                     </div>
                                     <button name="action_apply_default_consumption"
                                             string="Appliquer à tous les mois"
@@ -370,10 +366,10 @@
                             <div class="alert alert-secondary mt-3" role="status">
                                 <strong>Légende des données :</strong>
                                 <ul class="mb-0">
-                                    <li><strong>Prod. (kWh)</strong> — Production mensuelle : calculée automatiquement (jours du mois × production quotidienne moyenne). Source : PVGIS ou profil de production.</li>
-                                    <li><strong>Conso. (kWh)</strong> — Consommation mensuelle : saisie manuelle (estimation ou historique facture client).</li>
-                                    <li><strong>Prod. quot. (kWh)</strong> — Production quotidienne moyenne : calculée en divisant la production mensuelle par le nombre de jours du mois.</li>
-                                    <li><strong>Conso jour / nuit (kWh)</strong> — Consommation quotidienne jour/nuit : saisie manuelle par mois, ou appliquée depuis les valeurs par défaut ci-dessus.</li>
+                                    <li><strong>Prod. (kWh)</strong> — Production mensuelle : calculée automatiquement. Source : PVGIS ou profil de production.</li>
+                                    <li><strong>Conso. (kWh)</strong> — Consommation mensuelle : saisie manuelle par mois (estimation ou historique facture client). Les consommations jour/nuit sont dérivées automatiquement via le ratio jour/nuit.</li>
+                                    <li><strong>Prod. quot. (kWh)</strong> — Production quotidienne moyenne : production mensuelle ÷ jours du mois.</li>
+                                    <li><strong>Conso jour / nuit (kWh)</strong> — Consommation quotidienne jour/nuit : calculée automatiquement (consommation mensuelle × ratio ÷ jours). Modifiable manuellement si nécessaire.</li>
                                     <li><strong>Charge (kWh)</strong> — Énergie stockée dans la batterie : calculée automatiquement à partir du surplus PV, de la capacité et du rendement de la batterie.</li>
                                     <li><strong>Vente (kWh)</strong> — Surplus revendu au réseau : calculé automatiquement (surplus PV − charge batterie).</li>
                                     <li><strong>Achat (kWh)</strong> — Énergie achetée au réseau : calculé automatiquement (consommation nuit − énergie batterie disponible).</li>
