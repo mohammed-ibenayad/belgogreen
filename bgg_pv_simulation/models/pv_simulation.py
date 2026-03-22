@@ -384,10 +384,10 @@ class PvSimulation(models.Model):
         }
 
     def action_apply_default_consumption(self):
-        """Copy default consumption values to all monthly results"""
+        """Copy default monthly consumption to all monthly results, deriving day/night via ratio."""
         self.ensure_one()
-        if not self.default_monthly_consumption_kwh and not self.default_daily_day_consumption_kwh and not self.default_daily_night_consumption_kwh:
-            raise UserError(_("Veuillez saisir au moins une valeur de consommation par défaut."))
+        if not self.default_monthly_consumption_kwh:
+            raise UserError(_("Veuillez saisir une valeur de consommation mensuelle par défaut."))
         if not self.monthly_result_ids:
             raise UserError(_("Aucun résultat mensuel trouvé. Veuillez d'abord générer la simulation."))
 
@@ -397,18 +397,8 @@ class PvSimulation(models.Model):
         }
         for result in self.monthly_result_ids:
             days = days_in_months.get(result.month, 30)
-            vals = {}
-            if self.default_monthly_consumption_kwh:
-                # Use monthly consumption + ratio to derive day/night
-                vals = self._apply_consumption_ratio(self.default_monthly_consumption_kwh, days)
-            if self.default_daily_day_consumption_kwh:
-                vals['daily_day_consumption_kwh'] = self.default_daily_day_consumption_kwh
-                vals['monthly_day_consumption_kwh'] = self.default_daily_day_consumption_kwh * days
-            if self.default_daily_night_consumption_kwh:
-                vals['daily_night_consumption_kwh'] = self.default_daily_night_consumption_kwh
-                vals['monthly_night_consumption_kwh'] = self.default_daily_night_consumption_kwh * days
-            if vals:
-                result.write(vals)
+            vals = self._apply_consumption_ratio(self.default_monthly_consumption_kwh, days)
+            result.write(vals)
 
         # Auto-compute daily energy balance after applying consumption
         self.action_compute_daily_balance()
