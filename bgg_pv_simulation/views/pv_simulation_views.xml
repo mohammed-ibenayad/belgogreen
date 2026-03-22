@@ -349,11 +349,17 @@
                                         <span>kWh/mois</span>
                                     </div>
                                     <button name="action_apply_default_consumption"
-                                            string="Appliquer à tous les mois"
+                                            string="Appliquer la consommation par défaut"
                                             type="object"
                                             class="btn-primary"
                                             invisible="not id"
-                                            confirm="Ceci va écraser les valeurs de consommation pour tous les mois. Continuer ?"/>
+                                            confirm="Ceci va écraser les valeurs de consommation de tous les mois avec la valeur par défaut. Continuer ?"/>
+                                    <button name="action_apply_ratio"
+                                            string="Appliquer le ratio jour/nuit"
+                                            type="object"
+                                            class="btn-secondary"
+                                            invisible="not id"
+                                            confirm="Ceci va recalculer les consommations jour/nuit à partir de la consommation mensuelle de chaque mois. Continuer ?"/>
                                 </group>
                                 <group string="Titres de section">
                                     <field name="section_title_consumption" placeholder="DONNÉES DE CONSOMMATION" string="Titre principal"/>
