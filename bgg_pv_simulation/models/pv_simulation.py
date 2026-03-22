@@ -493,7 +493,7 @@ class PvSimulation(models.Model):
                 'monthly_battery_charge_kwh': round(charge * days, 2),
                 'monthly_energy_sold_kwh': round(vente * days, 2),
                 'monthly_energy_bought_kwh': round(achat * days, 2),
-                'monthly_autoconsumption_kwh': round((autocons_jour + charge) * days, 2),
+                'monthly_autoconsumption_kwh': round((autocons_jour + batt_use) * days, 2),
                 # Financial
                 'panel_savings': eco_panneaux,
                 'sale_revenue': revenu_vente,
@@ -502,8 +502,8 @@ class PvSimulation(models.Model):
                 'net_balance': cout_achat - revenu_vente,
             })
 
-            # CapDebutBat for next month
-            cap_debut_bat = max(0.0, min(cap_bat_effective, cap_debut_bat + charge - conso_nuit))
+            # CapDebutBat for next month: battery only discharges what was actually used (batt_use)
+            cap_debut_bat = max(0.0, min(cap_bat_effective, cap_debut_bat + charge - batt_use))
 
     @api.depends('sale_order_id.partner_id',
                  'sale_order_id.partner_id.street',
