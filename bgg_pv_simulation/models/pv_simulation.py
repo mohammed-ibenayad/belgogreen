@@ -607,12 +607,30 @@ class PvSimulation(models.Model):
         # Use context flag to prevent write hook from re-flagging during regeneration
         self = self.with_context(skip_regeneration_flag=True)
 
+        # Preserve existing per-month consumption values before regeneration
+        # so they are not lost or re-applied from defaults
+        saved_consumption = {}
+        for result in self.monthly_result_ids:
+            saved_consumption[result.month] = {
+                'monthly_consumption_kwh': result.monthly_consumption_kwh,
+                'daily_day_consumption_kwh': result.daily_day_consumption_kwh,
+                'daily_night_consumption_kwh': result.daily_night_consumption_kwh,
+                'monthly_day_consumption_kwh': result.monthly_day_consumption_kwh,
+                'monthly_night_consumption_kwh': result.monthly_night_consumption_kwh,
+            }
+
         # Fetch solar data from APIs (force update to replace existing values)
         self.action_fetch_solar_data(force_update=True)
 
         # Recalculate monthly results and charts
         self._compute_monthly_results()
         self._generate_charts()
+
+        # Restore saved consumption values to the newly created monthly results
+        if saved_consumption:
+            for result in self.monthly_result_ids:
+                if result.month in saved_consumption:
+                    result.write(saved_consumption[result.month])
 
         # Compute daily energy balance (Charge, Vente, Achat)
         self.action_compute_daily_balance()
@@ -1071,15 +1089,6 @@ class PvSimulation(models.Model):
                 'monthly_production_kwh': monthly_kwh,
                 'daily_production_kwh': daily_kwh,
             }
-            # Auto-apply default consumption values
-            if self.default_monthly_consumption_kwh:
-                monthly_result_vals['monthly_consumption_kwh'] = self.default_monthly_consumption_kwh
-            if self.default_daily_day_consumption_kwh:
-                monthly_result_vals['daily_day_consumption_kwh'] = self.default_daily_day_consumption_kwh
-                monthly_result_vals['monthly_day_consumption_kwh'] = self.default_daily_day_consumption_kwh * days
-            if self.default_daily_night_consumption_kwh:
-                monthly_result_vals['daily_night_consumption_kwh'] = self.default_daily_night_consumption_kwh
-                monthly_result_vals['monthly_night_consumption_kwh'] = self.default_daily_night_consumption_kwh * days
             monthly_results.append((0, 0, monthly_result_vals))
 
         self.monthly_result_ids = monthly_results
@@ -1116,15 +1125,6 @@ class PvSimulation(models.Model):
                 'monthly_production_kwh': monthly_production_kwh,
                 'daily_production_kwh': daily_production_kwh,
             }
-            # Auto-apply default consumption values
-            if self.default_monthly_consumption_kwh:
-                monthly_result_vals['monthly_consumption_kwh'] = self.default_monthly_consumption_kwh
-            if self.default_daily_day_consumption_kwh:
-                monthly_result_vals['daily_day_consumption_kwh'] = self.default_daily_day_consumption_kwh
-                monthly_result_vals['monthly_day_consumption_kwh'] = self.default_daily_day_consumption_kwh * days
-            if self.default_daily_night_consumption_kwh:
-                monthly_result_vals['daily_night_consumption_kwh'] = self.default_daily_night_consumption_kwh
-                monthly_result_vals['monthly_night_consumption_kwh'] = self.default_daily_night_consumption_kwh * days
             monthly_results.append((0, 0, monthly_result_vals))
 
         self.monthly_result_ids = monthly_results
