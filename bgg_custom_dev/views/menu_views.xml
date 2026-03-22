@@ -17,10 +17,10 @@
               action="bgg_custom_dev.action_commercial_dashboard"
               sequence="10"/>
 
-    <menuitem id="menu_bgg_commercial_kpi"
-              name="KPI Suivi Commercial (Pivot)"
+    <menuitem id="menu_bgg_avis_count"
+              name="Avis &amp; Recommandations (Pivot)"
               parent="menu_bgg_appointment_tracking"
-              action="bgg_custom_dev.action_commercial_kpi_report"
+              action="bgg_custom_dev.action_avis_count_report"
               sequence="30"/>
 
 </odoo>
