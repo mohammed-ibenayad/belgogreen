@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
-from odoo import api, fields, models, tools
+from odoo import fields, models, tools
 
 
-class CommercialKpiReport(models.Model):
-    _name = 'commercial.kpi.report'
-    _description = "Rapport KPI Suivi Commercial"
+class AvisCountReport(models.Model):
+    _name = 'avis.count.report'
+    _description = "Rapport Avis & Recommandations"
     _auto = False
     _order = 'date desc'
 
@@ -24,11 +24,8 @@ class CommercialKpiReport(models.Model):
         ('cancelled', 'Refusé'),
         ('booked', 'Réservé'),
     ], string='Statut', readonly=True)
-    appointment_count = fields.Integer(string='Nombre de RDV', readonly=True)
-    attended_count = fields.Integer(string='Présents', readonly=True)
-    no_show_count = fields.Integer(string='No-Show', readonly=True)
-    cancelled_count = fields.Integer(string='Refusés', readonly=True)
-    booked_count = fields.Integer(string='Réservés', readonly=True)
+    avis_count = fields.Integer(string="Nombre d'avis", readonly=True)
+    recommandation_count = fields.Integer(string='Nombre de recommandations', readonly=True)
 
     def init(self):
         tools.drop_view_if_exists(self.env.cr, self._table)
@@ -44,11 +41,8 @@ class CommercialKpiReport(models.Model):
                         WHEN apt.x_appointment_ref IN ('APT-ENERG-COM', 'APT-NISOL-COM') THEN 'commercial'
                     END AS appointment_category,
                     ce.appointment_status,
-                    1 AS appointment_count,
-                    CASE WHEN ce.appointment_status = 'attended' THEN 1 ELSE 0 END AS attended_count,
-                    CASE WHEN ce.appointment_status = 'no_show' THEN 1 ELSE 0 END AS no_show_count,
-                    CASE WHEN ce.appointment_status = 'cancelled' THEN 1 ELSE 0 END AS cancelled_count,
-                    CASE WHEN ce.appointment_status = 'booked' THEN 1 ELSE 0 END AS booked_count
+                    COALESCE(ce.x_avis_count, 0) AS avis_count,
+                    COALESCE(ce.x_recommandation_count, 0) AS recommandation_count
                 FROM calendar_event ce
                 JOIN appointment_type apt ON apt.id = ce.appointment_type_id
                 WHERE apt.x_appointment_ref IN ('APT-ENERG-CNT', 'APT-NISOL-CNT', 'APT-ENERG-COM', 'APT-NISOL-COM')
