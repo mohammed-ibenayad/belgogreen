@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Extend Product Template Form View -->
+    <record id="view_product_template_form_pv_inherit" model="ir.ui.view">
+        <field name="name">product.template.form.pv.inherit</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <!-- Add solar panel / battery specification fields in the General Information tab -->
+            <xpath expr="//page[@name='general_information']" position="inside">
+                <field name="is_panel_category" invisible="1"/>
+                <field name="is_battery_category" invisible="1"/>
+                <group string="Solar Panel Specifications" invisible="not is_panel_category">
+                    <div class="alert alert-info mb-3" role="status" colspan="2">
+                        Ce produit est détecté comme <strong>Panneau solaire</strong> car il appartient à la catégorie
+                        <em>All / Saleable / Panneaux</em>.
+                    </div>
+                    <field name="panel_unit_power_wc"/>
+                </group>
+                <group string="Battery Specifications" invisible="not is_battery_category">
+                    <div class="alert alert-info mb-3" role="status" colspan="2">
+                        Ce produit est détecté comme <strong>Batterie</strong> car il appartient à la catégorie
+                        <em>All / Saleable / Batteries</em>.
+                    </div>
+                    <field name="battery_capacity_kwh"/>
+                    <field name="battery_efficiency_percent"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

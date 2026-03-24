@@ -1,0 +1,1141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Main Report Template -->
+        <template id="report_pv_simulation_document">
+            <t t-call="web.html_container">
+                <t t-foreach="docs" t-as="o">
+                    <t t-call="web.external_layout">
+                        <div class="page pv_simulation_report">
+                            <!-- Inline styles for WeasyPrint compatibility -->
+                            <style>
+                                /* ===== DESIGN SYSTEM v4.0 ===== */
+                                @page {
+                                    margin: 25mm 20mm 22mm 20mm;
+                                }
+
+                                .pv_simulation_report {
+                                    font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+                                    font-size: 11pt;
+                                    color: #212121;
+                                    line-height: 1.55;
+                                }
+
+                                /* --- Cover Page --- */
+                                .pv-cover {
+                                    page-break-after: always;
+                                    position: relative;
+                                    min-height: 250mm;
+                                }
+
+                                .pv-cover-photo-wrap {
+                                    position: relative;
+                                    height: 148mm;
+                                    margin: -25mm -20mm 0 -20mm;
+                                    overflow: hidden;
+                                }
+
+                                .pv-cover-photo {
+                                    width: 100%;
+                                    height: 100%;
+                                    object-fit: cover;
+                                    display: block;
+                                }
+
+                                .pv-cover-photo-placeholder {
+                                    width: 100%;
+                                    height: 100%;
+                                    background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 50%, #A5D6A7 100%);
+                                }
+
+                                .pv-cover-overlay {
+                                    position: absolute;
+                                    top: 0; left: 0; right: 0; bottom: 0;
+                                    background: rgba(0, 0, 0, 0.18);
+                                }
+
+                                .pv-cover-fade {
+                                    position: absolute;
+                                    bottom: 0; left: 0; right: 0;
+                                    height: 80mm;
+                                    background: linear-gradient(
+                                        to bottom,
+                                        rgba(255,255,255,0) 0%,
+                                        rgba(255,255,255,0.4) 35%,
+                                        rgba(255,255,255,0.8) 65%,
+                                        rgba(255,255,255,1) 100%
+                                    );
+                                }
+
+                                .pv-cover-logo {
+                                    position: absolute;
+                                    top: 12mm;
+                                    left: 15mm;
+                                    z-index: 10;
+                                }
+
+                                .pv-cover-logo img {
+                                    max-height: 18mm;
+                                    max-width: 55mm;
+                                }
+
+                                .pv-cover-title-area {
+                                    position: relative;
+                                    margin-top: 12mm;
+                                    padding-left: 12mm;
+                                }
+
+                                .pv-cover-accent-line {
+                                    position: absolute;
+                                    left: 0;
+                                    top: 2mm;
+                                    width: 3px;
+                                    height: 42mm;
+                                    background: #4A9B5D;
+                                    border-radius: 2px;
+                                }
+
+                                .pv-cover-title-line1 {
+                                    font-size: 28pt;
+                                    font-weight: 300;
+                                    color: #212121;
+                                    letter-spacing: 1.5mm;
+                                    text-transform: uppercase;
+                                    margin: 0;
+                                    line-height: 1.25;
+                                }
+
+                                .pv-cover-title-accent {
+                                    font-size: 28pt;
+                                    font-weight: 300;
+                                    color: #4A9B5D;
+                                    letter-spacing: 1.5mm;
+                                    text-transform: uppercase;
+                                    margin: 0 0 4mm 0;
+                                    line-height: 1.25;
+                                }
+
+                                .pv-cover-tagline {
+                                    font-size: 10.5pt;
+                                    font-style: italic;
+                                    color: #757575;
+                                    margin: 0;
+                                    letter-spacing: 0.2mm;
+                                }
+
+                                .pv-cover-client-area {
+                                    margin-top: 12mm;
+                                }
+
+                                .pv-cover-client-name {
+                                    font-size: 16pt;
+                                    font-weight: 600;
+                                    color: #212121;
+                                    margin: 0 0 2mm 0;
+                                    line-height: 1.2;
+                                }
+
+                                .pv-cover-client-addr {
+                                    font-size: 9.5pt;
+                                    color: #616161;
+                                    margin: 0;
+                                    line-height: 1.4;
+                                }
+
+                                .pv-cover-meta-box {
+                                    position: absolute;
+                                    bottom: 0;
+                                    right: 0;
+                                    background: rgba(74, 155, 93, 0.08);
+                                    border: 1px solid rgba(74, 155, 93, 0.25);
+                                    border-radius: 8px;
+                                    padding: 5mm 7mm;
+                                    text-align: right;
+                                    min-width: 45mm;
+                                }
+
+                                .pv-cover-meta-line {
+                                    font-size: 7.5pt;
+                                    color: #616161;
+                                    text-transform: uppercase;
+                                    letter-spacing: 0.3mm;
+                                    margin: 0;
+                                }
+
+                                .pv-cover-meta-val {
+                                    font-size: 10.5pt;
+                                    font-weight: 600;
+                                    color: #212121;
+                                    margin: 0 0 2mm 0;
+                                }
+
+                                /* --- Section titles --- */
+                                .pv-section-number {
+                                    font-size: 28pt;
+                                    font-weight: 700;
+                                    color: #E0E0E0;
+                                    float: left;
+                                    margin-right: 4mm;
+                                    line-height: 1;
+                                    margin-top: -2mm;
+                                }
+
+                                .pv-section-title {
+                                    font-size: 16pt;
+                                    font-weight: 600;
+                                    color: #212121;
+                                    text-transform: uppercase;
+                                    border-bottom: none;
+                                    padding-bottom: 3mm;
+                                    margin-top: 0;
+                                    margin-bottom: 4mm;
+                                    overflow: visible;
+                                }
+                                .pv-section-title::after {
+                                    content: '';
+                                    display: block;
+                                    width: 40mm;
+                                    height: 2px;
+                                    background: #4A9B5D;
+                                    margin-top: 3mm;
+                                }
+
+                                /* --- Location --- */
+                                .pv-location-page-bg {
+                                    background: #F1F9F1;
+                                    margin: -25mm -20mm 0 -20mm;
+                                    padding: 25mm 20mm 6mm 20mm;
+                                }
+                                .pv-location-page-bg.has-image {
+                                    margin-top: 0;
+                                    padding-top: 8mm;
+                                }
+
+                                .pv-location-image-wrap {
+                                    text-align: center;
+                                    margin: -25mm -20mm 0 -20mm;
+                                    padding: 18mm 20mm 0 20mm;
+                                    background: #FFFFFF;
+                                }
+
+                                .pv-location-image-wrap img {
+                                    width: 100%;
+                                    height: 80mm;
+                                    object-fit: cover;
+                                    border-radius: 12px;
+                                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+                                }
+
+                                .pv-location-cards-row {
+                                    width: 100%;
+                                    border-collapse: separate;
+                                    border-spacing: 3mm 0;
+                                    margin: 0;
+                                }
+
+                                .pv-location-cards-row td {
+                                    width: 50%;
+                                    vertical-align: top;
+                                }
+
+                                .pv-location-cards-row .pv-card {
+                                    margin-bottom: 0;
+                                }
+
+                                .pv-section-subtitle {
+                                    font-size: 10pt;
+                                    font-weight: 600;
+                                    color: #212121;
+                                    text-transform: uppercase;
+                                    letter-spacing: 0.3mm;
+                                    margin: 4mm 0 3mm 0;
+                                }
+
+                                .pv-chart-source {
+                                    text-align: center;
+                                    font-size: 7pt;
+                                    color: #9E9E9E;
+                                    font-style: italic;
+                                    margin: 1mm 0 2mm 0;
+                                }
+
+                                .pv-production-system-bg {
+                                    background: #F1F9F1;
+                                    margin: 3mm -20mm -25mm -20mm;
+                                    padding: 4mm 20mm 10mm 20mm;
+                                    page-break-inside: avoid;
+                                }
+
+                                /* --- Two-column cards + image below --- */
+                                .pv-system-container {
+                                    border-radius: 12px;
+                                    margin: 2mm 0 0 0;
+                                    overflow: hidden;
+                                    page-break-inside: avoid;
+                                }
+
+                                .pv-system-cards-grid {
+                                    width: 100%;
+                                    table-layout: fixed;
+                                    border-collapse: collapse;
+                                }
+
+                                .pv-system-cards-col {
+                                    width: 50%;
+                                    vertical-align: top;
+                                    padding: 2mm;
+                                }
+
+                                .pv-system-image-wrap {
+                                    overflow: hidden;
+                                    border-radius: 12px;
+                                    margin: 3mm 0 0 0;
+                                    max-height: 45mm;
+                                }
+
+                                .pv-system-image {
+                                    width: 100%;
+                                    height: 45mm;
+                                    object-fit: cover;
+                                    display: block;
+                                }
+
+                                .pv-card {
+                                    display: block;
+                                    width: 100%;
+                                    margin-bottom: 2mm;
+                                    padding: 2.5mm 3mm;
+                                    background: rgba(255, 255, 255, 0.92);
+                                    border: 1px solid rgba(255, 255, 255, 0.6);
+                                    border-radius: 8px;
+                                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+                                    page-break-inside: avoid;
+                                }
+
+                                .pv-card:last-child {
+                                    margin-bottom: 0;
+                                }
+
+                                .pv-card::after {
+                                    content: '';
+                                    display: table;
+                                    clear: both;
+                                }
+
+                                .pv-card-icon {
+                                    float: left;
+                                    width: 8mm;
+                                    margin-right: 2mm;
+                                    margin-top: 0.5mm;
+                                }
+
+                                .pv-card-icon svg {
+                                    width: 20px;
+                                    height: 20px;
+                                }
+
+                                .pv-card-text {
+                                    overflow: hidden;
+                                }
+
+                                .pv-card-value {
+                                    font-size: 13pt;
+                                    font-weight: 700;
+                                    color: #212121;
+                                    line-height: 1.1;
+                                    display: inline;
+                                }
+
+                                .pv-card-unit {
+                                    font-size: 8pt;
+                                    color: #616161;
+                                    display: inline;
+                                    margin-left: 1mm;
+                                }
+
+                                .pv-card-label {
+                                    display: block;
+                                    font-size: 7pt;
+                                    color: #616161;
+                                    text-transform: uppercase;
+                                    letter-spacing: 0.3px;
+                                    margin-top: 1mm;
+                                }
+
+                                /* --- Chart / Production --- */
+                                .pv-chart-wrap {
+                                    text-align: center;
+                                    margin: 8mm auto 0 auto;
+                                }
+
+                                .pv-chart-wrap img {
+                                    max-width: 100%;
+                                    border-radius: 6px;
+                                }
+
+                                .pv-hero-metric {
+                                    text-align: center;
+                                    margin: 8mm auto;
+                                    padding: 6mm 10mm;
+                                    background: linear-gradient(135deg, #4A9B5D 0%, #388E3C 100%);
+                                    border-radius: 12px;
+                                }
+
+                                .pv-hero-value {
+                                    font-size: 32pt;
+                                    font-weight: 700;
+                                    color: #FFFFFF;
+                                    letter-spacing: 0.5mm;
+                                }
+
+                                .pv-hero-unit {
+                                    font-size: 14pt;
+                                    font-weight: 400;
+                                    color: rgba(255, 255, 255, 0.85);
+                                    margin-left: 2mm;
+                                }
+
+                                .pv-hero-label {
+                                    display: block;
+                                    font-size: 9pt;
+                                    color: rgba(255, 255, 255, 0.8);
+                                    text-transform: uppercase;
+                                    letter-spacing: 0.5mm;
+                                    margin-top: 2mm;
+                                }
+
+                                .pv-consumption-bg {
+                                    background: #F1F9F1;
+                                    margin: -25mm -20mm -22mm -20mm;
+                                    padding: 25mm 20mm 22mm 20mm;
+                                }
+
+                                /* --- Data tables (consumption page) --- */
+                                .pv-data-table {
+                                    width: 100%;
+                                    border-collapse: collapse;
+                                    margin-bottom: 4mm;
+                                    font-size: 8pt;
+                                }
+
+                                .pv-data-table thead tr {
+                                    background: #212121;
+                                    color: #FFFFFF;
+                                }
+
+                                .pv-data-table th {
+                                    padding: 2mm 2.5mm;
+                                    font-weight: 600;
+                                    font-size: 7.5pt;
+                                    text-align: right;
+                                    white-space: nowrap;
+                                }
+
+                                .pv-data-table th:first-child {
+                                    text-align: left;
+                                }
+
+                                .pv-data-table td {
+                                    padding: 1.5mm 2.5mm;
+                                    border-bottom: 0.5px solid #E0E0E0;
+                                    font-size: 8pt;
+                                }
+
+                                .pv-data-table tbody tr:nth-child(even) {
+                                    background: #F9F9F9;
+                                }
+
+                                .pv-data-val {
+                                    text-align: right;
+                                    font-variant-numeric: tabular-nums;
+                                }
+
+                                .pv-explanation-box {
+                                    background: #F1F9F1;
+                                    border-left: 3px solid #4A9B5D;
+                                    border-radius: 4px;
+                                    padding: 3mm 4mm;
+                                    margin: 4mm 0;
+                                    font-size: 8pt;
+                                    line-height: 1.5;
+                                    color: #424242;
+                                }
+
+                                .pv-explanation-box p {
+                                    margin: 0 0 1.5mm 0;
+                                }
+
+                                .pv-explanation-box p:last-child {
+                                    margin-bottom: 0;
+                                }
+
+                                /* --- Bilan table sections --- */
+                                /* --- Bilan page (card-based design) --- */
+                                .pv-bilan-bg {
+                                    background: #F1F9F1;
+                                    margin: -25mm -20mm -22mm -20mm;
+                                    padding: 25mm 20mm 22mm 20mm;
+                                }
+
+                                .pv-bilan-bg .pv-section-subtitle {
+                                    margin: 5mm 0 4mm 0;
+                                    padding-bottom: 1.5mm;
+                                    border-bottom: 1px solid #C8E6C9;
+                                }
+
+                                .pv-bilan-bg .pv-section-subtitle:first-child {
+                                    margin-top: 0;
+                                }
+
+                                .pv-bilan-cards-grid {
+                                    width: 100%;
+                                    table-layout: fixed;
+                                    border-collapse: separate;
+                                    border-spacing: 2mm 0;
+                                }
+
+                                .pv-bilan-cards-col {
+                                    width: 33.33%;
+                                    vertical-align: top;
+                                }
+
+                                .pv-bilan-summary-row {
+                                    width: 100%;
+                                    table-layout: fixed;
+                                    border-collapse: separate;
+                                    border-spacing: 2mm 0;
+                                    margin-top: 5mm;
+                                }
+
+                                .pv-bilan-summary-savings {
+                                    width: 60%;
+                                    vertical-align: top;
+                                }
+
+                                .pv-bilan-summary-savings-inner {
+                                    background: #212121;
+                                    color: #FFFFFF;
+                                    border-radius: 10px;
+                                    padding: 4mm 5mm;
+                                }
+
+                                .pv-bilan-summary-savings-inner::after {
+                                    content: '';
+                                    display: table;
+                                    clear: both;
+                                }
+
+                                .pv-bts-icon {
+                                    float: left;
+                                    width: 8mm;
+                                    margin-right: 2mm;
+                                    margin-top: 0.5mm;
+                                }
+
+                                .pv-bts-icon svg {
+                                    width: 24px;
+                                    height: 24px;
+                                }
+
+                                .pv-bts-label {
+                                    display: block;
+                                    font-size: 7pt;
+                                    text-transform: uppercase;
+                                    letter-spacing: 0.3px;
+                                    opacity: 0.9;
+                                }
+
+                                .pv-bts-value {
+                                    display: block;
+                                    font-size: 14pt;
+                                    font-weight: 700;
+                                }
+
+                                .pv-bilan-summary-purchase {
+                                    width: 40%;
+                                    vertical-align: top;
+                                }
+
+                                .pv-bilan-summary-purchase-inner {
+                                    background: #F9F9F9;
+                                    border: 1.5px solid #E0E0E0;
+                                    border-radius: 10px;
+                                    padding: 4mm 5mm;
+                                }
+
+                                .pv-bilan-summary-purchase-inner::after {
+                                    content: '';
+                                    display: table;
+                                    clear: both;
+                                }
+
+                                .pv-btp-icon {
+                                    float: left;
+                                    width: 8mm;
+                                    margin-right: 2mm;
+                                    margin-top: 0.5mm;
+                                }
+
+                                .pv-btp-icon svg {
+                                    width: 24px;
+                                    height: 24px;
+                                }
+
+                                .pv-btp-label {
+                                    display: block;
+                                    font-size: 7pt;
+                                    text-transform: uppercase;
+                                    letter-spacing: 0.3px;
+                                    color: #616161;
+                                }
+
+                                .pv-btp-value {
+                                    display: block;
+                                    font-size: 14pt;
+                                    font-weight: 700;
+                                    color: #212121;
+                                }
+
+                                .pv-production-page {
+                                    padding: 0;
+                                }
+
+                                .pv-strong-green {
+                                    font-weight: 600;
+                                    color: #4A9B5D;
+                                }
+                            </style>
+
+                            <!-- Page 1: Cover Page -->
+                            <t t-call="bgg_pv_simulation.report_pv_simulation_page_cover"/>
+
+                            <!-- Page 2: Bilan Énergétique -->
+                            <div class="page pv-bilan-bg" style="page-break-before: always;">
+                                <t t-call="bgg_pv_simulation.report_pv_simulation_page_bilan"/>
+                            </div>
+
+                            <!-- Page 3: Localisation -->
+                            <div class="page" style="page-break-before: always;">
+                                <t t-call="bgg_pv_simulation.report_pv_simulation_page_location"/>
+                            </div>
+
+                            <!-- Page 4: Production -->
+                            <div class="page pv-production-page" style="page-break-before: always;">
+                                <t t-call="bgg_pv_simulation.report_pv_simulation_page_production"/>
+                            </div>
+
+                            <!-- Page 5: Données de Consommation -->
+                            <div class="page" style="page-break-before: always;">
+                                <t t-call="bgg_pv_simulation.report_pv_simulation_page_consumption"/>
+                            </div>
+
+                            <!-- Page 6: Bilan Financier Mensuel -->
+                            <div class="page" style="page-break-before: always;">
+                                <t t-call="bgg_pv_simulation.report_pv_simulation_page_financial"/>
+                            </div>
+                        </div>
+                    </t>
+                </t>
+            </t>
+        </template>
+
+        <!-- ============================================ -->
+        <!-- Page 1: Cover Page                           -->
+        <!-- ============================================ -->
+        <template id="report_pv_simulation_page_cover">
+            <div class="pv-cover" style="page-break-after: always;">
+                <!-- Full-bleed photo with dark overlay + fade -->
+                <t t-set="effective_cover_photo" t-value="o.cover_photo or o.company_id.pv_default_cover_photo"/>
+                <div class="pv-cover-photo-wrap">
+                    <img t-if="effective_cover_photo"
+                         t-att-src="'data:image/png;base64,%s' % effective_cover_photo.decode()"
+                         class="pv-cover-photo"/>
+                    <div t-if="not effective_cover_photo" class="pv-cover-photo-placeholder"/>
+                    <div class="pv-cover-overlay"/>
+                    <div class="pv-cover-fade"/>
+                </div>
+
+                <!-- Logo overlaid top-left -->
+                <div class="pv-cover-logo">
+                    <img t-if="o.company_id.logo"
+                         t-att-src="'data:image/png;base64,%s' % o.company_id.logo.decode()"/>
+                </div>
+
+                <!-- Green accent line + title -->
+                <div class="pv-cover-title-area">
+                    <div class="pv-cover-accent-line"/>
+                    <h1 class="pv-cover-title-line1"><t t-esc="o.cover_title or 'Votre installation'"/></h1>
+                    <h1 class="pv-cover-title-accent"><t t-esc="o.cover_subtitle or 'Photovoltaïque'"/></h1>
+                </div>
+
+                <!-- Client name (prominent) -->
+                <div class="pv-cover-client-area">
+                    <p t-if="o.sale_order_id.partner_id" class="pv-cover-client-name">
+                        <t t-esc="o.sale_order_id.partner_id.name"/>
+                    </p>
+                    <p t-if="o.installation_address" class="pv-cover-client-addr">
+                        <t t-esc="o.installation_address"/>
+                    </p>
+                </div>
+
+                <!-- Metadata box bottom-right -->
+                <div class="pv-cover-meta-box">
+                    <t t-if="o.sale_order_id">
+                        <p class="pv-cover-meta-line">Référence Devis</p>
+                        <p class="pv-cover-meta-val"><t t-esc="o.sale_order_id.name"/></p>
+                    </t>
+                    <t t-if="o.report_date">
+                        <p class="pv-cover-meta-line">Date</p>
+                        <p class="pv-cover-meta-val"><t t-esc="o.report_date" t-options="{'widget': 'date'}"/></p>
+                    </t>
+                </div>
+            </div>
+        </template>
+
+        <!-- ============================================ -->
+        <!-- Page 2: Localisation                         -->
+        <!-- ============================================ -->
+        <template id="report_pv_simulation_page_location">
+            <div t-if="o.location_image" class="pv-location-image-wrap">
+                <img t-att-src="'data:image/png;base64,%s' % o.location_image.decode()"/>
+            </div>
+
+            <div t-attf-class="pv-location-page-bg #{o.location_image and 'has-image' or ''}">
+                <div class="pv-section-number">02</div>
+                <h2 class="pv-section-title">
+                    <t t-esc="o.section_title_location or 'LOCALISATION DE L\'INSTALLATION'"/>
+                </h2>
+
+                <table class="pv-location-cards-row">
+                    <tr>
+                        <td t-if="o.installation_address">
+                            <div class="pv-card">
+                                <div class="pv-card-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                </div>
+                                <div class="pv-card-text">
+                                    <div class="pv-card-value" style="font-size:11pt;"><t t-esc="o.installation_address"/></div>
+                                    <div class="pv-card-label">Adresse d'installation</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td t-if="o.roof_surface_m2">
+                            <div class="pv-card">
+                                <div class="pv-card-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+                                </div>
+                                <div class="pv-card-text">
+                                    <div class="pv-card-value"><t t-esc="'%.0f' % o.roof_surface_m2"/></div>
+                                    <div class="pv-card-unit">m²</div>
+                                    <div class="pv-card-label">Surface de toiture</div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </template>
+
+        <!-- ============================================ -->
+        <!-- Page 3: Production (System + Chart)           -->
+        <!-- ============================================ -->
+        <template id="report_pv_simulation_page_production">
+            <div class="pv-section-number">03</div>
+            <h2 class="pv-section-title">
+                <t t-esc="o.section_title_production or 'PRODUCTION ESTIMÉE'"/>
+            </h2>
+
+            <div t-if="o.chart_monthly_production" class="pv-chart-wrap">
+                <img t-att-src="'data:image/png;base64,%s' % o.chart_monthly_production.decode()"/>
+            </div>
+            <p class="pv-chart-source">
+                Production annuelle : <t t-esc="'{:,.0f}'.format(o.pvgis_annual_production_kwh or o.annual_production_kwh)"/> kWh/an
+                — Source : <t t-if="o.pvgis_annual_production_kwh">PVGIS (EU Science Hub)</t><t t-else="">Google Solar API</t>
+            </p>
+
+            <div class="pv-production-system-bg">
+                <h3 class="pv-section-subtitle">
+                    <t t-esc="o.section_title_system or 'CARACTÉRISTIQUES DU SYSTÈME'"/>
+                </h3>
+
+                <div class="pv-system-container">
+                <table class="pv-system-cards-grid">
+                    <tr>
+                        <td class="pv-system-cards-col">
+                            <div class="pv-card">
+                                <div class="pv-card-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                                </div>
+                                <div class="pv-card-text">
+                                    <div class="pv-card-value"><t t-esc="'{:,.0f}'.format(o.total_pv_power_wc)"/></div>
+                                    <div class="pv-card-unit">Wc</div>
+                                    <div class="pv-card-label">Puissance installée</div>
+                                </div>
+                            </div>
+                            <div t-if="o.number_of_panels" class="pv-card">
+                                <div class="pv-card-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="12" y1="3" x2="12" y2="17"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                                </div>
+                                <div class="pv-card-text">
+                                    <div class="pv-card-value"><t t-esc="o.number_of_panels"/></div>
+                                    <div class="pv-card-unit">panneaux</div>
+                                    <div class="pv-card-label">Nombre de panneaux</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="pv-system-cards-col">
+                            <div t-if="o.orientation_deg" class="pv-card">
+                                <div class="pv-card-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" fill="#4A9B5D" opacity="0.3"/></svg>
+                                </div>
+                                <div class="pv-card-text">
+                                    <div class="pv-card-value"><t t-esc="'{:.0f}'.format(o.orientation_deg)"/>°</div>
+                                    <div class="pv-card-unit"> </div>
+                                    <div class="pv-card-label">Orientation</div>
+                                </div>
+                            </div>
+                            <div t-if="o.tilt_deg" class="pv-card">
+                                <div class="pv-card-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 20L2 20"/><path d="M4 20L18 6"/><path d="M18 6L18 14"/><path d="M14 10L18 6" stroke-dasharray="2 2"/></svg>
+                                </div>
+                                <div class="pv-card-text">
+                                    <div class="pv-card-value"><t t-esc="'{:.0f}'.format(o.tilt_deg)"/>°</div>
+                                    <div class="pv-card-unit"> </div>
+                                    <div class="pv-card-label">Inclinaison</div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+                <t t-set="effective_system_image" t-value="o.system_image or o.company_id.pv_default_system_image"/>
+                <div t-if="effective_system_image" class="pv-system-image-wrap">
+                    <img t-att-src="'data:image/png;base64,%s' % effective_system_image.decode()"
+                         class="pv-system-image"/>
+                </div>
+            </div>
+            </div>
+        </template>
+
+        <!-- ============================================ -->
+        <!-- Page 4: Données de Consommation              -->
+        <!-- ============================================ -->
+        <template id="report_pv_simulation_page_consumption">
+            <t t-set="results" t-value="o.monthly_result_ids.sorted(key=lambda r: int(r.month))"/>
+            <t t-set="month_names" t-value="{'1': 'Janvier', '2': 'Février', '3': 'Mars', '4': 'Avril', '5': 'Mai', '6': 'Juin', '7': 'Juillet', '8': 'Août', '9': 'Septembre', '10': 'Octobre', '11': 'Novembre', '12': 'Décembre'}"/>
+
+            <div class="pv-section-number">04</div>
+            <h2 class="pv-section-title"><t t-esc="o.section_title_consumption or 'DONNÉES DE CONSOMMATION'"/></h2>
+
+            <!-- Section 1: Monthly/Daily Data Table -->
+            <h3 class="pv-section-subtitle"><t t-esc="o.section_title_monthly_data or 'DONNÉES MENSUELLES'"/></h3>
+            <table class="pv-data-table">
+                <thead>
+                    <tr>
+                        <th>Mois</th>
+                        <th>Prod. Mois (kWh)</th>
+                        <th>Conso. Mois (kWh)</th>
+                        <th>Prod. quot. (kWh)</th>
+                        <th>Conso jour (kWh)</th>
+                        <th>Conso nuit (kWh)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <t t-foreach="results" t-as="r">
+                        <tr>
+                            <td><t t-esc="month_names.get(r.month, r.month)"/></td>
+                            <td class="pv-data-val"><t t-esc="'{:,.2f}'.format(r.monthly_production_kwh)"/></td>
+                            <td class="pv-data-val"><t t-esc="'{:,.2f}'.format(r.monthly_consumption_kwh)"/></td>
+                            <td class="pv-data-val"><t t-esc="'{:,.2f}'.format(r.daily_production_kwh)"/></td>
+                            <td class="pv-data-val"><t t-esc="'{:,.2f}'.format(r.daily_day_consumption_kwh)"/></td>
+                            <td class="pv-data-val"><t t-esc="'{:,.2f}'.format(r.daily_night_consumption_kwh)"/></td>
+                        </tr>
+                    </t>
+                </tbody>
+            </table>
+
+            <!-- Explanation box -->
+            <div class="pv-explanation-box">
+                <p>La <b>charge</b> est l'énergie disponible dans la batterie. Elle dépend de la capacité
+                de la batterie et du surplus de production par rapport à la consommation de jour.
+                Elle tient également compte du pourcentage de batterie utilisable et de sa performance.</p>
+                <p>La <b>vente</b> est l'énergie produite qui ne peut pas être auto-consommée (ni en
+                consommation de jour, ni pour charger la batterie). Elle sera alors revendue sur le réseau.</p>
+                <p>L'<b>achat</b> correspond à l'énergie qu'il faut acheter sur le réseau, en déduisant
+                la partie auto-consommation.</p>
+            </div>
+
+            <!-- Section 3: Daily Energy Balance Table -->
+            <h3 class="pv-section-subtitle"><t t-esc="o.section_title_daily_balance or 'BILAN ÉNERGÉTIQUE QUOTIDIEN'"/></h3>
+            <table class="pv-data-table">
+                <thead>
+                    <tr>
+                        <th>Mois</th>
+                        <th>Prod. Mois (kWh)</th>
+                        <th>Conso jour (kWh)</th>
+                        <th>Conso nuit (kWh)</th>
+                        <th>Charge (kWh)</th>
+                        <th style="width:30px;"></th>
+                        <th>Vente (kWh)</th>
+                        <th>Achat (kWh)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <t t-foreach="results" t-as="r">
+                        <tr>
+                            <td><t t-esc="month_names.get(r.month, r.month)"/></td>
+                            <td class="pv-data-val"><t t-esc="'{:,.2f}'.format(r.daily_production_kwh)"/></td>
+                            <td class="pv-data-val"><t t-esc="'{:,.2f}'.format(r.daily_day_consumption_kwh)"/></td>
+                            <td class="pv-data-val"><t t-esc="'{:,.2f}'.format(r.daily_night_consumption_kwh)"/></td>
+                            <td class="pv-data-val"><t t-esc="'{:,.2f}'.format(r.daily_battery_charge_kwh)"/></td>
+                            <td style="text-align:center; vertical-align:middle;">
+                                <t t-set="bl" t-value="r.battery_charge_level"/>
+                                <t t-if="bl > 0">
+                                    <t t-set="fh" t-value="int(round(bl / 7.0 * 28))"/>
+                                    <t t-set="fy" t-value="32 - fh"/>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="30" viewBox="0 0 20 36">
+                                        <rect x="6" y="0" width="8" height="4" rx="1" stroke="#555" stroke-width="1.2" fill="none"/>
+                                        <rect x="1" y="4" width="18" height="30" rx="2" stroke="#555" stroke-width="1.5" fill="none"/>
+                                        <rect x="3" t-att-y="fy + 1" width="14" t-att-height="fh - 2" rx="1" fill="#27ae60"/>
+                                    </svg>
+                                </t>
+                                <t t-else="">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="30" viewBox="0 0 20 36">
+                                        <rect x="6" y="0" width="8" height="4" rx="1" stroke="#555" stroke-width="1.2" fill="none"/>
+                                        <rect x="1" y="4" width="18" height="30" rx="2" stroke="#555" stroke-width="1.5" fill="none"/>
+                                    </svg>
+                                </t>
+                            </td>
+                            <td class="pv-data-val"><t t-esc="'{:,.2f}'.format(r.daily_energy_sold_kwh)"/></td>
+                            <td class="pv-data-val"><t t-esc="'{:,.2f}'.format(r.daily_energy_bought_kwh)"/></td>
+                        </tr>
+                    </t>
+                </tbody>
+            </table>
+        </template>
+
+        <!-- ============================================ -->
+        <!-- Page 5: Bilan Financier Mensuel              -->
+        <!-- ============================================ -->
+        <template id="report_pv_simulation_page_financial">
+            <t t-set="results" t-value="o.monthly_result_ids.sorted(key=lambda r: int(r.month))"/>
+            <t t-set="month_names" t-value="{'1': 'Janvier', '2': 'Février', '3': 'Mars', '4': 'Avril', '5': 'Mai', '6': 'Juin', '7': 'Juillet', '8': 'Août', '9': 'Septembre', '10': 'Octobre', '11': 'Novembre', '12': 'Décembre'}"/>
+
+            <div class="pv-section-number">05</div>
+            <h2 class="pv-section-title"><t t-esc="o.section_title_financial or 'BILAN FINANCIER MENSUEL'"/></h2>
+
+            <!-- Explanation box -->
+            <div class="pv-explanation-box">
+                <p>L'<b>économie panneaux</b> représente l'argent économisé en utilisant la production des panneaux pour sa consommation de jour.</p>
+                <p>L'<b>économie batterie</b> représente l'argent économisé grâce à l'énergie stockée dans la batterie qui sera utilisée pour la consommation de nuit. Le calcul tient compte du coût d'utilisation de la batterie.</p>
+                <p>La <b>vente</b> correspond aux bénéfices engendrés en revendant le surplus de production.</p>
+                <p>L'<b>achat</b> est le montant à payer pour la partie de la consommation qui n'est pas couverte par la production.</p>
+                <p>Le <b>bilan</b> est la différence entre le montant à payer pour l'achat et le profit de la revente.</p>
+            </div>
+
+            <table class="pv-data-table">
+                <thead>
+                    <tr>
+                        <th>Mois</th>
+                        <th>Économie panneaux</th>
+                        <th>Économie batterie</th>
+                        <th>Vente</th>
+                        <th>Achat</th>
+                        <th>Bilan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <t t-foreach="results" t-as="r">
+                        <t t-set="bilan_row" t-value="(r.panel_savings or 0) + (r.battery_savings or 0) + (r.sale_revenue or 0) - (r.purchase_cost or 0)"/>
+                        <tr>
+                            <td><t t-esc="month_names.get(r.month, r.month)"/></td>
+                            <td class="pv-data-val"><t t-esc="'{:,.2f}'.format(r.panel_savings or 0)"/> €</td>
+                            <td class="pv-data-val"><t t-esc="'{:,.2f}'.format(r.battery_savings or 0)"/> €</td>
+                            <td class="pv-data-val"><t t-esc="'{:,.2f}'.format(r.sale_revenue or 0)"/> €</td>
+                            <td class="pv-data-val"><t t-esc="'{:,.2f}'.format(r.purchase_cost or 0)"/> €</td>
+                            <td class="pv-data-val" t-attf-style="font-weight:600; color:{{ bilan_row >= 0 and '#4A9B5D' or '#e74c3c' }};">
+                                <t t-if="bilan_row &lt; 0">
+                                    <span style="color:#e74c3c;">€</span><t t-esc="'{:,.2f}'.format(abs(bilan_row))"/> €
+                                </t>
+                                <t t-else="">
+                                    <span style="color:#4A9B5D;">€</span><t t-esc="'{:,.2f}'.format(bilan_row)"/> €
+                                </t>
+                            </td>
+                        </tr>
+                    </t>
+                </tbody>
+            </table>
+        </template>
+
+        <!-- ============================================ -->
+        <!-- Page 6: Bilan Énergétique                    -->
+        <!-- ============================================ -->
+        <template id="report_pv_simulation_page_bilan">
+            <t t-set="results" t-value="o.monthly_result_ids"/>
+            <t t-set="prod_total" t-value="o.pvgis_annual_production_kwh or o.annual_production_kwh or 0.0"/>
+            <t t-set="conso_day" t-value="sum(results.mapped('monthly_day_consumption_kwh')) if results else 0.0"/>
+            <t t-set="conso_night" t-value="sum(results.mapped('monthly_night_consumption_kwh')) if results else 0.0"/>
+            <t t-set="conso_total" t-value="sum(results.mapped('monthly_consumption_kwh')) if results else 0.0"/>
+            <t t-set="autocons_total" t-value="sum(results.mapped('monthly_autoconsumption_kwh')) if results else 0.0"/>
+            <t t-set="battery_charge" t-value="sum(results.mapped('monthly_battery_charge_kwh')) if results else 0.0"/>
+            <t t-set="autocons_day" t-value="autocons_total - battery_charge"/>
+            <t t-set="savings_panels" t-value="sum(results.mapped('panel_savings')) if results else 0.0"/>
+            <t t-set="savings_battery" t-value="sum(results.mapped('battery_savings')) if results else 0.0"/>
+            <t t-set="savings_resale" t-value="sum(results.mapped('sale_revenue')) if results else 0.0"/>
+            <t t-set="savings_total" t-value="savings_panels + savings_battery + savings_resale"/>
+            <t t-set="purchase_total" t-value="sum(results.mapped('purchase_cost')) if results else 0.0"/>
+
+            <div class="pv-section-number">01</div>
+            <h2 class="pv-section-title"><t t-esc="o.section_title_bilan or 'BILAN ÉNERGÉTIQUE'"/></h2>
+
+            <!-- Production -->
+            <h3 class="pv-section-subtitle">Production</h3>
+            <table class="pv-bilan-cards-grid">
+                <tr>
+                    <td class="pv-bilan-cards-col">
+                        <div class="pv-card">
+                            <div class="pv-card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></div>
+                            <div class="pv-card-text">
+                                <div class="pv-card-value"><t t-esc="'{:,.2f}'.format(prod_total)"/></div>
+                                <div class="pv-card-unit">kWh</div>
+                                <div class="pv-card-label">Production totale</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="pv-bilan-cards-col"/>
+                    <td class="pv-bilan-cards-col"/>
+                </tr>
+            </table>
+
+            <!-- Consommation -->
+            <h3 class="pv-section-subtitle">Consommation</h3>
+            <table class="pv-bilan-cards-grid">
+                <tr>
+                    <td class="pv-bilan-cards-col">
+                        <div class="pv-card">
+                            <div class="pv-card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+                            <div class="pv-card-text">
+                                <div class="pv-card-value"><t t-esc="'{:,.2f}'.format(conso_day)"/></div>
+                                <div class="pv-card-unit">kWh</div>
+                                <div class="pv-card-label">Jour</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="pv-bilan-cards-col">
+                        <div class="pv-card">
+                            <div class="pv-card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></div>
+                            <div class="pv-card-text">
+                                <div class="pv-card-value"><t t-esc="'{:,.2f}'.format(conso_night)"/></div>
+                                <div class="pv-card-unit">kWh</div>
+                                <div class="pv-card-label">Nuit</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="pv-bilan-cards-col">
+                        <div class="pv-card">
+                            <div class="pv-card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+                            <div class="pv-card-text">
+                                <div class="pv-card-value"><t t-esc="'{:,.2f}'.format(conso_total)"/></div>
+                                <div class="pv-card-unit">kWh</div>
+                                <div class="pv-card-label">Totale</div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Auto Consommation -->
+            <h3 class="pv-section-subtitle">Auto Consommation</h3>
+            <table class="pv-bilan-cards-grid">
+                <tr>
+                    <td class="pv-bilan-cards-col">
+                        <div class="pv-card">
+                            <div class="pv-card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></div>
+                            <div class="pv-card-text">
+                                <div class="pv-card-value"><t t-esc="'{:,.2f}'.format(autocons_day)"/></div>
+                                <div class="pv-card-unit">kWh</div>
+                                <div class="pv-card-label">Consommé la journée</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="pv-bilan-cards-col">
+                        <div class="pv-card">
+                            <div class="pv-card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="18" height="12" rx="2" ry="2"/><line x1="23" y1="13" x2="23" y2="11"/><line x1="7" y1="10" x2="7" y2="14"/><line x1="5" y1="12" x2="9" y2="12"/></svg></div>
+                            <div class="pv-card-text">
+                                <div class="pv-card-value"><t t-esc="'{:,.2f}'.format(battery_charge)"/></div>
+                                <div class="pv-card-unit">kWh</div>
+                                <div class="pv-card-label">Stocké dans la batterie</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="pv-bilan-cards-col">
+                        <div class="pv-card">
+                            <div class="pv-card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+                            <div class="pv-card-text">
+                                <div class="pv-card-value"><t t-esc="'{:,.2f}'.format(autocons_total)"/></div>
+                                <div class="pv-card-unit">kWh</div>
+                                <div class="pv-card-label">Total</div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Économies -->
+            <h3 class="pv-section-subtitle">Économies</h3>
+            <table class="pv-bilan-cards-grid">
+                <tr>
+                    <td class="pv-bilan-cards-col">
+                        <div class="pv-card">
+                            <div class="pv-card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="12" y1="3" x2="12" y2="17"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+                            <div class="pv-card-text">
+                                <div class="pv-card-value"><t t-esc="'{:,.2f}'.format(savings_panels)"/></div>
+                                <div class="pv-card-unit">€</div>
+                                <div class="pv-card-label">Liées aux panneaux</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="pv-bilan-cards-col">
+                        <div class="pv-card">
+                            <div class="pv-card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="18" height="12" rx="2" ry="2"/><line x1="23" y1="13" x2="23" y2="11"/><line x1="7" y1="10" x2="7" y2="14"/><line x1="5" y1="12" x2="9" y2="12"/></svg></div>
+                            <div class="pv-card-text">
+                                <div class="pv-card-value"><t t-esc="'{:,.2f}'.format(savings_battery)"/></div>
+                                <div class="pv-card-unit">€</div>
+                                <div class="pv-card-label">Liées à la batterie</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="pv-bilan-cards-col">
+                        <div class="pv-card">
+                            <div class="pv-card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.2 7A6 6 0 0 0 7 12a6 6 0 0 0 10.2 5"/><line x1="4" y1="10" x2="14" y2="10"/><line x1="4" y1="14" x2="14" y2="14"/></svg></div>
+                            <div class="pv-card-text">
+                                <div class="pv-card-value"><t t-esc="'{:,.2f}'.format(savings_resale)"/></div>
+                                <div class="pv-card-unit">€</div>
+                                <div class="pv-card-label">Liées à la revente</div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Bottom summary -->
+            <table class="pv-bilan-summary-row">
+                <tr>
+                    <td class="pv-bilan-summary-savings">
+                        <div class="pv-bilan-summary-savings-inner">
+                            <span class="pv-bts-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2v-4h-2c0-1-.5-1.5-1-2"/><path d="M2 9.5a1 1 0 0 1 1-1h.01"/><circle cx="12.5" cy="9.5" r=".5" fill="#FFFFFF"/></svg></span>
+                            <span class="pv-bts-label">Total économies</span>
+                            <span class="pv-bts-value"><t t-esc="'{:,.2f}'.format(savings_total)"/> €</span>
+                        </div>
+                    </td>
+                    <td class="pv-bilan-summary-purchase">
+                        <div class="pv-bilan-summary-purchase-inner">
+                            <span class="pv-btp-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/><circle cx="18" cy="15" r="1.5"/></svg></span>
+                            <span class="pv-btp-label">Achat</span>
+                            <span class="pv-btp-value"><t t-esc="'{:,.2f}'.format(purchase_total)"/> €</span>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </template>
+    </data>
+</odoo>
