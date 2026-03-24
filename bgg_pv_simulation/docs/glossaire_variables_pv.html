@@ -3,16 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rapport Simulation Photovoltaïque — DEVIS BARBE 75 PV</title>
+    <title>Glossaire &amp; Exemple de Calcul — Simulation Photovoltaïque</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        @page {
-            size: A4;
-            margin: 25mm 20mm 22mm 20mm;
-        }
 
         body {
             font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -21,12 +16,8 @@
             color: #212121;
             background: #FFFFFF;
             padding: 40px 50px;
-        }
-
-        @media print {
-            body { padding: 0; }
-            .page { page-break-after: always; }
-            .page:last-child { page-break-after: auto; }
+            max-width: 960px;
+            margin: 0 auto;
         }
 
         /* ---- Section headers ---- */
@@ -79,116 +70,6 @@
             width: 24px;
             height: 24px;
         }
-
-        /* ---- Cards ---- */
-        .cards-row {
-            display: flex;
-            gap: 12px;
-            margin: 12px 0;
-            flex-wrap: wrap;
-        }
-        .card {
-            flex: 1;
-            min-width: 140px;
-            padding: 12px 14px;
-            background: #FFFFFF;
-            border: 1px solid #E0E0E0;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-        }
-        .card-label {
-            font-size: 7.5pt;
-            color: #616161;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-        }
-        .card-value {
-            font-size: 16pt;
-            font-weight: 700;
-            color: #212121;
-            line-height: 1.2;
-        }
-        .card-unit {
-            font-size: 9pt;
-            color: #616161;
-            margin-left: 2px;
-        }
-
-        .card-highlight {
-            background: #212121;
-            color: #FFFFFF;
-            border-color: #212121;
-        }
-        .card-highlight .card-label { color: rgba(255,255,255,0.8); }
-        .card-highlight .card-value { color: #FFFFFF; }
-        .card-highlight .card-unit { color: rgba(255,255,255,0.8); }
-
-        .card-accent {
-            background: linear-gradient(135deg, #4A9B5D 0%, #388E3C 100%);
-            color: #FFFFFF;
-            border-color: #388E3C;
-        }
-        .card-accent .card-label { color: rgba(255,255,255,0.85); }
-        .card-accent .card-value { color: #FFFFFF; }
-        .card-accent .card-unit { color: rgba(255,255,255,0.85); }
-
-        /* ---- Data tables ---- */
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 12px 0 20px 0;
-            font-size: 9pt;
-            border-radius: 6px;
-            overflow: hidden;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-        }
-        .data-table thead tr {
-            background: #212121;
-        }
-        .data-table th {
-            color: #FFFFFF;
-            font-weight: 600;
-            text-align: right;
-            padding: 8px 10px;
-            font-size: 8pt;
-            white-space: nowrap;
-        }
-        .data-table th:first-child {
-            text-align: left;
-        }
-        .data-table td {
-            padding: 6px 10px;
-            border-bottom: 1px solid #E0E0E0;
-            vertical-align: top;
-            text-align: right;
-            font-variant-numeric: tabular-nums;
-        }
-        .data-table td:first-child {
-            text-align: left;
-            font-weight: 500;
-        }
-        .data-table tbody tr:nth-child(even) {
-            background: #F9F9F9;
-        }
-        .data-table tbody tr:hover {
-            background: #E8F5E9;
-        }
-        .positive { color: #4A9B5D; font-weight: 600; }
-        .negative { color: #e74c3c; font-weight: 600; }
-
-        /* ---- Explanation box ---- */
-        .explanation-box {
-            background: #F1F9F1;
-            border-left: 3px solid #4A9B5D;
-            border-radius: 4px;
-            padding: 12px 16px;
-            margin: 16px 0;
-            font-size: 9pt;
-            line-height: 1.5;
-            color: #424242;
-        }
-        .explanation-box p { margin: 0 0 6px 0; }
-        .explanation-box p:last-child { margin-bottom: 0; }
 
         /* ---- Glossary table ---- */
         .glossary-table {
@@ -246,479 +127,437 @@
             font-weight: 500;
         }
 
-        /* ---- Bilan section green bg ---- */
-        .bilan-section {
-            background: #F1F9F1;
-            border-radius: 10px;
-            padding: 20px 24px;
-            margin: 16px 0;
-        }
-
-        /* ---- Material table ---- */
-        .material-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 12px 0;
-            font-size: 9pt;
-        }
-        .material-table thead tr {
-            background: #212121;
-        }
-        .material-table th {
-            color: #FFFFFF;
-            font-weight: 600;
-            padding: 8px 10px;
-            font-size: 8pt;
-            text-align: left;
-        }
-        .material-table th:last-child,
-        .material-table th:nth-child(3),
-        .material-table th:nth-child(4),
-        .material-table th:nth-child(5) {
-            text-align: right;
-        }
-        .material-table td {
-            padding: 8px 10px;
-            border-bottom: 1px solid #E0E0E0;
-            vertical-align: top;
-        }
-        .material-table td:last-child,
-        .material-table td:nth-child(3),
-        .material-table td:nth-child(4),
-        .material-table td:nth-child(5) {
-            text-align: right;
-            font-variant-numeric: tabular-nums;
-        }
-        .material-table tbody tr:nth-child(even) {
-            background: #F9F9F9;
-        }
-        .material-total {
-            background: #4A9B5D !important;
-            color: #FFFFFF;
-            font-weight: 600;
-        }
-        .material-total td { color: #FFFFFF; border-bottom: none; }
-
-        /* ---- Footer ---- */
-        .page-footer {
-            margin-top: 32px;
-            padding-top: 12px;
-            border-top: 1px solid #E0E0E0;
-            text-align: center;
-            font-size: 7.5pt;
-            color: #9E9E9E;
-        }
-
         .glossary-intro {
             font-size: 9.5pt;
             color: #616161;
             margin: 0 0 12px 0;
             line-height: 1.5;
         }
+
+        /* ---- Explanation / calculation boxes ---- */
+        .explanation-box {
+            background: #F1F9F1;
+            border-left: 3px solid #4A9B5D;
+            border-radius: 4px;
+            padding: 12px 16px;
+            margin: 16px 0;
+            font-size: 9pt;
+            line-height: 1.5;
+            color: #424242;
+        }
+        .explanation-box p { margin: 0 0 6px 0; }
+        .explanation-box p:last-child { margin-bottom: 0; }
+
+        .calc-box {
+            background: #FFFDE7;
+            border-left: 3px solid #F9A825;
+            border-radius: 4px;
+            padding: 14px 18px;
+            margin: 12px 0;
+            font-size: 9pt;
+            line-height: 1.65;
+            color: #424242;
+        }
+        .calc-box p { margin: 0 0 4px 0; }
+        .calc-box p:last-child { margin-bottom: 0; }
+
+        .calc-title {
+            font-weight: 700;
+            font-size: 9.5pt;
+            color: #212121;
+            margin-bottom: 8px !important;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .calc-formula {
+            font-family: 'Courier New', Courier, monospace;
+            background: rgba(0,0,0,0.05);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 8.5pt;
+            color: #4A9B5D;
+            font-weight: 600;
+        }
+
+        .calc-result {
+            font-weight: 700;
+            color: #212121;
+        }
+
+        .positive { color: #4A9B5D; font-weight: 600; }
+        .negative { color: #e74c3c; font-weight: 600; }
+
+        /* ---- Data tables ---- */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0 20px 0;
+            font-size: 9pt;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+        .data-table thead tr {
+            background: #212121;
+        }
+        .data-table th {
+            color: #FFFFFF;
+            font-weight: 600;
+            text-align: right;
+            padding: 8px 10px;
+            font-size: 8pt;
+            white-space: nowrap;
+        }
+        .data-table th:first-child {
+            text-align: left;
+        }
+        .data-table td {
+            padding: 6px 10px;
+            border-bottom: 1px solid #E0E0E0;
+            vertical-align: top;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+        .data-table td:first-child {
+            text-align: left;
+            font-weight: 500;
+        }
+        .data-table tbody tr:hover {
+            background: #E8F5E9;
+        }
+
+        .highlight-row {
+            background: #FFF8E1 !important;
+            font-weight: 600;
+        }
+
+        /* ---- Summary cards ---- */
+        .params-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin: 12px 0;
+        }
+        .param-card {
+            padding: 10px 14px;
+            background: #FFFFFF;
+            border: 1px solid #E0E0E0;
+            border-radius: 8px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        }
+        .param-label {
+            font-size: 7.5pt;
+            color: #616161;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .param-value {
+            font-size: 14pt;
+            font-weight: 700;
+            color: #212121;
+        }
+        .param-unit {
+            font-size: 9pt;
+            color: #616161;
+            margin-left: 2px;
+        }
+
+        .divider {
+            border: none;
+            border-top: 1px solid #E0E0E0;
+            margin: 24px 0;
+        }
     </style>
 </head>
 <body>
 
     <!-- ============================================ -->
-    <!-- SECTION 1 : LOCALISATION DE L'INSTALLATION   -->
+    <!-- SECTION 1 : GLOSSAIRE DES VARIABLES          -->
     <!-- ============================================ -->
-    <div class="page">
-        <div class="section-header">
-            <span class="section-number">01</span>
-            <h2>Localisation de l'installation</h2>
+    <div class="section-header">
+        <div class="header-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+            </svg>
         </div>
+        <h2>Glossaire des variables</h2>
+    </div>
 
-        <div class="cards-row">
-            <div class="card">
-                <div class="card-label">Adresse</div>
-                <div class="card-value" style="font-size:12pt;">RUE DE CORDEMONT 38 B - 4450 SLINS</div>
-            </div>
-            <div class="card">
-                <div class="card-label">Superficie de la toiture</div>
-                <div class="card-value">—<span class="card-unit">m²</span></div>
-            </div>
+    <p class="glossary-intro">Ce tableau décrit les principales variables utilisées dans cette simulation photovoltaïque.</p>
+
+    <table class="glossary-table">
+        <thead>
+            <tr>
+                <th class="glossary-var">Variable</th>
+                <th class="glossary-unit">Unité</th>
+                <th class="glossary-desc">Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="glossary-var">Production</td>
+                <td class="glossary-unit">kWh</td>
+                <td class="glossary-desc">Énergie électrique produite par les panneaux photovoltaïques sur une période donnée (jour ou mois).</td>
+            </tr>
+            <tr>
+                <td class="glossary-var">Conso Jour</td>
+                <td class="glossary-unit">kWh</td>
+                <td class="glossary-desc">Consommation électrique du foyer pendant la journée (heures d'ensoleillement), lorsque les panneaux produisent.</td>
+            </tr>
+            <tr>
+                <td class="glossary-var">Conso Nuit</td>
+                <td class="glossary-unit">kWh</td>
+                <td class="glossary-desc">Consommation électrique du foyer pendant la nuit, alimentée par la batterie ou le réseau.</td>
+            </tr>
+            <tr>
+                <td class="glossary-var">SurplusPV</td>
+                <td class="glossary-unit">kWh</td>
+                <td class="glossary-desc">Excédent de production après couverture de la consommation de jour. Formule : <em>max(0, Production − Conso Jour)</em>.</td>
+            </tr>
+            <tr>
+                <td class="glossary-var">Autoconsommation</td>
+                <td class="glossary-unit">kWh</td>
+                <td class="glossary-desc">Part de la production solaire consommée directement par le foyer. Formule : <em>min(Production, Conso Jour)</em>.</td>
+            </tr>
+            <tr>
+                <td class="glossary-var">Charge</td>
+                <td class="glossary-unit">kWh</td>
+                <td class="glossary-desc">Énergie excédentaire stockée dans la batterie. Formule : <em>min(SurplusPV, CapBat × RenBat)</em>.</td>
+            </tr>
+            <tr>
+                <td class="glossary-var">CapBat</td>
+                <td class="glossary-unit">kWh</td>
+                <td class="glossary-desc">Capacité totale de stockage de la batterie installée.</td>
+            </tr>
+            <tr>
+                <td class="glossary-var">RenBat</td>
+                <td class="glossary-unit">%</td>
+                <td class="glossary-desc">Rendement de la batterie (pourcentage d'énergie réellement utilisable par rapport à la capacité totale).</td>
+            </tr>
+            <tr>
+                <td class="glossary-var">Vente</td>
+                <td class="glossary-unit">kWh</td>
+                <td class="glossary-desc">Surplus de production qui ne peut être ni autoconsommé ni stocké, revendu au réseau. Formule : <em>SurplusPV − Charge</em>.</td>
+            </tr>
+            <tr>
+                <td class="glossary-var">Achat</td>
+                <td class="glossary-unit">kWh</td>
+                <td class="glossary-desc">Énergie achetée au réseau pour combler le déficit nocturne. Formule : <em>max(0, Conso Nuit − Charge)</em>.</td>
+            </tr>
+            <tr>
+                <td class="glossary-var">Économie panneaux</td>
+                <td class="glossary-unit">&euro;</td>
+                <td class="glossary-desc">Argent économisé en consommant directement l'énergie produite par les panneaux au lieu de l'acheter au réseau. Formule : <em>Autoconsommation × Nb jours × Prix achat</em>.</td>
+            </tr>
+            <tr>
+                <td class="glossary-var">Économie batterie</td>
+                <td class="glossary-unit">&euro;</td>
+                <td class="glossary-desc">Argent économisé grâce à l'énergie stockée dans la batterie et utilisée la nuit. Formule : <em>Charge × Nb jours × (Prix achat − Coût batterie)</em>.</td>
+            </tr>
+            <tr>
+                <td class="glossary-var">Bilan</td>
+                <td class="glossary-unit">&euro;</td>
+                <td class="glossary-desc">Différence entre les économies totales (panneaux + batterie + revente) et le coût d'achat réseau. Formule : <em>Éco. panneaux + Éco. batterie + Vente − Achat</em>.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <hr class="divider">
+
+    <!-- ============================================ -->
+    <!-- SECTION 2 : EXEMPLE DE CALCUL — JANVIER      -->
+    <!-- ============================================ -->
+    <div class="section-header">
+        <div class="header-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="4" y="2" width="16" height="20" rx="2" ry="2"/>
+                <line x1="8" y1="6" x2="16" y2="6"/>
+                <line x1="8" y1="10" x2="16" y2="10"/>
+                <line x1="8" y1="14" x2="12" y2="14"/>
+            </svg>
         </div>
+        <h2>Exemple de calcul — Janvier</h2>
+    </div>
 
-        <!-- ============================================ -->
-        <!-- SECTION 2 : PRODUCTION MOYENNE JOURNALIÈRE   -->
-        <!-- ============================================ -->
-        <div class="section-header">
-            <span class="section-number">02</span>
-            <h2>Production moyenne journalière</h2>
+    <p class="glossary-intro">Cet exemple détaille pas à pas le calcul du bilan énergétique et financier pour le mois de <strong>janvier</strong>, où la production solaire est faible et ne couvre pas la consommation journalière.</p>
+
+    <!-- Paramètres d'entrée -->
+    <div class="section-subtitle">Paramètres d'entrée</div>
+
+    <div class="params-grid">
+        <div class="param-card">
+            <div class="param-label">Production mensuelle</div>
+            <div class="param-value">97,92<span class="param-unit">kWh</span></div>
         </div>
-
-        <div class="cards-row">
-            <div class="card card-accent">
-                <div class="card-label">Production totale annuelle</div>
-                <div class="card-value">30 534,38<span class="card-unit">kWh</span></div>
-            </div>
-            <div class="card">
-                <div class="card-label">Puissance panneaux</div>
-                <div class="card-value">31 500<span class="card-unit">Wc</span></div>
-            </div>
-            <div class="card">
-                <div class="card-label">Orientation</div>
-                <div class="card-value">-15°</div>
-            </div>
-            <div class="card">
-                <div class="card-label">Inclinaison</div>
-                <div class="card-value">30°</div>
-            </div>
+        <div class="param-card">
+            <div class="param-label">Consommation mensuelle</div>
+            <div class="param-value">331,00<span class="param-unit">kWh</span></div>
+        </div>
+        <div class="param-card">
+            <div class="param-label">Nombre de jours</div>
+            <div class="param-value">31<span class="param-unit">jours</span></div>
+        </div>
+        <div class="param-card">
+            <div class="param-label">Capacité batterie/jour</div>
+            <div class="param-value">4,50<span class="param-unit">kWh</span></div>
+        </div>
+        <div class="param-card">
+            <div class="param-label">Prix achat réseau</div>
+            <div class="param-value">0,31<span class="param-unit">&euro;/kWh</span></div>
+        </div>
+        <div class="param-card">
+            <div class="param-label">Prix revente réseau</div>
+            <div class="param-value">0,21<span class="param-unit">&euro;/kWh</span></div>
+        </div>
+        <div class="param-card">
+            <div class="param-label">Coût utilisation batterie</div>
+            <div class="param-value">0,02<span class="param-unit">&euro;/kWh</span></div>
+        </div>
+        <div class="param-card">
+            <div class="param-label">Rendement batterie</div>
+            <div class="param-value">95<span class="param-unit">%</span></div>
         </div>
     </div>
 
-    <!-- ============================================ -->
-    <!-- SECTION 3 : DONNÉES DE CONSOMMATION          -->
-    <!-- ============================================ -->
-    <div class="page">
-        <div class="section-header">
-            <span class="section-number">03</span>
-            <h2>Données de consommation</h2>
-        </div>
+    <!-- Étape 1 : Valeurs quotidiennes -->
+    <div class="section-subtitle">Étape 1 — Valeurs quotidiennes</div>
 
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Mois</th>
-                    <th>Production (kWh)</th>
-                    <th>Consommation (kWh)</th>
-                    <th>Prod. quot. (kWh)</th>
-                    <th>Conso nuit (kWh)</th>
-                    <th>Conso jour (kWh)</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr><td>Janvier</td><td>1 106,58</td><td>2 458,33</td><td>36,89</td><td>42,61</td><td>39,33</td></tr>
-                <tr><td>Février</td><td>1 388,51</td><td>2 458,33</td><td>46,28</td><td>42,61</td><td>39,33</td></tr>
-                <tr><td>Mars</td><td>2 588,29</td><td>2 458,33</td><td>86,28</td><td>42,61</td><td>39,33</td></tr>
-                <tr><td>Avril</td><td>3 540,33</td><td>2 458,33</td><td>118,01</td><td>42,61</td><td>39,33</td></tr>
-                <tr><td>Mai</td><td>3 713,90</td><td>2 458,33</td><td>123,80</td><td>42,61</td><td>39,33</td></tr>
-                <tr><td>Juin</td><td>3 790,61</td><td>2 458,33</td><td>126,35</td><td>42,61</td><td>39,33</td></tr>
-                <tr><td>Juillet</td><td>3 800,34</td><td>2 458,33</td><td>126,68</td><td>42,61</td><td>39,33</td></tr>
-                <tr><td>Août</td><td>3 414,46</td><td>2 458,33</td><td>113,82</td><td>42,61</td><td>39,33</td></tr>
-                <tr><td>Septembre</td><td>2 930,63</td><td>2 458,33</td><td>97,69</td><td>42,61</td><td>39,33</td></tr>
-                <tr><td>Octobre</td><td>2 152,13</td><td>2 458,33</td><td>71,74</td><td>42,61</td><td>39,33</td></tr>
-                <tr><td>Novembre</td><td>1 197,44</td><td>2 458,33</td><td>39,91</td><td>42,61</td><td>39,33</td></tr>
-                <tr><td>Décembre</td><td>911,16</td><td>2 458,33</td><td>30,37</td><td>42,61</td><td>39,33</td></tr>
-            </tbody>
-        </table>
+    <div class="calc-box">
+        <p class="calc-title">Production quotidienne</p>
+        <p><span class="calc-formula">Prod. quot. = Production mensuelle / Nb jours</span></p>
+        <p><span class="calc-formula">Prod. quot. = 97,92 / 31 = <strong>3,16 kWh/jour</strong></span></p>
     </div>
 
-    <!-- ============================================ -->
-    <!-- SECTION 4 : BILAN ÉNERGÉTIQUE QUOTIDIEN      -->
-    <!-- ============================================ -->
-    <div class="page">
-        <div class="section-header">
-            <span class="section-number">04</span>
-            <h2>Bilan énergétique quotidien (en kWh)</h2>
-        </div>
-
-        <div class="explanation-box">
-            <p>La <strong>charge</strong> est l'énergie disponible dans la batterie. Elle dépend de la capacité de la batterie et du surplus de production par rapport à la consommation de jour. Elle tient également compte du pourcentage de batterie utilisable et de sa performance.</p>
-            <p>La <strong>vente</strong> est l'énergie produite qui ne peut pas être auto-consommée (ni en consommation de jour, ni pour charger la batterie). Elle sera alors revendue sur le réseau.</p>
-            <p>L'<strong>achat</strong> correspond à l'énergie qu'il faut acheter sur le réseau, en déduisant la partie auto-consommation.</p>
-        </div>
-
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Mois</th>
-                    <th>Production</th>
-                    <th>Conso jour</th>
-                    <th>Conso nuit</th>
-                    <th>Charge</th>
-                    <th>Vente</th>
-                    <th>Achat</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr><td>Janvier</td><td>36,89</td><td>39,33</td><td>42,61</td><td>0,00</td><td>0,00</td><td>45,05</td></tr>
-                <tr><td>Février</td><td>46,28</td><td>39,33</td><td>42,61</td><td>6,95</td><td>0,00</td><td>35,66</td></tr>
-                <tr><td>Mars</td><td>86,28</td><td>39,33</td><td>42,61</td><td>39,60</td><td>7,35</td><td>3,01</td></tr>
-                <tr><td>Avril</td><td>118,01</td><td>39,33</td><td>42,61</td><td>39,60</td><td>39,08</td><td>3,01</td></tr>
-                <tr><td>Mai</td><td>123,80</td><td>39,33</td><td>42,61</td><td>39,60</td><td>44,87</td><td>3,01</td></tr>
-                <tr><td>Juin</td><td>126,35</td><td>39,33</td><td>42,61</td><td>39,60</td><td>47,42</td><td>3,01</td></tr>
-                <tr><td>Juillet</td><td>126,68</td><td>39,33</td><td>42,61</td><td>39,60</td><td>47,75</td><td>3,01</td></tr>
-                <tr><td>Août</td><td>113,82</td><td>39,33</td><td>42,61</td><td>39,60</td><td>34,89</td><td>3,01</td></tr>
-                <tr><td>Septembre</td><td>97,69</td><td>39,33</td><td>42,61</td><td>39,60</td><td>18,76</td><td>3,01</td></tr>
-                <tr><td>Octobre</td><td>71,74</td><td>39,33</td><td>42,61</td><td>32,41</td><td>0,00</td><td>10,20</td></tr>
-                <tr><td>Novembre</td><td>39,91</td><td>39,33</td><td>42,61</td><td>0,58</td><td>0,00</td><td>42,03</td></tr>
-                <tr><td>Décembre</td><td>30,37</td><td>39,33</td><td>42,61</td><td>0,00</td><td>0,00</td><td>51,57</td></tr>
-            </tbody>
-        </table>
+    <div class="calc-box">
+        <p class="calc-title">Consommation quotidienne</p>
+        <p><span class="calc-formula">Conso jour = 6,41 kWh/jour</span> (répartition selon le profil de consommation)</p>
+        <p><span class="calc-formula">Conso nuit = 4,27 kWh/jour</span> (répartition selon le profil de consommation)</p>
+        <p>Vérification : <span class="calc-formula">(6,41 + 4,27) × 31 = 331,08 &asymp; 331,00 kWh</span> &check;</p>
     </div>
 
-    <!-- ============================================ -->
-    <!-- SECTION 5 : BILAN FINANCIER MENSUEL          -->
-    <!-- ============================================ -->
-    <div class="page">
-        <div class="section-header">
-            <span class="section-number">05</span>
-            <h2>Bilan financier mensuel</h2>
-        </div>
+    <!-- Étape 2 : Bilan énergétique quotidien -->
+    <div class="section-subtitle">Étape 2 — Bilan énergétique quotidien</div>
 
-        <div class="explanation-box">
-            <p>L'<strong>économie panneaux</strong> représente l'argent économisé en utilisant la production des panneaux pour sa consommation de jour.</p>
-            <p>L'<strong>économie batterie</strong> représente l'argent économisé grâce à l'énergie stockée dans la batterie qui sera utilisée pour la consommation de nuit. Le calcul tient compte du coût d'utilisation de la batterie.</p>
-            <p>La <strong>vente</strong> correspond aux bénéfices engrangés en revendant le surplus de production.</p>
-            <p>L'<strong>achat</strong> est le montant à payer pour la partie de la consommation qui n'est pas couverte par la production.</p>
-            <p>Le <strong>bilan</strong> est la différence entre le montant à payer pour l'achat et le profit de la revente.</p>
-        </div>
-
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Mois</th>
-                    <th>Économie panneaux</th>
-                    <th>Économie batterie</th>
-                    <th>Vente</th>
-                    <th>Achat</th>
-                    <th>Bilan</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr><td>Janvier</td><td>276,65 &euro;</td><td>0,00 &euro;</td><td>0,00 &euro;</td><td>337,91 &euro;</td><td class="negative">337,91 &euro;</td></tr>
-                <tr><td>Février</td><td>294,97 &euro;</td><td>50,84 &euro;</td><td>0,00 &euro;</td><td>267,42 &euro;</td><td class="negative">267,42 &euro;</td></tr>
-                <tr><td>Mars</td><td>294,97 &euro;</td><td>289,50 &euro;</td><td>15,43 &euro;</td><td>22,57 &euro;</td><td class="negative">7,15 &euro;</td></tr>
-                <tr><td>Avril</td><td>294,97 &euro;</td><td>289,50 &euro;</td><td>82,07 &euro;</td><td>22,57 &euro;</td><td class="positive">59,50 &euro;</td></tr>
-                <tr><td>Mai</td><td>294,97 &euro;</td><td>289,50 &euro;</td><td>94,22 &euro;</td><td>22,57 &euro;</td><td class="positive">71,65 &euro;</td></tr>
-                <tr><td>Juin</td><td>294,97 &euro;</td><td>289,50 &euro;</td><td>99,59 &euro;</td><td>22,57 &euro;</td><td class="positive">77,01 &euro;</td></tr>
-                <tr><td>Juillet</td><td>294,97 &euro;</td><td>289,50 &euro;</td><td>100,27 &euro;</td><td>22,57 &euro;</td><td class="positive">77,70 &euro;</td></tr>
-                <tr><td>Août</td><td>294,97 &euro;</td><td>289,50 &euro;</td><td>73,26 &euro;</td><td>22,57 &euro;</td><td class="positive">50,68 &euro;</td></tr>
-                <tr><td>Septembre</td><td>294,97 &euro;</td><td>289,50 &euro;</td><td>39,39 &euro;</td><td>22,57 &euro;</td><td class="positive">16,82 &euro;</td></tr>
-                <tr><td>Octobre</td><td>294,97 &euro;</td><td>236,92 &euro;</td><td>0,00 &euro;</td><td>76,52 &euro;</td><td class="negative">76,52 &euro;</td></tr>
-                <tr><td>Novembre</td><td>294,97 &euro;</td><td>4,27 &euro;</td><td>0,00 &euro;</td><td>315,19 &euro;</td><td class="negative">315,19 &euro;</td></tr>
-                <tr><td>Décembre</td><td>227,79 &euro;</td><td>0,00 &euro;</td><td>0,00 &euro;</td><td>386,76 &euro;</td><td class="negative">386,76 &euro;</td></tr>
-            </tbody>
-        </table>
+    <div class="explanation-box">
+        <p>En janvier, la production quotidienne (3,16 kWh) est <strong>inférieure</strong> à la consommation de jour (6,41 kWh). Il n'y a donc <strong>aucun surplus</strong> de production, aucune charge de batterie et aucune revente possible. Toute la consommation de nuit doit être achetée au réseau.</p>
     </div>
 
-    <!-- ============================================ -->
-    <!-- SECTION 6 : BILAN ANNUEL                     -->
-    <!-- ============================================ -->
-    <div class="page">
-        <div class="section-header">
-            <span class="section-number">06</span>
-            <h2>Bilan annuel</h2>
-        </div>
-
-        <div class="section-subtitle">Production</div>
-        <div class="cards-row">
-            <div class="card card-accent">
-                <div class="card-label">Production totale</div>
-                <div class="card-value">30 534,38<span class="card-unit">kWh</span></div>
-            </div>
-        </div>
-
-        <div class="section-subtitle">Consommation</div>
-        <div class="cards-row">
-            <div class="card">
-                <div class="card-label">Jour</div>
-                <div class="card-value">14 158,8<span class="card-unit">kWh</span></div>
-            </div>
-            <div class="card">
-                <div class="card-label">Nuit</div>
-                <div class="card-value">15 339,6<span class="card-unit">kWh</span></div>
-            </div>
-            <div class="card">
-                <div class="card-label">Totale</div>
-                <div class="card-value">29 499,96<span class="card-unit">kWh</span></div>
-            </div>
-        </div>
-
-        <div class="section-subtitle">Auto consommation</div>
-        <div class="cards-row">
-            <div class="card">
-                <div class="card-label">Consommé la journée</div>
-                <div class="card-value">13 816,74<span class="card-unit">kWh</span></div>
-            </div>
-            <div class="card">
-                <div class="card-label">Stocké dans la batterie</div>
-                <div class="card-value">9 514,38<span class="card-unit">kWh</span></div>
-            </div>
-            <div class="card">
-                <div class="card-label">Total</div>
-                <div class="card-value">23 331,12<span class="card-unit">kWh</span></div>
-            </div>
-        </div>
-
-        <div class="section-subtitle">Économies</div>
-        <div class="cards-row">
-            <div class="card">
-                <div class="card-label">Liées aux panneaux</div>
-                <div class="card-value">3 454,14<span class="card-unit">&euro;</span></div>
-            </div>
-            <div class="card">
-                <div class="card-label">Liées à la batterie</div>
-                <div class="card-value">2 318,53<span class="card-unit">&euro;</span></div>
-            </div>
-            <div class="card">
-                <div class="card-label">Liées à la revente</div>
-                <div class="card-value">504,23<span class="card-unit">&euro;</span></div>
-            </div>
-        </div>
-
-        <div class="cards-row">
-            <div class="card card-accent">
-                <div class="card-label">Total économies</div>
-                <div class="card-value">6 276,90<span class="card-unit">&euro;</span></div>
-            </div>
-        </div>
+    <div class="calc-box">
+        <p class="calc-title">SurplusPV</p>
+        <p><span class="calc-formula">SurplusPV = max(0, Production − Conso Jour)</span></p>
+        <p><span class="calc-formula">SurplusPV = max(0, 3,16 − 6,41) = max(0, −3,25) = <strong>0,00 kWh</strong></span></p>
     </div>
 
-    <!-- ============================================ -->
-    <!-- SECTION 7 : MATÉRIEL SÉLECTIONNÉ             -->
-    <!-- ============================================ -->
-    <div class="page">
-        <div class="section-header">
-            <span class="section-number">07</span>
-            <h2>Matériel sélectionné</h2>
-        </div>
-
-        <table class="material-table">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Description</th>
-                    <th>Prix unit HT</th>
-                    <th>Quantité</th>
-                    <th>Total TTC</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>25798</td>
-                    <td>QN SOLAR Double Glass Bifaciale 420Wc N-Type — Panneau</td>
-                    <td>475 &euro;</td>
-                    <td>75</td>
-                    <td>35 625 &euro;</td>
-                </tr>
-                <tr>
-                    <td>26097</td>
-                    <td>Onduleur hybride Triphasé Sofar Solar 20 kVA - HYD20KTL-3PH</td>
-                    <td>8 160 &euro;</td>
-                    <td>1</td>
-                    <td>8 160 &euro;</td>
-                </tr>
-                <tr>
-                    <td>25962</td>
-                    <td>Parc de Batterie Lithium Pylontech US5000 38.4 kWh +800</td>
-                    <td>35 890 &euro;</td>
-                    <td>1</td>
-                    <td>35 890 &euro;</td>
-                </tr>
-                <tr class="material-total">
-                    <td colspan="2">TOTAL HT</td>
-                    <td colspan="3">79 675 &euro;</td>
-                </tr>
-                <tr class="material-total">
-                    <td colspan="2">TVA</td>
-                    <td colspan="3">0 %</td>
-                </tr>
-                <tr class="material-total">
-                    <td colspan="2">TOTAL TTC</td>
-                    <td colspan="3">79 675 &euro;</td>
-                </tr>
-            </tbody>
-        </table>
+    <div class="calc-box">
+        <p class="calc-title">Autoconsommation</p>
+        <p><span class="calc-formula">Autoconsommation = min(Production, Conso Jour)</span></p>
+        <p><span class="calc-formula">Autoconsommation = min(3,16 ; 6,41) = <strong>3,16 kWh</strong></span></p>
+        <p>Seuls 3,16 kWh sur les 6,41 kWh consommés le jour sont couverts par les panneaux.</p>
     </div>
 
-    <!-- ============================================ -->
-    <!-- SECTION 8 : GLOSSAIRE DES VARIABLES          -->
-    <!-- ============================================ -->
-    <div class="page">
-        <div class="section-header">
-            <div class="header-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
-                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-                </svg>
-            </div>
-            <h2>Glossaire des variables</h2>
-        </div>
-
-        <p class="glossary-intro">Ce tableau décrit les principales variables utilisées dans cette simulation photovoltaïque.</p>
-
-        <table class="glossary-table">
-            <thead>
-                <tr>
-                    <th class="glossary-var">Variable</th>
-                    <th class="glossary-unit">Unité</th>
-                    <th class="glossary-desc">Description</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td class="glossary-var">Production</td>
-                    <td class="glossary-unit">kWh</td>
-                    <td class="glossary-desc">Énergie électrique produite par les panneaux photovoltaïques sur une période donnée (jour ou mois).</td>
-                </tr>
-                <tr>
-                    <td class="glossary-var">Conso Jour</td>
-                    <td class="glossary-unit">kWh</td>
-                    <td class="glossary-desc">Consommation électrique du foyer pendant la journée (heures d'ensoleillement), lorsque les panneaux produisent.</td>
-                </tr>
-                <tr>
-                    <td class="glossary-var">Conso Nuit</td>
-                    <td class="glossary-unit">kWh</td>
-                    <td class="glossary-desc">Consommation électrique du foyer pendant la nuit, alimentée par la batterie ou le réseau.</td>
-                </tr>
-                <tr>
-                    <td class="glossary-var">SurplusPV</td>
-                    <td class="glossary-unit">kWh</td>
-                    <td class="glossary-desc">Excédent de production après couverture de la consommation de jour. Formule : <em>max(0, Production − Conso Jour)</em>.</td>
-                </tr>
-                <tr>
-                    <td class="glossary-var">Autoconsommation</td>
-                    <td class="glossary-unit">kWh</td>
-                    <td class="glossary-desc">Part de la production solaire consommée directement par le foyer. Formule : <em>min(Production, Conso Jour)</em>.</td>
-                </tr>
-                <tr>
-                    <td class="glossary-var">Charge</td>
-                    <td class="glossary-unit">kWh</td>
-                    <td class="glossary-desc">Énergie excédentaire stockée dans la batterie. Formule : <em>min(SurplusPV, CapBat × RenBat)</em>.</td>
-                </tr>
-                <tr>
-                    <td class="glossary-var">CapBat</td>
-                    <td class="glossary-unit">kWh</td>
-                    <td class="glossary-desc">Capacité totale de stockage de la batterie installée.</td>
-                </tr>
-                <tr>
-                    <td class="glossary-var">RenBat</td>
-                    <td class="glossary-unit">%</td>
-                    <td class="glossary-desc">Rendement de la batterie (pourcentage d'énergie réellement utilisable par rapport à la capacité totale).</td>
-                </tr>
-                <tr>
-                    <td class="glossary-var">Vente</td>
-                    <td class="glossary-unit">kWh</td>
-                    <td class="glossary-desc">Surplus de production qui ne peut être ni autoconsommé ni stocké, revendu au réseau. Formule : <em>SurplusPV − Charge</em>.</td>
-                </tr>
-                <tr>
-                    <td class="glossary-var">Achat</td>
-                    <td class="glossary-unit">kWh</td>
-                    <td class="glossary-desc">Énergie achetée au réseau pour combler le déficit nocturne. Formule : <em>max(0, Conso Nuit − Énergie batterie nuit)</em>.</td>
-                </tr>
-                <tr>
-                    <td class="glossary-var">Économie panneaux</td>
-                    <td class="glossary-unit">&euro;</td>
-                    <td class="glossary-desc">Argent économisé en consommant directement l'énergie produite par les panneaux au lieu de l'acheter au réseau.</td>
-                </tr>
-                <tr>
-                    <td class="glossary-var">Économie batterie</td>
-                    <td class="glossary-unit">&euro;</td>
-                    <td class="glossary-desc">Argent économisé grâce à l'énergie stockée dans la batterie et utilisée la nuit, déduction faite du coût d'utilisation de la batterie.</td>
-                </tr>
-                <tr>
-                    <td class="glossary-var">Bilan</td>
-                    <td class="glossary-unit">&euro;</td>
-                    <td class="glossary-desc">Différence entre les économies totales (panneaux + batterie + revente) et le coût d'achat réseau.</td>
-                </tr>
-            </tbody>
-        </table>
+    <div class="calc-box">
+        <p class="calc-title">Charge batterie</p>
+        <p><span class="calc-formula">Charge = min(SurplusPV, CapBat journalier)</span></p>
+        <p><span class="calc-formula">Charge = min(0,00 ; 4,50) = <strong>0,00 kWh</strong></span></p>
+        <p>Pas de surplus &rarr; la batterie ne se charge pas.</p>
     </div>
 
-    <div class="page-footer">
-        Rapport Simulation Photovoltaïque — DEVIS BARBE 75 PV
+    <div class="calc-box">
+        <p class="calc-title">Vente au réseau</p>
+        <p><span class="calc-formula">Vente = SurplusPV − Charge</span></p>
+        <p><span class="calc-formula">Vente = 0,00 − 0,00 = <strong>0,00 kWh</strong></span></p>
+    </div>
+
+    <div class="calc-box">
+        <p class="calc-title">Achat au réseau</p>
+        <p><span class="calc-formula">Achat = max(0, Conso Nuit − Charge)</span></p>
+        <p><span class="calc-formula">Achat = max(0, 4,27 − 0,00) = <strong>4,27 kWh</strong></span></p>
+        <p>La totalité de la consommation nocturne doit être achetée au réseau.</p>
+    </div>
+
+    <!-- Résumé énergétique quotidien -->
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Variable</th>
+                <th>Valeur quotidienne</th>
+                <th>Valeur mensuelle (×31)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>Production</td><td>3,16 kWh</td><td>97,92 kWh</td></tr>
+            <tr><td>Conso Jour</td><td>6,41 kWh</td><td>198,71 kWh</td></tr>
+            <tr><td>Conso Nuit</td><td>4,27 kWh</td><td>132,37 kWh</td></tr>
+            <tr><td>Autoconsommation</td><td>3,16 kWh</td><td>97,96 kWh</td></tr>
+            <tr><td>SurplusPV</td><td>0,00 kWh</td><td>0,00 kWh</td></tr>
+            <tr class="highlight-row"><td>Charge</td><td>0,00 kWh</td><td>0,00 kWh</td></tr>
+            <tr class="highlight-row"><td>Vente</td><td>0,00 kWh</td><td>0,00 kWh</td></tr>
+            <tr class="highlight-row"><td>Achat</td><td>4,27 kWh</td><td>132,37 kWh</td></tr>
+        </tbody>
+    </table>
+
+    <!-- Étape 3 : Bilan financier mensuel -->
+    <div class="section-subtitle">Étape 3 — Bilan financier mensuel</div>
+
+    <div class="explanation-box">
+        <p>Le bilan financier est calculé sur le mois entier (31 jours). Chaque valeur quotidienne est multipliée par le nombre de jours, puis par le tarif correspondant.</p>
+    </div>
+
+    <div class="calc-box">
+        <p class="calc-title">Économie panneaux</p>
+        <p><span class="calc-formula">Éco. panneaux = Autoconsommation × Nb jours × Prix achat</span></p>
+        <p><span class="calc-formula">Éco. panneaux = 3,16 × 31 × 0,31 = 97,96 × 0,31 = <strong>30,37 &euro;</strong></span></p>
+        <p>C'est l'argent économisé en n'achetant pas au réseau l'énergie autoconsommée.</p>
+    </div>
+
+    <div class="calc-box">
+        <p class="calc-title">Économie batterie</p>
+        <p><span class="calc-formula">Éco. batterie = Charge × Nb jours × (Prix achat − Coût batterie)</span></p>
+        <p><span class="calc-formula">Éco. batterie = 0,00 × 31 × (0,31 − 0,02) = <strong>0,00 &euro;</strong></span></p>
+        <p>La batterie n'a pas été chargée en janvier &rarr; aucune économie batterie.</p>
+    </div>
+
+    <div class="calc-box">
+        <p class="calc-title">Revenu de vente</p>
+        <p><span class="calc-formula">Vente (&euro;) = Vente (kWh) × Nb jours × Prix revente</span></p>
+        <p><span class="calc-formula">Vente (&euro;) = 0,00 × 31 × 0,21 = <strong>0,00 &euro;</strong></span></p>
+    </div>
+
+    <div class="calc-box">
+        <p class="calc-title">Coût d'achat réseau</p>
+        <p><span class="calc-formula">Achat (&euro;) = Achat (kWh) × Nb jours × Prix achat</span></p>
+        <p><span class="calc-formula">Achat (&euro;) = 4,27 × 31 × 0,31 = 132,37 × 0,31 = <strong>41,03 &euro;</strong></span></p>
+    </div>
+
+    <div class="calc-box" style="border-left-color: #4A9B5D; background: #F1F9F1;">
+        <p class="calc-title">Bilan mensuel</p>
+        <p><span class="calc-formula">Bilan = Éco. panneaux + Éco. batterie + Vente − Achat</span></p>
+        <p><span class="calc-formula">Bilan = 30,37 + 0,00 + 0,00 − 41,03 = <strong class="negative">−10,67 &euro;</strong></span></p>
+        <p>En janvier, le bilan est <strong>négatif</strong> : la faible production solaire ne compense pas les achats réseau nocturnes.</p>
+    </div>
+
+    <!-- Résumé financier -->
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Poste</th>
+                <th>Montant</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>Économie panneaux</td><td class="positive">+30,37 &euro;</td></tr>
+            <tr><td>Économie batterie</td><td>0,00 &euro;</td></tr>
+            <tr><td>Vente (revente réseau)</td><td>0,00 &euro;</td></tr>
+            <tr><td>Achat (réseau)</td><td class="negative">−41,03 &euro;</td></tr>
+            <tr class="highlight-row"><td><strong>BILAN JANVIER</strong></td><td class="negative"><strong>−10,67 &euro;</strong></td></tr>
+        </tbody>
+    </table>
+
+    <div class="explanation-box">
+        <p><strong>Interprétation :</strong> En janvier, la production solaire quotidienne (3,16 kWh) est bien inférieure à la consommation de jour (6,41 kWh). Il n'y a donc aucun surplus pour charger la batterie ou revendre au réseau. Toute la consommation nocturne (4,27 kWh/jour) est achetée au réseau, ce qui génère un coût de 41,03 &euro;. L'économie réalisée grâce aux panneaux (30,37 &euro;) ne suffit pas à couvrir ce coût, d'où un bilan négatif de −10,67 &euro;.</p>
+        <p>Ce scénario est typique des mois d'hiver. En revanche, dès le printemps (mars–avril), la production dépasse la consommation de jour, permettant de charger la batterie et de revendre le surplus, ce qui rend le bilan positif.</p>
     </div>
 
 </body>
