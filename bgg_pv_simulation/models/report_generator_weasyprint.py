@@ -572,7 +572,7 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             <thead>
                 <tr>
                     <th>Mois</th>
-                    <th>Prod. Mois (kWh)</th>
+                    <th>Prod. Quot. (kWh)</th>
                     <th>Conso jour (kWh)</th>
                     <th>Conso nuit (kWh)</th>
                     <th>Charge (kWh)</th>
