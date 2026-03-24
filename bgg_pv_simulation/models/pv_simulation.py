@@ -675,9 +675,28 @@ class PvSimulation(models.Model):
         self.simulation_needs_regeneration = False
 
     def action_generate_report(self):
-        """Generate PDF report using QWeb template"""
+        """Generate PDF report using WeasyPrint"""
         self.ensure_one()
-        return self.env.ref('bgg_pv_simulation.action_report_pv_simulation').report_action(self)
+
+        generator = self.env['pv.simulation.weasyprint.generator']
+        pdf_content = generator.generate_report(self.id)
+
+        # Create attachment
+        attachment = self.env['ir.attachment'].create({
+            'name': f'Rapport_PV_{self.name}.pdf',
+            'type': 'binary',
+            'datas': base64.b64encode(pdf_content),
+            'res_model': 'pv.simulation',
+            'res_id': self.id,
+            'mimetype': 'application/pdf'
+        })
+
+        # Return download action
+        return {
+            'type': 'ir.actions.act_url',
+            'url': f'/web/content/{attachment.id}?download=true',
+            'target': 'new',
+        }
 
     def _compute_monthly_results(self):
         """
