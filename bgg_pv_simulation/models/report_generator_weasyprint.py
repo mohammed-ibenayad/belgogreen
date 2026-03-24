@@ -392,7 +392,96 @@ class PvSimulationWeasyPrint(models.AbstractModel):
     </div>
 
     <!-- ============================================ -->
-    <!-- PAGE 2: BILAN ÉNERGÉTIQUE                    -->
+    <!-- PAGE 2: GLOSSAIRE DES VARIABLES              -->
+    <!-- ============================================ -->
+    <div class="page content-page">
+        <div class="section">
+            <div class="section-number">&nbsp;</div>
+            <h2 class="section-title">GLOSSAIRE DES VARIABLES</h2>
+        </div>
+
+        <p class="glossary-intro">Ce tableau d\u00e9crit les principales variables utilis\u00e9es dans cette simulation photovolta\u00efque.</p>
+
+        <table class="glossary-table">
+            <thead>
+                <tr>
+                    <th class="glossary-var">Variable</th>
+                    <th class="glossary-unit">Unit\u00e9</th>
+                    <th class="glossary-desc">Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="glossary-var"><strong>Production</strong></td>
+                    <td class="glossary-unit">kWh</td>
+                    <td class="glossary-desc">\u00c9nergie \u00e9lectrique produite par les panneaux photovolta\u00efques sur une p\u00e9riode donn\u00e9e (jour ou mois).</td>
+                </tr>
+                <tr>
+                    <td class="glossary-var"><strong>Conso Jour</strong></td>
+                    <td class="glossary-unit">kWh</td>
+                    <td class="glossary-desc">Consommation \u00e9lectrique du foyer pendant la journ\u00e9e (heures d\u2019ensoleillement), lorsque les panneaux produisent.</td>
+                </tr>
+                <tr>
+                    <td class="glossary-var"><strong>Conso Nuit</strong></td>
+                    <td class="glossary-unit">kWh</td>
+                    <td class="glossary-desc">Consommation \u00e9lectrique du foyer pendant la nuit, aliment\u00e9e par la batterie ou le r\u00e9seau.</td>
+                </tr>
+                <tr>
+                    <td class="glossary-var"><strong>SurplusPV</strong></td>
+                    <td class="glossary-unit">kWh</td>
+                    <td class="glossary-desc">Exc\u00e9dent de production apr\u00e8s couverture de la consommation de jour. Formule\u00a0: <em>max(0, Production \u2212 Conso Jour)</em>.</td>
+                </tr>
+                <tr>
+                    <td class="glossary-var"><strong>Autoconsommation</strong></td>
+                    <td class="glossary-unit">kWh</td>
+                    <td class="glossary-desc">Part de la production solaire consomm\u00e9e directement par le foyer. Formule\u00a0: <em>min(Production, Conso Jour)</em>.</td>
+                </tr>
+                <tr>
+                    <td class="glossary-var"><strong>Charge</strong></td>
+                    <td class="glossary-unit">kWh</td>
+                    <td class="glossary-desc">\u00c9nergie exc\u00e9dentaire stock\u00e9e dans la batterie. Formule\u00a0: <em>min(SurplusPV, CapBat \u00d7 RenBat)</em>.</td>
+                </tr>
+                <tr>
+                    <td class="glossary-var"><strong>CapBat</strong></td>
+                    <td class="glossary-unit">kWh</td>
+                    <td class="glossary-desc">Capacit\u00e9 totale de stockage de la batterie install\u00e9e.</td>
+                </tr>
+                <tr>
+                    <td class="glossary-var"><strong>RenBat</strong></td>
+                    <td class="glossary-unit">%</td>
+                    <td class="glossary-desc">Rendement de la batterie (pourcentage d\u2019\u00e9nergie r\u00e9ellement utilisable par rapport \u00e0 la capacit\u00e9 totale).</td>
+                </tr>
+                <tr>
+                    <td class="glossary-var"><strong>Vente</strong></td>
+                    <td class="glossary-unit">kWh</td>
+                    <td class="glossary-desc">Surplus de production qui ne peut \u00eatre ni autoconsomm\u00e9 ni stock\u00e9, revendu au r\u00e9seau. Formule\u00a0: <em>SurplusPV \u2212 Charge</em>.</td>
+                </tr>
+                <tr>
+                    <td class="glossary-var"><strong>Achat</strong></td>
+                    <td class="glossary-unit">kWh</td>
+                    <td class="glossary-desc">\u00c9nergie achet\u00e9e au r\u00e9seau pour combler le d\u00e9ficit nocturne. Formule\u00a0: <em>max(0, Conso Nuit \u2212 \u00c9nergie batterie nuit)</em>.</td>
+                </tr>
+                <tr>
+                    <td class="glossary-var"><strong>\u00c9conomie panneaux</strong></td>
+                    <td class="glossary-unit">\u20ac</td>
+                    <td class="glossary-desc">Argent \u00e9conomis\u00e9 en consommant directement l\u2019\u00e9nergie produite par les panneaux au lieu de l\u2019acheter au r\u00e9seau.</td>
+                </tr>
+                <tr>
+                    <td class="glossary-var"><strong>\u00c9conomie batterie</strong></td>
+                    <td class="glossary-unit">\u20ac</td>
+                    <td class="glossary-desc">Argent \u00e9conomis\u00e9 gr\u00e2ce \u00e0 l\u2019\u00e9nergie stock\u00e9e dans la batterie et utilis\u00e9e la nuit, d\u00e9duction faite du co\u00fbt d\u2019utilisation de la batterie.</td>
+                </tr>
+                <tr>
+                    <td class="glossary-var"><strong>Bilan</strong></td>
+                    <td class="glossary-unit">\u20ac</td>
+                    <td class="glossary-desc">Diff\u00e9rence entre les \u00e9conomies totales (panneaux + batterie + revente) et le co\u00fbt d\u2019achat r\u00e9seau.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- PAGE 3: BILAN ÉNERGÉTIQUE                    -->
     <!-- ============================================ -->
     <div class="page content-page bilan-bg">
         <div class="section">
@@ -1185,6 +1274,72 @@ class PvSimulationWeasyPrint(models.AbstractModel):
 
         .explanation-box p:last-child {
             margin-bottom: 0;
+        }
+
+        /* ===================================================
+           GLOSSARY TABLE
+           =================================================== */
+        .glossary-intro {
+            font-size: 9.5pt;
+            color: #616161;
+            margin: 0 0 10pt 0;
+            line-height: 1.5;
+        }
+
+        .glossary-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8.5pt;
+            margin-top: 4pt;
+        }
+
+        .glossary-table thead tr {
+            background: #4A9B5D;
+        }
+
+        .glossary-table th {
+            color: #FFFFFF;
+            font-weight: 600;
+            text-align: left;
+            padding: 6pt 8pt;
+            font-size: 8.5pt;
+            letter-spacing: 0.3px;
+        }
+
+        .glossary-table td {
+            padding: 5pt 8pt;
+            border-bottom: 1px solid #E0E0E0;
+            vertical-align: top;
+            line-height: 1.4;
+            color: #212121;
+        }
+
+        .glossary-table tbody tr:nth-child(even) {
+            background: #F9F9F9;
+        }
+
+        .glossary-var {
+            width: 22%;
+            white-space: nowrap;
+        }
+
+        .glossary-unit {
+            width: 8%;
+            text-align: center;
+            color: #616161;
+        }
+
+        .glossary-table th.glossary-unit {
+            text-align: center;
+        }
+
+        .glossary-desc {
+            width: 70%;
+        }
+
+        .glossary-desc em {
+            font-style: italic;
+            color: #4A9B5D;
         }
 
         /* ===================================================
