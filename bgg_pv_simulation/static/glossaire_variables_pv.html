@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glossaire des Variables — Simulation Photovoltaïque</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        @page {
+            size: A4;
+            margin: 25mm 20mm 22mm 20mm;
+        }
+
+        body {
+            font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 11pt;
+            line-height: 1.55;
+            color: #212121;
+            background: #FFFFFF;
+            padding: 40px 50px;
+        }
+
+        @media print {
+            body { padding: 0; }
+        }
+
+        /* Header */
+        .page-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 28px;
+            padding-bottom: 16px;
+            border-bottom: 3px solid #4A9B5D;
+        }
+        .header-icon {
+            width: 42px;
+            height: 42px;
+            background: #4A9B5D;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .header-icon svg {
+            width: 24px;
+            height: 24px;
+        }
+        .header-text h1 {
+            font-size: 20pt;
+            font-weight: 700;
+            color: #212121;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+        .header-text p {
+            font-size: 9.5pt;
+            color: #616161;
+            margin-top: 2px;
+        }
+
+        /* Intro */
+        .glossary-intro {
+            font-size: 9.5pt;
+            color: #616161;
+            margin: 0 0 14pt 0;
+            line-height: 1.5;
+        }
+
+        /* Table */
+        .glossary-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9pt;
+            margin-top: 4pt;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+
+        .glossary-table thead tr {
+            background: #4A9B5D;
+        }
+
+        .glossary-table th {
+            color: #FFFFFF;
+            font-weight: 600;
+            text-align: left;
+            padding: 9pt 10pt;
+            font-size: 9pt;
+            letter-spacing: 0.3px;
+        }
+
+        .glossary-table td {
+            padding: 7pt 10pt;
+            border-bottom: 1px solid #E0E0E0;
+            vertical-align: top;
+            line-height: 1.45;
+            color: #212121;
+        }
+
+        .glossary-table tbody tr:nth-child(even) {
+            background: #F9F9F9;
+        }
+
+        .glossary-table tbody tr:hover {
+            background: #E8F5E9;
+        }
+
+        .glossary-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .glossary-var {
+            width: 20%;
+            white-space: nowrap;
+            font-weight: 600;
+        }
+
+        .glossary-desc {
+            width: 80%;
+        }
+
+        .glossary-desc em {
+            font-style: italic;
+            color: #4A9B5D;
+            font-weight: 500;
+        }
+
+        /* Footer */
+        .page-footer {
+            margin-top: 24px;
+            padding-top: 12px;
+            border-top: 1px solid #E0E0E0;
+            text-align: center;
+            font-size: 7.5pt;
+            color: #9E9E9E;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <div class="page-header">
+        <div class="header-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+            </svg>
+        </div>
+        <div class="header-text">
+            <h1>Glossaire des Variables</h1>
+            <p>Simulation Photovoltaïque — Définitions des termes clés</p>
+        </div>
+    </div>
+
+    <p class="glossary-intro">Ce tableau décrit les 13 principales variables utilisées dans cette simulation photovoltaïque.</p>
+
+    <table class="glossary-table">
+        <thead>
+            <tr>
+                <th class="glossary-var">Variable</th>
+                <th class="glossary-desc">Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="glossary-var">Production</td>
+                <td class="glossary-desc">Énergie produite par les panneaux PV</td>
+            </tr>
+            <tr>
+                <td class="glossary-var">Conso Jour</td>
+                <td class="glossary-desc">Consommation pendant la journée</td>
+            </tr>
+            <tr>
+                <td class="glossary-var">Conso Nuit</td>
+                <td class="glossary-desc">Consommation pendant la nuit</td>
+            </tr>
+            <tr>
+                <td class="glossary-var">SurplusPV</td>
+                <td class="glossary-desc">Excédent après conso jour : <em>max(0, Production − Conso Jour)</em></td>
+            </tr>
+            <tr>
+                <td class="glossary-var">Autoconsommation</td>
+                <td class="glossary-desc">Part consommée directement : <em>min(Production, Conso Jour)</em></td>
+            </tr>
+            <tr>
+                <td class="glossary-var">Charge</td>
+                <td class="glossary-desc">Énergie stockée dans la batterie : <em>min(SurplusPV, CapBat × RenBat)</em></td>
+            </tr>
+            <tr>
+                <td class="glossary-var">CapBat</td>
+                <td class="glossary-desc">Capacité totale de la batterie</td>
+            </tr>
+            <tr>
+                <td class="glossary-var">RenBat</td>
+                <td class="glossary-desc">Rendement de la batterie (%)</td>
+            </tr>
+            <tr>
+                <td class="glossary-var">Vente</td>
+                <td class="glossary-desc">Surplus revendu au réseau : <em>SurplusPV − Charge</em></td>
+            </tr>
+            <tr>
+                <td class="glossary-var">Achat</td>
+                <td class="glossary-desc">Énergie achetée au réseau</td>
+            </tr>
+            <tr>
+                <td class="glossary-var">Économie panneaux</td>
+                <td class="glossary-desc">Argent économisé via autoconsommation</td>
+            </tr>
+            <tr>
+                <td class="glossary-var">Économie batterie</td>
+                <td class="glossary-desc">Argent économisé via la batterie</td>
+            </tr>
+            <tr>
+                <td class="glossary-var">Bilan</td>
+                <td class="glossary-desc">Différence économies totales − coût d'achat</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="page-footer">
+        Glossaire des Variables — Simulation Photovoltaïque
+    </div>
+
+</body>
+</html>
