@@ -2,15 +2,30 @@
 <odoo>
     <!-- Root Menu -->
     <menuitem id="menu_bgg_custom_dev_root"
-              name="BelGoGreen Custom Development"
+              name="BGG Dashboards"
+              groups="bgg_custom_dev.group_bgg_dashboard"
+              web_icon="fa-line-chart,#875A7B,#ffffff"
               sequence="100"/>
 
-    <!-- Main Menu Categories -->
-    <!-- Uncomment and customize as needed
-    <menuitem id="menu_bgg_custom_dev_config"
-              name="Configuration"
+    <!-- Suivi Rendez-vous -->
+    <menuitem id="menu_bgg_appointment_tracking"
+              name="Suivi Rendez-vous"
               parent="menu_bgg_custom_dev_root"
-              sequence="99"/>
-    -->
+              groups="bgg_custom_dev.group_bgg_dashboard"
+              sequence="10"/>
+
+    <menuitem id="menu_bgg_commercial_dashboard"
+              name="Suivi Commercial"
+              parent="menu_bgg_appointment_tracking"
+              action="bgg_custom_dev.action_commercial_dashboard"
+              groups="bgg_custom_dev.group_bgg_dashboard"
+              sequence="10"/>
+
+    <menuitem id="menu_bgg_avis_count"
+              name="Avis &amp; Recommandations (Pivot)"
+              parent="menu_bgg_appointment_tracking"
+              action="bgg_custom_dev.action_avis_count_report"
+              groups="bgg_custom_dev.group_bgg_dashboard"
+              sequence="30"/>
 
 </odoo>

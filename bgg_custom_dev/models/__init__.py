@@ -6,4 +6,5 @@ from . import appointment_type
 from . import calendar_event
 from . import project_project
 from . import project_task
+from . import commercial_dashboard
 from . import res_partner

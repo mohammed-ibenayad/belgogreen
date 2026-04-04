@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_commercial_dashboard" model="ir.actions.client">
+        <field name="name">Suivi Commercial</field>
+        <field name="tag">commercial_dashboard</field>
+    </record>
+</odoo>
