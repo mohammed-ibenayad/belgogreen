@@ -103,7 +103,7 @@ class CommercialDashboard(models.TransientModel):
         if company_id:
             event_domain.append(('user_id.company_id', '=', company_id))
 
-        events = self.env['calendar.event'].search(event_domain)
+        events = self.env['calendar.event'].with_context(active_test=False).search(event_domain)
 
         # Get Commercial group user IDs to filter results
         commercial_group = self.env['res.groups'].browse(59)
