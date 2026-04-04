@@ -4,7 +4,7 @@
     <menuitem id="menu_bgg_custom_dev_root"
               name="BGG Dashboards"
               groups="bgg_custom_dev.group_bgg_dashboard"
-              web_icon="fa-tachometer,#875A7B,#ffffff"
+              web_icon="oi-stacked-column-chart,#875A7B,#ffffff"
               sequence="100"/>
 
     <!-- Suivi Rendez-vous -->
