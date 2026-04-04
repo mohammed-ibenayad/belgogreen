@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Inherit calendar.event form view -->
+    <record id="view_calendar_event_form_inherit_bgg" model="ir.ui.view">
+        <field name="name">calendar.event.form.inherit.bgg</field>
+        <field name="model">calendar.event</field>
+        <field name="inherit_id" ref="calendar.view_calendar_event_form"/>
+        <field name="arch" type="xml">
+
+            <!-- Alert banner prompting user to fill in KPI tab after status change -->
+            <xpath expr="//sheet" position="before">
+                <div class="alert alert-warning text-center" role="alert"
+                     invisible="appointment_status not in ('attended', 'no_show') or not appointment_type_id">
+                    Pensez à renseigner les informations dans l'onglet
+                    <strong>Avis &amp; Recommandations</strong>.
+                </div>
+            </xpath>
+
+            <!-- Add new "Avis &amp; Recommandations" tab in the notebook -->
+            <xpath expr="//notebook" position="inside">
+                <page string="Avis &amp; Recommandations" name="page_avis_recommandations"
+                      invisible="not appointment_type_id">
+                    <group>
+                        <group string="Avis clients">
+                            <field name="x_avis_count"/>
+                        </group>
+                        <group string="Recommandations">
+                            <field name="x_recommandation_count"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>
