@@ -46,6 +46,7 @@ class AvisCountReport(models.Model):
                 FROM calendar_event ce
                 JOIN appointment_type apt ON apt.id = ce.appointment_type_id
                 WHERE apt.x_appointment_ref IN ('APT-ENERG-CNT', 'APT-NISOL-CNT', 'APT-ENERG-COM', 'APT-NISOL-COM')
+                  AND ce.active = TRUE
                   AND ce.user_id IS NOT NULL
             )
         """ % self._table)
