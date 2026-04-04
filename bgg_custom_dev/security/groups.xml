@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="group_bgg_dashboard" model="res.groups">
+        <field name="name">BGG Dashboard</field>
+        <field name="comment">Grants access to BGG Dashboards (Suivi Commercial, Avis &amp; Recommandations)</field>
+    </record>
+</odoo>
