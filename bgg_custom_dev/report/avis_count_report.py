@@ -29,6 +29,17 @@ class AvisCountReport(models.Model):
 
     def init(self):
         tools.drop_view_if_exists(self.env.cr, self._table)
+
+        # Look up Commercial group by name (manually created, no XML ID)
+        commercial_group = self.env['res.groups'].search([('name', '=', 'Commercial')], limit=1)
+        group_filter = ""
+        if commercial_group:
+            group_filter = (
+                "AND ce.user_id IN ("
+                "    SELECT uid FROM res_groups_users_rel WHERE gid = %d"
+                ")" % commercial_group.id
+            )
+
         self.env.cr.execute("""
             CREATE OR REPLACE VIEW %s AS (
                 SELECT
@@ -48,5 +59,6 @@ class AvisCountReport(models.Model):
                 WHERE apt.x_appointment_ref IN ('APT-ENERG-CNT', 'APT-NISOL-CNT', 'APT-ENERG-COM', 'APT-NISOL-COM')
                   AND ce.active = TRUE
                   AND ce.user_id IS NOT NULL
+                  %s
             )
-        """ % self._table)
+        """ % (self._table, group_filter))
