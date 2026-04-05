@@ -10,7 +10,7 @@
                         type="object"
                         class="oe_stat_button"
                         icon="fa-solar-panel">
-                    <field name="pv_simulation_count" widget="statinfo" string="PV Simulation"/>
+                    <field name="pv_simulation_count" widget="statinfo" string="Simulations PV"/>
                 </button>
             </xpath>
         </field>

@@ -330,12 +330,6 @@ class PvSimulation(models.Model):
                 vals['name'] = self.env['ir.sequence'].next_by_code('pv.simulation') or _('New')
 
         records = super(PvSimulation, self).create(vals_list)
-
-        # Link back to sale order
-        for record in records:
-            if record.sale_order_id and not record.sale_order_id.pv_simulation_id:
-                record.sale_order_id.pv_simulation_id = record.id
-
         return records
 
     @api.depends('monthly_result_ids', 'monthly_result_ids.monthly_production_kwh',

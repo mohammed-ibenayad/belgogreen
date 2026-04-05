@@ -12,32 +12,27 @@ class SaleOrder(models.Model):
         ondelete='set null',
         copy=False
     )
+    pv_simulation_ids = fields.One2many(
+        'pv.simulation',
+        'sale_order_id',
+        string='PV Simulations',
+    )
     pv_simulation_count = fields.Integer(
         compute='_compute_pv_simulation_count',
         string='Simulation Count'
     )
 
-    @api.depends('pv_simulation_id')
+    @api.depends('pv_simulation_ids')
     def _compute_pv_simulation_count(self):
         for order in self:
-            order.pv_simulation_count = 1 if order.pv_simulation_id else 0
+            order.pv_simulation_count = len(order.pv_simulation_ids)
 
     def action_open_pv_simulation(self):
-        """Open PV simulation form"""
+        """Open PV simulation list or wizard depending on count."""
         self.ensure_one()
 
-        if self.pv_simulation_id:
-            # Open existing simulation
-            return {
-                'type': 'ir.actions.act_window',
-                'name': _('PV Simulation'),
-                'res_model': 'pv.simulation',
-                'res_id': self.pv_simulation_id.id,
-                'view_mode': 'form',
-                'target': 'current',
-            }
-        else:
-            # Open wizard to collect GPS & consumption data before creating
+        if self.pv_simulation_count == 0:
+            # No simulations: open wizard to create one
             return {
                 'type': 'ir.actions.act_window',
                 'name': _('Nouvelle Simulation PV'),
@@ -46,5 +41,18 @@ class SaleOrder(models.Model):
                 'target': 'new',
                 'context': {
                     'default_sale_order_id': self.id,
+                },
+            }
+        else:
+            # 1+ simulations: show list with ability to create new
+            return {
+                'type': 'ir.actions.act_window',
+                'name': _('Simulations PV'),
+                'res_model': 'pv.simulation',
+                'view_mode': 'list,form',
+                'domain': [('sale_order_id', '=', self.id)],
+                'context': {
+                    'default_sale_order_id': self.id,
+                    'create': False,
                 },
             }
