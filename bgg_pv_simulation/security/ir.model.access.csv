@@ -11,3 +11,5 @@ access_pv_tariff_profile_user,pv.tariff.profile.user,model_pv_tariff_profile,gro
 access_pv_tariff_profile_admin,pv.tariff.profile.admin,model_pv_tariff_profile,group_pv_admin,1,1,1,1
 access_pv_simulation_wizard_user,pv.simulation.wizard.user,model_pv_simulation_wizard,group_pv_user,1,1,1,1
 access_pv_simulation_wizard_admin,pv.simulation.wizard.admin,model_pv_simulation_wizard,group_pv_admin,1,1,1,1
+access_geo_cache_user,geo.cache.user,model_geo_cache,group_pv_user,1,1,1,0
+access_geo_cache_admin,geo.cache.admin,model_geo_cache,group_pv_admin,1,1,1,1
