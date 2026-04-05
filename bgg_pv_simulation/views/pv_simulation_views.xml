@@ -84,36 +84,14 @@
                             <field name="sale_order_id" readonly="1" string="Devis"/>
                             <field name="report_date" string="Date du rapport" class="o_field_highlight"/>
                         </group>
-                        <group string="Coordonnées Client">
-                            <field name="installation_address" string="Adresse" readonly="1"/>
-                            <field name="latitude" placeholder="ex: 50.8503396"
-                                   class="o_field_highlight"/>
-                            <field name="longitude" placeholder="ex: 4.3517103"
-                                   class="o_field_highlight"/>
-                            <div colspan="2">
-                                <button name="action_fetch_coordinates"
-                                        type="object"
-                                        class="btn-sm btn-secondary"
-                                        icon="fa-refresh"
-                                        string="Récupérer / Rafraîchir les coordonnées GPS"
-                                        invisible="not id"/>
-                            </div>
-                            <div colspan="2" invisible="not google_maps_url">
-                                <field name="google_maps_url" widget="url" nolabel="1"
-                                       string="Voir sur Google Maps"/>
-                            </div>
+                        <group string="Client">
+                            <field name="partner_id" readonly="1" string="Client"/>
                         </group>
                     </group>
 
                     <notebook>
                         <!-- ==================== Système PV ==================== -->
                         <page string="Système PV" name="pv_system">
-                            <div class="alert alert-info" role="status">
-                                <strong>Données du système :</strong> Les panneaux sont détectés automatiquement à partir des produits du devis
-                                appartenant à la catégorie <em>All / Saleable / Panneaux</em>.
-                                Les batteries sont détectées via la catégorie <em>All / Saleable / Batteries</em>.
-                                La production est calculée via Google Solar API et/ou PVGIS. Le profil de production distribue la production annuelle sur les 12 mois.
-                            </div>
                             <group>
                                 <group string="Configuration des panneaux">
                                     <field name="number_of_panels" readonly="1" string="Nombre de panneaux"/>
@@ -164,6 +142,12 @@
                             </group>
 
                             <div class="alert alert-warning mt-3" role="alert">
+                                <strong>Données du système :</strong> Les panneaux sont détectés automatiquement à partir des produits du devis
+                                appartenant à la catégorie <em>All / Saleable / Panneaux</em>.
+                                Les batteries sont détectées via la catégorie <em>All / Saleable / Batteries</em>.
+                                La production est calculée via Google Solar API et/ou PVGIS. Le profil de production distribue la production annuelle sur les 12 mois.
+                            </div>
+                            <div class="alert alert-warning" role="alert">
                                 <strong>Comment la production est-elle calculée ?</strong>
                                 <p class="mb-1 mt-2">
                                     Deux sources de données solaires sont utilisées pour estimer la production de votre installation :
@@ -192,9 +176,6 @@
 
                         <!-- ==================== Couverture (Page 1) ==================== -->
                         <page string="Couverture (Page 1)" name="page_cover">
-                            <div class="alert alert-info" role="status">
-                                <strong>Données à saisir :</strong> Photo de couverture et titres affichés sur la première page du rapport.
-                            </div>
                             <group>
                                 <group string="Photo de couverture">
                                     <field name="cover_photo" widget="image" class="oe_avatar" string="Photo"/>
@@ -204,6 +185,9 @@
                                     <field name="cover_subtitle" string="Titre (ligne 2)" class="o_field_highlight"/>
                                 </group>
                             </group>
+                            <div class="alert alert-warning mt-3" role="alert">
+                                <strong>Note :</strong> Photo de couverture et titres affichés sur la première page du rapport.
+                            </div>
                         </page>
 
                         <!-- ==================== Bilan Énergétique (Page 2) ==================== -->
@@ -211,9 +195,6 @@
                             <group string="Titre de section">
                                 <field name="section_title_bilan" placeholder="BILAN ÉNERGÉTIQUE" string="Titre" class="o_field_highlight"/>
                             </group>
-                            <div class="alert alert-info" role="status">
-                                Le bilan énergétique annuel est calculé automatiquement à partir des résultats mensuels de l'onglet Consommation.
-                            </div>
 
                             <!-- Production -->
                             <group string="Production">
@@ -304,17 +285,32 @@
                                     </div>
                                 </group>
                             </group>
+                            <div class="alert alert-warning mt-3" role="alert">
+                                <strong>Note :</strong> Le bilan énergétique annuel est calculé automatiquement à partir des résultats mensuels de l'onglet Consommation.
+                            </div>
                         </page>
 
                         <!-- ==================== Localisation (Page 3) ==================== -->
                         <page string="Localisation (Page 3)" name="page_localisation">
-                            <div class="alert alert-info" role="status">
-                                <strong>Données à saisir :</strong> Adresse, coordonnées GPS et image satellite de l'installation.
-                                L'adresse est pré-remplie depuis la fiche client du devis.
-                            </div>
                             <group>
-                                <group string="Emplacement">
+                                <group string="Coordonnées Client">
                                     <field name="installation_address" string="Adresse d'installation"/>
+                                    <field name="latitude" placeholder="ex: 50.8503396"
+                                           class="o_field_highlight"/>
+                                    <field name="longitude" placeholder="ex: 4.3517103"
+                                           class="o_field_highlight"/>
+                                    <div colspan="2">
+                                        <button name="action_fetch_coordinates"
+                                                type="object"
+                                                class="btn-sm btn-secondary"
+                                                icon="fa-refresh"
+                                                string="Récupérer / Rafraîchir les coordonnées GPS"
+                                                invisible="not id"/>
+                                    </div>
+                                    <div colspan="2" invisible="not google_maps_url">
+                                        <field name="google_maps_url" widget="url" nolabel="1"
+                                               string="Voir sur Google Maps"/>
+                                    </div>
                                     <field name="roof_surface_m2" string="Surface de toiture (m²)" class="o_field_highlight"/>
                                 </group>
                                 <group string="Image de localisation">
@@ -324,24 +320,20 @@
                             <group string="Titre de section">
                                 <field name="section_title_location" placeholder="LOCALISATION DE L'INSTALLATION" string="Titre" class="o_field_highlight"/>
                             </group>
+                            <div class="alert alert-warning mt-3" role="alert">
+                                <strong>Note :</strong> L'adresse est pré-remplie depuis la fiche client du devis.
+                                Les coordonnées GPS peuvent être récupérées automatiquement via le bouton ci-dessus.
+                            </div>
                         </page>
 
                         <!-- ==================== Production (Page 4) ==================== -->
                         <page string="Production (Page 4)" name="page_production">
-                            <div class="alert alert-info" role="status">
-                                <strong>Données à saisir :</strong> Image du système (photo des panneaux, schéma d'implantation).
-                                Le graphique de production est généré automatiquement à partir des données PVGIS ou du profil de production.
-                            </div>
                             <group>
                                 <group string="Image du système">
                                     <field name="system_image" widget="image" class="oe_avatar" string="Image"/>
                                 </group>
                                 <group string="Configuration">
                                     <field name="production_profile_id" string="Profil de production"/>
-                                    <div class="text-muted small">
-                                        Le profil de production définit la répartition mensuelle (%) de la production annuelle sur 12 mois.
-                                        Il est utilisé pour générer le graphique de production et calculer les données mensuelles du rapport.
-                                    </div>
                                 </group>
                             </group>
                             <group string="Titres de section">
@@ -351,15 +343,15 @@
                             <separator string="Aperçu du graphique"/>
                             <field name="chart_monthly_production" widget="image" nolabel="1"
                                    style="max-width: 100%; width: 800px;"/>
+                            <div class="alert alert-warning mt-3" role="alert">
+                                <strong>Note :</strong> Image du système (photo des panneaux, schéma d'implantation).
+                                Le graphique de production est généré automatiquement à partir des données PVGIS ou du profil de production.
+                                Le profil de production définit la répartition mensuelle (%) de la production annuelle sur 12 mois.
+                            </div>
                         </page>
 
                         <!-- ==================== Consommation (Page 5) ==================== -->
                         <page string="Consommation (Page 5)" name="page_consumption">
-                            <div class="alert alert-warning" role="status">
-                                <strong>Données à saisir :</strong> Modifiez la colonne « Conso. (kWh) » de chaque mois dans le tableau ci-dessous.
-                                Les consommations jour/nuit seront calculées automatiquement via le ratio jour/nuit.
-                                Vous pouvez aussi saisir une valeur par défaut et cliquer « Appliquer à tous les mois ».
-                            </div>
                             <group>
                                 <group string="Consommation Client">
                                     <label for="default_monthly_consumption_kwh" string="Consommation mensuelle par défaut"/>
@@ -402,7 +394,11 @@
                             </group>
                             <separator string="Résultats mensuels"/>
                             <field name="monthly_result_ids" nolabel="1"/>
-                            <div class="alert alert-secondary mt-3" role="status">
+                            <div class="alert alert-warning mt-3" role="alert">
+                                <strong>Note :</strong> Modifiez la colonne « Conso. (kWh) » de chaque mois dans le tableau ci-dessus.
+                                Les consommations jour/nuit seront calculées automatiquement via le ratio jour/nuit.
+                            </div>
+                            <div class="alert alert-warning" role="alert">
                                 <strong>Légende des données :</strong>
                                 <ul class="mb-0">
                                     <li><strong>Prod. (kWh)</strong> — Production mensuelle : calculée automatiquement. Source : PVGIS ou profil de production.</li>
@@ -427,10 +423,6 @@
                                     <field name="section_title_financial" placeholder="BILAN FINANCIER MENSUEL" string="Titre de section" class="o_field_highlight"/>
                                 </group>
                             </group>
-                            <div class="alert alert-info" role="status">
-                                Le bilan financier mensuel est calculé automatiquement à partir des résultats mensuels
-                                et du profil tarifaire sélectionné ci-dessus.
-                            </div>
                             <separator string="Bilan financier mensuel"/>
                             <field name="monthly_result_ids" nolabel="1">
                                 <list editable="bottom" create="0" delete="0">
@@ -443,7 +435,11 @@
                                     <field name="net_balance" readonly="1" string="Bilan (€)"/>
                                 </list>
                             </field>
-                            <div class="alert alert-secondary mt-3" role="status">
+                            <div class="alert alert-warning mt-3" role="alert">
+                                <strong>Note :</strong> Le bilan financier mensuel est calculé automatiquement à partir des résultats mensuels
+                                et du profil tarifaire sélectionné ci-dessus.
+                            </div>
+                            <div class="alert alert-warning" role="alert">
                                 <strong>Légende des données :</strong>
                                 <ul class="mb-0">
                                     <li><strong>Économie panneaux (€)</strong> — Argent économisé en utilisant la production des panneaux pour la consommation de jour.</li>

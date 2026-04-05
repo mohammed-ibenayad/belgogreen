@@ -29,6 +29,12 @@ class PvSimulation(models.Model):
         required=True,
         ondelete='restrict'
     )
+    partner_id = fields.Many2one(
+        related='sale_order_id.partner_id',
+        string='Client',
+        readonly=True,
+        store=True,
+    )
     currency_id = fields.Many2one(
         'res.currency',
         string='Currency',
