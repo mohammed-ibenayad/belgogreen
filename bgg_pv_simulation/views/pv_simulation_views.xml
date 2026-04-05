@@ -44,7 +44,7 @@
         <field name="name">pv.simulation.form</field>
         <field name="model">pv.simulation</field>
         <field name="arch" type="xml">
-            <form string="Simulation PV">
+            <form string="Simulation PV" create="0">
                 <header>
                     <button name="action_regenerate_simulation"
                             string="Régénérer la simulation"
