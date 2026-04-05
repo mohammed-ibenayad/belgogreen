@@ -82,11 +82,26 @@
                     <group>
                         <group string="Devis">
                             <field name="sale_order_id" readonly="1" string="Devis"/>
-                            <field name="report_date" string="Date du rapport"/>
+                            <field name="report_date" string="Date du rapport" class="o_field_highlight"/>
                         </group>
-                        <group string="Coordonnées GPS">
-                            <field name="latitude" placeholder="ex: 50.8503396"/>
-                            <field name="longitude" placeholder="ex: 4.3517103"/>
+                        <group string="Coordonnées Client">
+                            <field name="installation_address" string="Adresse" readonly="1"/>
+                            <field name="latitude" placeholder="ex: 50.8503396"
+                                   class="o_field_highlight"/>
+                            <field name="longitude" placeholder="ex: 4.3517103"
+                                   class="o_field_highlight"/>
+                            <div colspan="2">
+                                <button name="action_fetch_coordinates"
+                                        type="object"
+                                        class="btn-sm btn-secondary"
+                                        icon="fa-refresh"
+                                        string="Récupérer / Rafraîchir les coordonnées GPS"
+                                        invisible="not id"/>
+                            </div>
+                            <div colspan="2" invisible="not google_maps_url">
+                                <field name="google_maps_url" widget="url" nolabel="1"
+                                       string="Voir sur Google Maps"/>
+                            </div>
                         </group>
                     </group>
 
@@ -114,12 +129,12 @@
                                     </div>
                                     <label for="orientation_deg" string="Orientation"/>
                                     <div class="o_row">
-                                        <field name="orientation_deg"/>
+                                        <field name="orientation_deg" class="o_field_highlight"/>
                                         <span>° (0=Sud)</span>
                                     </div>
                                     <label for="tilt_deg" string="Inclinaison"/>
                                     <div class="o_row">
-                                        <field name="tilt_deg"/>
+                                        <field name="tilt_deg" class="o_field_highlight"/>
                                         <span>°</span>
                                     </div>
                                     <label for="battery_capacity_kwh" string="Capacité batterie"/>
@@ -136,7 +151,7 @@
                                 <group string="Production">
                                     <label for="pvgis_annual_production_kwh" string="Production annuelle (PVGIS)"/>
                                     <div class="o_row">
-                                        <field name="pvgis_annual_production_kwh"/>
+                                        <field name="pvgis_annual_production_kwh" class="o_field_highlight"/>
                                         <span>kWh</span>
                                     </div>
                                     <label for="annual_production_kwh" string="Production annuelle (GSA)"/>
@@ -185,8 +200,8 @@
                                     <field name="cover_photo" widget="image" class="oe_avatar" string="Photo"/>
                                 </group>
                                 <group string="Titre">
-                                    <field name="cover_title" string="Titre (ligne 1)"/>
-                                    <field name="cover_subtitle" string="Titre (ligne 2)"/>
+                                    <field name="cover_title" string="Titre (ligne 1)" class="o_field_highlight"/>
+                                    <field name="cover_subtitle" string="Titre (ligne 2)" class="o_field_highlight"/>
                                 </group>
                             </group>
                         </page>
@@ -194,7 +209,7 @@
                         <!-- ==================== Bilan Énergétique (Page 2) ==================== -->
                         <page string="Bilan Énergétique (Page 2)" name="page_bilan">
                             <group string="Titre de section">
-                                <field name="section_title_bilan" placeholder="BILAN ÉNERGÉTIQUE" string="Titre"/>
+                                <field name="section_title_bilan" placeholder="BILAN ÉNERGÉTIQUE" string="Titre" class="o_field_highlight"/>
                             </group>
                             <div class="alert alert-info" role="status">
                                 Le bilan énergétique annuel est calculé automatiquement à partir des résultats mensuels de l'onglet Consommation.
@@ -300,14 +315,14 @@
                             <group>
                                 <group string="Emplacement">
                                     <field name="installation_address" string="Adresse d'installation"/>
-                                    <field name="roof_surface_m2" string="Surface de toiture (m²)"/>
+                                    <field name="roof_surface_m2" string="Surface de toiture (m²)" class="o_field_highlight"/>
                                 </group>
                                 <group string="Image de localisation">
                                     <field name="location_image" widget="image" class="oe_avatar" string="Image satellite"/>
                                 </group>
                             </group>
                             <group string="Titre de section">
-                                <field name="section_title_location" placeholder="LOCALISATION DE L'INSTALLATION" string="Titre"/>
+                                <field name="section_title_location" placeholder="LOCALISATION DE L'INSTALLATION" string="Titre" class="o_field_highlight"/>
                             </group>
                         </page>
 
@@ -330,8 +345,8 @@
                                 </group>
                             </group>
                             <group string="Titres de section">
-                                <field name="section_title_production" placeholder="PRODUCTION ESTIMÉE" string="Titre production"/>
-                                <field name="section_title_system" placeholder="CARACTÉRISTIQUES DU SYSTÈME" string="Titre système"/>
+                                <field name="section_title_production" placeholder="PRODUCTION ESTIMÉE" string="Titre production" class="o_field_highlight"/>
+                                <field name="section_title_system" placeholder="CARACTÉRISTIQUES DU SYSTÈME" string="Titre système" class="o_field_highlight"/>
                             </group>
                             <separator string="Aperçu du graphique"/>
                             <field name="chart_monthly_production" widget="image" nolabel="1"
@@ -347,33 +362,42 @@
                             </div>
                             <group>
                                 <group string="Consommation Client">
-                                    <label for="day_consumption_ratio" string="Ratio jour/nuit"/>
-                                    <div class="o_row">
-                                        <field name="day_consumption_ratio"/>
-                                        <span>(0.6 = 60 % jour, 40 % nuit)</span>
-                                    </div>
                                     <label for="default_monthly_consumption_kwh" string="Consommation mensuelle par défaut"/>
                                     <div class="o_row">
-                                        <field name="default_monthly_consumption_kwh"/>
+                                        <field name="default_monthly_consumption_kwh"
+                                               class="o_field_highlight"/>
                                         <span>kWh/mois</span>
                                     </div>
-                                    <button name="action_apply_default_consumption"
-                                            string="Appliquer la consommation par défaut"
-                                            type="object"
-                                            class="btn-primary"
-                                            invisible="not id"
-                                            confirm="Ceci va écraser les valeurs de consommation de tous les mois avec la valeur par défaut. Continuer ?"/>
-                                    <button name="action_apply_ratio"
-                                            string="Appliquer le ratio jour/nuit"
-                                            type="object"
-                                            class="btn-secondary"
-                                            invisible="not id"
-                                            confirm="Ceci va recalculer les consommations jour/nuit à partir de la consommation mensuelle de chaque mois. Continuer ?"/>
+                                    <div colspan="2">
+                                        <button name="action_apply_default_consumption"
+                                                string="Appliquer la consommation par défaut"
+                                                type="object"
+                                                class="btn-sm btn-secondary"
+                                                invisible="not id"
+                                                confirm="Ceci va écraser les valeurs de consommation de tous les mois avec la valeur par défaut. Continuer ?"/>
+                                    </div>
+                                    <label for="day_consumption_ratio" string="Ratio jour/nuit"/>
+                                    <div class="o_row">
+                                        <field name="day_consumption_ratio"
+                                               class="o_field_highlight"/>
+                                        <span>(0.6 = 60 % jour, 40 % nuit)</span>
+                                    </div>
+                                    <div colspan="2">
+                                        <button name="action_apply_ratio"
+                                                string="Appliquer le ratio jour/nuit"
+                                                type="object"
+                                                class="btn-sm btn-secondary"
+                                                invisible="not id"
+                                                confirm="Ceci va recalculer les consommations jour/nuit à partir de la consommation mensuelle de chaque mois. Continuer ?"/>
+                                    </div>
                                 </group>
                                 <group string="Titres de section">
-                                    <field name="section_title_consumption" placeholder="DONNÉES DE CONSOMMATION" string="Titre principal"/>
-                                    <field name="section_title_monthly_data" placeholder="DONNÉES MENSUELLES / QUOTIDIENNES" string="Sous-titre données mensuelles"/>
-                                    <field name="section_title_daily_balance" placeholder="BILAN ÉNERGÉTIQUE QUOTIDIEN" string="Sous-titre bilan quotidien"/>
+                                    <field name="section_title_consumption" placeholder="DONNÉES DE CONSOMMATION" string="Titre principal"
+                                           class="o_field_highlight"/>
+                                    <field name="section_title_monthly_data" placeholder="DONNÉES MENSUELLES / QUOTIDIENNES" string="Sous-titre données mensuelles"
+                                           class="o_field_highlight"/>
+                                    <field name="section_title_daily_balance" placeholder="BILAN ÉNERGÉTIQUE QUOTIDIEN" string="Sous-titre bilan quotidien"
+                                           class="o_field_highlight"/>
                                 </group>
                             </group>
                             <separator string="Résultats mensuels"/>
@@ -400,7 +424,7 @@
                                            options="{'no_create': False, 'no_open': False}"/>
                                 </group>
                                 <group>
-                                    <field name="section_title_financial" placeholder="BILAN FINANCIER MENSUEL" string="Titre de section"/>
+                                    <field name="section_title_financial" placeholder="BILAN FINANCIER MENSUEL" string="Titre de section" class="o_field_highlight"/>
                                 </group>
                             </group>
                             <div class="alert alert-info" role="status">
