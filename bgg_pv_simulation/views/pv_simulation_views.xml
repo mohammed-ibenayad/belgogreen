@@ -44,7 +44,7 @@
         <field name="name">pv.simulation.form</field>
         <field name="model">pv.simulation</field>
         <field name="arch" type="xml">
-            <form string="Simulation PV">
+            <form string="Simulation PV" create="0">
                 <header>
                     <button name="action_regenerate_simulation"
                             string="Régénérer la simulation"
@@ -154,13 +154,13 @@
                                 </p>
                                 <ul class="mb-2">
                                     <li>
-                                        <strong>Google Solar API</strong> : fournit une estimation annuelle de la production,
+                                        <strong>Google Solar API (GSA)</strong> : fournit une estimation annuelle de la production,
                                         l'image satellite du toit et le nombre maximal de panneaux installables.
                                         L'API calcule avec des panneaux de 400W par défaut — la production est automatiquement
                                         ajustée selon la puissance réelle de vos panneaux (ex : 425Wc).
                                     </li>
                                     <li>
-                                        <strong>PVGIS (Photovoltaic Geographical Information System)</strong> : fournit la
+                                        <strong>Photovoltaic Geographical Information System (PVGIS)</strong> : fournit la
                                         répartition mensuelle de la production sur 12 mois. Les paramètres envoyés sont :
                                         coordonnées GPS, puissance crête (kWc), pertes système de 14%, technologie silicium
                                         cristallin, montage en toiture. L'inclinaison et l'orientation sont envoyées si renseignées,
