@@ -52,6 +52,10 @@ class PvSimulation(models.Model):
     longitude = fields.Char(
         string='Longitude',
     )
+    google_maps_url = fields.Char(
+        string='Google Maps',
+        compute='_compute_google_maps_url',
+    )
     location_image = fields.Binary(
         string='Location Image',
         help='Satellite or map image of installation location'
@@ -533,6 +537,57 @@ class PvSimulation(models.Model):
 
             if address_parts:
                 record.installation_address = '\n'.join(address_parts)
+
+    @api.depends('latitude', 'longitude')
+    def _compute_google_maps_url(self):
+        for rec in self:
+            if rec.latitude and rec.longitude:
+                lat = str(rec.latitude).strip().replace(',', '.')
+                lng = str(rec.longitude).strip().replace(',', '.')
+                rec.google_maps_url = 'https://www.google.com/maps?q=%s,%s' % (lat, lng)
+            else:
+                rec.google_maps_url = ''
+
+    def action_fetch_coordinates(self):
+        """Fetch GPS coordinates from Google Geocoding API via geo.cache."""
+        self.ensure_one()
+        partner = self.sale_order_id.partner_id
+        if not partner:
+            raise UserError(_("Aucun client associé au devis."))
+
+        # Delegate to wizard's geocoding logic
+        Wizard = self.env['pv.simulation.wizard']
+        lat, lng = Wizard._geocode_address(partner)
+        if lat and lng:
+            # Cache in geo.cache
+            cache = self.env['geo.cache'].search([('partner_id', '=', partner.id)], limit=1)
+            address_parts = [
+                partner.street or '', partner.street2 or '',
+                partner.zip or '', partner.city or '',
+                partner.country_id.name or '',
+            ]
+            cache_vals = {
+                'latitude': str(lat),
+                'longitude': str(lng),
+                'address': ', '.join(p for p in address_parts if p),
+            }
+            if cache:
+                cache.write(cache_vals)
+            else:
+                cache_vals['partner_id'] = partner.id
+                self.env['geo.cache'].create(cache_vals)
+            self.write({
+                'latitude': str(lat),
+                'longitude': str(lng),
+            })
+        else:
+            raise UserError(_(
+                "Impossible de récupérer les coordonnées GPS pour l'adresse:\n%s\n\n"
+                "Vérifiez que:\n"
+                "- L'adresse du client est correcte\n"
+                "- La clé API Google est configurée (google_api_key)\n"
+                "- L'API Geocoding est activée dans la console Google Cloud"
+            ) % self.installation_address)
 
     @api.depends('sale_order_id', 'sale_order_id.order_line', 'sale_order_id.order_line.product_id',
                  'sale_order_id.order_line.product_id.categ_id',
