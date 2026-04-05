@@ -5,11 +5,20 @@
         <field name="name">pv.simulation.list</field>
         <field name="model">pv.simulation</field>
         <field name="arch" type="xml">
-            <list string="Simulations PV">
+            <list string="Simulations PV" create="0">
+                <header>
+                    <button name="%(bgg_pv_simulation.action_pv_simulation_wizard)d"
+                            string="Nouvelle simulation"
+                            type="action"
+                            class="btn-primary"
+                            context="{'default_sale_order_id': context.get('default_sale_order_id')}"/>
+                </header>
                 <field name="name" string="Référence"/>
                 <field name="sale_order_id" string="Devis"/>
                 <field name="installation_address" string="Adresse"/>
                 <field name="total_pv_power_wc" string="Puissance PV (Wc)"/>
+                <field name="orientation_deg" string="Orientation (°)"/>
+                <field name="tilt_deg" string="Inclinaison (°)"/>
                 <field name="annual_production_kwh" string="Production annuelle (kWh)"/>
                 <field name="currency_id" column_invisible="1"/>
                 <field name="report_date" string="Date du rapport"/>

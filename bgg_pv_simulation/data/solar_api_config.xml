@@ -4,10 +4,10 @@
         <!-- Google Solar API Configuration -->
         <!-- This parameter stores the API key for Google Solar API -->
         <!-- To configure: Settings > Technical > Parameters > System Parameters -->
-        <!-- Set key: google_solar_api_key, value: YOUR_API_KEY -->
+        <!-- Set key: google_api_key, value: YOUR_API_KEY -->
 
-        <record id="google_solar_api_key_param" model="ir.config_parameter">
-            <field name="key">google_solar_api_key</field>
+        <record id="google_api_key_param" model="ir.config_parameter">
+            <field name="key">google_api_key</field>
             <field name="value"></field>
         </record>
 

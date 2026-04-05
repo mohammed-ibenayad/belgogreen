@@ -61,7 +61,7 @@ The PV Simulation module now includes integration with **Google Solar API** to a
 1. Log in to Odoo as **Administrator**
 2. Go to **Settings > Technical > Parameters > System Parameters**
 3. Find or create parameter:
-   - **Key**: `google_solar_api_key`
+   - **Key**: `google_api_key`
    - **Value**: *Your API key from Step 1*
 4. Save
 

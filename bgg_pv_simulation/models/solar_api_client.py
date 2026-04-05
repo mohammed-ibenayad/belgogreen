@@ -19,12 +19,12 @@ class SolarApiClient(models.AbstractModel):
     @api.model
     def _get_api_key(self):
         """Get Google Solar API key from system parameters"""
-        api_key = self.env['ir.config_parameter'].sudo().get_param('google_solar_api_key')
+        api_key = self.env['ir.config_parameter'].sudo().get_param('google_api_key')
         if not api_key:
             raise UserError(_(
                 "Google Solar API key not configured.\n"
                 "Please configure it in Settings > Technical > Parameters > System Parameters\n"
-                "Key: 'google_solar_api_key'"
+                "Key: 'google_api_key'"
             ))
         return api_key
 

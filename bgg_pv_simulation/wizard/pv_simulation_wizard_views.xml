@@ -11,14 +11,32 @@
                     </div>
 
                     <field name="sale_order_id" invisible="1"/>
+                    <field name="can_generate" invisible="1"/>
+
+                    <!-- Missing data warning -->
+                    <div class="alert alert-warning" role="alert"
+                         invisible="not missing_data_warning">
+                        <field name="missing_data_warning" nolabel="1" readonly="1"/>
+                    </div>
 
                     <group>
-                        <group string="Coordonnées GPS">
+                        <group string="Installation">
                             <div colspan="2" class="mb-2 text-muted">
                                 <field name="installation_address" readonly="1" nolabel="1"/>
                             </div>
                             <field name="latitude" placeholder="ex: 50.8503396"/>
                             <field name="longitude" placeholder="ex: 4.3517103"/>
+                            <separator string="Panneaux" colspan="2"/>
+                            <label for="tilt_deg" string="Inclinaison"/>
+                            <div class="o_row">
+                                <field name="tilt_deg"/>
+                                <span>°</span>
+                            </div>
+                            <label for="orientation_deg" string="Orientation"/>
+                            <div class="o_row">
+                                <field name="orientation_deg" required="1"/>
+                                <span>° (0=Sud)</span>
+                            </div>
                         </group>
                         <group string="Consommation du client">
                             <label for="default_monthly_consumption_kwh"/>
@@ -43,7 +61,14 @@
                     <button name="action_create_and_generate"
                             string="Créer et Générer"
                             type="object"
-                            class="btn-primary"/>
+                            class="btn-primary"
+                            invisible="not can_generate"/>
+                    <button name="action_create_and_generate"
+                            string="Créer (données manquantes)"
+                            type="object"
+                            class="btn-warning"
+                            invisible="can_generate"
+                            confirm="Des données requises sont manquantes dans le devis. Voulez-vous quand même créer la simulation ?"/>
                     <button string="Annuler" class="btn-secondary" special="cancel"/>
                 </footer>
             </form>
