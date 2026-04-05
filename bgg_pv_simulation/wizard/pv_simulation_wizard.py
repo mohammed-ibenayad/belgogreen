@@ -37,6 +37,15 @@ class PvSimulationWizard(models.TransientModel):
     longitude = fields.Char(
         string='Longitude',
     )
+    coords_status = fields.Selection([
+        ('cached', 'Coordonnées récupérées (cache)'),
+        ('fetched', 'Coordonnées récupérées'),
+        ('empty', 'Coordonnées non disponibles'),
+    ], string='Statut coordonnées', compute='_compute_coords_status')
+    google_maps_url = fields.Char(
+        string='Voir sur Google Maps',
+        compute='_compute_google_maps_url',
+    )
 
     # Panel orientation & inclination
     tilt_deg = fields.Float(
@@ -89,6 +98,29 @@ class PvSimulationWizard(models.TransientModel):
             else:
                 wiz.installation_address = ''
 
+    @api.depends('latitude', 'longitude')
+    def _compute_coords_status(self):
+        for wiz in self:
+            if wiz.latitude and wiz.longitude:
+                # Check if these came from cache
+                partner = wiz.sale_order_id.partner_id
+                if partner and partner.geo_latitude and partner.geo_longitude:
+                    wiz.coords_status = 'cached'
+                else:
+                    wiz.coords_status = 'fetched'
+            else:
+                wiz.coords_status = 'empty'
+
+    @api.depends('latitude', 'longitude')
+    def _compute_google_maps_url(self):
+        for wiz in self:
+            if wiz.latitude and wiz.longitude:
+                lat = wiz.latitude.strip().replace(',', '.')
+                lng = wiz.longitude.strip().replace(',', '.')
+                wiz.google_maps_url = 'https://www.google.com/maps?q=%s,%s' % (lat, lng)
+            else:
+                wiz.google_maps_url = ''
+
     @api.depends('sale_order_id')
     def _compute_missing_data_warning(self):
         for wiz in self:
@@ -132,16 +164,48 @@ class PvSimulationWizard(models.TransientModel):
     @api.model
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
+        # Use cached coordinates from partner if available (no API call = no blocking)
         sale_order_id = res.get('sale_order_id') or self.env.context.get('default_sale_order_id')
         if sale_order_id:
             sale_order = self.env['sale.order'].browse(sale_order_id)
             partner = sale_order.partner_id
-            if partner:
-                lat, lng = self._geocode_address(partner)
-                if lat and lng:
-                    res['latitude'] = str(lat)
-                    res['longitude'] = str(lng)
+            if partner and partner.geo_latitude and partner.geo_longitude:
+                res['latitude'] = partner.geo_latitude
+                res['longitude'] = partner.geo_longitude
         return res
+
+    def action_fetch_coordinates(self):
+        """Fetch GPS coordinates from Google Geocoding API and cache on partner."""
+        self.ensure_one()
+        partner = self.sale_order_id.partner_id
+        if not partner:
+            raise UserError(_("Aucun client associé au devis."))
+
+        lat, lng = self._geocode_address(partner)
+        if lat and lng:
+            # Cache on partner for future use
+            partner.sudo().write({
+                'geo_latitude': str(lat),
+                'geo_longitude': str(lng),
+            })
+            self.write({
+                'latitude': str(lat),
+                'longitude': str(lng),
+            })
+        else:
+            raise UserError(_(
+                "Impossible de récupérer les coordonnées GPS pour l'adresse:\n%s\n\n"
+                "Vérifiez que:\n"
+                "- L'adresse du client est correcte\n"
+                "- La clé API Google est configurée (google_api_key)\n"
+                "- L'API Geocoding est activée dans la console Google Cloud"
+            ) % self.installation_address)
+
+        return {'type': 'ir.actions.act_window',
+                'res_model': self._name,
+                'res_id': self.id,
+                'view_mode': 'form',
+                'target': 'new'}
 
     def _geocode_address(self, partner):
         """Use Google Geocoding API to get coordinates from partner address."""

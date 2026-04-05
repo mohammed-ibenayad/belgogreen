@@ -12,6 +12,7 @@
 
                     <field name="sale_order_id" invisible="1"/>
                     <field name="can_generate" invisible="1"/>
+                    <field name="coords_status" invisible="1"/>
 
                     <!-- Missing data warning -->
                     <div class="alert alert-warning" role="alert"
@@ -24,8 +25,29 @@
                             <div colspan="2" class="mb-2 text-muted">
                                 <field name="installation_address" readonly="1" nolabel="1"/>
                             </div>
+                            <div colspan="2" class="mb-2">
+                                <button name="action_fetch_coordinates"
+                                        type="object"
+                                        class="btn-sm btn-secondary"
+                                        icon="fa-map-marker"
+                                        string="Récupérer les coordonnées GPS"
+                                        invisible="coords_status == 'fetched'"
+                                        />
+                                <button name="action_fetch_coordinates"
+                                        type="object"
+                                        class="btn-sm btn-link"
+                                        icon="fa-refresh"
+                                        string="Rafraîchir les coordonnées"
+                                        invisible="coords_status != 'fetched' and coords_status != 'cached'"
+                                        />
+                            </div>
                             <field name="latitude" placeholder="ex: 50.8503396"/>
                             <field name="longitude" placeholder="ex: 4.3517103"/>
+                            <div colspan="2" invisible="not google_maps_url">
+                                <field name="google_maps_url" widget="url" nolabel="1"
+                                       string="Voir sur Google Maps"
+                                       placeholder="Google Maps"/>
+                            </div>
                             <separator string="Panneaux" colspan="2"/>
                             <label for="tilt_deg" string="Inclinaison"/>
                             <div class="o_row">
