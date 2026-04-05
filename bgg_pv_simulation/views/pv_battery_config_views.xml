@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pv_battery_config_form" model="ir.ui.view">
+        <field name="name">pv.battery.config.form</field>
+        <field name="model">pv.battery.config</field>
+        <field name="arch" type="xml">
+            <form string="Battery Configuration">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Battery Configuration Name"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Capacity">
+                            <label for="capacity_kwh" string="Nominal Capacity"/>
+                            <div class="o_row">
+                                <field name="capacity_kwh"/>
+                                <span>kWh</span>
+                            </div>
+                            <label for="max_daily_charge_kwh" string="Max Daily Charge"/>
+                            <div class="o_row">
+                                <field name="max_daily_charge_kwh"/>
+                                <span>kWh/day</span>
+                            </div>
+                        </group>
+                        <group string="Performance">
+                            <field name="usable_ratio" widget="percentage"/>
+                            <field name="efficiency" widget="percentage"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Cost">
+                            <label for="cost_per_kwh" string="Degradation Cost"/>
+                            <div class="o_row">
+                                <field name="cost_per_kwh"/>
+                                <span>/kWh</span>
+                            </div>
+                        </group>
+                        <group>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Technical Info" name="technical_info">
+                            <group>
+                                <group>
+                                    <label for="usable_ratio" string="Usable Ratio Info"/>
+                                    <div class="text-muted">
+                                        Percentage of nominal capacity that can be used (typically 90-95%)
+                                    </div>
+                                </group>
+                                <group>
+                                    <label for="efficiency" string="Efficiency Info"/>
+                                    <div class="text-muted">
+                                        Round-trip efficiency for charge/discharge cycle
+                                    </div>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

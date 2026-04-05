@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- Belgian Standard Production Profile -->
+        <record id="production_profile_belgium_standard" model="pv.production.profile">
+            <field name="name">Profil Standard Belgique</field>
+            <field name="january_pct">3.62</field>
+            <field name="february_pct">4.55</field>
+            <field name="march_pct">8.47</field>
+            <field name="april_pct">11.60</field>
+            <field name="may_pct">12.16</field>
+            <field name="june_pct">12.41</field>
+            <field name="july_pct">12.44</field>
+            <field name="august_pct">11.18</field>
+            <field name="september_pct">9.60</field>
+            <field name="october_pct">7.05</field>
+            <field name="november_pct">3.92</field>
+            <field name="december_pct">3.00</field>
+        </record>
+
+    </data>
+</odoo>

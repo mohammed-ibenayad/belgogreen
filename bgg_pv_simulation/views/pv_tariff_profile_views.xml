@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pv_tariff_profile_form" model="ir.ui.view">
+        <field name="name">pv.tariff.profile.form</field>
+        <field name="model">pv.tariff.profile</field>
+        <field name="arch" type="xml">
+            <form string="Profil tarifaire">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Nom du profil"/>
+                        </h1>
+                    </div>
+                    <field name="currency_id" invisible="1"/>
+                    <group string="Tarifs électricité">
+                        <group>
+                            <label for="purchase_price_kwh" string="Prix achat réseau"/>
+                            <div class="o_row">
+                                <field name="purchase_price_kwh"/>
+                                <span>€/kWh</span>
+                            </div>
+                            <label for="feed_in_tariff_kwh" string="Prix revente surplus"/>
+                            <div class="o_row">
+                                <field name="feed_in_tariff_kwh"/>
+                                <span>€/kWh</span>
+                            </div>
+                        </group>
+                        <group>
+                            <label for="battery_cost_kwh" string="Coût usage batterie"/>
+                            <div class="o_row">
+                                <field name="battery_cost_kwh"/>
+                                <span>€/kWh</span>
+                            </div>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

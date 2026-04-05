@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Demo Quotations -->
+        <record id="demo_sale_order_1" model="sale.order">
+            <field name="partner_id" ref="base.res_partner_12"/>
+            <field name="state">draft</field>
+        </record>
+
+        <record id="demo_sale_order_2" model="sale.order">
+            <field name="partner_id" ref="base.res_partner_2"/>
+            <field name="state">draft</field>
+        </record>
+
+        <record id="demo_sale_order_3" model="sale.order">
+            <field name="partner_id" ref="base.res_partner_10"/>
+            <field name="state">sent</field>
+        </record>
+
+        <!-- Demo PV Simulations -->
+        <record id="demo_pv_simulation_1" model="pv.simulation">
+            <field name="name">SIM-2024-001</field>
+            <field name="sale_order_id" ref="demo_sale_order_1"/>
+            <field name="currency_id" ref="base.EUR"/>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="installation_address">123 Rue du Soleil, 1000 Brussels, Belgium</field>
+            <field name="latitude">50.8503</field>
+            <field name="longitude">4.3517</field>
+            <field name="roof_surface_m2">85.0</field>
+            <field name="total_pv_power_wc">12000</field>
+            <field name="orientation_deg">0</field>
+            <field name="tilt_deg">35</field>
+            <field name="annual_production_kwh">11500</field>
+            <field name="production_profile_id" ref="bgg_pv_simulation.production_profile_belgium_standard"/>
+        </record>
+
+        <record id="demo_pv_simulation_2" model="pv.simulation">
+            <field name="name">SIM-2024-002</field>
+            <field name="sale_order_id" ref="demo_sale_order_2"/>
+            <field name="currency_id" ref="base.EUR"/>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="installation_address">456 Avenue Verte, 2000 Antwerp, Belgium</field>
+            <field name="latitude">51.2194</field>
+            <field name="longitude">4.4025</field>
+            <field name="roof_surface_m2">120.0</field>
+            <field name="total_pv_power_wc">18000</field>
+            <field name="orientation_deg">-15</field>
+            <field name="tilt_deg">30</field>
+            <field name="annual_production_kwh">17200</field>
+            <field name="production_profile_id" ref="bgg_pv_simulation.production_profile_belgium_standard"/>
+        </record>
+
+        <record id="demo_pv_simulation_3" model="pv.simulation">
+            <field name="name">SIM-2024-003</field>
+            <field name="sale_order_id" ref="demo_sale_order_3"/>
+            <field name="currency_id" ref="base.EUR"/>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="installation_address">789 Chemin de l'Énergie, 4000 Liège, Belgium</field>
+            <field name="latitude">50.6326</field>
+            <field name="longitude">5.5797</field>
+            <field name="roof_surface_m2">65.0</field>
+            <field name="total_pv_power_wc">9000</field>
+            <field name="orientation_deg">10</field>
+            <field name="tilt_deg">40</field>
+            <field name="annual_production_kwh">8600</field>
+            <field name="production_profile_id" ref="bgg_pv_simulation.production_profile_belgium_standard"/>
+        </record>
+
+        <!-- Link simulations back to quotations -->
+        <record id="demo_sale_order_1" model="sale.order">
+            <field name="pv_simulation_id" ref="demo_pv_simulation_1"/>
+        </record>
+
+        <record id="demo_sale_order_2" model="sale.order">
+            <field name="pv_simulation_id" ref="demo_pv_simulation_2"/>
+        </record>
+
+        <record id="demo_sale_order_3" model="sale.order">
+            <field name="pv_simulation_id" ref="demo_pv_simulation_3"/>
+        </record>
+
+    </data>
+</odoo>

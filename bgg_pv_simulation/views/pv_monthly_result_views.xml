@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pv_monthly_result_tree" model="ir.ui.view">
+        <field name="name">pv.monthly.result.tree</field>
+        <field name="model">pv.monthly.result</field>
+        <field name="arch" type="xml">
+            <list editable="bottom" create="0" delete="0">
+                <field name="month_sequence" column_invisible="1"/>
+                <field name="month" readonly="1" string="Mois"/>
+                <field name="days_in_month" readonly="1" string="Jours"/>
+                <field name="monthly_production_kwh" readonly="1" string="Prod. (kWh)"/>
+                <field name="monthly_consumption_kwh" string="Conso. (kWh)"/>
+                <field name="daily_production_kwh" readonly="1" string="Prod. quot. (kWh)"/>
+                <field name="daily_day_consumption_kwh" string="Conso jour (kWh)"/>
+                <field name="daily_night_consumption_kwh" string="Conso nuit (kWh)"/>
+                <field name="daily_battery_charge_kwh" readonly="1" string="Charge (kWh)"/>
+                <field name="battery_charge_level" widget="battery_icon" string="" width="40px" readonly="1" nolabel="1"/>
+                <field name="daily_energy_sold_kwh" readonly="1" string="Vente (kWh)"/>
+                <field name="daily_energy_bought_kwh" readonly="1" string="Achat (kWh)"/>
+            </list>
+        </field>
+    </record>
+</odoo>
