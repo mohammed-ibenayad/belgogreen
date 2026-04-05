@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from . import res_company
-from . import res_partner
+from . import geo_cache
 from . import product_template
 from . import pv_production_profile
 from . import pv_battery_config
