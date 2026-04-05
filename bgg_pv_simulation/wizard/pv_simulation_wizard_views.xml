@@ -85,12 +85,6 @@
                             type="object"
                             class="btn-primary"
                             invisible="not can_generate"/>
-                    <button name="action_create_and_generate"
-                            string="Créer (données manquantes)"
-                            type="object"
-                            class="btn-warning"
-                            invisible="can_generate"
-                            confirm="Des données requises sont manquantes dans le devis. Voulez-vous quand même créer la simulation ?"/>
                     <button string="Annuler" class="btn-secondary" special="cancel"/>
                 </footer>
             </form>
