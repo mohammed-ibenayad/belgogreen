@@ -102,12 +102,7 @@ class PvSimulationWizard(models.TransientModel):
     def _compute_coords_status(self):
         for wiz in self:
             if wiz.latitude and wiz.longitude:
-                # Check if these came from cache
-                partner = wiz.sale_order_id.partner_id
-                if partner and partner.geo_latitude and partner.geo_longitude:
-                    wiz.coords_status = 'cached'
-                else:
-                    wiz.coords_status = 'fetched'
+                wiz.coords_status = 'fetched'
             else:
                 wiz.coords_status = 'empty'
 
@@ -164,14 +159,16 @@ class PvSimulationWizard(models.TransientModel):
     @api.model
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
-        # Use cached coordinates from partner if available (no API call = no blocking)
+        # Use cached coordinates if available (no API call = no blocking)
         sale_order_id = res.get('sale_order_id') or self.env.context.get('default_sale_order_id')
         if sale_order_id:
             sale_order = self.env['sale.order'].browse(sale_order_id)
             partner = sale_order.partner_id
-            if partner and partner.geo_latitude and partner.geo_longitude:
-                res['latitude'] = partner.geo_latitude
-                res['longitude'] = partner.geo_longitude
+            if partner:
+                cache = self.env['geo.cache'].search([('partner_id', '=', partner.id)], limit=1)
+                if cache and cache.latitude and cache.longitude:
+                    res['latitude'] = cache.latitude
+                    res['longitude'] = cache.longitude
         return res
 
     def action_fetch_coordinates(self):
@@ -183,11 +180,23 @@ class PvSimulationWizard(models.TransientModel):
 
         lat, lng = self._geocode_address(partner)
         if lat and lng:
-            # Cache on partner for future use
-            partner.sudo().write({
-                'geo_latitude': str(lat),
-                'geo_longitude': str(lng),
-            })
+            # Cache for future use
+            address = ', '.join(p for p in [
+                partner.street or '', partner.street2 or '',
+                partner.zip or '', partner.city or '',
+                partner.country_id.name or '',
+            ] if p)
+            cache = self.env['geo.cache'].search([('partner_id', '=', partner.id)], limit=1)
+            cache_vals = {
+                'latitude': str(lat),
+                'longitude': str(lng),
+                'address': address,
+            }
+            if cache:
+                cache.write(cache_vals)
+            else:
+                cache_vals['partner_id'] = partner.id
+                self.env['geo.cache'].create(cache_vals)
             self.write({
                 'latitude': str(lat),
                 'longitude': str(lng),
