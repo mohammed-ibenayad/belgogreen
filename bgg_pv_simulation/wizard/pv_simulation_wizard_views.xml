@@ -67,15 +67,10 @@
                                 <field name="default_monthly_consumption_kwh"/>
                                 <span>kWh/mois</span>
                             </div>
-                            <label for="default_daily_day_consumption_kwh"/>
+                            <label for="day_consumption_ratio" string="Ratio jour / nuit"/>
                             <div class="o_row">
-                                <field name="default_daily_day_consumption_kwh"/>
-                                <span>kWh/jour</span>
-                            </div>
-                            <label for="default_daily_night_consumption_kwh"/>
-                            <div class="o_row">
-                                <field name="default_daily_night_consumption_kwh"/>
-                                <span>kWh/nuit</span>
+                                <field name="day_consumption_ratio" widget="percentage"/>
+                                <span class="text-muted ms-1">jour</span>
                             </div>
                         </group>
                     </group>

@@ -64,13 +64,12 @@ class PvSimulationWizard(models.TransientModel):
         string='Consommation mensuelle',
         help='Consommation totale mensuelle en kWh',
     )
-    default_daily_day_consumption_kwh = fields.Float(
-        string='Consommation jour quotidienne',
-        help='Consommation quotidienne en journée en kWh',
-    )
-    default_daily_night_consumption_kwh = fields.Float(
-        string='Consommation nuit quotidienne',
-        help='Consommation quotidienne la nuit en kWh',
+    day_consumption_ratio = fields.Float(
+        string='Ratio consommation jour (%)',
+        default=0.6,
+        help='Part de la consommation totale consommée en journée (0.0–1.0). '
+             'Ex: 0.6 = 60 % jour, 40 % nuit. Utilisé pour dériver automatiquement '
+             'les consommations jour/nuit à partir de la consommation mensuelle.',
     )
 
     # Validation notes (computed)
@@ -313,6 +312,5 @@ class PvSimulationWizard(models.TransientModel):
             'tilt_deg': self.tilt_deg,
             'orientation_deg': self.orientation_deg,
             'default_monthly_consumption_kwh': self.default_monthly_consumption_kwh,
-            'default_daily_day_consumption_kwh': self.default_daily_day_consumption_kwh,
-            'default_daily_night_consumption_kwh': self.default_daily_night_consumption_kwh,
+            'day_consumption_ratio': self.day_consumption_ratio,
         }
