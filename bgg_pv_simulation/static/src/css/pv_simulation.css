@@ -26,3 +26,27 @@
     margin-bottom: 0;
     padding-left: 18px;
 }
+
+/* Editable cells inside the consumption / financial monthly result list:
+   highlight the columns the user can edit so they stand out from the
+   read-only ones, and drop the default zebra striping which competes
+   with the column-level highlight. */
+.pv_editable_table tbody tr,
+.pv_editable_table tbody tr:nth-child(even),
+.pv_editable_table tbody tr.o_data_row,
+.pv_editable_table tbody tr.o_data_row:nth-child(even) {
+    background-color: #ffffff !important;
+}
+
+.pv_editable_table td.o_field_highlight,
+.pv_editable_table td.o_data_cell.o_field_highlight {
+    background-color: #f5f5f5 !important;
+    border-left: 1px solid #e0e0e0;
+    border-right: 1px solid #e0e0e0;
+}
+
+.pv_editable_table td.o_field_highlight .o_input,
+.pv_editable_table td.o_field_highlight input {
+    background-color: #f5f5f5 !important;
+    border-color: #bdbdbd !important;
+}
