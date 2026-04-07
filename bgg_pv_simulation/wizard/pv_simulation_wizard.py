@@ -154,7 +154,9 @@ class PvSimulationWizard(models.TransientModel):
                               "Configurez le champ 'Battery Capacity (kWh)' sur la fiche produit.")
                         )
             wiz.missing_data_warning = '\n'.join(warnings) if warnings else ''
-            wiz.can_generate = has_panels
+            has_panel_power = has_panels and any(l.product_id.panel_unit_power_wc for l in panel_lines)
+            has_battery_capacity = bool(battery_lines) and any(l.product_id.battery_capacity_kwh for l in battery_lines)
+            wiz.can_generate = has_panel_power and has_battery_capacity
 
     @api.model
     def default_get(self, fields_list):
