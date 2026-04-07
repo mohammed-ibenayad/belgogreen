@@ -132,12 +132,8 @@
                                         <field name="pvgis_annual_production_kwh" class="o_field_highlight"/>
                                         <span>kWh</span>
                                     </div>
-                                    <label for="annual_production_kwh" string="Production annuelle (GSA)"/>
-                                    <div class="o_row">
-                                        <field name="annual_production_kwh" readonly="1"/>
-                                        <span>kWh</span>
-                                    </div>
-                                    <field name="max_panels_count" readonly="1" string="Panneaux max (GSA)"/>
+                                    <field name="annual_production_kwh" invisible="1"/>
+                                    <field name="max_panels_count" invisible="1"/>
                                 </group>
                             </group>
 
@@ -145,31 +141,20 @@
                                 <strong>Données du système :</strong> Les panneaux sont détectés automatiquement à partir des produits du devis
                                 appartenant à la catégorie <em>All / Saleable / Panneaux</em>.
                                 Les batteries sont détectées via la catégorie <em>All / Saleable / Batteries</em>.
-                                La production est calculée via Google Solar API et/ou PVGIS. Le profil de production distribue la production annuelle sur les 12 mois.
+                                La production est calculée via PVGIS. Le profil de production distribue la production annuelle sur les 12 mois.
                             </div>
                             <div class="alert alert-warning" role="alert">
                                 <strong>Comment la production est-elle calculée ?</strong>
                                 <p class="mb-1 mt-2">
-                                    Deux sources de données solaires sont utilisées pour estimer la production de votre installation :
+                                    La production de votre installation est estimée via le
+                                    <strong>Photovoltaic Geographical Information System (PVGIS)</strong>, qui fournit
+                                    la répartition mensuelle de la production sur 12 mois.
                                 </p>
-                                <ul class="mb-2">
-                                    <li>
-                                        <strong>Google Solar API (GSA)</strong> : fournit une estimation annuelle de la production,
-                                        l'image satellite du toit et le nombre maximal de panneaux installables.
-                                        L'API calcule avec des panneaux de 400W par défaut — la production est automatiquement
-                                        ajustée selon la puissance réelle de vos panneaux (ex : 425Wc).
-                                    </li>
-                                    <li>
-                                        <strong>Photovoltaic Geographical Information System (PVGIS)</strong> : fournit la
-                                        répartition mensuelle de la production sur 12 mois. Les paramètres envoyés sont :
-                                        coordonnées GPS, puissance crête (kWc), pertes système de 14%, technologie silicium
-                                        cristallin, montage en toiture. L'inclinaison et l'orientation sont envoyées si renseignées,
-                                        sinon PVGIS utilise les valeurs optimales pour votre localisation.
-                                    </li>
-                                </ul>
                                 <p class="mb-0">
-                                    <strong>Priorité</strong> : les données mensuelles PVGIS sont utilisées pour le rapport.
-                                    Google Solar fournit la référence annuelle et l'imagerie satellite.
+                                    Les paramètres envoyés sont : coordonnées GPS, puissance crête (kWc),
+                                    pertes système de 14%, technologie silicium cristallin, montage en toiture.
+                                    L'inclinaison et l'orientation sont envoyées si renseignées, sinon PVGIS
+                                    utilise les valeurs optimales pour votre localisation.
                                 </p>
                             </div>
                         </page>
