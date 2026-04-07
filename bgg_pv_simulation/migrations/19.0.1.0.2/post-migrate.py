@@ -11,13 +11,11 @@ def migrate(cr, version):
     were left with the placeholder name 'New' (e.g. created before the
     sequence override was active)."""
     env = api.Environment(cr, SUPERUSER_ID, {})
-    simulations = env['pv.simulation'].search([('name', '=', 'New')])
+    Simulation = env['pv.simulation']
+    simulations = Simulation.search([('name', 'in', ('New', 'Nouveau'))])
     if not simulations:
         return
 
     _logger.info("Renaming %s pv.simulation records still labelled 'New'.", len(simulations))
-    sequence = env['ir.sequence']
     for simulation in simulations:
-        new_name = sequence.next_by_code('pv.simulation')
-        if new_name:
-            simulation.name = new_name
+        simulation.name = Simulation._next_simulation_reference()

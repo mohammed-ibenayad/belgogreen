@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'PV Simulation & Quotation Report',
-    'version': '19.0.1.0.1',
+    'version': '19.0.1.0.2',
     'category': 'Sales',
     'summary': 'Photovoltaic installation simulation with energy and financial calculations',
     'description': """

@@ -317,7 +317,7 @@ class PvSimulationWizard(models.TransientModel):
         # Resolve the SIM- reference up-front so the simulation never lands
         # in the database with the placeholder 'New' name, even if a code
         # path bypasses the model's create() override.
-        name = self.env['ir.sequence'].sudo().next_by_code('pv.simulation') or _('New')
+        name = self.env['pv.simulation']._next_simulation_reference()
         return {
             'name': name,
             'sale_order_id': self.sale_order_id.id,
