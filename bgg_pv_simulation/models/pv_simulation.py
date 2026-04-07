@@ -329,11 +329,39 @@ class PvSimulation(models.Model):
                 super().write({'simulation_needs_regeneration': True})
         return res
 
+    @api.model
+    def _next_simulation_reference(self):
+        """Return the next SIM- reference, creating the sequence on the fly
+        if it is missing from the database (e.g. when the module was loaded
+        without a full upgrade and the security XML never inserted it)."""
+        Sequence = self.env['ir.sequence'].sudo()
+        new_name = Sequence.next_by_code('pv.simulation')
+        if new_name:
+            return new_name
+        # Sequence record missing — create it now so future calls succeed.
+        existing = Sequence.search([('code', '=', 'pv.simulation')], limit=1)
+        if not existing:
+            Sequence.create({
+                'name': 'PV Simulation Sequence',
+                'code': 'pv.simulation',
+                'prefix': 'SIM-',
+                'padding': 5,
+                'number_next': 1,
+                'number_increment': 1,
+            })
+            new_name = Sequence.next_by_code('pv.simulation')
+            if new_name:
+                return new_name
+        # Hard fallback so we never persist the placeholder 'New' label.
+        return 'SIM-' + fields.Datetime.now().strftime('%Y%m%d%H%M%S')
+
     @api.model_create_multi
     def create(self, vals_list):
+        placeholder_names = {'New', _('New')}
         for vals in vals_list:
-            if not vals.get('name') or vals.get('name') == _('New'):
-                vals['name'] = self.env['ir.sequence'].sudo().next_by_code('pv.simulation') or _('New')
+            current = vals.get('name')
+            if not current or current in placeholder_names:
+                vals['name'] = self._next_simulation_reference()
         return super().create(vals_list)
 
     @api.depends('monthly_result_ids', 'monthly_result_ids.monthly_production_kwh',
