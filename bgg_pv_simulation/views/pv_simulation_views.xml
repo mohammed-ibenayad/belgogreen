@@ -421,10 +421,33 @@
                                 <group string="Configuration">
                                     <field name="tariff_profile_id" string="Profil tarifaire"
                                            options="{'no_create': False, 'no_open': False}"/>
+                                    <label for="purchase_price_kwh" string="Prix d'achat"/>
+                                    <div class="o_row">
+                                        <field name="purchase_price_kwh" class="o_field_highlight" nolabel="1"/>
+                                        <span>€/kWh</span>
+                                    </div>
+                                    <label for="feed_in_tariff_kwh" string="Tarif de revente"/>
+                                    <div class="o_row">
+                                        <field name="feed_in_tariff_kwh" class="o_field_highlight" nolabel="1"/>
+                                        <span>€/kWh</span>
+                                    </div>
+                                    <label for="battery_cost_kwh" string="Coût batterie"/>
+                                    <div class="o_row">
+                                        <field name="battery_cost_kwh" class="o_field_highlight" nolabel="1"/>
+                                        <span>€/kWh</span>
+                                    </div>
                                 </group>
                                 <group>
                                     <separator string="Titre de section" colspan="2"/>
                                     <field name="section_title_financial" placeholder="BILAN FINANCIER MENSUEL" string="Titre" class="o_field_highlight"/>
+                                    <div colspan="2" class="pv_note_box mt-2">
+                                        <strong>Profil tarifaire</strong>
+                                        <p class="mb-0 mt-1">
+                                            La sélection d'un profil pré-remplit les trois prix ci-contre.
+                                            Vous pouvez ensuite les ajuster pour cette simulation sans
+                                            modifier le profil de référence partagé.
+                                        </p>
+                                    </div>
                                 </group>
                             </group>
                             <separator string="Bilan financier mensuel"/>

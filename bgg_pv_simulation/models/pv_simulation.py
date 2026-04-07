@@ -255,13 +255,48 @@ class PvSimulation(models.Model):
         help='Set to True when simulation-impacting data has changed since last generation'
     )
 
-    # Tariff profile for financial calculations
+    # Tariff profile for financial calculations. The profile is only used as
+    # a starting point: when it is selected, its values are copied onto the
+    # simulation's own override fields below so the user can adjust them per
+    # simulation without altering the shared profile.
     tariff_profile_id = fields.Many2one(
         'pv.tariff.profile',
         string='Profil tarifaire',
         default=lambda self: self.env['pv.tariff.profile'].search([], limit=1),
-        help='Profil tarifaire utilisé pour le bilan financier (P_buy, P_sell, P_batt)'
+        help='Profil tarifaire utilisé pour pré-remplir le bilan financier '
+             '(prix d\'achat, tarif de revente, coût batterie). Les valeurs '
+             'sont copiées sur la simulation et peuvent être modifiées sans '
+             'impacter le profil de référence.'
     )
+    purchase_price_kwh = fields.Monetary(
+        string="Prix d'achat (€/kWh)",
+        currency_field='currency_id',
+        help="Prix d'achat de l'électricité au réseau (P_buy). "
+             "Pré-rempli depuis le profil tarifaire, modifiable par simulation."
+    )
+    feed_in_tariff_kwh = fields.Monetary(
+        string='Tarif de revente (€/kWh)',
+        currency_field='currency_id',
+        help="Tarif de revente du surplus PV au réseau (P_sell). "
+             "Pré-rempli depuis le profil tarifaire, modifiable par simulation."
+    )
+    battery_cost_kwh = fields.Monetary(
+        string="Coût batterie (€/kWh)",
+        currency_field='currency_id',
+        help="Coût d'usure par kWh cyclé dans la batterie (P_batt). "
+             "Pré-rempli depuis le profil tarifaire, modifiable par simulation."
+    )
+
+    @api.onchange('tariff_profile_id')
+    def _onchange_tariff_profile_id(self):
+        """Copy the selected profile's values onto the simulation so the user
+        can override them locally without touching the shared profile."""
+        for rec in self:
+            profile = rec.tariff_profile_id
+            if profile:
+                rec.purchase_price_kwh = profile.purchase_price_kwh
+                rec.feed_in_tariff_kwh = profile.feed_in_tariff_kwh
+                rec.battery_cost_kwh = profile.battery_cost_kwh
 
     # Report section title for financial page
     section_title_financial = fields.Char(
@@ -323,6 +358,10 @@ class PvSimulation(models.Model):
         'latitude',
         'longitude',
         'roof_surface_m2',
+        'tariff_profile_id',
+        'purchase_price_kwh',
+        'feed_in_tariff_kwh',
+        'battery_cost_kwh',
     }
 
     def write(self, vals):
@@ -367,6 +406,16 @@ class PvSimulation(models.Model):
             current = vals.get('name')
             if not current or current in placeholder_names:
                 vals['name'] = self._next_simulation_reference()
+            # Seed the per-simulation tariff overrides from the selected
+            # profile when they are not explicitly provided (the @api.onchange
+            # only fires from the UI, not from programmatic creates).
+            profile_id = vals.get('tariff_profile_id')
+            if profile_id:
+                profile = self.env['pv.tariff.profile'].browse(profile_id)
+                if profile.exists():
+                    vals.setdefault('purchase_price_kwh', profile.purchase_price_kwh)
+                    vals.setdefault('feed_in_tariff_kwh', profile.feed_in_tariff_kwh)
+                    vals.setdefault('battery_cost_kwh', profile.battery_cost_kwh)
         return super().create(vals_list)
 
     @api.depends('monthly_result_ids', 'monthly_result_ids.monthly_production_kwh',
@@ -468,11 +517,14 @@ class PvSimulation(models.Model):
         ren_bat = (self.battery_efficiency or 0.0) / 100.0  # stored as percentage
         cap_bat_effective = cap_bat * ren_bat  # CapBat × RenBat
 
-        # Pricing from tariff profile
+        # Pricing — use the per-simulation overrides (seeded from the
+        # selected tariff profile) so users can tweak prices without
+        # touching the shared profile. Fall back to the profile if a
+        # value is missing (e.g. records created before this field).
         tariff = self.tariff_profile_id
-        p_buy = tariff.purchase_price_kwh if tariff else 0.0
-        p_sell = tariff.feed_in_tariff_kwh if tariff else 0.0
-        p_batt = tariff.battery_cost_kwh if tariff else 0.0
+        p_buy = self.purchase_price_kwh or (tariff.purchase_price_kwh if tariff else 0.0)
+        p_sell = self.feed_in_tariff_kwh or (tariff.feed_in_tariff_kwh if tariff else 0.0)
+        p_batt = self.battery_cost_kwh or (tariff.battery_cost_kwh if tariff else 0.0)
 
         # Process months in order (1-12)
         results = self.monthly_result_ids.sorted(key=lambda r: int(r.month))
