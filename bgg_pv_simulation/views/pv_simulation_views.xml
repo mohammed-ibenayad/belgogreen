@@ -78,6 +78,11 @@
                         <h1>
                             <field name="name" readonly="1"/>
                         </h1>
+                        <h2 class="text-muted">
+                            <field name="sale_order_id" readonly="1" nolabel="1" options="{'no_open': True}"/>
+                            <span invisible="not partner_id"> — </span>
+                            <field name="partner_id" readonly="1" nolabel="1" options="{'no_open': True}"/>
+                        </h2>
                     </div>
                     <group>
                         <group string="Devis">
@@ -303,8 +308,8 @@
                                         <button name="action_fetch_coordinates"
                                                 type="object"
                                                 class="btn-sm btn-secondary"
-                                                icon="fa-refresh"
-                                                string="Récupérer / Rafraîchir les coordonnées GPS"
+                                                icon="fa-map-marker"
+                                                string="Rafraîchir les coordonnées"
                                                 invisible="not id"/>
                                     </div>
                                     <div colspan="2" invisible="not google_maps_url">
