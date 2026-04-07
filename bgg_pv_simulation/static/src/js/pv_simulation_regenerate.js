@@ -57,14 +57,18 @@ class PvSimulationGenerate extends Component {
         } catch (e) {
             this.notification.add("Erreur lors de la génération: " + (e.data?.message || e.message || "erreur inconnue"), { type: "danger" });
         }
-        // Navigate to the simulation form
-        this.action.doAction({
-            type: "ir.actions.act_window",
-            res_model: "pv.simulation",
-            res_id: simulationId,
-            views: [[false, "form"]],
-            target: "current",
-        });
+        // Navigate to the simulation form, replacing the loading action so it
+        // doesn't leave a "Génération" entry in the breadcrumb.
+        this.action.doAction(
+            {
+                type: "ir.actions.act_window",
+                res_model: "pv.simulation",
+                res_id: simulationId,
+                views: [[false, "form"]],
+                target: "current",
+            },
+            { stackPosition: "replaceCurrentAction" },
+        );
     }
 }
 
