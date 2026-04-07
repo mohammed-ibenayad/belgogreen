@@ -75,6 +75,20 @@
                             </div>
                         </group>
                     </group>
+                    <div class="alert alert-info mt-3" role="alert">
+                        <strong>Comment lire l'orientation ?</strong>
+                        <p class="mb-1 mt-2">
+                            L'orientation est exprimée en degrés par rapport au <strong>Sud</strong>
+                            (référence PVGIS). Les valeurs positives vont vers l'Ouest, les négatives vers l'Est :
+                        </p>
+                        <ul class="mb-0">
+                            <li><strong>0°</strong> — Sud (orientation optimale)</li>
+                            <li><strong>+45°</strong> — Sud-Ouest &nbsp;·&nbsp; <strong>−45°</strong> — Sud-Est</li>
+                            <li><strong>+90°</strong> — Ouest &nbsp;·&nbsp; <strong>−90°</strong> — Est</li>
+                            <li><strong>+135°</strong> — Nord-Ouest &nbsp;·&nbsp; <strong>−135°</strong> — Nord-Est</li>
+                            <li><strong>180°</strong> / <strong>−180°</strong> — Nord</li>
+                        </ul>
+                    </div>
                 </sheet>
                 <footer>
                     <button name="action_create_and_generate"
