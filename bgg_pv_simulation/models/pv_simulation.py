@@ -548,6 +548,17 @@ class PvSimulation(models.Model):
             else:
                 rec.google_maps_url = ''
 
+    def action_open_google_maps(self):
+        """Open the Google Maps URL for the current simulation in a new tab."""
+        self.ensure_one()
+        if not self.google_maps_url:
+            raise UserError(_("Aucune coordonnée disponible. Récupérez d'abord les coordonnées GPS."))
+        return {
+            'type': 'ir.actions.act_url',
+            'url': self.google_maps_url,
+            'target': 'new',
+        }
+
     def action_fetch_coordinates(self):
         """Fetch GPS coordinates from Google Geocoding API via geo.cache."""
         self.ensure_one()
@@ -678,11 +689,14 @@ class PvSimulation(models.Model):
     def action_do_generate(self):
         """Initial generation logic called from the wizard JS client action.
 
-        Creates monthly results, applies default consumption, then computes balance.
+        Creates monthly results, applies default consumption (if provided),
+        then computes balance. Missing consumption data is not a hard error
+        here: the user can fill it in afterwards on the Consommation tab.
         """
         self.ensure_one()
         self.action_do_regenerate()
-        self.action_apply_default_consumption()
+        if self.default_monthly_consumption_kwh:
+            self.action_apply_default_consumption()
         self.action_compute_daily_balance()
 
     def action_do_regenerate(self):

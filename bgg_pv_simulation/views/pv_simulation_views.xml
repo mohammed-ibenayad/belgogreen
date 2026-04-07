@@ -284,6 +284,7 @@
                                            class="o_field_highlight"/>
                                     <field name="longitude" placeholder="ex: 4.3517103"
                                            class="o_field_highlight"/>
+                                    <field name="google_maps_url" invisible="1"/>
                                     <div colspan="2">
                                         <button name="action_fetch_coordinates"
                                                 type="object"
@@ -291,20 +292,21 @@
                                                 icon="fa-map-marker"
                                                 string="Rafraîchir les coordonnées"
                                                 invisible="not id"/>
-                                    </div>
-                                    <div colspan="2" invisible="not google_maps_url">
-                                        <i class="fa fa-map-marker me-1 text-primary" title="Google Maps"/>
-                                        <field name="google_maps_url" widget="url" nolabel="1"
-                                               string="Voir sur Google Maps"/>
+                                        <button name="action_open_google_maps"
+                                                type="object"
+                                                class="btn-sm btn-secondary ms-1"
+                                                icon="fa-external-link"
+                                                string="Google Maps"
+                                                invisible="not google_maps_url"/>
                                     </div>
                                     <field name="roof_surface_m2" string="Surface de toiture (m²)" class="o_field_highlight"/>
                                 </group>
-                                <group string="Image de localisation">
-                                    <field name="location_image" widget="image" class="oe_avatar" string="Image satellite"/>
+                                <group>
+                                    <separator string="Titre de section" colspan="2"/>
+                                    <field name="section_title_location" placeholder="LOCALISATION DE L'INSTALLATION" string="Titre" class="o_field_highlight"/>
+                                    <separator string="Image de localisation" colspan="2"/>
+                                    <field name="location_image" widget="image" class="oe_avatar" nolabel="1" string="Image satellite"/>
                                 </group>
-                            </group>
-                            <group string="Titre de section">
-                                <field name="section_title_location" placeholder="LOCALISATION DE L'INSTALLATION" string="Titre" class="o_field_highlight"/>
                             </group>
                             <div class="alert alert-warning mt-3" role="alert">
                                 <strong>Note :</strong> L'adresse est pré-remplie depuis la fiche client du devis.
@@ -318,13 +320,13 @@
                                 <group string="Image du système">
                                     <field name="system_image" widget="image" class="oe_avatar" string="Image"/>
                                 </group>
-                                <group string="Configuration">
+                                <group>
+                                    <separator string="Titres de section" colspan="2"/>
+                                    <field name="section_title_production" placeholder="PRODUCTION ESTIMÉE" string="Titre production" class="o_field_highlight"/>
+                                    <field name="section_title_system" placeholder="CARACTÉRISTIQUES DU SYSTÈME" string="Titre système" class="o_field_highlight"/>
+                                    <separator string="Configuration" colspan="2"/>
                                     <field name="production_profile_id" string="Profil de production"/>
                                 </group>
-                            </group>
-                            <group string="Titres de section">
-                                <field name="section_title_production" placeholder="PRODUCTION ESTIMÉE" string="Titre production" class="o_field_highlight"/>
-                                <field name="section_title_system" placeholder="CARACTÉRISTIQUES DU SYSTÈME" string="Titre système" class="o_field_highlight"/>
                             </group>
                             <separator string="Aperçu du graphique"/>
                             <field name="chart_monthly_production" widget="image" nolabel="1"

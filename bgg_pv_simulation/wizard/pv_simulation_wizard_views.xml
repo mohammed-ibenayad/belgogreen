@@ -25,6 +25,7 @@
                             <div colspan="2" class="mb-2 text-muted">
                                 <field name="installation_address" readonly="1" nolabel="1"/>
                             </div>
+                            <field name="google_maps_url" invisible="1"/>
                             <div colspan="2" class="mb-2">
                                 <button name="action_fetch_coordinates"
                                         type="object"
@@ -35,20 +36,20 @@
                                         />
                                 <button name="action_fetch_coordinates"
                                         type="object"
-                                        class="btn-sm btn-link"
-                                        icon="fa-refresh"
+                                        class="btn-sm btn-secondary"
+                                        icon="fa-map-marker"
                                         string="Rafraîchir les coordonnées"
                                         invisible="coords_status != 'fetched' and coords_status != 'cached'"
                                         />
+                                <button name="action_open_google_maps"
+                                        type="object"
+                                        class="btn-sm btn-secondary ms-1"
+                                        icon="fa-external-link"
+                                        string="Google Maps"
+                                        invisible="not google_maps_url"/>
                             </div>
                             <field name="latitude" placeholder="ex: 50.8503396"/>
                             <field name="longitude" placeholder="ex: 4.3517103"/>
-                            <div colspan="2" invisible="not google_maps_url">
-                                <i class="fa fa-map-marker me-1 text-primary" title="Google Maps"/>
-                                <field name="google_maps_url" widget="url" nolabel="1"
-                                       string="Voir sur Google Maps"
-                                       placeholder="Google Maps"/>
-                            </div>
                             <separator string="Panneaux" colspan="2"/>
                             <label for="tilt_deg" string="Inclinaison"/>
                             <div class="o_row">
