@@ -63,10 +63,10 @@
                             </div>
                         </group>
                         <group string="Consommation du client">
-                            <label for="default_monthly_consumption_kwh"/>
+                            <label for="default_annual_consumption_kwh"/>
                             <div class="o_row">
-                                <field name="default_monthly_consumption_kwh" class="o_field_highlight"/>
-                                <span>kWh/mois</span>
+                                <field name="default_annual_consumption_kwh" class="o_field_highlight"/>
+                                <span>kWh/an</span>
                             </div>
                             <label for="day_consumption_ratio" string="Ratio jour / nuit"/>
                             <div class="o_row">

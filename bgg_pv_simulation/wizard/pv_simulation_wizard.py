@@ -59,10 +59,13 @@ class PvSimulationWizard(models.TransientModel):
         help='Orientation des panneaux en degrés (-180 à 180, 0=Sud)',
     )
 
-    # Consumption
-    default_monthly_consumption_kwh = fields.Float(
-        string='Consommation mensuelle',
-        help='Consommation totale mensuelle en kWh',
+    # Consumption — collected as an annual value in the wizard and split
+    # evenly across the 12 months when the simulation is created. The user
+    # can still adjust per-month values later from the Consommation tab.
+    default_annual_consumption_kwh = fields.Float(
+        string='Consommation annuelle',
+        help='Consommation totale annuelle en kWh. Sera divisée par 12 pour '
+             'initialiser la consommation mensuelle par défaut.',
     )
     day_consumption_ratio = fields.Float(
         string='Ratio consommation jour (%)',
@@ -327,6 +330,6 @@ class PvSimulationWizard(models.TransientModel):
             'longitude': str(longitude),
             'tilt_deg': self.tilt_deg,
             'orientation_deg': self.orientation_deg,
-            'default_monthly_consumption_kwh': self.default_monthly_consumption_kwh,
+            'default_monthly_consumption_kwh': (self.default_annual_consumption_kwh or 0.0) / 12.0,
             'day_consumption_ratio': self.day_consumption_ratio,
         }
