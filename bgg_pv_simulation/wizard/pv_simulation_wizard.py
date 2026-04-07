@@ -115,6 +115,17 @@ class PvSimulationWizard(models.TransientModel):
             else:
                 wiz.google_maps_url = ''
 
+    def action_open_google_maps(self):
+        """Open the Google Maps URL for the current wizard coordinates in a new tab."""
+        self.ensure_one()
+        if not self.google_maps_url:
+            raise UserError(_("Aucune coordonnée disponible. Récupérez d'abord les coordonnées GPS."))
+        return {
+            'type': 'ir.actions.act_url',
+            'url': self.google_maps_url,
+            'target': 'new',
+        }
+
     @api.depends('sale_order_id')
     def _compute_missing_data_warning(self):
         for wiz in self:
@@ -303,7 +314,12 @@ class PvSimulationWizard(models.TransientModel):
         }
 
     def _prepare_simulation_vals(self, latitude, longitude):
+        # Resolve the SIM- reference up-front so the simulation never lands
+        # in the database with the placeholder 'New' name, even if a code
+        # path bypasses the model's create() override.
+        name = self.env['ir.sequence'].sudo().next_by_code('pv.simulation') or _('New')
         return {
+            'name': name,
             'sale_order_id': self.sale_order_id.id,
             'currency_id': self.sale_order_id.currency_id.id or self.env.company.currency_id.id,
             'company_id': self.sale_order_id.company_id.id or self.env.company.id,
