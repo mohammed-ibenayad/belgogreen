@@ -44,6 +44,7 @@
                             <field name="latitude" placeholder="ex: 50.8503396"/>
                             <field name="longitude" placeholder="ex: 4.3517103"/>
                             <div colspan="2" invisible="not google_maps_url">
+                                <i class="fa fa-map-marker me-1 text-primary" title="Google Maps"/>
                                 <field name="google_maps_url" widget="url" nolabel="1"
                                        string="Voir sur Google Maps"
                                        placeholder="Google Maps"/>

@@ -329,18 +329,12 @@ class PvSimulation(models.Model):
                 super().write({'simulation_needs_regeneration': True})
         return res
 
-    @api.model
+    @api.model_create_multi
     def create(self, vals_list):
-        # Handle both single dict and list of dicts for backward compatibility
-        if isinstance(vals_list, dict):
-            vals_list = [vals_list]
-
         for vals in vals_list:
-            if vals.get('name', _('New')) == _('New'):
-                vals['name'] = self.env['ir.sequence'].next_by_code('pv.simulation') or _('New')
-
-        records = super(PvSimulation, self).create(vals_list)
-        return records
+            if not vals.get('name') or vals.get('name') == _('New'):
+                vals['name'] = self.env['ir.sequence'].sudo().next_by_code('pv.simulation') or _('New')
+        return super().create(vals_list)
 
     @api.depends('monthly_result_ids', 'monthly_result_ids.monthly_production_kwh',
                  'monthly_result_ids.monthly_day_consumption_kwh',
