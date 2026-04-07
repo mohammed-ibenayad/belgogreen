@@ -83,9 +83,9 @@
                         </p>
                         <ul class="mb-0">
                             <li><strong>0°</strong> — Sud (orientation optimale)</li>
-                            <li><strong>+45°</strong> — Sud-Ouest &nbsp;·&nbsp; <strong>−45°</strong> — Sud-Est</li>
-                            <li><strong>+90°</strong> — Ouest &nbsp;·&nbsp; <strong>−90°</strong> — Est</li>
-                            <li><strong>+135°</strong> — Nord-Ouest &nbsp;·&nbsp; <strong>−135°</strong> — Nord-Est</li>
+                            <li><strong>+45°</strong> — Sud-Ouest &#160;·&#160; <strong>−45°</strong> — Sud-Est</li>
+                            <li><strong>+90°</strong> — Ouest &#160;·&#160; <strong>−90°</strong> — Est</li>
+                            <li><strong>+135°</strong> — Nord-Ouest &#160;·&#160; <strong>−135°</strong> — Nord-Est</li>
                             <li><strong>180°</strong> / <strong>−180°</strong> — Nord</li>
                         </ul>
                     </div>
