@@ -269,6 +269,11 @@ class PvSimulation(models.Model):
         default='BILAN FINANCIER MENSUEL',
         help='Title for the monthly financial balance page in the PDF report'
     )
+    report_company_name = fields.Char(
+        string='Nom de société (rapport)',
+        default='BelGoGreen',
+        help='Nom de société affiché dans le pied de page du rapport PDF.'
+    )
 
     # Default consumption (to prefill monthly results)
     default_monthly_consumption_kwh = fields.Float(

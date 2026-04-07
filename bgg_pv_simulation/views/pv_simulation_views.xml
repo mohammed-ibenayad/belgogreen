@@ -137,6 +137,20 @@
                                 </group>
                             </group>
 
+                            <div class="alert alert-info mt-3" role="alert">
+                                <strong>Comment lire l'orientation ?</strong>
+                                <p class="mb-1 mt-2">
+                                    L'orientation est exprimée en degrés par rapport au <strong>Sud</strong>
+                                    (référence PVGIS). Les valeurs positives vont vers l'Ouest, les négatives vers l'Est :
+                                </p>
+                                <ul class="mb-0">
+                                    <li><strong>0°</strong> — Sud (orientation optimale)</li>
+                                    <li><strong>+45°</strong> — Sud-Ouest &#160;·&#160; <strong>−45°</strong> — Sud-Est</li>
+                                    <li><strong>+90°</strong> — Ouest &#160;·&#160; <strong>−90°</strong> — Est</li>
+                                    <li><strong>+135°</strong> — Nord-Ouest &#160;·&#160; <strong>−135°</strong> — Nord-Est</li>
+                                    <li><strong>180°</strong> / <strong>−180°</strong> — Nord</li>
+                                </ul>
+                            </div>
                             <div class="alert alert-warning mt-3" role="alert">
                                 <strong>Données du système :</strong> Les panneaux sont détectés automatiquement à partir des produits du devis
                                 appartenant à la catégorie <em>All / Saleable / Panneaux</em>.
@@ -402,13 +416,15 @@
 
                         <!-- ==================== Bilan Financier (Page 6) ==================== -->
                         <page string="Bilan Financier (Page 6)" name="page_financial">
-                            <group string="Configuration">
-                                <group>
+                            <group>
+                                <group string="Configuration">
                                     <field name="tariff_profile_id" string="Profil tarifaire"
                                            options="{'no_create': False, 'no_open': False}"/>
                                 </group>
                                 <group>
-                                    <field name="section_title_financial" placeholder="BILAN FINANCIER MENSUEL" string="Titre de section" class="o_field_highlight"/>
+                                    <separator string="Titres de section" colspan="2"/>
+                                    <field name="section_title_financial" placeholder="BILAN FINANCIER MENSUEL" string="Titre" class="o_field_highlight"/>
+                                    <field name="report_company_name" placeholder="BelGoGreen" string="Nom de société" class="o_field_highlight"/>
                                 </group>
                             </group>
                             <separator string="Bilan financier mensuel"/>
