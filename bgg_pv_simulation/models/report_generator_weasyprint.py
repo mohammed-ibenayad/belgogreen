@@ -135,8 +135,8 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         title_daily_balance = _esc(simulation.section_title_daily_balance or 'BILAN ÉNERGÉTIQUE QUOTIDIEN')
         title_financial = _esc(simulation.section_title_financial or 'BILAN FINANCIER MENSUEL')
 
-        # Footer
-        company_name = _esc(company.name or '')
+        # Footer — prefer the configurable per-simulation report company name
+        company_name = _esc(simulation.report_company_name or company.name or '')
         company_phone = _esc(company.phone or '')
         company_email = _esc(company.email or '')
         address = _esc(simulation.installation_address or '')
@@ -564,6 +564,17 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             consommation de jour, ni pour charger la batterie). Elle sera alors revendue sur le r\u00e9seau.</p>
             <p>L\u2019<strong>achat</strong> correspond \u00e0 l\u2019\u00e9nergie qu\u2019il faut acheter sur le r\u00e9seau, en d\u00e9duisant
             la partie auto-consommation.</p>
+        </div>
+
+    </div>
+
+    <!-- ============================================ -->
+    <!-- PAGE 5b: BILAN ÉNERGÉTIQUE QUOTIDIEN          -->
+    <!-- ============================================ -->
+    <div class="page content-page">
+        <div class="section">
+            <div class="section-number">04</div>
+            <h2 class="section-title">{title_consumption}</h2>
         </div>
 
         <!-- Section 3: Daily Energy Balance Table -->

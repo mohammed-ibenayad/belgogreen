@@ -416,13 +416,15 @@
 
                         <!-- ==================== Bilan Financier (Page 6) ==================== -->
                         <page string="Bilan Financier (Page 6)" name="page_financial">
-                            <group string="Configuration">
-                                <group>
+                            <group>
+                                <group string="Configuration">
                                     <field name="tariff_profile_id" string="Profil tarifaire"
                                            options="{'no_create': False, 'no_open': False}"/>
                                 </group>
                                 <group>
-                                    <field name="section_title_financial" placeholder="BILAN FINANCIER MENSUEL" string="Titre de section" class="o_field_highlight"/>
+                                    <separator string="Titres de section" colspan="2"/>
+                                    <field name="section_title_financial" placeholder="BILAN FINANCIER MENSUEL" string="Titre" class="o_field_highlight"/>
+                                    <field name="report_company_name" placeholder="BelGoGreen" string="Nom de société" class="o_field_highlight"/>
                                 </group>
                             </group>
                             <separator string="Bilan financier mensuel"/>
