@@ -48,47 +48,47 @@
                                         string="Google Maps"
                                         invisible="not google_maps_url"/>
                             </div>
-                            <field name="latitude" placeholder="ex: 50.8503396"/>
-                            <field name="longitude" placeholder="ex: 4.3517103"/>
+                            <field name="latitude" placeholder="ex: 50.8503396" class="o_field_highlight"/>
+                            <field name="longitude" placeholder="ex: 4.3517103" class="o_field_highlight"/>
                             <separator string="Panneaux" colspan="2"/>
                             <label for="tilt_deg" string="Inclinaison"/>
                             <div class="o_row">
-                                <field name="tilt_deg"/>
+                                <field name="tilt_deg" class="o_field_highlight"/>
                                 <span>°</span>
                             </div>
                             <label for="orientation_deg" string="Orientation"/>
                             <div class="o_row">
-                                <field name="orientation_deg" required="1"/>
+                                <field name="orientation_deg" required="1" class="o_field_highlight"/>
                                 <span>° (0=Sud)</span>
                             </div>
                         </group>
                         <group string="Consommation du client">
                             <label for="default_monthly_consumption_kwh"/>
                             <div class="o_row">
-                                <field name="default_monthly_consumption_kwh"/>
+                                <field name="default_monthly_consumption_kwh" class="o_field_highlight"/>
                                 <span>kWh/mois</span>
                             </div>
                             <label for="day_consumption_ratio" string="Ratio jour / nuit"/>
                             <div class="o_row">
-                                <field name="day_consumption_ratio" widget="percentage"/>
+                                <field name="day_consumption_ratio" widget="percentage" class="o_field_highlight"/>
                                 <span class="text-muted ms-1">jour</span>
+                            </div>
+                            <div colspan="2" class="pv_note_box mt-2">
+                                <strong>Comment lire l'orientation ?</strong>
+                                <p class="mb-1 mt-2">
+                                    L'orientation est exprimée en degrés par rapport au <strong>Sud</strong>.
+                                    Les valeurs positives vont vers l'Ouest, les négatives vers l'Est :
+                                </p>
+                                <ul class="mb-0">
+                                    <li><strong>0°</strong> — Sud (orientation optimale)</li>
+                                    <li><strong>+45°</strong> — Sud-Ouest &#160;·&#160; <strong>−45°</strong> — Sud-Est</li>
+                                    <li><strong>+90°</strong> — Ouest &#160;·&#160; <strong>−90°</strong> — Est</li>
+                                    <li><strong>+135°</strong> — Nord-Ouest &#160;·&#160; <strong>−135°</strong> — Nord-Est</li>
+                                    <li><strong>180°</strong> / <strong>−180°</strong> — Nord</li>
+                                </ul>
                             </div>
                         </group>
                     </group>
-                    <div class="alert alert-info mt-3" role="alert">
-                        <strong>Comment lire l'orientation ?</strong>
-                        <p class="mb-1 mt-2">
-                            L'orientation est exprimée en degrés par rapport au <strong>Sud</strong>
-                            (référence PVGIS). Les valeurs positives vont vers l'Ouest, les négatives vers l'Est :
-                        </p>
-                        <ul class="mb-0">
-                            <li><strong>0°</strong> — Sud (orientation optimale)</li>
-                            <li><strong>+45°</strong> — Sud-Ouest &#160;·&#160; <strong>−45°</strong> — Sud-Est</li>
-                            <li><strong>+90°</strong> — Ouest &#160;·&#160; <strong>−90°</strong> — Est</li>
-                            <li><strong>+135°</strong> — Nord-Ouest &#160;·&#160; <strong>−135°</strong> — Nord-Est</li>
-                            <li><strong>180°</strong> / <strong>−180°</strong> — Nord</li>
-                        </ul>
-                    </div>
                 </sheet>
                 <footer>
                     <button name="action_create_and_generate"
