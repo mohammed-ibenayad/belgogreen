@@ -247,6 +247,10 @@ class PvSimulation(models.Model):
         string='Monthly Production Chart',
         help='PNG: Monthly daily production bar chart'
     )
+    chart_production_vs_consumption = fields.Binary(
+        string='Production vs Consumption Chart',
+        help='PNG: Daily production vs consumption with bilan/revente/achat overlays'
+    )
 
     # Regeneration tracking
     simulation_needs_regeneration = fields.Boolean(
@@ -915,6 +919,13 @@ class PvSimulation(models.Model):
                 _logger.error(f"Failed to generate chart for {record.name}: {e}")
                 # Continue even if chart generation fails
 
+            try:
+                record.chart_production_vs_consumption = record._generate_production_vs_consumption_chart()
+            except Exception as e:
+                _logger.error(
+                    f"Failed to generate production-vs-consumption chart for {record.name}: {e}"
+                )
+
     def _generate_monthly_production_chart(self):
         """Chart 1: Monthly daily production bar chart"""
         import matplotlib.pyplot as plt
@@ -948,6 +959,129 @@ class PvSimulation(models.Model):
             ax.text(bar.get_x() + bar.get_width()/2., height + (max(values) * 0.02),
                     f'{val:.1f}',
                     ha='center', va='bottom', fontsize=8)
+
+        plt.tight_layout()
+
+        buffer = io.BytesIO()
+        plt.savefig(buffer, format='png', dpi=150, bbox_inches='tight',
+                    facecolor='white', edgecolor='none', transparent=False)
+        plt.close()
+
+        return base64.b64encode(buffer.getvalue())
+
+    def _generate_production_vs_consumption_chart(self):
+        """Chart 2: Production vs Consommation (daily averages per month).
+
+        - Two columns per month side by side: production (single bar)
+          and consumption (jour+nuit stacked).
+        - Three overlays: Bilan (line, daily net energy), Revente (line,
+          daily energy sold), Achat (filled area, plotted negatively).
+        """
+        import matplotlib.pyplot as plt
+        import numpy as np
+        import io
+        import base64
+
+        results = self.monthly_result_ids.sorted(key=lambda r: int(r.month))
+        if not results:
+            return False
+
+        months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+                  'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
+        production = [r.daily_production_kwh or 0.0 for r in results]
+        cons_day = [r.daily_day_consumption_kwh or 0.0 for r in results]
+        cons_night = [r.daily_night_consumption_kwh or 0.0 for r in results]
+        bilan = [p - d - n for p, d, n in zip(production, cons_day, cons_night)]
+        revente = [r.daily_energy_sold_kwh or 0.0 for r in results]
+        achat = [-(r.daily_energy_bought_kwh or 0.0) for r in results]
+
+        x = np.arange(len(months))
+        bar_width = 0.38
+
+        fig, ax = plt.subplots(figsize=(11, 5))
+
+        # Production bars (left of each month)
+        bars_prod = ax.bar(
+            x - bar_width / 2, production, bar_width,
+            color='#A8C947', label='Production quotidienne (kWh)'
+        )
+        # Stacked consumption bars (right of each month): jour + nuit
+        bars_day = ax.bar(
+            x + bar_width / 2, cons_day, bar_width,
+            color='#C5E8E8', label='Consommation de jour (kWh)'
+        )
+        bars_night = ax.bar(
+            x + bar_width / 2, cons_night, bar_width, bottom=cons_day,
+            color='#1F6C6C', label='Consommation de nuit (kWh)'
+        )
+
+        # Achat as a filled area below zero
+        ax.fill_between(
+            x, achat, 0,
+            color='#F8C9CA', alpha=0.7, label='Achat (kWh)'
+        )
+        # Bilan line (daily net energy)
+        ax.plot(
+            x, bilan,
+            color='#F39C12', linewidth=2.2, marker='o', markersize=4,
+            label='Bilan (kWh)'
+        )
+        # Revente line (energy sold)
+        ax.plot(
+            x, revente,
+            color='#1F6C6C', linewidth=2.0, marker='o', markersize=4,
+            markerfacecolor='white', markeredgewidth=1.5,
+            label='Revente (kWh)'
+        )
+
+        # Numeric labels on the production bars (top)
+        for bar, val in zip(bars_prod, production):
+            ax.text(
+                bar.get_x() + bar.get_width() / 2.0,
+                bar.get_height() + 1.5,
+                f'{val:.2f}',
+                ha='center', va='bottom', fontsize=7
+            )
+        # Numeric labels inside the consumption stacks
+        for bar, val in zip(bars_day, cons_day):
+            if val > 0:
+                ax.text(
+                    bar.get_x() + bar.get_width() / 2.0,
+                    bar.get_height() / 2.0,
+                    f'{val:.2f}',
+                    ha='center', va='center', fontsize=7, color='#1F6C6C'
+                )
+        for bar, val, base in zip(bars_night, cons_night, cons_day):
+            if val > 0:
+                ax.text(
+                    bar.get_x() + bar.get_width() / 2.0,
+                    base + val / 2.0,
+                    f'{val:.2f}',
+                    ha='center', va='center', fontsize=7, color='white'
+                )
+        # Numeric labels on the Achat area (under the bar group)
+        for xi, val in zip(x, achat):
+            if val < 0:
+                ax.text(
+                    xi, val - 2.0,
+                    f'{val:.2f}',
+                    ha='center', va='top', fontsize=7, color='#B95860'
+                )
+
+        # Axes / styling
+        ax.set_xticks(x)
+        ax.set_xticklabels(months, rotation=0, fontsize=8)
+        ax.set_ylabel('kWh', fontsize=10)
+        ax.axhline(0, color='#9e9e9e', linewidth=0.8)
+        ax.grid(axis='y', alpha=0.3)
+        for spine in ('top', 'right', 'bottom', 'left'):
+            ax.spines[spine].set_visible(False)
+
+        # Legend on top, two rows
+        ax.legend(
+            loc='upper center', bbox_to_anchor=(0.5, 1.18),
+            ncol=3, frameon=False, fontsize=9
+        )
 
         plt.tight_layout()
 
