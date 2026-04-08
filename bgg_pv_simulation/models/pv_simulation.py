@@ -251,6 +251,10 @@ class PvSimulation(models.Model):
         string='Production vs Consumption Chart',
         help='PNG: Daily production vs consumption with bilan/revente/achat overlays'
     )
+    chart_energy_balance = fields.Binary(
+        string='Energy Balance Donut',
+        help='PNG: Annual energy balance donut — Production (Autoconso + Vente) vs Consommation (Autoconso + Achat)'
+    )
 
     # Regeneration tracking
     simulation_needs_regeneration = fields.Boolean(
@@ -930,6 +934,13 @@ class PvSimulation(models.Model):
                     f"Failed to generate production-vs-consumption chart for {record.name}: {e}"
                 )
 
+            try:
+                record.chart_energy_balance = record._generate_energy_balance_chart()
+            except Exception as e:
+                _logger.error(
+                    f"Failed to generate energy balance chart for {record.name}: {e}"
+                )
+
     def _generate_monthly_production_chart(self):
         """Chart 1: Monthly daily production bar chart"""
         import matplotlib.pyplot as plt
@@ -1087,6 +1098,140 @@ class PvSimulation(models.Model):
         ax.legend(
             loc='upper center', bbox_to_anchor=(0.5, 1.18),
             ncol=3, frameon=False, fontsize=9
+        )
+
+        plt.tight_layout()
+
+        buffer = io.BytesIO()
+        plt.savefig(buffer, format='png', dpi=150, bbox_inches='tight',
+                    facecolor='white', edgecolor='none', transparent=False)
+        plt.close()
+
+        return base64.b64encode(buffer.getvalue())
+
+    def _generate_energy_balance_chart(self):
+        """Chart 3: annual energy balance dual donut.
+
+        - Outer ring  = Production       → Autoconso (teal) + Vente (yellow)
+        - Inner ring  = Consommation     → Autoconso (teal) + Achat (pink)
+        - Black inner disk in the centre carries the Consommation total.
+        """
+        import matplotlib.pyplot as plt
+        import io
+        import base64
+
+        results = self.monthly_result_ids
+        if not results:
+            return False
+
+        prod_total = (
+            self.pvgis_annual_production_kwh
+            or self.annual_production_kwh
+            or sum(results.mapped('monthly_production_kwh'))
+            or 0.0
+        )
+        conso_total = sum(results.mapped('monthly_consumption_kwh')) or 0.0
+        autocons_total = sum(results.mapped('monthly_autoconsumption_kwh')) or 0.0
+        vente_total = sum(results.mapped('monthly_energy_sold_kwh')) or 0.0
+        achat_total = sum(results.mapped('monthly_energy_bought_kwh')) or 0.0
+
+        if prod_total <= 0 and conso_total <= 0:
+            return False
+
+        # Colour palette aligned with the legend in the reference image.
+        color_production = '#3FA9E0'  # blue (label/legend only)
+        color_autoconso = '#46BFA9'   # teal
+        color_vente = '#F7C948'       # yellow
+        color_achat = '#F26B7A'       # pink
+        color_consommation = '#111111'  # near-black centre disk
+        white = '#FFFFFF'
+
+        def _fmt(val):
+            return f'{val:,.2f}'
+
+        fig, ax = plt.subplots(figsize=(8, 8))
+        ax.set_aspect('equal')
+
+        # Outer donut: production breakdown.
+        outer_sizes = [autocons_total, vente_total]
+        outer_colors = [color_autoconso, color_vente]
+        outer_wedges, _ = ax.pie(
+            outer_sizes,
+            colors=outer_colors,
+            radius=1.0,
+            startangle=90,
+            counterclock=False,
+            wedgeprops=dict(width=0.32, edgecolor=white, linewidth=2),
+        )
+
+        # Inner donut: consumption breakdown.
+        inner_sizes = [autocons_total, achat_total]
+        inner_colors = [color_autoconso, color_achat]
+        inner_wedges, _ = ax.pie(
+            inner_sizes,
+            colors=inner_colors,
+            radius=0.66,
+            startangle=90,
+            counterclock=False,
+            wedgeprops=dict(width=0.30, edgecolor=white, linewidth=2),
+        )
+
+        # Black solid disk in the centre with the Consommation total.
+        ax.add_artist(plt.Circle((0, 0), 0.34, color=color_consommation, zorder=3))
+        ax.text(
+            0, 0, _fmt(conso_total),
+            ha='center', va='center',
+            color='white', fontsize=12, fontweight='bold', zorder=4,
+        )
+        ax.text(
+            0, -0.05, '',
+            ha='center', va='center',
+        )
+
+        # External annotations next to each wedge, coloured to match the slice.
+        def _annotate_wedge(wedge, value, color):
+            angle = (wedge.theta2 + wedge.theta1) / 2.0
+            import math
+            rad = math.radians(angle)
+            x = math.cos(rad) * (wedge.r + 0.05)
+            y = math.sin(rad) * (wedge.r + 0.05)
+            ha = 'left' if x >= 0 else 'right'
+            ax.text(
+                x, y, _fmt(value),
+                ha=ha, va='center',
+                color=color, fontsize=11, fontweight='bold',
+            )
+
+        # Outer ring labels.
+        _annotate_wedge(outer_wedges[0], autocons_total, color_autoconso)
+        if vente_total > 0:
+            _annotate_wedge(outer_wedges[1], vente_total, color_vente)
+        # Inner ring label for Achat (Autoconso label is already shown on the
+        # outer ring at the same angular position).
+        if achat_total > 0:
+            _annotate_wedge(inner_wedges[1], achat_total, color_achat)
+
+        # Production total annotation, placed below the donut so it does not
+        # collide with the slice labels.
+        ax.text(
+            0, -1.18, _fmt(prod_total),
+            ha='center', va='center',
+            color=color_production, fontsize=12, fontweight='bold',
+        )
+
+        # Custom legend matching the reference image (5 entries on two rows).
+        from matplotlib.patches import Patch
+        legend_handles = [
+            Patch(facecolor=color_production, label='Production'),
+            Patch(facecolor=color_autoconso, label='Autoconso'),
+            Patch(facecolor=color_vente, label='Vente'),
+            Patch(facecolor=color_achat, label='Achat'),
+            Patch(facecolor=color_consommation, label='Consommation'),
+        ]
+        ax.legend(
+            handles=legend_handles,
+            loc='upper center', bbox_to_anchor=(0.5, 1.12),
+            ncol=3, frameon=False, fontsize=11,
         )
 
         plt.tight_layout()
