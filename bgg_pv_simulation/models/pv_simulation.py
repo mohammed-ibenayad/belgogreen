@@ -1038,15 +1038,15 @@ class PvSimulation(models.Model):
             label='Revente (kWh)'
         )
 
-        # Numeric labels inside the production bars (centered vertically)
+        # Numeric labels above the production bars in black so they don't
+        # overlap with the consumption stack labels sitting inside the bars.
         for bar, val in zip(bars_prod, production):
             if val > 0:
                 ax.text(
                     bar.get_x() + bar.get_width() / 2.0,
-                    bar.get_height() / 2.0,
+                    bar.get_height() + 1.5,
                     f'{val:.2f}',
-                    ha='center', va='center', fontsize=7, color='white',
-                    fontweight='bold',
+                    ha='center', va='bottom', fontsize=7, color='#212121',
                 )
         # Numeric labels inside the consumption stacks
         for bar, val in zip(bars_day, cons_day):
