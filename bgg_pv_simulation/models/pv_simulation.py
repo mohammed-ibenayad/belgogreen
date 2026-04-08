@@ -1110,13 +1110,22 @@ class PvSimulation(models.Model):
         return base64.b64encode(buffer.getvalue())
 
     def _generate_energy_balance_chart(self):
-        """Chart 3: annual energy balance dual donut.
+        """Chart 3: annual energy balance tri-layer donut.
 
-        - Outer ring  = Production       → Autoconso (teal) + Vente (yellow)
-        - Inner ring  = Consommation     → Autoconso (teal) + Achat (pink)
-        - Black inner disk in the centre carries the Consommation total.
+        Three concentric layers that all share the same angular
+        segmentation [Autoconso, Vente, Achat] so the pieces line up:
+
+        - Outer ring  = Production arc (blue). Left OPEN at the Achat
+          angle — the gap visualises the energy the customer had to buy
+          instead of produce on site.
+        - Middle ring = total energy flow, split into three colours:
+          Autoconso (teal), Vente (yellow), Achat (pink). Full circle.
+        - Inner disk  = Consommation (black) with the Vente wedge CUT
+          OUT (sold energy is not consumed).
         """
+        import math
         import matplotlib.pyplot as plt
+        from matplotlib.patches import Patch
         import io
         import base64
 
@@ -1135,15 +1144,17 @@ class PvSimulation(models.Model):
         vente_total = sum(results.mapped('monthly_energy_sold_kwh')) or 0.0
         achat_total = sum(results.mapped('monthly_energy_bought_kwh')) or 0.0
 
-        if prod_total <= 0 and conso_total <= 0:
+        # Common angular reference: total energy flow through the system.
+        total_angle_ref = autocons_total + vente_total + achat_total
+        if total_angle_ref <= 0:
             return False
 
         # Colour palette aligned with the legend in the reference image.
-        color_production = '#3FA9E0'  # blue (label/legend only)
-        color_autoconso = '#46BFA9'   # teal
-        color_vente = '#F7C948'       # yellow
-        color_achat = '#F26B7A'       # pink
-        color_consommation = '#111111'  # near-black centre disk
+        color_production = '#3FA9E0'    # blue outer arc + label
+        color_autoconso = '#46BFA9'     # teal
+        color_vente = '#F7C948'         # yellow
+        color_achat = '#F26B7A'         # pink
+        color_consommation = '#111111'  # near-black inner disk
         white = '#FFFFFF'
 
         def _fmt(val):
@@ -1152,75 +1163,88 @@ class PvSimulation(models.Model):
         fig, ax = plt.subplots(figsize=(8, 8))
         ax.set_aspect('equal')
 
-        # Outer donut: production breakdown.
-        outer_sizes = [autocons_total, vente_total]
-        outer_colors = [color_autoconso, color_vente]
+        # All three layers share this segment order so their angles line up.
+        segment_values = [autocons_total, vente_total, achat_total]
+
+        # ----- Layer 1: outer Production arc (Autoconso+Vente = Production,
+        # Achat angle left as an open gap) -----
         outer_wedges, _ = ax.pie(
-            outer_sizes,
-            colors=outer_colors,
+            segment_values,
+            colors=[color_production, color_production, white],
             radius=1.0,
             startangle=90,
             counterclock=False,
-            wedgeprops=dict(width=0.32, edgecolor=white, linewidth=2),
+            wedgeprops=dict(width=0.22, edgecolor=white, linewidth=2),
         )
+        # Hide the Achat gap edge so it reads as an opening, not a wedge.
+        outer_wedges[2].set_linewidth(0)
+        outer_wedges[2].set_edgecolor('none')
 
-        # Inner donut: consumption breakdown.
-        inner_sizes = [autocons_total, achat_total]
-        inner_colors = [color_autoconso, color_achat]
-        inner_wedges, _ = ax.pie(
-            inner_sizes,
-            colors=inner_colors,
-            radius=0.66,
+        # ----- Layer 2: middle breakdown (three colours) -----
+        middle_wedges, _ = ax.pie(
+            segment_values,
+            colors=[color_autoconso, color_vente, color_achat],
+            radius=0.76,
             startangle=90,
             counterclock=False,
-            wedgeprops=dict(width=0.30, edgecolor=white, linewidth=2),
+            wedgeprops=dict(width=0.22, edgecolor=white, linewidth=2),
         )
 
-        # Black solid disk in the centre with the Consommation total.
-        ax.add_artist(plt.Circle((0, 0), 0.34, color=color_consommation, zorder=3))
-        ax.text(
-            0, 0, _fmt(conso_total),
-            ha='center', va='center',
-            color='white', fontsize=12, fontweight='bold', zorder=4,
+        # ----- Layer 3: inner Consommation disk (full pie) with Vente
+        # wedge cut out (painted white) -----
+        inner_wedges, _ = ax.pie(
+            segment_values,
+            colors=[color_consommation, white, color_consommation],
+            radius=0.50,
+            startangle=90,
+            counterclock=False,
+            wedgeprops=dict(width=0.50, edgecolor=white, linewidth=2),
         )
-        ax.text(
-            0, -0.05, '',
-            ha='center', va='center',
-        )
+        inner_wedges[1].set_linewidth(0)
+        inner_wedges[1].set_edgecolor('none')
 
-        # External annotations next to each wedge, coloured to match the slice.
-        def _annotate_wedge(wedge, value, color):
+        # Helper: place a label near a wedge's mid-angle.
+        def _label_wedge(wedge, value, color, radial_offset=0.08, ha_hint=None):
             angle = (wedge.theta2 + wedge.theta1) / 2.0
-            import math
             rad = math.radians(angle)
-            x = math.cos(rad) * (wedge.r + 0.05)
-            y = math.sin(rad) * (wedge.r + 0.05)
-            ha = 'left' if x >= 0 else 'right'
+            x = math.cos(rad) * (wedge.r + radial_offset)
+            y = math.sin(rad) * (wedge.r + radial_offset)
+            ha = ha_hint if ha_hint else ('left' if x >= 0 else 'right')
             ax.text(
                 x, y, _fmt(value),
                 ha=ha, va='center',
                 color=color, fontsize=11, fontweight='bold',
             )
 
-        # Outer ring labels.
-        _annotate_wedge(outer_wedges[0], autocons_total, color_autoconso)
+        # Middle-ring value labels (these are the numbers the user reads).
+        _label_wedge(
+            middle_wedges[0], autocons_total, color_autoconso,
+            radial_offset=-0.02, ha_hint='center',
+        )
         if vente_total > 0:
-            _annotate_wedge(outer_wedges[1], vente_total, color_vente)
-        # Inner ring label for Achat (Autoconso label is already shown on the
-        # outer ring at the same angular position).
+            _label_wedge(
+                middle_wedges[1], vente_total, color_vente,
+                radial_offset=-0.02, ha_hint='center',
+            )
         if achat_total > 0:
-            _annotate_wedge(inner_wedges[1], achat_total, color_achat)
+            _label_wedge(
+                middle_wedges[2], achat_total, color_achat,
+                radial_offset=-0.02, ha_hint='center',
+            )
 
-        # Production total annotation, placed below the donut so it does not
-        # collide with the slice labels.
+        # Production total label placed just outside the blue outer arc.
+        _label_wedge(outer_wedges[0], prod_total, color_production, radial_offset=0.06)
+
+        # Consommation total inside the black disk. Centre it over the
+        # black region (between Autoconso and Achat), slightly shifted
+        # away from the Vente cut-out.
         ax.text(
-            0, -1.18, _fmt(prod_total),
-            ha='center', va='center',
-            color=color_production, fontsize=12, fontweight='bold',
+            0.05, 0, _fmt(conso_total),
+            ha='left', va='center',
+            color='white', fontsize=11, fontweight='bold', zorder=5,
         )
 
-        # Custom legend matching the reference image (5 entries on two rows).
-        from matplotlib.patches import Patch
+        # 5-entry legend across the top of the figure.
         legend_handles = [
             Patch(facecolor=color_production, label='Production'),
             Patch(facecolor=color_autoconso, label='Autoconso'),
