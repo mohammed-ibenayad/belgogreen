@@ -122,6 +122,17 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             except Exception as e:
                 _logger.warning(f"Could not generate chart: {e}")
 
+        # Production vs Consommation chart — same fallback pattern: prefer
+        # the cached binary, otherwise build it on the fly from matplotlib.
+        prod_vs_cons_chart_data = _make_data_uri(simulation.chart_production_vs_consumption)
+        if not prod_vs_cons_chart_data and simulation.monthly_result_ids:
+            try:
+                b64 = simulation._generate_production_vs_consumption_chart()
+                if b64:
+                    prod_vs_cons_chart_data = f"data:image/png;base64,{b64.decode() if isinstance(b64, bytes) else b64}"
+            except Exception as e:
+                _logger.warning(f"Could not generate production-vs-consumption chart: {e}")
+
         # Text fields
         cover_title = _esc(simulation.cover_title or 'Votre installation')
         cover_subtitle = _esc(simulation.cover_subtitle or 'Photovoltaïque')
@@ -630,6 +641,17 @@ class PvSimulationWeasyPrint(models.AbstractModel):
                 {financial_rows}
             </tbody>
         </table>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- PAGE 7: PRODUCTION VS CONSOMMATION (chart)   -->
+    <!-- ============================================ -->
+    <div class="page content-page">
+        <div class="section">
+            <div class="section-number">06</div>
+            <h2 class="section-title">PRODUCTION VS CONSOMMATION</h2>
+        </div>
+        {f'<div class="chart-container"><img src="{prod_vs_cons_chart_data}" alt="Production vs Consommation" class="chart-img"></div>' if prod_vs_cons_chart_data else ''}
     </div>
 </body>
 </html>"""
