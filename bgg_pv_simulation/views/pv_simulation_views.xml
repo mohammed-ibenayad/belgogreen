@@ -101,18 +101,6 @@
                                     </div>
                                     <field name="annual_production_kwh" invisible="1"/>
                                     <field name="max_panels_count" invisible="1"/>
-                                </group>
-                                <group string="Configuration des panneaux">
-                                    <label for="orientation_deg" string="Orientation"/>
-                                    <div class="o_row">
-                                        <field name="orientation_deg" class="o_field_highlight"/>
-                                        <span>° (0=Sud)</span>
-                                    </div>
-                                    <label for="tilt_deg" string="Inclinaison"/>
-                                    <div class="o_row">
-                                        <field name="tilt_deg" class="o_field_highlight"/>
-                                        <span>°</span>
-                                    </div>
                                     <field name="number_of_panels" readonly="1" string="Nombre de panneaux"/>
                                     <label for="panel_unit_power_wc" string="Puissance unitaire"/>
                                     <div class="o_row">
@@ -133,6 +121,18 @@
                                     <div class="o_row">
                                         <field name="battery_efficiency" readonly="1"/>
                                         <span>%</span>
+                                    </div>
+                                </group>
+                                <group string="Configuration des panneaux">
+                                    <label for="orientation_deg" string="Orientation"/>
+                                    <div class="o_row">
+                                        <field name="orientation_deg" class="o_field_highlight"/>
+                                        <span>° (0=Sud)</span>
+                                    </div>
+                                    <label for="tilt_deg" string="Inclinaison"/>
+                                    <div class="o_row">
+                                        <field name="tilt_deg" class="o_field_highlight"/>
+                                        <span>°</span>
                                     </div>
                                     <div colspan="2" class="pv_note_box mt-2">
                                         <strong>Comment lire l'orientation ?</strong>
