@@ -424,17 +424,17 @@
                                     <label for="purchase_price_kwh" string="Prix d'achat"/>
                                     <div class="o_row">
                                         <field name="purchase_price_kwh" class="o_field_highlight" nolabel="1"/>
-                                        <span>€/kWh</span>
+                                        <span>/kWh</span>
                                     </div>
                                     <label for="feed_in_tariff_kwh" string="Tarif de revente"/>
                                     <div class="o_row">
                                         <field name="feed_in_tariff_kwh" class="o_field_highlight" nolabel="1"/>
-                                        <span>€/kWh</span>
+                                        <span>/kWh</span>
                                     </div>
                                     <label for="battery_cost_kwh" string="Coût batterie"/>
                                     <div class="o_row">
                                         <field name="battery_cost_kwh" class="o_field_highlight" nolabel="1"/>
-                                        <span>€/kWh</span>
+                                        <span>/kWh</span>
                                     </div>
                                 </group>
                                 <group>
