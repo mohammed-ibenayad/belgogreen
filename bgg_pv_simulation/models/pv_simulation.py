@@ -810,9 +810,8 @@ class PvSimulation(models.Model):
         # Fetch solar data from APIs (force update to replace existing values)
         self.action_fetch_solar_data(force_update=True)
 
-        # Recalculate monthly results and charts
+        # Recalculate monthly results
         self._compute_monthly_results()
-        self._generate_charts()
 
         # Restore saved consumption values to the newly created monthly results
         if saved_consumption:
@@ -820,8 +819,13 @@ class PvSimulation(models.Model):
                 if result.month in saved_consumption:
                     result.write(saved_consumption[result.month])
 
-        # Compute daily energy balance (Charge, Vente, Achat)
+        # Compute daily energy balance (Charge, Vente, Achat) BEFORE charts
+        # so the Production vs Consommation chart can read the freshly
+        # written daily_energy_sold_kwh / daily_energy_bought_kwh values.
         self.action_compute_daily_balance()
+
+        # Now build the chart images from the up-to-date monthly results.
+        self._generate_charts()
 
         # Clear regeneration flag
         self.simulation_needs_regeneration = False
