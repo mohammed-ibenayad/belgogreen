@@ -270,19 +270,19 @@ class PvSimulation(models.Model):
     )
     purchase_price_kwh = fields.Float(
         string="Prix d'achat (€/kWh)",
-        digits=(8, 4),
+        digits=(8, 2),
         help="Prix d'achat de l'électricité au réseau (P_buy). "
              "Pré-rempli depuis le profil tarifaire, modifiable par simulation."
     )
     feed_in_tariff_kwh = fields.Float(
         string='Tarif de revente (€/kWh)',
-        digits=(8, 4),
+        digits=(8, 2),
         help="Tarif de revente du surplus PV au réseau (P_sell). "
              "Pré-rempli depuis le profil tarifaire, modifiable par simulation."
     )
     battery_cost_kwh = fields.Float(
         string="Coût batterie (€/kWh)",
-        digits=(8, 4),
+        digits=(8, 2),
         help="Coût d'usure par kWh cyclé dans la batterie (P_batt). "
              "Pré-rempli depuis le profil tarifaire, modifiable par simulation."
     )
