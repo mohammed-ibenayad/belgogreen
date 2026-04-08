@@ -93,6 +93,15 @@
                         <!-- ==================== Système PV ==================== -->
                         <page string="Système PV" name="pv_system">
                             <group>
+                                <group string="Production">
+                                    <label for="pvgis_annual_production_kwh" string="Production annuelle (PVGIS)"/>
+                                    <div class="o_row">
+                                        <field name="pvgis_annual_production_kwh" class="o_field_highlight"/>
+                                        <span>kWh</span>
+                                    </div>
+                                    <field name="annual_production_kwh" invisible="1"/>
+                                    <field name="max_panels_count" invisible="1"/>
+                                </group>
                                 <group string="Configuration des panneaux">
                                     <label for="orientation_deg" string="Orientation"/>
                                     <div class="o_row">
@@ -125,15 +134,6 @@
                                         <field name="battery_efficiency" readonly="1"/>
                                         <span>%</span>
                                     </div>
-                                </group>
-                                <group string="Production">
-                                    <label for="pvgis_annual_production_kwh" string="Production annuelle (PVGIS)"/>
-                                    <div class="o_row">
-                                        <field name="pvgis_annual_production_kwh" class="o_field_highlight"/>
-                                        <span>kWh</span>
-                                    </div>
-                                    <field name="annual_production_kwh" invisible="1"/>
-                                    <field name="max_panels_count" invisible="1"/>
                                     <div colspan="2" class="pv_note_box mt-2">
                                         <strong>Comment lire l'orientation ?</strong>
                                         <p class="mb-1 mt-2">
@@ -423,18 +423,18 @@
                                            options="{'no_create': False, 'no_open': False}"/>
                                     <label for="purchase_price_kwh" string="Prix d'achat"/>
                                     <div class="o_row">
-                                        <field name="purchase_price_kwh" class="o_field_highlight" nolabel="1"/>
-                                        <span>/kWh</span>
+                                        <field name="purchase_price_kwh" class="o_field_highlight"/>
+                                        <span>€/kWh</span>
                                     </div>
                                     <label for="feed_in_tariff_kwh" string="Tarif de revente"/>
                                     <div class="o_row">
-                                        <field name="feed_in_tariff_kwh" class="o_field_highlight" nolabel="1"/>
-                                        <span>/kWh</span>
+                                        <field name="feed_in_tariff_kwh" class="o_field_highlight"/>
+                                        <span>€/kWh</span>
                                     </div>
                                     <label for="battery_cost_kwh" string="Coût batterie"/>
                                     <div class="o_row">
-                                        <field name="battery_cost_kwh" class="o_field_highlight" nolabel="1"/>
-                                        <span>/kWh</span>
+                                        <field name="battery_cost_kwh" class="o_field_highlight"/>
+                                        <span>€/kWh</span>
                                     </div>
                                 </group>
                                 <group>

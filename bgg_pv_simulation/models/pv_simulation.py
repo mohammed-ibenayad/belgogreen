@@ -268,21 +268,21 @@ class PvSimulation(models.Model):
              'sont copiées sur la simulation et peuvent être modifiées sans '
              'impacter le profil de référence.'
     )
-    purchase_price_kwh = fields.Monetary(
+    purchase_price_kwh = fields.Float(
         string="Prix d'achat (€/kWh)",
-        currency_field='currency_id',
+        digits=(8, 4),
         help="Prix d'achat de l'électricité au réseau (P_buy). "
              "Pré-rempli depuis le profil tarifaire, modifiable par simulation."
     )
-    feed_in_tariff_kwh = fields.Monetary(
+    feed_in_tariff_kwh = fields.Float(
         string='Tarif de revente (€/kWh)',
-        currency_field='currency_id',
+        digits=(8, 4),
         help="Tarif de revente du surplus PV au réseau (P_sell). "
              "Pré-rempli depuis le profil tarifaire, modifiable par simulation."
     )
-    battery_cost_kwh = fields.Monetary(
+    battery_cost_kwh = fields.Float(
         string="Coût batterie (€/kWh)",
-        currency_field='currency_id',
+        digits=(8, 4),
         help="Coût d'usure par kWh cyclé dans la batterie (P_batt). "
              "Pré-rempli depuis le profil tarifaire, modifiable par simulation."
     )
