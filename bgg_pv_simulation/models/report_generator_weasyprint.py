@@ -133,6 +133,16 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             except Exception as e:
                 _logger.warning(f"Could not generate production-vs-consumption chart: {e}")
 
+        # Annual energy balance donut chart — same fallback pattern.
+        energy_balance_chart_data = _make_data_uri(simulation.chart_energy_balance)
+        if not energy_balance_chart_data and simulation.monthly_result_ids:
+            try:
+                b64 = simulation._generate_energy_balance_chart()
+                if b64:
+                    energy_balance_chart_data = f"data:image/png;base64,{b64.decode() if isinstance(b64, bytes) else b64}"
+            except Exception as e:
+                _logger.warning(f"Could not generate energy balance chart: {e}")
+
         # Text fields
         cover_title = _esc(simulation.cover_title or 'Votre installation')
         cover_subtitle = _esc(simulation.cover_subtitle or 'Photovoltaïque')
@@ -652,6 +662,17 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             <h2 class="section-title">PRODUCTION VS CONSOMMATION</h2>
         </div>
         {f'<div class="chart-container"><img src="{prod_vs_cons_chart_data}" alt="Production vs Consommation" class="chart-img"></div>' if prod_vs_cons_chart_data else ''}
+    </div>
+
+    <!-- ============================================ -->
+    <!-- PAGE 8: BILAN ÉNERGÉTIQUE ANNUEL (donut)     -->
+    <!-- ============================================ -->
+    <div class="page content-page">
+        <div class="section">
+            <div class="section-number">07</div>
+            <h2 class="section-title">BILAN \u00c9NERG\u00c9TIQUE ANNUEL</h2>
+        </div>
+        {f'<div class="chart-container"><img src="{energy_balance_chart_data}" alt="Bilan énergétique annuel" class="chart-img"></div>' if energy_balance_chart_data else ''}
     </div>
 </body>
 </html>"""
