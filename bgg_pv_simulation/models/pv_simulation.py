@@ -1034,14 +1034,16 @@ class PvSimulation(models.Model):
             label='Revente (kWh)'
         )
 
-        # Numeric labels on the production bars (top)
+        # Numeric labels inside the production bars (centered vertically)
         for bar, val in zip(bars_prod, production):
-            ax.text(
-                bar.get_x() + bar.get_width() / 2.0,
-                bar.get_height() + 1.5,
-                f'{val:.2f}',
-                ha='center', va='bottom', fontsize=7
-            )
+            if val > 0:
+                ax.text(
+                    bar.get_x() + bar.get_width() / 2.0,
+                    bar.get_height() / 2.0,
+                    f'{val:.2f}',
+                    ha='center', va='center', fontsize=7, color='white',
+                    fontweight='bold',
+                )
         # Numeric labels inside the consumption stacks
         for bar, val in zip(bars_day, cons_day):
             if val > 0:
