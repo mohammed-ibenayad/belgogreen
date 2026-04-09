@@ -109,9 +109,16 @@ class PvSimulationWeasyPrint(models.AbstractModel):
 
         # Encode images
         logo_data = _make_data_uri(company.logo)
-        cover_photo_data = _make_data_uri(simulation.cover_photo)
+        # Fallback to shared report defaults when the simulation has no
+        # per-record image.  The defaults are company-independent.
+        report_defaults = self.env['pv.report.defaults'].get_defaults()
+        cover_photo_data = _make_data_uri(
+            simulation.cover_photo or report_defaults.default_cover_photo
+        )
         location_image_data = _make_data_uri(simulation.location_image)
-        system_image_data = _make_data_uri(simulation.system_image)
+        system_image_data = _make_data_uri(
+            simulation.system_image or report_defaults.default_system_image
+        )
         chart_data = _make_data_uri(simulation.chart_monthly_production)
 
         if not chart_data and simulation.monthly_result_ids:

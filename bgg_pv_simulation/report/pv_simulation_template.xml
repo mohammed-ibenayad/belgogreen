@@ -645,7 +645,8 @@
         <template id="report_pv_simulation_page_cover">
             <div class="pv-cover" style="page-break-after: always;">
                 <!-- Full-bleed photo with dark overlay + fade -->
-                <t t-set="effective_cover_photo" t-value="o.cover_photo or o.company_id.pv_default_cover_photo"/>
+                <t t-set="pv_defaults" t-value="env['pv.report.defaults'].get_defaults()"/>
+                <t t-set="effective_cover_photo" t-value="o.cover_photo or pv_defaults.default_cover_photo"/>
                 <div class="pv-cover-photo-wrap">
                     <img t-if="effective_cover_photo"
                          t-att-src="'data:image/png;base64,%s' % effective_cover_photo.decode()"
@@ -807,7 +808,7 @@
                         </td>
                     </tr>
                 </table>
-                <t t-set="effective_system_image" t-value="o.system_image or o.company_id.pv_default_system_image"/>
+                <t t-set="effective_system_image" t-value="o.system_image or pv_defaults.default_system_image"/>
                 <div t-if="effective_system_image" class="pv-system-image-wrap">
                     <img t-att-src="'data:image/png;base64,%s' % effective_system_image.decode()"
                          class="pv-system-image"/>
