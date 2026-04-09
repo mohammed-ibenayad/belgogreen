@@ -1141,8 +1141,14 @@ class PvSimulation(models.Model):
         )
         conso_total = sum(results.mapped('monthly_consumption_kwh')) or 0.0
         autocons_total = sum(results.mapped('monthly_autoconsumption_kwh')) or 0.0
-        vente_total = sum(results.mapped('monthly_energy_sold_kwh')) or 0.0
-        achat_total = sum(results.mapped('monthly_energy_bought_kwh')) or 0.0
+
+        # Derive Vente and Achat so the donut is mathematically closed:
+        #   Production = Autoconso + Vente   (what we did with our production)
+        #   Consommation = Autoconso + Achat (where our consumption came from)
+        # Using the raw monthly_energy_sold/bought fields would leave a gap
+        # because the model only tracks nighttime grid purchases as "Achat".
+        vente_total = max(0.0, prod_total - autocons_total)
+        achat_total = max(0.0, conso_total - autocons_total)
 
         # Common angular reference: total energy flow through the system.
         total_angle_ref = autocons_total + vente_total + achat_total
@@ -1204,12 +1210,16 @@ class PvSimulation(models.Model):
         inner_wedges[1].set_linewidth(0)
         inner_wedges[1].set_edgecolor('none')
 
-        # Helper: place a label near a wedge's mid-angle.
+        # Helper: place a label at the mid-angle of a wedge.
         def _label_wedge(wedge, value, color, radial_offset=0.08, ha_hint=None):
             angle = (wedge.theta2 + wedge.theta1) / 2.0
             rad = math.radians(angle)
-            x = math.cos(rad) * (wedge.r + radial_offset)
-            y = math.sin(rad) * (wedge.r + radial_offset)
+            # Place the label at the mid-radius of the wedge (inside the
+            # visible ring) rather than offset from the outer edge.
+            mid_r = wedge.r - (wedge.width / 2.0) if hasattr(wedge, 'width') else wedge.r
+            r = mid_r + radial_offset
+            x = math.cos(rad) * r
+            y = math.sin(rad) * r
             ha = ha_hint if ha_hint else ('left' if x >= 0 else 'right')
             ax.text(
                 x, y, _fmt(value),
@@ -1218,23 +1228,23 @@ class PvSimulation(models.Model):
             )
 
         # Middle-ring value labels — all in black for readability.
-        _label_wedge(
-            middle_wedges[0], autocons_total, label_color,
-            radial_offset=-0.02, ha_hint='center',
-        )
+        # Each label sits at the centre of its own wedge.
+        _label_wedge(middle_wedges[0], autocons_total, label_color, radial_offset=0, ha_hint='center')
         if vente_total > 0:
-            _label_wedge(
-                middle_wedges[1], vente_total, label_color,
-                radial_offset=-0.02, ha_hint='center',
-            )
+            _label_wedge(middle_wedges[1], vente_total, label_color, radial_offset=0, ha_hint='center')
         if achat_total > 0:
-            _label_wedge(
-                middle_wedges[2], achat_total, label_color,
-                radial_offset=-0.02, ha_hint='center',
-            )
+            _label_wedge(middle_wedges[2], achat_total, label_color, radial_offset=0, ha_hint='center')
 
-        # Production total label placed just outside the outer arc.
-        _label_wedge(outer_wedges[0], prod_total, label_color, radial_offset=0.06)
+        # Production total outside the outer arc, below the donut.
+        prod_wedge = outer_wedges[0]
+        prod_angle = (prod_wedge.theta2 + prod_wedge.theta1) / 2.0
+        prod_rad = math.radians(prod_angle)
+        ax.text(
+            math.cos(prod_rad) * 1.12, math.sin(prod_rad) * 1.12,
+            _fmt(prod_total),
+            ha='center', va='center',
+            color=label_color, fontsize=12, fontweight='bold',
+        )
 
         # Consommation total inside the black disk — white so it shows
         # against the dark background.
