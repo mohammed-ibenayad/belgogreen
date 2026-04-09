@@ -654,15 +654,17 @@ class PvSimulationWeasyPrint(models.AbstractModel):
     </div>
 
     <!-- ============================================ -->
-    <!-- PAGE 7: PRODUCTION VS CONSOMMATION (chart)   -->
+    <!-- PAGE 7: BILAN ANNUEL (charts)                -->
     <!-- ============================================ -->
     <div class="page content-page">
         <div class="section">
             <div class="section-number">06</div>
-            <h2 class="section-title">PRODUCTION VS CONSOMMATION</h2>
+            <h2 class="section-title">BILAN ANNUEL</h2>
         </div>
+        <h3 class="section-subtitle">Production vs Consommation</h3>
         {f'<div class="chart-container"><img src="{prod_vs_cons_chart_data}" alt="Production vs Consommation" class="chart-img"></div>' if prod_vs_cons_chart_data else ''}
-        {f'<div class="chart-container" style="margin-top:10px;"><img src="{energy_balance_chart_data}" alt="Bilan énergétique annuel" class="chart-img" style="max-width:60%;margin:0 auto;display:block;"></div>' if energy_balance_chart_data else ''}
+        <h3 class="section-subtitle" style="margin-top:12px;">R\u00e9partition \u00e9nerg\u00e9tique</h3>
+        {f'<div class="chart-container" style="margin-top:4px;"><img src="{energy_balance_chart_data}" alt="Répartition énergétique" class="chart-img" style="max-width:55%;margin:0 auto;display:block;"></div>' if energy_balance_chart_data else ''}
     </div>
 </body>
 </html>"""
