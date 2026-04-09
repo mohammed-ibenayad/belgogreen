@@ -13,12 +13,12 @@ class PvReportDefaults(models.Model):
         string='Photo de couverture par défaut',
         help='Photo utilisée par défaut sur la page de couverture du rapport PDF.',
     )
-    default_cover_photo_filename = fields.Char(string='Filename')
+    default_cover_photo_filename = fields.Char(string='Cover Photo Filename')
     default_system_image = fields.Binary(
         string='Image système par défaut',
         help='Image utilisée par défaut pour les caractéristiques du système dans le rapport PDF.',
     )
-    default_system_image_filename = fields.Char(string='Filename')
+    default_system_image_filename = fields.Char(string='System Image Filename')
 
     @api.model
     def get_defaults(self):
