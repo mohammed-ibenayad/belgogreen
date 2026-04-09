@@ -1149,13 +1149,14 @@ class PvSimulation(models.Model):
         if total_angle_ref <= 0:
             return False
 
-        # Colour palette aligned with the legend in the reference image.
-        color_production = '#3FA9E0'    # blue outer arc + label
-        color_autoconso = '#46BFA9'     # teal
-        color_vente = '#F7C948'         # yellow
-        color_achat = '#F26B7A'         # pink
+        # Colour palette consistent with the Production vs Consommation bar chart.
+        color_production = '#A8C947'    # lime green (production bars)
+        color_autoconso = '#1F6C6C'     # dark teal (conso nuit / revente line)
+        color_vente = '#F39C12'         # orange (bilan line)
+        color_achat = '#F8C9CA'         # light pink (achat area)
         color_consommation = '#111111'  # near-black inner disk
         white = '#FFFFFF'
+        label_color = '#212121'         # all numeric labels in black
 
         def _fmt(val):
             return f'{val:,.2f}'
@@ -1216,28 +1217,27 @@ class PvSimulation(models.Model):
                 color=color, fontsize=11, fontweight='bold',
             )
 
-        # Middle-ring value labels (these are the numbers the user reads).
+        # Middle-ring value labels — all in black for readability.
         _label_wedge(
-            middle_wedges[0], autocons_total, color_autoconso,
+            middle_wedges[0], autocons_total, label_color,
             radial_offset=-0.02, ha_hint='center',
         )
         if vente_total > 0:
             _label_wedge(
-                middle_wedges[1], vente_total, color_vente,
+                middle_wedges[1], vente_total, label_color,
                 radial_offset=-0.02, ha_hint='center',
             )
         if achat_total > 0:
             _label_wedge(
-                middle_wedges[2], achat_total, color_achat,
+                middle_wedges[2], achat_total, label_color,
                 radial_offset=-0.02, ha_hint='center',
             )
 
-        # Production total label placed just outside the blue outer arc.
-        _label_wedge(outer_wedges[0], prod_total, color_production, radial_offset=0.06)
+        # Production total label placed just outside the outer arc.
+        _label_wedge(outer_wedges[0], prod_total, label_color, radial_offset=0.06)
 
-        # Consommation total inside the black disk. Centre it over the
-        # black region (between Autoconso and Achat), slightly shifted
-        # away from the Vente cut-out.
+        # Consommation total inside the black disk — white so it shows
+        # against the dark background.
         ax.text(
             0.05, 0, _fmt(conso_total),
             ha='left', va='center',
