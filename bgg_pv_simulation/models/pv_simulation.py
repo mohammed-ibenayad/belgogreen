@@ -77,12 +77,10 @@ class PvSimulation(models.Model):
     # Cover Page Customization
     cover_photo = fields.Binary(
         string='Cover Photo',
-        default=lambda self: self.env.company.pv_default_cover_photo,
-        help='Cover page photo (configurable per quotation)'
+        help='Photo de couverture. Si vide, la photo par défaut (Configuration → Report Defaults) est utilisée.',
     )
     cover_photo_filename = fields.Char(
         string='Cover Photo Filename',
-        default=lambda self: self.env.company.pv_default_cover_photo_filename,
     )
     cover_title = fields.Char(
         string='Cover Title (Line 1)',
@@ -96,12 +94,10 @@ class PvSimulation(models.Model):
     )
     system_image = fields.Binary(
         string='System Image',
-        default=lambda self: self.env.company.pv_default_system_image,
-        help='Image displayed next to system characteristics (e.g. panel layout photo)'
+        help='Image système. Si vide, l\'image par défaut (Configuration → Report Defaults) est utilisée.',
     )
     system_image_filename = fields.Char(
         string='System Image Filename',
-        default=lambda self: self.env.company.pv_default_system_image_filename,
     )
 
     # Section Titles (Configurable per Quotation)
