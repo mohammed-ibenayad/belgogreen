@@ -158,6 +158,9 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         title_system = _esc(simulation.section_title_system or 'CARACTÉRISTIQUES DU SYSTÈME')
         title_production = _esc(simulation.section_title_production or 'PRODUCTION ESTIMÉE')
         title_bilan = _esc(simulation.section_title_bilan or 'BILAN ÉNERGÉTIQUE')
+        title_bilan_annuel = _esc(simulation.section_title_bilan_annuel or 'BILAN ANNUEL')
+        subtitle_bilan_annuel_prod_vs_conso = _esc(simulation.section_title_bilan_annuel_prod_vs_conso or 'Production vs Consommation')
+        subtitle_bilan_annuel_repartition = _esc(simulation.section_title_bilan_annuel_repartition or 'Répartition énergétique')
         title_consumption = _esc(simulation.section_title_consumption or 'DONNÉES DE CONSOMMATION')
         title_monthly_data = _esc(simulation.section_title_monthly_data or 'DONNÉES MENSUELLES')
         title_daily_balance = _esc(simulation.section_title_daily_balance or 'BILAN ÉNERGÉTIQUE QUOTIDIEN')
@@ -492,11 +495,25 @@ class PvSimulationWeasyPrint(models.AbstractModel):
     </div>
 
     <!-- ============================================ -->
-    <!-- PAGE 3: LOCALISATION                         -->
+    <!-- PAGE 3: BILAN ANNUEL (charts)                -->
+    <!-- ============================================ -->
+    <div class="page content-page">
+        <div class="section">
+            <div class="section-number">02</div>
+            <h2 class="section-title">{title_bilan_annuel}</h2>
+        </div>
+        <h3 class="section-subtitle">{subtitle_bilan_annuel_prod_vs_conso}</h3>
+        {f'<div class="chart-container"><img src="{prod_vs_cons_chart_data}" alt="Production vs Consommation" class="chart-img"></div>' if prod_vs_cons_chart_data else ''}
+        <h3 class="section-subtitle" style="margin-top:12px;">{subtitle_bilan_annuel_repartition}</h3>
+        {f'<div class="chart-container" style="margin-top:4px;"><img src="{energy_balance_chart_data}" alt="Répartition énergétique" class="chart-img" style="max-width:55%;margin:0 auto;display:block;"></div>' if energy_balance_chart_data else ''}
+    </div>
+
+    <!-- ============================================ -->
+    <!-- PAGE 4: LOCALISATION                         -->
     <!-- ============================================ -->
     <div class="page content-page">
         <div class="location-page-bg">
-            <div class="section-number">02</div>
+            <div class="section-number">03</div>
             <h2 class="section-title">{title_location}</h2>
 
             <div class="location-image-container">
@@ -526,11 +543,11 @@ class PvSimulationWeasyPrint(models.AbstractModel):
     </div>
 
     <!-- ============================================ -->
-    <!-- PAGE 4: PRODUCTION (System + Chart)           -->
+    <!-- PAGE 5: PRODUCTION (System + Chart)           -->
     <!-- ============================================ -->
     <div class="page content-page production-page">
         <div class="section">
-            <div class="section-number">03</div>
+            <div class="section-number">04</div>
             <h2 class="section-title">{title_production}</h2>
 
             {f'<div class="chart-container"><img src="{chart_data}" alt="Production mensuelle" class="chart-img"></div>' if chart_data else ''}
@@ -557,11 +574,11 @@ class PvSimulationWeasyPrint(models.AbstractModel):
     </div>
 
     <!-- ============================================ -->
-    <!-- PAGE 5: DONNÉES DE CONSOMMATION              -->
+    <!-- PAGE 6: DONNÉES DE CONSOMMATION              -->
     <!-- ============================================ -->
     <div class="page content-page">
         <div class="section">
-            <div class="section-number">04</div>
+            <div class="section-number">05</div>
             <h2 class="section-title">{title_consumption}</h2>
         </div>
 
@@ -597,11 +614,11 @@ class PvSimulationWeasyPrint(models.AbstractModel):
     </div>
 
     <!-- ============================================ -->
-    <!-- PAGE 5b: BILAN ÉNERGÉTIQUE QUOTIDIEN          -->
+    <!-- PAGE 6b: BILAN ÉNERGÉTIQUE QUOTIDIEN          -->
     <!-- ============================================ -->
     <div class="page content-page">
         <div class="section">
-            <div class="section-number">04</div>
+            <div class="section-number">05</div>
             <h2 class="section-title">{title_consumption}</h2>
         </div>
 
@@ -627,11 +644,11 @@ class PvSimulationWeasyPrint(models.AbstractModel):
     </div>
 
     <!-- ============================================ -->
-    <!-- PAGE 6: BILAN FINANCIER MENSUEL              -->
+    <!-- PAGE 7: BILAN FINANCIER MENSUEL              -->
     <!-- ============================================ -->
     <div class="page content-page">
         <div class="section">
-            <div class="section-number">05</div>
+            <div class="section-number">06</div>
             <h2 class="section-title">{title_financial}</h2>
         </div>
 
@@ -660,19 +677,6 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         </table>
     </div>
 
-    <!-- ============================================ -->
-    <!-- PAGE 7: BILAN ANNUEL (charts)                -->
-    <!-- ============================================ -->
-    <div class="page content-page">
-        <div class="section">
-            <div class="section-number">06</div>
-            <h2 class="section-title">BILAN ANNUEL</h2>
-        </div>
-        <h3 class="section-subtitle">Production vs Consommation</h3>
-        {f'<div class="chart-container"><img src="{prod_vs_cons_chart_data}" alt="Production vs Consommation" class="chart-img"></div>' if prod_vs_cons_chart_data else ''}
-        <h3 class="section-subtitle" style="margin-top:12px;">R\u00e9partition \u00e9nerg\u00e9tique</h3>
-        {f'<div class="chart-container" style="margin-top:4px;"><img src="{energy_balance_chart_data}" alt="Répartition énergétique" class="chart-img" style="max-width:55%;margin:0 auto;display:block;"></div>' if energy_balance_chart_data else ''}
-    </div>
 </body>
 </html>"""
 

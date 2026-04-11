@@ -290,8 +290,27 @@
                             </div>
                         </page>
 
-                        <!-- ==================== Localisation (Page 3) ==================== -->
-                        <page string="Localisation (Page 3)" name="page_localisation">
+                        <!-- ==================== Bilan Annuel (Page 3) ==================== -->
+                        <page string="Bilan Annuel (Page 3)" name="page_bilan_annuel">
+                            <group string="Titres de section">
+                                <field name="section_title_bilan_annuel" placeholder="BILAN ANNUEL" string="Titre principal" class="o_field_highlight"/>
+                                <field name="section_title_bilan_annuel_prod_vs_conso" placeholder="Production vs Consommation" string="Sous-titre — Production vs Consommation" class="o_field_highlight"/>
+                                <field name="section_title_bilan_annuel_repartition" placeholder="Répartition énergétique" string="Sous-titre — Répartition énergétique" class="o_field_highlight"/>
+                            </group>
+                            <separator string="Aperçu — Production vs Consommation"/>
+                            <field name="chart_production_vs_consumption" widget="image" nolabel="1"
+                                   style="max-width: 100%; width: 800px;"/>
+                            <separator string="Aperçu — Répartition énergétique"/>
+                            <field name="chart_energy_balance" widget="image" nolabel="1"
+                                   style="max-width: 100%; width: 500px;"/>
+                            <div class="alert alert-warning mt-3" role="alert">
+                                <strong>Note :</strong> Les deux graphiques sont générés automatiquement à partir des résultats mensuels et du bilan énergétique.
+                                Cliquez sur <em>Régénérer la simulation</em> pour les mettre à jour après modification des données.
+                            </div>
+                        </page>
+
+                        <!-- ==================== Localisation (Page 4) ==================== -->
+                        <page string="Localisation (Page 4)" name="page_localisation">
                             <group>
                                 <group string="Coordonnées Client">
                                     <field name="installation_address" string="Adresse d'installation"/>
@@ -329,8 +348,8 @@
                             </div>
                         </page>
 
-                        <!-- ==================== Production (Page 4) ==================== -->
-                        <page string="Production (Page 4)" name="page_production">
+                        <!-- ==================== Production (Page 5) ==================== -->
+                        <page string="Production (Page 5)" name="page_production">
                             <group>
                                 <group string="Image du système">
                                     <field name="system_image" widget="image" class="oe_avatar" string="Image"/>
@@ -353,8 +372,8 @@
                             </div>
                         </page>
 
-                        <!-- ==================== Consommation (Page 5) ==================== -->
-                        <page string="Consommation (Page 5)" name="page_consumption">
+                        <!-- ==================== Consommation (Page 6) ==================== -->
+                        <page string="Consommation (Page 6)" name="page_consumption">
                             <group>
                                 <group string="Consommation Client">
                                     <label for="default_monthly_consumption_kwh" string="Consommation mensuelle par défaut"/>
@@ -415,8 +434,8 @@
                             </div>
                         </page>
 
-                        <!-- ==================== Bilan Financier (Page 6) ==================== -->
-                        <page string="Bilan Financier (Page 6)" name="page_financial">
+                        <!-- ==================== Bilan Financier (Page 7) ==================== -->
+                        <page string="Bilan Financier (Page 7)" name="page_financial">
                             <group>
                                 <group string="Configuration">
                                     <field name="tariff_profile_id" string="Profil tarifaire"
