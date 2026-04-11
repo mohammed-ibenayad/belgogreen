@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+
+        <!-- Security Groups -->
+        <record id="group_pv_user" model="res.groups">
+            <field name="name">PV Simulation User</field>
+            <field name="implied_ids" eval="[(4, ref('sales_team.group_sale_salesman'))]"/>
+        </record>
+
+        <record id="group_pv_admin" model="res.groups">
+            <field name="name">PV Simulation Administrator</field>
+            <field name="implied_ids" eval="[(4, ref('group_pv_user'))]"/>
+        </record>
+
+        <!-- Record Rules -->
+        <record id="rule_pv_simulation_user" model="ir.rule">
+            <field name="name">PV Simulation: user own orders</field>
+            <field name="model_id" ref="model_pv_simulation"/>
+            <field name="domain_force">[('sale_order_id.user_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('group_pv_user'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <record id="rule_pv_monthly_result_user" model="ir.rule">
+            <field name="name">PV Monthly Result: user own orders</field>
+            <field name="model_id" ref="model_pv_monthly_result"/>
+            <field name="domain_force">[('simulation_id.sale_order_id.user_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('group_pv_user'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <record id="rule_pv_simulation_admin" model="ir.rule">
+            <field name="name">PV Simulation: admin all</field>
+            <field name="model_id" ref="model_pv_simulation"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_pv_admin'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <record id="rule_pv_monthly_result_admin" model="ir.rule">
+            <field name="name">PV Monthly Result: admin all</field>
+            <field name="model_id" ref="model_pv_monthly_result"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_pv_admin'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <!-- Sequence for PV Simulation -->
+        <record id="seq_pv_simulation" model="ir.sequence">
+            <field name="name">PV Simulation Sequence</field>
+            <field name="code">pv.simulation</field>
+            <field name="prefix">SIM-</field>
+            <field name="padding">5</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+
+    </data>
+</odoo>

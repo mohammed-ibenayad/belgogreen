@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Form view for PV report defaults (singleton, shared across companies) -->
+    <record id="view_pv_report_defaults_form" model="ir.ui.view">
+        <field name="name">pv.report.defaults.form</field>
+        <field name="model">pv.report.defaults</field>
+        <field name="arch" type="xml">
+            <form string="Paramètres du rapport PV" create="0" delete="0">
+                <sheet>
+                    <group>
+                        <group string="Photo de couverture par d&#233;faut">
+                            <field name="default_cover_photo" widget="image" class="oe_avatar" nolabel="1"/>
+                        </group>
+                        <group string="Image syst&#232;me par d&#233;faut">
+                            <field name="default_system_image" widget="image" class="oe_avatar" nolabel="1"/>
+                        </group>
+                    </group>
+                    <div class="pv_note_box mt-3">
+                        <p class="mb-0">
+                            Ces images sont utilis&#233;es par d&#233;faut dans les rapports PDF
+                            de toutes les simulations PV. Elles peuvent &#234;tre remplac&#233;es
+                            individuellement sur chaque simulation.
+                        </p>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Server action to open the singleton defaults record -->
+    <record id="action_pv_report_defaults" model="ir.actions.server">
+        <field name="name">Paramètres du rapport</field>
+        <field name="model_id" ref="model_pv_report_defaults"/>
+        <field name="state">code</field>
+        <field name="code">
+defaults = env['pv.report.defaults'].get_defaults()
+action = {
+    'type': 'ir.actions.act_window',
+    'res_model': 'pv.report.defaults',
+    'res_id': defaults.id,
+    'view_mode': 'form',
+    'views': [(env.ref('bgg_pv_simulation.view_pv_report_defaults_form').id, 'form')],
+    'target': 'inline',
+}
+        </field>
+    </record>
+</odoo>

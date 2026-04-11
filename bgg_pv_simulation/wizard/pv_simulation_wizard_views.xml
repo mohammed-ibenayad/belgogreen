@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pv_simulation_wizard_form" model="ir.ui.view">
+        <field name="name">pv.simulation.wizard.form</field>
+        <field name="model">pv.simulation.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Nouvelle Simulation PV">
+                <sheet>
+                    <div class="oe_title mb-3">
+                        <h2>Nouvelle Simulation PV</h2>
+                    </div>
+
+                    <field name="sale_order_id" invisible="1"/>
+                    <field name="can_generate" invisible="1"/>
+                    <field name="coords_status" invisible="1"/>
+
+                    <!-- Missing data warning -->
+                    <div class="alert alert-warning" role="alert"
+                         invisible="not missing_data_warning">
+                        <field name="missing_data_warning" nolabel="1" readonly="1"/>
+                    </div>
+
+                    <group>
+                        <group string="Installation">
+                            <div colspan="2" class="mb-2 text-muted">
+                                <field name="installation_address" readonly="1" nolabel="1"/>
+                            </div>
+                            <field name="google_maps_url" invisible="1"/>
+                            <div colspan="2" class="mb-2">
+                                <button name="action_fetch_coordinates"
+                                        type="object"
+                                        class="btn-sm btn-secondary"
+                                        icon="fa-map-marker"
+                                        string="Récupérer les coordonnées GPS"
+                                        invisible="coords_status == 'fetched'"
+                                        />
+                                <button name="action_fetch_coordinates"
+                                        type="object"
+                                        class="btn-sm btn-secondary"
+                                        icon="fa-map-marker"
+                                        string="Rafraîchir les coordonnées"
+                                        invisible="coords_status != 'fetched' and coords_status != 'cached'"
+                                        />
+                                <button name="action_open_google_maps"
+                                        type="object"
+                                        class="btn-sm btn-secondary ms-1"
+                                        icon="fa-external-link"
+                                        string="Google Maps"
+                                        invisible="not google_maps_url"/>
+                            </div>
+                            <field name="latitude" placeholder="ex: 50.8503396" class="o_field_highlight"/>
+                            <field name="longitude" placeholder="ex: 4.3517103" class="o_field_highlight"/>
+                            <separator string="Panneaux" colspan="2"/>
+                            <label for="tilt_deg" string="Inclinaison"/>
+                            <div class="o_row">
+                                <field name="tilt_deg" class="o_field_highlight"/>
+                                <span>°</span>
+                            </div>
+                            <label for="orientation_deg" string="Orientation"/>
+                            <div class="o_row">
+                                <field name="orientation_deg" required="1" class="o_field_highlight"/>
+                                <span>° (0=Sud)</span>
+                            </div>
+                        </group>
+                        <group string="Consommation du client">
+                            <label for="default_annual_consumption_kwh"/>
+                            <div class="o_row">
+                                <field name="default_annual_consumption_kwh" class="o_field_highlight"/>
+                                <span>kWh/an</span>
+                            </div>
+                            <label for="day_consumption_ratio" string="Ratio jour / nuit"/>
+                            <div class="o_row">
+                                <field name="day_consumption_ratio" widget="percentage" class="o_field_highlight"/>
+                                <span class="text-muted ms-1">jour</span>
+                            </div>
+                            <div colspan="2" class="pv_note_box mt-2">
+                                <strong>Comment lire l'orientation ?</strong>
+                                <p class="mb-1 mt-2">
+                                    L'orientation est exprimée en degrés par rapport au <strong>Sud</strong>.
+                                    Les valeurs positives vont vers l'Ouest, les négatives vers l'Est :
+                                </p>
+                                <ul class="mb-0">
+                                    <li><strong>0°</strong> — Sud (orientation optimale)</li>
+                                    <li><strong>+45°</strong> — Sud-Ouest &#160;·&#160; <strong>−45°</strong> — Sud-Est</li>
+                                    <li><strong>+90°</strong> — Ouest &#160;·&#160; <strong>−90°</strong> — Est</li>
+                                    <li><strong>+135°</strong> — Nord-Ouest &#160;·&#160; <strong>−135°</strong> — Nord-Est</li>
+                                    <li><strong>180°</strong> / <strong>−180°</strong> — Nord</li>
+                                </ul>
+                            </div>
+                        </group>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_create_and_generate"
+                            string="Créer et Générer"
+                            type="object"
+                            class="btn-primary"
+                            invisible="not can_generate"/>
+                    <button string="Annuler" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_pv_simulation_wizard" model="ir.actions.act_window">
+        <field name="name">Nouvelle Simulation PV</field>
+        <field name="res_model">pv.simulation.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

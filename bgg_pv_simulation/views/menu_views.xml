@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Main Menu -->
+    <menuitem id="menu_pv_simulation_root"
+              name="Simulation PV"
+              sequence="50"/>
+
+    <!-- Simulations Submenu -->
+    <menuitem id="menu_pv_simulation_simulations"
+              name="Simulations"
+              parent="menu_pv_simulation_root"
+              sequence="10"/>
+
+    <!-- PV Simulation Action -->
+    <record id="action_pv_simulation" model="ir.actions.act_window">
+        <field name="name">Simulations PV</field>
+        <field name="res_model">pv.simulation</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'create': False}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Aucune simulation PV
+            </p>
+            <p>
+                Les simulations PV sont créées depuis un devis via le bouton « Simulations PV ».
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_pv_simulation_list"
+              name="Toutes les simulations"
+              parent="menu_pv_simulation_simulations"
+              action="action_pv_simulation"
+              sequence="10"/>
+
+    <!-- Configuration Submenu -->
+    <menuitem id="menu_pv_simulation_config"
+              name="Configuration"
+              parent="menu_pv_simulation_root"
+              sequence="90"
+              groups="bgg_pv_simulation.group_pv_admin"/>
+
+    <!-- Report Defaults -->
+    <menuitem id="menu_pv_report_defaults"
+              name="Paramètres du rapport"
+              parent="menu_pv_simulation_config"
+              action="action_pv_report_defaults"
+              sequence="5"/>
+
+    <!-- Production Profiles -->
+    <record id="action_pv_production_profile" model="ir.actions.act_window">
+        <field name="name">Profils de production</field>
+        <field name="res_model">pv.production.profile</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Créer un profil de production
+            </p>
+            <p>
+                Les profils de production définissent la répartition mensuelle (%) de la production annuelle PV.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_pv_production_profile"
+              name="Profils de production"
+              parent="menu_pv_simulation_config"
+              action="action_pv_production_profile"
+              sequence="20"/>
+
+    <!-- Tariff Profiles -->
+    <record id="action_pv_tariff_profile" model="ir.actions.act_window">
+        <field name="name">Profils tarifaires</field>
+        <field name="res_model">pv.tariff.profile</field>
+        <field name="view_mode">form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Créer un profil tarifaire
+            </p>
+            <p>
+                Les profils tarifaires définissent le prix d'achat de l'électricité et le tarif de revente.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_pv_tariff_profile"
+              name="Profils tarifaires"
+              parent="menu_pv_simulation_config"
+              action="action_pv_tariff_profile"
+              sequence="40"/>
+
+</odoo>

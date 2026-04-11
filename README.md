@@ -1,56 +1,39 @@
-# BelGoGreen Custom Development
+# BelGoGreen Odoo Addons
 
-## Description
+Custom Odoo 19 addons developed for **BelGoGreen** — a Belgian photovoltaic installer. The repository contains three independent modules, each with its own manifest, views and docs.
 
-Custom development module for BelGoGreen operations and workflows
+## Modules
 
-This module extends Odoo 19 with custom functionality specific to BelGoGreen operations.
+| Module | Purpose |
+|---|---|
+| [`bgg_custom_dev`](bgg_custom_dev/) | Extends core Odoo models (appointments, calendar, projects) with BelGoGreen-specific business logic: spouse contact sync, organizer auto-assignment, NoShow activities, clickable phones/addresses, welcome-call deadlines, phone-based customer deduplication. |
+| [`bgg_pv_simulation`](bgg_pv_simulation/) | Generates a full photovoltaic simulation from a sale order: Google Solar API + PVGIS production, monthly energy balance (charge / vente / achat), monthly financial balance, and a branded 7-page WeasyPrint PDF report. See [`pv_simulation_complete_spec.md`](bgg_pv_simulation/pv_simulation_complete_spec.md). |
+| [`belgogreen_sales_commission`](belgogreen_sales_commission/) | Hierarchical commission engine: multi-level calculation (salesperson → team leader → director), auto-creation on invoice payment, claim/approval workflow, role-based percentages, team dashboards. |
 
-## Features
+## End-user guides (French)
 
-- Custom business logic and workflows
-- Integration with core Odoo modules
-- Custom views and reports
-- Configurable settings
+- [`docs/Guide_Utilisateur_Commissions.md`](docs/Guide_Utilisateur_Commissions.md) — salesperson guide for the commission module
+- [`docs/Guide_Manager_Commissions.md`](docs/Guide_Manager_Commissions.md) — manager guide for approvals and payouts
+- [`docs/Guide_Utilisateur_Simulation_PV.md`](docs/Guide_Utilisateur_Simulation_PV.md) — salesperson guide for the PV simulation module
 
 ## Installation
 
-1. Copy this module to your Odoo addons directory
-2. Update the app list: `Settings > Apps > Update Apps List`
-3. Search for "BelGoGreen Custom Development"
-4. Click Install
+1. Copy the module directory (or the whole repo) into your Odoo addons path
+2. Install Python dependencies: `pip install -r requirements.txt`
+3. From Odoo, **Apps → Update Apps List**, then search and install the modules you need
 
-## Configuration
+## Running the tests
 
-After installation, configure the module:
+```bash
+# PV simulation core logic
+odoo --test-enable -i bgg_pv_simulation --test-tags=bgg_pv_simulation
 
-1. Go to `BelGoGreen Custom Development > Configuration`
-2. Set up your preferences
-3. Configure user permissions
+# Sales commission
+odoo --test-enable -i belgogreen_sales_commission --test-tags=belgogreen_sales_commission
+```
 
-## Usage
+## Technical
 
-[Add usage instructions here]
-
-## Technical Details
-
-- **Module Name:** `bgg_custom_dev`
-- **Version:** 19.0.0.0
-- **Odoo Version:** 19.0
+- **Odoo version:** 19.0
 - **License:** LGPL-3
-- **Author:** Belgogreen
-
-## Dependencies
-
-- base
-- web
-
-## Support
-
-For support, please contact https://www.belgogreen.com
-
-## Changelog
-
-### Version 19.0.0.0
-- Initial release
-- Basic module structure
+- **Author:** BelGoGreen — <https://www.belgogreen.com>

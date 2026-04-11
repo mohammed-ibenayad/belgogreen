@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pv_production_profile_form" model="ir.ui.view">
+        <field name="name">pv.production.profile.form</field>
+        <field name="model">pv.production.profile</field>
+        <field name="arch" type="xml">
+            <form string="Profil de production">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Nom du profil"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="total_pct" readonly="1"
+                                   decoration-danger="total_pct &lt; 99.9 or total_pct &gt; 100.1"
+                                   decoration-success="total_pct &gt;= 99.9 and total_pct &lt;= 100.1"/>
+                        </group>
+                    </group>
+                    <group string="Répartition mensuelle (%)" col="4">
+                        <group>
+                            <label for="january_pct" string="Janvier"/>
+                            <div class="o_row">
+                                <field name="january_pct"/>
+                                <span>%</span>
+                            </div>
+                            <label for="february_pct" string="Février"/>
+                            <div class="o_row">
+                                <field name="february_pct"/>
+                                <span>%</span>
+                            </div>
+                            <label for="march_pct" string="Mars"/>
+                            <div class="o_row">
+                                <field name="march_pct"/>
+                                <span>%</span>
+                            </div>
+                            <label for="april_pct" string="Avril"/>
+                            <div class="o_row">
+                                <field name="april_pct"/>
+                                <span>%</span>
+                            </div>
+                            <label for="may_pct" string="Mai"/>
+                            <div class="o_row">
+                                <field name="may_pct"/>
+                                <span>%</span>
+                            </div>
+                            <label for="june_pct" string="Juin"/>
+                            <div class="o_row">
+                                <field name="june_pct"/>
+                                <span>%</span>
+                            </div>
+                        </group>
+                        <group>
+                            <label for="july_pct" string="Juillet"/>
+                            <div class="o_row">
+                                <field name="july_pct"/>
+                                <span>%</span>
+                            </div>
+                            <label for="august_pct" string="Août"/>
+                            <div class="o_row">
+                                <field name="august_pct"/>
+                                <span>%</span>
+                            </div>
+                            <label for="september_pct" string="Septembre"/>
+                            <div class="o_row">
+                                <field name="september_pct"/>
+                                <span>%</span>
+                            </div>
+                            <label for="october_pct" string="Octobre"/>
+                            <div class="o_row">
+                                <field name="october_pct"/>
+                                <span>%</span>
+                            </div>
+                            <label for="november_pct" string="Novembre"/>
+                            <div class="o_row">
+                                <field name="november_pct"/>
+                                <span>%</span>
+                            </div>
+                            <label for="december_pct" string="Décembre"/>
+                            <div class="o_row">
+                                <field name="december_pct"/>
+                                <span>%</span>
+                            </div>
+                        </group>
+                    </group>
+                    <div class="alert alert-info" role="alert" invisible="total_pct &gt;= 99.9 and total_pct &lt;= 100.1">
+                        <strong>Attention :</strong> la somme des pourcentages mensuels doit être exactement égale à 100 %.
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_pv_production_profile_list" model="ir.ui.view">
+        <field name="name">pv.production.profile.list</field>
+        <field name="model">pv.production.profile</field>
+        <field name="arch" type="xml">
+            <list string="Profils de production">
+                <field name="name"/>
+                <field name="january_pct"/>
+                <field name="february_pct"/>
+                <field name="march_pct"/>
+                <field name="april_pct"/>
+                <field name="may_pct"/>
+                <field name="june_pct"/>
+                <field name="july_pct"/>
+                <field name="august_pct"/>
+                <field name="september_pct"/>
+                <field name="october_pct"/>
+                <field name="november_pct"/>
+                <field name="december_pct"/>
+                <field name="total_pct"
+                       decoration-danger="total_pct &lt; 99.9 or total_pct &gt; 100.1"
+                       decoration-success="total_pct &gt;= 99.9 and total_pct &lt;= 100.1"/>
+            </list>
+        </field>
+    </record>
+</odoo>
