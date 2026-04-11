@@ -1260,7 +1260,7 @@ class PvSimulation(models.Model):
         label_color = '#212121'         # all numeric labels in black
 
         def _fmt(val):
-            return f'{val:,.2f}'
+            return f'{val:,.2f} kWh'
 
         fig, ax = plt.subplots(figsize=(8, 8))
         ax.set_aspect('equal')
