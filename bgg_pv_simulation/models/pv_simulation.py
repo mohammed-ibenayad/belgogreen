@@ -126,6 +126,21 @@ class PvSimulation(models.Model):
         default='BILAN ÉNERGÉTIQUE',
         help='Page 4: Annual energy balance section'
     )
+    section_title_bilan_annuel = fields.Char(
+        string='Annual Balance Section Title',
+        default='BILAN ANNUEL',
+        help='Page: Annual balance charts section (production vs consumption + energy split)'
+    )
+    section_title_bilan_annuel_prod_vs_conso = fields.Char(
+        string='Production vs Consumption Subtitle',
+        default='Production vs Consommation',
+        help='Page BILAN ANNUEL: subtitle above the production vs consumption chart'
+    )
+    section_title_bilan_annuel_repartition = fields.Char(
+        string='Energy Split Subtitle',
+        default='Répartition énergétique',
+        help='Page BILAN ANNUEL: subtitle above the energy split donut chart'
+    )
     section_title_monthly_data = fields.Char(
         string='Monthly Data Subtitle',
         default='DONNÉES MENSUELLES / QUOTIDIENNES',
