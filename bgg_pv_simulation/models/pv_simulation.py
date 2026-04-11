@@ -378,10 +378,25 @@ class PvSimulation(models.Model):
         return res
 
     @api.model
-    def _next_simulation_reference(self):
-        """Return the next SIM- reference, creating the sequence on the fly
-        if it is missing from the database (e.g. when the module was loaded
-        without a full upgrade and the security XML never inserted it)."""
+    def _next_simulation_reference(self, sale_order=None):
+        """Return the next simulation reference.
+
+        Preferred format: ``SIM-<sale order reference>-v<NN>`` where NN is
+        the next version number for that sale order (v01, v02, …). If no
+        sale order is provided, falls back to the legacy global sequence
+        so callers that don't know the SO still get a unique reference.
+        """
+        if sale_order and sale_order.name:
+            so_ref = sale_order.name
+            existing = self.with_context(active_test=False).search_count([
+                ('sale_order_id', '=', sale_order.id),
+            ])
+            version = existing + 1
+            return f'SIM-{so_ref}-v{version:02d}'
+
+        # Legacy fallback — keep the sequence path so older call sites
+        # (and test fixtures) that create simulations without a sale order
+        # still receive a unique reference.
         Sequence = self.env['ir.sequence'].sudo()
         new_name = Sequence.next_by_code('pv.simulation')
         if new_name:
@@ -406,14 +421,23 @@ class PvSimulation(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         placeholder_names = {'New', _('New')}
+        default_tariff = self.env['pv.tariff.profile'].search([], limit=1)
         for vals in vals_list:
             current = vals.get('name')
             if not current or current in placeholder_names:
-                vals['name'] = self._next_simulation_reference()
+                so_id = vals.get('sale_order_id')
+                sale_order = self.env['sale.order'].browse(so_id) if so_id else None
+                vals['name'] = self._next_simulation_reference(sale_order=sale_order)
             # Seed the per-simulation tariff overrides from the selected
             # profile when they are not explicitly provided (the @api.onchange
             # only fires from the UI, not from programmatic creates).
+            # If no profile was supplied at all, fall back to the first
+            # tariff profile found so new simulations always land with
+            # sensible default prices pre-filled.
             profile_id = vals.get('tariff_profile_id')
+            if not profile_id and default_tariff:
+                vals['tariff_profile_id'] = default_tariff.id
+                profile_id = default_tariff.id
             if profile_id:
                 profile = self.env['pv.tariff.profile'].browse(profile_id)
                 if profile.exists():
@@ -511,7 +535,7 @@ class PvSimulation(models.Model):
         - Vente = SurplusPV - Charge
         - CapDebutBat(M) = max(0, min(CapBat × RenBat, CapDebutBat(M-1) + Charge(M-1) - ConsoNuit(M-1)))
         - Énergie_batterie_nuit = min(CapDebutBat + Charge, CapBat × RenBat)
-        - Achat = max(0, ConsoNuit - Énergie_batterie_nuit)
+        - Achat = max(0, ConsoNuit - Énergie_batterie_nuit) + max(0, ConsoJour - Production)
         """
         self.ensure_one()
         if not self.monthly_result_ids:
@@ -556,8 +580,9 @@ class PvSimulation(models.Model):
             vente = surplus_pv - charge
             # Énergie batterie disponible la nuit
             energie_bat_nuit = min(cap_debut_bat + charge, cap_bat_effective) if cap_bat > 0 else 0.0
-            # Achat
-            achat = max(0.0, conso_nuit - energie_bat_nuit)
+            # Achat — cover the nighttime deficit from the battery shortfall
+            # PLUS any daytime consumption not covered by production.
+            achat = max(0.0, conso_nuit - energie_bat_nuit) + max(0.0, conso_jour - prod)
 
             # Financial calculations
             # Économie panneaux = Auto_jour_day * days * P_buy
@@ -1541,12 +1566,27 @@ class PvSimulation(models.Model):
                     self._compute_monthly_from_profile()
                 return False
 
-            # Store PVGIS yearly total for comparison
-            self.pvgis_annual_production_kwh = pvgis_data['yearly_kwh']
-            _logger.info(f"📊 Comparison - Google: {self.annual_production_kwh:.0f} kWh vs PVGIS: {self.pvgis_annual_production_kwh:.0f} kWh")
+            pvgis_yearly = pvgis_data['yearly_kwh'] or 0.0
+            monthly_kwh = pvgis_data['monthly_kwh']
+
+            # If the user has already set a manual annual value, preserve it
+            # and scale the PVGIS monthly breakdown to match. This avoids
+            # clean inputs like 5000 silently becoming 5000.04 because of the
+            # raw PVGIS float total replacing the user's value.
+            user_total = self.pvgis_annual_production_kwh or 0.0
+            if user_total > 0 and pvgis_yearly > 0 and abs(user_total - pvgis_yearly) > 0.01:
+                scale = user_total / pvgis_yearly
+                monthly_kwh = [m * scale for m in monthly_kwh]
+                _logger.info(
+                    f"📊 Preserving manual annual total ({user_total:.2f} kWh) — "
+                    f"scaling PVGIS monthly values by {scale:.4f}"
+                )
+            else:
+                self.pvgis_annual_production_kwh = pvgis_yearly
+                _logger.info(f"📊 Comparison - Google: {self.annual_production_kwh:.0f} kWh vs PVGIS: {self.pvgis_annual_production_kwh:.0f} kWh")
 
             # Store monthly data
-            self._store_monthly_results(pvgis_data['monthly_kwh'])
+            self._store_monthly_results(monthly_kwh)
             return True
 
         except Exception as e:

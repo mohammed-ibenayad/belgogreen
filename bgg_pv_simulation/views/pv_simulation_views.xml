@@ -410,7 +410,7 @@
                                     <li><strong>Conso jour / nuit (kWh)</strong> — Consommation quotidienne jour/nuit : calculée automatiquement (consommation mensuelle × ratio ÷ jours). Modifiable manuellement si nécessaire.</li>
                                     <li><strong>Charge (kWh)</strong> — Énergie stockée dans la batterie : calculée automatiquement à partir du surplus PV, de la capacité et du rendement de la batterie.</li>
                                     <li><strong>Vente (kWh)</strong> — Surplus revendu au réseau : calculé automatiquement (surplus PV − charge batterie).</li>
-                                    <li><strong>Achat (kWh)</strong> — Énergie achetée au réseau : calculé automatiquement (consommation nuit − énergie batterie disponible).</li>
+                                    <li><strong>Achat (kWh)</strong> — Énergie achetée au réseau : calculé automatiquement (déficit nuit non couvert par la batterie + déficit jour non couvert par la production).</li>
                                 </ul>
                             </div>
                         </page>
