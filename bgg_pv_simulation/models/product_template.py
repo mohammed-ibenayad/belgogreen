@@ -28,17 +28,17 @@ class ProductTemplate(models.Model):
     _inherit = 'product.template'
 
     panel_unit_power_wc = fields.Float(
-        string='Panel Unit Power (Wc)',
-        help='Power output per panel in Wc (Watts-crête)'
+        string='Puissance unitaire panneau (Wc)',
+        help='Puissance de sortie par panneau en Wc (Watts-crête)'
     )
     battery_capacity_kwh = fields.Float(
-        string='Battery Capacity (kWh)',
-        help='Total battery capacity in kWh'
+        string='Capacité batterie (kWh)',
+        help='Capacité totale de la batterie en kWh'
     )
     battery_efficiency_percent = fields.Float(
-        string='Battery Efficiency (%)',
+        string='Rendement batterie (%)',
         default=100.0,
-        help='Battery round-trip efficiency percentage (default: 100%)'
+        help='Rendement aller-retour de la batterie en pourcentage (par défaut : 100 %)'
     )
     is_panel_category = fields.Boolean(
         compute='_compute_is_panel_category',

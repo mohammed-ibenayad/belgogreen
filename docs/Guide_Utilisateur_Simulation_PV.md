@@ -187,7 +187,7 @@ Chaque simulation garde sa propre numérotation et son propre historique de rég
 ## 8. Questions fréquentes
 
 **Q : L'assistant affiche "Aucune batterie trouvée" alors que j'ai bien une batterie sur le devis.**
-R : Vérifiez que le produit batterie appartient à la catégorie `All / Saleable / Batteries` et que le champ **Battery Capacity (kWh)** est renseigné sur la fiche produit.
+R : Vérifiez que le produit batterie appartient à la catégorie `All / Saleable / Batteries` et que le champ **Capacité batterie (kWh)** est renseigné sur la fiche produit.
 
 **Q : La production annuelle affichée ne correspond pas à ce que le client attendait.**
 R : La production est calculée par PVGIS en fonction des coordonnées GPS, de l'orientation, de l'inclinaison et de la puissance installée. Vérifiez ces quatre paramètres avant de régénérer. Vous pouvez aussi corriger manuellement la valeur **Production annuelle (PVGIS)** dans l'onglet Système PV.
@@ -202,7 +202,7 @@ R : Oui. Les valeurs mensuelles saisies à la main sont préservées à chaque r
 R : Oui. Chaque onglet correspondant à une page du rapport contient un champ **Titre de section** (et parfois des sous-titres) que vous pouvez personnaliser par simulation.
 
 **Q : Comment changer la photo de couverture ou l'image du système pour une simulation ?**
-R : Dans les onglets **Couverture (Page 1)** et **Production (Page 5)** respectivement. Si vous laissez le champ vide, l'image par défaut (Configuration → Report Defaults) est utilisée.
+R : Dans les onglets **Couverture (Page 1)** et **Production (Page 5)** respectivement. Si vous laissez le champ vide, l'image par défaut (Simulation PV → Configuration → Paramètres du rapport) est utilisée.
 
 **Q : Que signifie la version `v02`, `v03` dans le nom de la simulation ?**
 R : C'est le numéro de génération. Il s'incrémente à chaque fois que vous cliquez sur **Régénérer la simulation**, ce qui permet de suivre combien d'itérations ont été faites.

@@ -4,24 +4,24 @@
         <field name="name">pv.battery.config.form</field>
         <field name="model">pv.battery.config</field>
         <field name="arch" type="xml">
-            <form string="Battery Configuration">
+            <form string="Configuration batterie">
                 <sheet>
                     <div class="oe_title">
                         <h1>
-                            <field name="name" placeholder="Battery Configuration Name"/>
+                            <field name="name" placeholder="Nom de la configuration"/>
                         </h1>
                     </div>
                     <group>
-                        <group string="Capacity">
-                            <label for="capacity_kwh" string="Nominal Capacity"/>
+                        <group string="Capacité">
+                            <label for="capacity_kwh" string="Capacité nominale"/>
                             <div class="o_row">
                                 <field name="capacity_kwh"/>
                                 <span>kWh</span>
                             </div>
-                            <label for="max_daily_charge_kwh" string="Max Daily Charge"/>
+                            <label for="max_daily_charge_kwh" string="Charge quotidienne max"/>
                             <div class="o_row">
                                 <field name="max_daily_charge_kwh"/>
-                                <span>kWh/day</span>
+                                <span>kWh/jour</span>
                             </div>
                         </group>
                         <group string="Performance">
@@ -30,8 +30,8 @@
                         </group>
                     </group>
                     <group>
-                        <group string="Cost">
-                            <label for="cost_per_kwh" string="Degradation Cost"/>
+                        <group string="Coût">
+                            <label for="cost_per_kwh" string="Coût d'usure"/>
                             <div class="o_row">
                                 <field name="cost_per_kwh"/>
                                 <span>/kWh</span>
@@ -41,18 +41,18 @@
                         </group>
                     </group>
                     <notebook>
-                        <page string="Technical Info" name="technical_info">
+                        <page string="Informations techniques" name="technical_info">
                             <group>
                                 <group>
-                                    <label for="usable_ratio" string="Usable Ratio Info"/>
+                                    <label for="usable_ratio" string="Ratio utilisable — info"/>
                                     <div class="text-muted">
-                                        Percentage of nominal capacity that can be used (typically 90-95%)
+                                        Pourcentage de la capacité nominale réellement utilisable (typiquement 90-95 %)
                                     </div>
                                 </group>
                                 <group>
-                                    <label for="efficiency" string="Efficiency Info"/>
+                                    <label for="efficiency" string="Rendement — info"/>
                                     <div class="text-muted">
-                                        Round-trip efficiency for charge/discharge cycle
+                                        Rendement aller-retour pour un cycle de charge/décharge
                                     </div>
                                 </group>
                             </group>
