@@ -491,6 +491,27 @@ class PvSimulation(models.Model):
             'monthly_night_consumption_kwh': round(monthly_kwh * (1 - ratio), 2),
         }
 
+    @staticmethod
+    def _distribute_annual_consumption(annual_kwh, count=12):
+        """Split an annual consumption total across ``count`` months with
+        cent-level precision.
+
+        Each per-month value has at most 2 decimals and the sum of the
+        returned values equals the original annual total exactly. This
+        avoids the "5000 → 5000.04" drift caused by rounding ``annual / 12``
+        independently for every month (round(416.666…, 2) = 416.67 →
+        12 × 416.67 = 5000.04).
+        """
+        if not annual_kwh or count <= 0:
+            return [0.0] * max(count, 0)
+        total_cents = int(round(annual_kwh * 100))
+        base_cents = total_cents // count
+        extra = total_cents - base_cents * count
+        return [
+            (base_cents + (1 if i < extra else 0)) / 100.0
+            for i in range(count)
+        ]
+
     def action_apply_default_consumption(self):
         """Copy default monthly consumption to all months and derive day/night via ratio."""
         self.ensure_one()
@@ -499,9 +520,16 @@ class PvSimulation(models.Model):
         if not self.monthly_result_ids:
             raise UserError(_("Aucun résultat mensuel trouvé. Veuillez d'abord générer la simulation."))
 
-        for result in self.monthly_result_ids:
+        # Distribute the implied annual total (monthly default × 12) across
+        # the 12 months with cent-level precision so the sum on the bilan
+        # page matches what the user entered in the wizard (5000, not 5000.04).
+        annual_total = self.default_monthly_consumption_kwh * 12
+        monthly_distribution = self._distribute_annual_consumption(annual_total, 12)
+        sorted_results = self.monthly_result_ids.sorted(key=lambda r: int(r.month))
+        for idx, result in enumerate(sorted_results):
             days = result.days_in_month or 30
-            vals = self._apply_consumption_ratio(self.default_monthly_consumption_kwh, days)
+            month_conso = monthly_distribution[idx] if idx < len(monthly_distribution) else self.default_monthly_consumption_kwh
+            vals = self._apply_consumption_ratio(month_conso, days)
             result.write(vals)
 
         # Auto-compute daily energy balance after applying consumption
@@ -1566,27 +1594,12 @@ class PvSimulation(models.Model):
                     self._compute_monthly_from_profile()
                 return False
 
-            pvgis_yearly = pvgis_data['yearly_kwh'] or 0.0
-            monthly_kwh = pvgis_data['monthly_kwh']
-
-            # If the user has already set a manual annual value, preserve it
-            # and scale the PVGIS monthly breakdown to match. This avoids
-            # clean inputs like 5000 silently becoming 5000.04 because of the
-            # raw PVGIS float total replacing the user's value.
-            user_total = self.pvgis_annual_production_kwh or 0.0
-            if user_total > 0 and pvgis_yearly > 0 and abs(user_total - pvgis_yearly) > 0.01:
-                scale = user_total / pvgis_yearly
-                monthly_kwh = [m * scale for m in monthly_kwh]
-                _logger.info(
-                    f"📊 Preserving manual annual total ({user_total:.2f} kWh) — "
-                    f"scaling PVGIS monthly values by {scale:.4f}"
-                )
-            else:
-                self.pvgis_annual_production_kwh = pvgis_yearly
-                _logger.info(f"📊 Comparison - Google: {self.annual_production_kwh:.0f} kWh vs PVGIS: {self.pvgis_annual_production_kwh:.0f} kWh")
+            # Store PVGIS yearly total for comparison
+            self.pvgis_annual_production_kwh = pvgis_data['yearly_kwh']
+            _logger.info(f"📊 Comparison - Google: {self.annual_production_kwh:.0f} kWh vs PVGIS: {self.pvgis_annual_production_kwh:.0f} kWh")
 
             # Store monthly data
-            self._store_monthly_results(monthly_kwh)
+            self._store_monthly_results(pvgis_data['monthly_kwh'])
             return True
 
         except Exception as e:
@@ -1615,6 +1628,13 @@ class PvSimulation(models.Model):
         # Days in each month (Feb = 29)
         days_in_months = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 
+        # Cent-precise distribution of the annual consumption default so
+        # sum(monthly_consumption_kwh) matches what the user entered.
+        consumption_distribution = []
+        if self.default_monthly_consumption_kwh:
+            annual_total = self.default_monthly_consumption_kwh * 12
+            consumption_distribution = self._distribute_annual_consumption(annual_total, 12)
+
         # Create new monthly results
         monthly_results = []
         for month_num in range(1, 13):
@@ -1629,8 +1649,9 @@ class PvSimulation(models.Model):
                 'daily_production_kwh': daily_kwh,
             }
             # Auto-apply default consumption values
-            if self.default_monthly_consumption_kwh:
-                monthly_result_vals.update(self._apply_consumption_ratio(self.default_monthly_consumption_kwh, days))
+            if consumption_distribution:
+                month_conso = consumption_distribution[month_num - 1]
+                monthly_result_vals.update(self._apply_consumption_ratio(month_conso, days))
             monthly_results.append((0, 0, monthly_result_vals))
 
         self.monthly_result_ids = monthly_results
@@ -1654,6 +1675,13 @@ class PvSimulation(models.Model):
         days_in_months = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
         monthly_results = []
 
+        # Cent-precise distribution of the annual consumption default so
+        # sum(monthly_consumption_kwh) matches what the user entered.
+        consumption_distribution = []
+        if self.default_monthly_consumption_kwh:
+            annual_total = self.default_monthly_consumption_kwh * 12
+            consumption_distribution = self._distribute_annual_consumption(annual_total, 12)
+
         for month_num in range(1, 13):
             month_pct = self.production_profile_id.get_month_pct(month_num)
             annual = self.pvgis_annual_production_kwh or self.annual_production_kwh or 0.0
@@ -1668,8 +1696,9 @@ class PvSimulation(models.Model):
                 'daily_production_kwh': daily_production_kwh,
             }
             # Auto-apply default consumption values
-            if self.default_monthly_consumption_kwh:
-                monthly_result_vals.update(self._apply_consumption_ratio(self.default_monthly_consumption_kwh, days))
+            if consumption_distribution:
+                month_conso = consumption_distribution[month_num - 1]
+                monthly_result_vals.update(self._apply_consumption_ratio(month_conso, days))
             monthly_results.append((0, 0, monthly_result_vals))
 
         self.monthly_result_ids = monthly_results
