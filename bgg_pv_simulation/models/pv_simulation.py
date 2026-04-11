@@ -273,6 +273,14 @@ class PvSimulation(models.Model):
         default=False,
         help='Set to True when simulation-impacting data has changed since last generation'
     )
+    version = fields.Integer(
+        string='Version',
+        default=1,
+        readonly=True,
+        copy=False,
+        help='Generation version of this simulation. Starts at 1 (v01) and is '
+             'incremented every time the user clicks "Régénérer la simulation".'
+    )
 
     # Tariff profile for financial calculations. The profile is only used as
     # a starting point: when it is selected, its values are copied onto the
@@ -392,22 +400,24 @@ class PvSimulation(models.Model):
                 super().write({'simulation_needs_regeneration': True})
         return res
 
+    @staticmethod
+    def _format_simulation_name(so_ref, version):
+        """Build the SIM-<SO>-vNN reference string for a given version."""
+        return f'SIM-{so_ref}-v{int(version or 1):02d}'
+
     @api.model
-    def _next_simulation_reference(self, sale_order=None):
+    def _next_simulation_reference(self, sale_order=None, version=1):
         """Return the next simulation reference.
 
         Preferred format: ``SIM-<sale order reference>-v<NN>`` where NN is
-        the next version number for that sale order (v01, v02, …). If no
-        sale order is provided, falls back to the legacy global sequence
-        so callers that don't know the SO still get a unique reference.
+        the generation version. Newly created simulations start at v01;
+        the version is then incremented every time the user regenerates
+        the simulation from the UI. If no sale order is provided, falls
+        back to the legacy global sequence so callers that don't know the
+        SO still get a unique reference.
         """
         if sale_order and sale_order.name:
-            so_ref = sale_order.name
-            existing = self.with_context(active_test=False).search_count([
-                ('sale_order_id', '=', sale_order.id),
-            ])
-            version = existing + 1
-            return f'SIM-{so_ref}-v{version:02d}'
+            return self._format_simulation_name(sale_order.name, version)
 
         # Legacy fallback — keep the sequence path so older call sites
         # (and test fixtures) that create simulations without a sale order
@@ -851,10 +861,24 @@ class PvSimulation(models.Model):
         here: the user can fill it in afterwards on the Consommation tab.
         """
         self.ensure_one()
-        self.action_do_regenerate()
+        # The wizard already created the record at v01 — the first
+        # generation should not bump it to v02, so skip the version
+        # increment on this initial pass.
+        self.with_context(skip_version_bump=True).action_do_regenerate()
         if self.default_monthly_consumption_kwh:
             self.action_apply_default_consumption()
         self.action_compute_daily_balance()
+
+    def _bump_version(self):
+        """Increment the version number and refresh the SIM-<SO>-vNN name."""
+        self.ensure_one()
+        new_version = (self.version or 1) + 1
+        so_ref = self.sale_order_id.name or 'DRAFT'
+        new_name = self._format_simulation_name(so_ref, new_version)
+        self.with_context(skip_regeneration_flag=True).write({
+            'version': new_version,
+            'name': new_name,
+        })
 
     def action_do_regenerate(self):
         """Actual regeneration logic called from the JS client action"""
@@ -897,6 +921,13 @@ class PvSimulation(models.Model):
 
         # Clear regeneration flag
         self.simulation_needs_regeneration = False
+
+        # Bump the version (and refresh the SIM-<SO>-vNN name) so the user
+        # can tell regenerations apart. The initial wizard generation sets
+        # ``skip_version_bump`` so the freshly-created simulation stays at
+        # v01 after its very first run.
+        if not self.env.context.get('skip_version_bump'):
+            self._bump_version()
 
     def action_generate_report(self):
         """Generate PDF report using WeasyPrint"""
