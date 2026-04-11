@@ -338,17 +338,11 @@ class PvSimulation(models.Model):
     )
 
     # Default consumption (to prefill monthly results)
-    default_monthly_consumption_kwh = fields.Float(
-        string='Consommation mensuelle par défaut (kWh)',
-        help='Valeur de consommation mensuelle par défaut. Utilisez le bouton pour copier cette valeur sur tous les mois.'
-    )
-    default_daily_day_consumption_kwh = fields.Float(
-        string='Consommation jour quotidienne par défaut (kWh)',
-        help='Consommation de jour quotidienne par défaut. Utilisez le bouton pour copier cette valeur sur tous les mois.'
-    )
-    default_daily_night_consumption_kwh = fields.Float(
-        string='Consommation nuit quotidienne par défaut (kWh)',
-        help='Consommation de nuit quotidienne par défaut. Utilisez le bouton pour copier cette valeur sur tous les mois.'
+    default_annual_consumption_kwh = fields.Float(
+        string='Consommation annuelle par défaut (kWh)',
+        help="Consommation annuelle totale par défaut (en kWh). Utilisez le "
+             "bouton « Appliquer la consommation par défaut » pour la "
+             "répartir automatiquement sur les 12 mois."
     )
     day_consumption_ratio = fields.Float(
         string='Ratio consommation jour (%)',
@@ -538,22 +532,22 @@ class PvSimulation(models.Model):
         ]
 
     def action_apply_default_consumption(self):
-        """Copy default monthly consumption to all months and derive day/night via ratio."""
+        """Copy the annual consumption default across the 12 months and derive day/night via ratio."""
         self.ensure_one()
-        if not self.default_monthly_consumption_kwh:
-            raise UserError(_("Veuillez saisir une valeur de consommation mensuelle par défaut."))
+        if not self.default_annual_consumption_kwh:
+            raise UserError(_("Veuillez saisir une valeur de consommation annuelle par défaut."))
         if not self.monthly_result_ids:
             raise UserError(_("Aucun résultat mensuel trouvé. Veuillez d'abord générer la simulation."))
 
-        # Distribute the implied annual total (monthly default × 12) across
-        # the 12 months with cent-level precision so the sum on the bilan
-        # page matches what the user entered in the wizard (5000, not 5000.04).
-        annual_total = self.default_monthly_consumption_kwh * 12
+        # Distribute the annual total across the 12 months with cent-level
+        # precision so the sum on the bilan page matches what the user
+        # entered (5000, not 5000.04).
+        annual_total = self.default_annual_consumption_kwh
         monthly_distribution = self._distribute_annual_consumption(annual_total, 12)
         sorted_results = self.monthly_result_ids.sorted(key=lambda r: int(r.month))
         for idx, result in enumerate(sorted_results):
             days = result.days_in_month or 30
-            month_conso = monthly_distribution[idx] if idx < len(monthly_distribution) else self.default_monthly_consumption_kwh
+            month_conso = monthly_distribution[idx] if idx < len(monthly_distribution) else annual_total / 12.0
             vals = self._apply_consumption_ratio(month_conso, days)
             result.write(vals)
 
@@ -865,7 +859,7 @@ class PvSimulation(models.Model):
         # generation should not bump it to v02, so skip the version
         # increment on this initial pass.
         self.with_context(skip_version_bump=True).action_do_regenerate()
-        if self.default_monthly_consumption_kwh:
+        if self.default_annual_consumption_kwh:
             self.action_apply_default_consumption()
         self.action_compute_daily_balance()
 
@@ -1677,9 +1671,10 @@ class PvSimulation(models.Model):
         # Cent-precise distribution of the annual consumption default so
         # sum(monthly_consumption_kwh) matches what the user entered.
         consumption_distribution = []
-        if self.default_monthly_consumption_kwh:
-            annual_total = self.default_monthly_consumption_kwh * 12
-            consumption_distribution = self._distribute_annual_consumption(annual_total, 12)
+        if self.default_annual_consumption_kwh:
+            consumption_distribution = self._distribute_annual_consumption(
+                self.default_annual_consumption_kwh, 12,
+            )
 
         # Create new monthly results
         monthly_results = []
@@ -1724,9 +1719,10 @@ class PvSimulation(models.Model):
         # Cent-precise distribution of the annual consumption default so
         # sum(monthly_consumption_kwh) matches what the user entered.
         consumption_distribution = []
-        if self.default_monthly_consumption_kwh:
-            annual_total = self.default_monthly_consumption_kwh * 12
-            consumption_distribution = self._distribute_annual_consumption(annual_total, 12)
+        if self.default_annual_consumption_kwh:
+            consumption_distribution = self._distribute_annual_consumption(
+                self.default_annual_consumption_kwh, 12,
+            )
 
         for month_num in range(1, 13):
             month_pct = self.production_profile_id.get_month_pct(month_num)
