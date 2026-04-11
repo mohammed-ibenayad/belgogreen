@@ -37,8 +37,8 @@ class ProductTemplate(models.Model):
     )
     battery_efficiency_percent = fields.Float(
         string='Battery Efficiency (%)',
-        default=90.0,
-        help='Battery round-trip efficiency percentage (default: 90%)'
+        default=100.0,
+        help='Battery round-trip efficiency percentage (default: 100%)'
     )
     is_panel_category = fields.Boolean(
         compute='_compute_is_panel_category',

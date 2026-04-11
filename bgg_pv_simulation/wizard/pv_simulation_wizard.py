@@ -157,7 +157,8 @@ class PvSimulationWizard(models.TransientModel):
                         )
                 if not battery_lines:
                     warnings.append(
-                        _("ℹ Aucune batterie trouvée dans le devis. La simulation sera sans stockage.")
+                        _("⚠ Aucune batterie trouvée dans le devis. "
+                          "Ajoutez un produit de la catégorie 'Batteries' pour pouvoir générer la simulation.")
                     )
                 else:
                     has_capacity = any(l.product_id.battery_capacity_kwh for l in battery_lines)
@@ -317,12 +318,9 @@ class PvSimulationWizard(models.TransientModel):
         }
 
     def _prepare_simulation_vals(self, latitude, longitude):
-        # Resolve the SIM- reference up-front so the simulation never lands
-        # in the database with the placeholder 'New' name, even if a code
-        # path bypasses the model's create() override.
-        name = self.env['pv.simulation']._next_simulation_reference()
+        # The simulation name is resolved by pv.simulation.create() from the
+        # sale order so it can embed the SO reference and version number.
         return {
-            'name': name,
             'sale_order_id': self.sale_order_id.id,
             'currency_id': self.sale_order_id.currency_id.id or self.env.company.currency_id.id,
             'company_id': self.sale_order_id.company_id.id or self.env.company.id,
