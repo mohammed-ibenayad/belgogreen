@@ -40,7 +40,7 @@ SVG_ICON_MOON = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" 
 SVG_ICON_BATTERY = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="18" height="12" rx="2" ry="2"/><line x1="23" y1="13" x2="23" y2="11"/><line x1="7" y1="10" x2="7" y2="14"/><line x1="5" y1="12" x2="9" y2="12"/></svg>'
 SVG_ICON_RECYCLE = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>'
 SVG_ICON_EURO = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.2 7A6 6 0 0 0 7 12a6 6 0 0 0 10.2 5"/><line x1="4" y1="10" x2="14" y2="10"/><line x1="4" y1="14" x2="14" y2="14"/></svg>'
-SVG_ICON_PIGGY = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2v-4h-2c0-1-.5-1.5-1-2"/><path d="M2 9.5a1 1 0 0 1 1-1h.01"/><circle cx="12.5" cy="9.5" r=".5" fill="#FFFFFF"/></svg>'
+SVG_ICON_PIGGY = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#8BC34A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2v-4h-2c0-1-.5-1.5-1-2"/><path d="M2 9.5a1 1 0 0 1 1-1h.01"/><circle cx="12.5" cy="9.5" r=".5" fill="#8BC34A"/></svg>'
 SVG_ICON_WALLET = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9B5D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/><circle cx="18" cy="15" r="1.5"/></svg>'
 
 
@@ -1287,8 +1287,9 @@ class PvSimulationWeasyPrint(models.AbstractModel):
         }
 
         .bilan-summary-savings-inner {
-            background: #212121;
-            color: #FFFFFF;
+            background: #FFFFFF;
+            color: #212121;
+            border: 1.5px solid #E0E0E0;
             border-radius: 10px;
             padding: 4mm 5mm;
             page-break-inside: avoid;
@@ -1317,13 +1318,14 @@ class PvSimulationWeasyPrint(models.AbstractModel):
             font-size: 7pt;
             text-transform: uppercase;
             letter-spacing: 0.3px;
-            opacity: 0.9;
+            color: #212121;
         }
 
         .bts-value {
             display: block;
             font-size: 14pt;
             font-weight: 700;
+            color: #8BC34A;
         }
 
         .bilan-summary-purchase {

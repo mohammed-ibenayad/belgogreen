@@ -378,10 +378,25 @@ class PvSimulation(models.Model):
         return res
 
     @api.model
-    def _next_simulation_reference(self):
-        """Return the next SIM- reference, creating the sequence on the fly
-        if it is missing from the database (e.g. when the module was loaded
-        without a full upgrade and the security XML never inserted it)."""
+    def _next_simulation_reference(self, sale_order=None):
+        """Return the next simulation reference.
+
+        Preferred format: ``SIM-<sale order reference>-v<NN>`` where NN is
+        the next version number for that sale order (v01, v02, …). If no
+        sale order is provided, falls back to the legacy global sequence
+        so callers that don't know the SO still get a unique reference.
+        """
+        if sale_order and sale_order.name:
+            so_ref = sale_order.name
+            existing = self.with_context(active_test=False).search_count([
+                ('sale_order_id', '=', sale_order.id),
+            ])
+            version = existing + 1
+            return f'SIM-{so_ref}-v{version:02d}'
+
+        # Legacy fallback — keep the sequence path so older call sites
+        # (and test fixtures) that create simulations without a sale order
+        # still receive a unique reference.
         Sequence = self.env['ir.sequence'].sudo()
         new_name = Sequence.next_by_code('pv.simulation')
         if new_name:
@@ -406,14 +421,23 @@ class PvSimulation(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         placeholder_names = {'New', _('New')}
+        default_tariff = self.env['pv.tariff.profile'].search([], limit=1)
         for vals in vals_list:
             current = vals.get('name')
             if not current or current in placeholder_names:
-                vals['name'] = self._next_simulation_reference()
+                so_id = vals.get('sale_order_id')
+                sale_order = self.env['sale.order'].browse(so_id) if so_id else None
+                vals['name'] = self._next_simulation_reference(sale_order=sale_order)
             # Seed the per-simulation tariff overrides from the selected
             # profile when they are not explicitly provided (the @api.onchange
             # only fires from the UI, not from programmatic creates).
+            # If no profile was supplied at all, fall back to the first
+            # tariff profile found so new simulations always land with
+            # sensible default prices pre-filled.
             profile_id = vals.get('tariff_profile_id')
+            if not profile_id and default_tariff:
+                vals['tariff_profile_id'] = default_tariff.id
+                profile_id = default_tariff.id
             if profile_id:
                 profile = self.env['pv.tariff.profile'].browse(profile_id)
                 if profile.exists():
@@ -467,6 +491,27 @@ class PvSimulation(models.Model):
             'monthly_night_consumption_kwh': round(monthly_kwh * (1 - ratio), 2),
         }
 
+    @staticmethod
+    def _distribute_annual_consumption(annual_kwh, count=12):
+        """Split an annual consumption total across ``count`` months with
+        cent-level precision.
+
+        Each per-month value has at most 2 decimals and the sum of the
+        returned values equals the original annual total exactly. This
+        avoids the "5000 → 5000.04" drift caused by rounding ``annual / 12``
+        independently for every month (round(416.666…, 2) = 416.67 →
+        12 × 416.67 = 5000.04).
+        """
+        if not annual_kwh or count <= 0:
+            return [0.0] * max(count, 0)
+        total_cents = int(round(annual_kwh * 100))
+        base_cents = total_cents // count
+        extra = total_cents - base_cents * count
+        return [
+            (base_cents + (1 if i < extra else 0)) / 100.0
+            for i in range(count)
+        ]
+
     def action_apply_default_consumption(self):
         """Copy default monthly consumption to all months and derive day/night via ratio."""
         self.ensure_one()
@@ -475,9 +520,16 @@ class PvSimulation(models.Model):
         if not self.monthly_result_ids:
             raise UserError(_("Aucun résultat mensuel trouvé. Veuillez d'abord générer la simulation."))
 
-        for result in self.monthly_result_ids:
+        # Distribute the implied annual total (monthly default × 12) across
+        # the 12 months with cent-level precision so the sum on the bilan
+        # page matches what the user entered in the wizard (5000, not 5000.04).
+        annual_total = self.default_monthly_consumption_kwh * 12
+        monthly_distribution = self._distribute_annual_consumption(annual_total, 12)
+        sorted_results = self.monthly_result_ids.sorted(key=lambda r: int(r.month))
+        for idx, result in enumerate(sorted_results):
             days = result.days_in_month or 30
-            vals = self._apply_consumption_ratio(self.default_monthly_consumption_kwh, days)
+            month_conso = monthly_distribution[idx] if idx < len(monthly_distribution) else self.default_monthly_consumption_kwh
+            vals = self._apply_consumption_ratio(month_conso, days)
             result.write(vals)
 
         # Auto-compute daily energy balance after applying consumption
@@ -511,7 +563,7 @@ class PvSimulation(models.Model):
         - Vente = SurplusPV - Charge
         - CapDebutBat(M) = max(0, min(CapBat × RenBat, CapDebutBat(M-1) + Charge(M-1) - ConsoNuit(M-1)))
         - Énergie_batterie_nuit = min(CapDebutBat + Charge, CapBat × RenBat)
-        - Achat = max(0, ConsoNuit - Énergie_batterie_nuit)
+        - Achat = max(0, ConsoNuit - Énergie_batterie_nuit) + max(0, ConsoJour - Production)
         """
         self.ensure_one()
         if not self.monthly_result_ids:
@@ -556,8 +608,9 @@ class PvSimulation(models.Model):
             vente = surplus_pv - charge
             # Énergie batterie disponible la nuit
             energie_bat_nuit = min(cap_debut_bat + charge, cap_bat_effective) if cap_bat > 0 else 0.0
-            # Achat
-            achat = max(0.0, conso_nuit - energie_bat_nuit)
+            # Achat — cover the nighttime deficit from the battery shortfall
+            # PLUS any daytime consumption not covered by production.
+            achat = max(0.0, conso_nuit - energie_bat_nuit) + max(0.0, conso_jour - prod)
 
             # Financial calculations
             # Économie panneaux = Auto_jour_day * days * P_buy
@@ -1575,6 +1628,13 @@ class PvSimulation(models.Model):
         # Days in each month (Feb = 29)
         days_in_months = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 
+        # Cent-precise distribution of the annual consumption default so
+        # sum(monthly_consumption_kwh) matches what the user entered.
+        consumption_distribution = []
+        if self.default_monthly_consumption_kwh:
+            annual_total = self.default_monthly_consumption_kwh * 12
+            consumption_distribution = self._distribute_annual_consumption(annual_total, 12)
+
         # Create new monthly results
         monthly_results = []
         for month_num in range(1, 13):
@@ -1589,8 +1649,9 @@ class PvSimulation(models.Model):
                 'daily_production_kwh': daily_kwh,
             }
             # Auto-apply default consumption values
-            if self.default_monthly_consumption_kwh:
-                monthly_result_vals.update(self._apply_consumption_ratio(self.default_monthly_consumption_kwh, days))
+            if consumption_distribution:
+                month_conso = consumption_distribution[month_num - 1]
+                monthly_result_vals.update(self._apply_consumption_ratio(month_conso, days))
             monthly_results.append((0, 0, monthly_result_vals))
 
         self.monthly_result_ids = monthly_results
@@ -1614,6 +1675,13 @@ class PvSimulation(models.Model):
         days_in_months = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
         monthly_results = []
 
+        # Cent-precise distribution of the annual consumption default so
+        # sum(monthly_consumption_kwh) matches what the user entered.
+        consumption_distribution = []
+        if self.default_monthly_consumption_kwh:
+            annual_total = self.default_monthly_consumption_kwh * 12
+            consumption_distribution = self._distribute_annual_consumption(annual_total, 12)
+
         for month_num in range(1, 13):
             month_pct = self.production_profile_id.get_month_pct(month_num)
             annual = self.pvgis_annual_production_kwh or self.annual_production_kwh or 0.0
@@ -1628,8 +1696,9 @@ class PvSimulation(models.Model):
                 'daily_production_kwh': daily_production_kwh,
             }
             # Auto-apply default consumption values
-            if self.default_monthly_consumption_kwh:
-                monthly_result_vals.update(self._apply_consumption_ratio(self.default_monthly_consumption_kwh, days))
+            if consumption_distribution:
+                month_conso = consumption_distribution[month_num - 1]
+                monthly_result_vals.update(self._apply_consumption_ratio(month_conso, days))
             monthly_results.append((0, 0, monthly_result_vals))
 
         self.monthly_result_ids = monthly_results
