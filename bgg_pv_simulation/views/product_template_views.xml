@@ -10,14 +10,14 @@
             <xpath expr="//page[@name='general_information']" position="inside">
                 <field name="is_panel_category" invisible="1"/>
                 <field name="is_battery_category" invisible="1"/>
-                <group string="Solar Panel Specifications" invisible="not is_panel_category">
+                <group string="Caractéristiques panneau solaire" invisible="not is_panel_category">
                     <div class="alert alert-info mb-3" role="status" colspan="2">
                         Ce produit est détecté comme <strong>Panneau solaire</strong> car il appartient à la catégorie
                         <em>All / Saleable / Panneaux</em>.
                     </div>
                     <field name="panel_unit_power_wc"/>
                 </group>
-                <group string="Battery Specifications" invisible="not is_battery_category">
+                <group string="Caractéristiques batterie" invisible="not is_battery_category">
                     <div class="alert alert-info mb-3" role="status" colspan="2">
                         Ce produit est détecté comme <strong>Batterie</strong> car il appartient à la catégorie
                         <em>All / Saleable / Batteries</em>.

@@ -1,20 +1,20 @@
 # -*- coding: utf-8 -*-
 {
-    'name': 'PV Simulation & Quotation Report',
-    'version': '19.0.1.0.4',
+    'name': 'Simulation PV & Rapport de devis',
+    'version': '19.0.1.0.5',
     'category': 'Sales',
-    'summary': 'Photovoltaic installation simulation with energy and financial calculations',
+    'summary': "Simulation d'installation photovoltaïque avec calculs énergétiques et financiers",
     'description': """
-        PV Simulation Module
+        Module Simulation PV
         ====================
-        * Simulate photovoltaic installations
-        * Calculate energy production, consumption, and storage
-        * Compute monthly and annual financial impacts
-        * Generate detailed PDF reports with charts
-        * Integrate with sale quotations
+        * Simuler une installation photovoltaïque
+        * Calculer la production, la consommation et le stockage d'énergie
+        * Calculer les impacts financiers mensuels et annuels
+        * Générer un rapport PDF complet avec graphiques
+        * Intégration avec les devis (sale.order)
     """,
-    'author': 'Your Company',
-    'website': 'https://www.yourcompany.com',
+    'author': 'BelGoGreen',
+    'website': 'https://www.belgogreen.com',
     'license': 'LGPL-3',
     'depends': ['base', 'sale_management'],
     'external_dependencies': {

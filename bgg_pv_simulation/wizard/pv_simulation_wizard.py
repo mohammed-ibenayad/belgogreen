@@ -12,7 +12,7 @@ _logger = logging.getLogger(__name__)
 
 class PvSimulationWizard(models.TransientModel):
     _name = 'pv.simulation.wizard'
-    _description = 'PV Simulation Creation Wizard'
+    _description = 'Assistant de création de simulation PV'
 
     sale_order_id = fields.Many2one(
         'sale.order',

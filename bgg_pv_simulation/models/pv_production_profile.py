@@ -6,79 +6,79 @@ from odoo.exceptions import ValidationError
 
 class PvProductionProfile(models.Model):
     _name = 'pv.production.profile'
-    _description = 'PV Production Profile'
+    _description = 'Profil de production PV'
     _order = 'name'
 
     name = fields.Char(
-        string='Profile Name',
+        string='Nom du profil',
         required=True,
         translate=True
     )
     january_pct = fields.Float(
-        string='January (%)',
+        string='Janvier (%)',
         required=True,
-        help='Percentage of annual production in January'
+        help='Pourcentage de la production annuelle en janvier'
     )
     february_pct = fields.Float(
-        string='February (%)',
+        string='Février (%)',
         required=True,
-        help='Percentage of annual production in February'
+        help='Pourcentage de la production annuelle en février'
     )
     march_pct = fields.Float(
-        string='March (%)',
+        string='Mars (%)',
         required=True,
-        help='Percentage of annual production in March'
+        help='Pourcentage de la production annuelle en mars'
     )
     april_pct = fields.Float(
-        string='April (%)',
+        string='Avril (%)',
         required=True,
-        help='Percentage of annual production in April'
+        help='Pourcentage de la production annuelle en avril'
     )
     may_pct = fields.Float(
-        string='May (%)',
+        string='Mai (%)',
         required=True,
-        help='Percentage of annual production in May'
+        help='Pourcentage de la production annuelle en mai'
     )
     june_pct = fields.Float(
-        string='June (%)',
+        string='Juin (%)',
         required=True,
-        help='Percentage of annual production in June'
+        help='Pourcentage de la production annuelle en juin'
     )
     july_pct = fields.Float(
-        string='July (%)',
+        string='Juillet (%)',
         required=True,
-        help='Percentage of annual production in July'
+        help='Pourcentage de la production annuelle en juillet'
     )
     august_pct = fields.Float(
-        string='August (%)',
+        string='Août (%)',
         required=True,
-        help='Percentage of annual production in August'
+        help='Pourcentage de la production annuelle en août'
     )
     september_pct = fields.Float(
-        string='September (%)',
+        string='Septembre (%)',
         required=True,
-        help='Percentage of annual production in September'
+        help='Pourcentage de la production annuelle en septembre'
     )
     october_pct = fields.Float(
-        string='October (%)',
+        string='Octobre (%)',
         required=True,
-        help='Percentage of annual production in October'
+        help='Pourcentage de la production annuelle en octobre'
     )
     november_pct = fields.Float(
-        string='November (%)',
+        string='Novembre (%)',
         required=True,
-        help='Percentage of annual production in November'
+        help='Pourcentage de la production annuelle en novembre'
     )
     december_pct = fields.Float(
-        string='December (%)',
+        string='Décembre (%)',
         required=True,
-        help='Percentage of annual production in December'
+        help='Pourcentage de la production annuelle en décembre'
     )
     total_pct = fields.Float(
         string='Total (%)',
         compute='_compute_total_pct',
         store=True,
-        help='Sum of all monthly percentages (must equal 100%)'
+        help='Somme des pourcentages mensuels (doit être égale à 100 %)'
     )
 
     @api.depends('january_pct', 'february_pct', 'march_pct', 'april_pct',
@@ -106,7 +106,7 @@ class PvProductionProfile(models.Model):
             ])
             if abs(total - 100.0) > 0.01:
                 raise ValidationError(
-                    _('Monthly percentages must sum to 100%%. Current total: %.2f%%') % total
+                    _('La somme des pourcentages mensuels doit être égale à 100 %%. Total actuel : %.2f %%') % total
                 )
 
     def get_month_pct(self, month_num):

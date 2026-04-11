@@ -5,7 +5,7 @@ from odoo import models, fields, api, _
 
 class PvMonthlyResult(models.Model):
     _name = 'pv.monthly.result'
-    _description = 'PV Monthly Result'
+    _description = 'Résultat mensuel PV'
     _order = 'simulation_id, month_sequence'
 
     simulation_id = fields.Many2one(
@@ -33,122 +33,122 @@ class PvMonthlyResult(models.Model):
         required=True
     )
     month_sequence = fields.Integer(
-        string='Month Sequence',
+        string='Ordre du mois',
         compute='_compute_month_sequence',
         store=True,
-        help='Numeric month value for proper sorting'
+        help='Numéro de mois utilisé pour le tri'
     )
     days_in_month = fields.Integer(
-        string='Days in Month',
+        string='Jours dans le mois',
         compute='_compute_days_in_month',
         store=True
     )
     currency_id = fields.Many2one(
         'res.currency',
-        string='Currency',
+        string='Devise',
         related='simulation_id.currency_id',
         store=True
     )
 
     # Monthly Energy Totals
     monthly_production_kwh = fields.Float(
-        string='Monthly Production (kWh)',
-        help='Total production for the month'
+        string='Production mensuelle (kWh)',
+        help='Production totale pour le mois'
     )
     monthly_consumption_kwh = fields.Float(
-        string='Monthly Consumption (kWh)',
-        help='Total consumption for the month'
+        string='Consommation mensuelle (kWh)',
+        help='Consommation totale pour le mois'
     )
     monthly_day_consumption_kwh = fields.Float(
-        string='Monthly Day Consumption (kWh)',
-        help='Day consumption for the month'
+        string='Consommation jour mensuelle (kWh)',
+        help='Consommation de jour pour le mois'
     )
     monthly_night_consumption_kwh = fields.Float(
-        string='Monthly Night Consumption (kWh)',
-        help='Night consumption for the month'
+        string='Consommation nuit mensuelle (kWh)',
+        help='Consommation de nuit pour le mois'
     )
     monthly_battery_charge_kwh = fields.Float(
-        string='Monthly Battery Charge (kWh)',
-        help='Energy stored for the month'
+        string='Charge batterie mensuelle (kWh)',
+        help='Énergie stockée dans la batterie pour le mois'
     )
     monthly_energy_sold_kwh = fields.Float(
-        string='Monthly Energy Sold (kWh)',
-        help='Energy sold for the month'
+        string='Énergie vendue mensuelle (kWh)',
+        help='Énergie revendue au réseau pour le mois'
     )
     monthly_energy_bought_kwh = fields.Float(
-        string='Monthly Energy Bought (kWh)',
-        help='Energy bought for the month'
+        string='Énergie achetée mensuelle (kWh)',
+        help='Énergie achetée au réseau pour le mois'
     )
     monthly_autoconsumption_kwh = fields.Float(
-        string='Monthly Autoconsumption (kWh)',
-        help='Total self-consumed for the month'
+        string='Autoconsommation mensuelle (kWh)',
+        help='Autoconsommation totale pour le mois'
     )
 
     # Daily Averages
     daily_production_kwh = fields.Float(
-        string='Daily Production (kWh)',
-        help='Average daily production'
+        string='Production quotidienne (kWh)',
+        help='Production quotidienne moyenne'
     )
     daily_day_consumption_kwh = fields.Float(
-        string='Daily Day Consumption (kWh)',
-        help='Daily day consumption'
+        string='Consommation jour quotidienne (kWh)',
+        help='Consommation de jour quotidienne'
     )
     daily_night_consumption_kwh = fields.Float(
-        string='Daily Night Consumption (kWh)',
-        help='Daily night consumption'
+        string='Consommation nuit quotidienne (kWh)',
+        help='Consommation de nuit quotidienne'
     )
     daily_day_autoconsumption_kwh = fields.Float(
-        string='Daily Direct Autoconsumption (kWh)',
-        help='Daily direct self-consumption'
+        string='Autoconsommation directe quotidienne (kWh)',
+        help='Autoconsommation directe quotidienne (production consommée directement en journée)'
     )
     daily_surplus_pv_kwh = fields.Float(
-        string='Daily Surplus PV (kWh)',
-        help='Daily solar surplus after day consumption (Production - Conso jour, if > 0)'
+        string='Surplus PV quotidien (kWh)',
+        help='Surplus solaire quotidien après consommation de jour (Production − Conso jour, si > 0)'
     )
     daily_battery_charge_kwh = fields.Float(
-        string='Daily Battery Charge (kWh)',
-        help='Daily battery charge'
+        string='Charge batterie quotidienne (kWh)',
+        help='Énergie stockée dans la batterie par jour'
     )
     daily_energy_sold_kwh = fields.Float(
-        string='Daily Energy Sold (kWh)',
-        help='Daily energy sold'
+        string='Énergie vendue quotidienne (kWh)',
+        help='Énergie revendue au réseau par jour'
     )
     daily_energy_bought_kwh = fields.Float(
-        string='Daily Energy Bought (kWh)',
-        help='Daily energy bought'
+        string='Énergie achetée quotidienne (kWh)',
+        help='Énergie achetée au réseau par jour'
     )
     battery_charge_level = fields.Integer(
-        string='Battery Level',
+        string='Niveau batterie',
         compute='_compute_battery_charge_level',
         store=False,
-        help='Battery charge level 0-7 for icon display'
+        help='Niveau de charge de la batterie (0-7), utilisé pour l\'icône'
     )
 
     # Monthly Financial Totals
     panel_savings = fields.Monetary(
-        string='Panel Savings',
+        string='Économies panneaux',
         currency_field='currency_id',
-        help='€ saved from panels'
+        help='Économies réalisées grâce aux panneaux (autoconsommation de jour)'
     )
     battery_savings = fields.Monetary(
-        string='Battery Savings',
+        string='Économies batterie',
         currency_field='currency_id',
-        help='€ saved from battery'
+        help='Économies réalisées grâce à la batterie (consommation de nuit)'
     )
     sale_revenue = fields.Monetary(
-        string='Sale Revenue',
+        string='Revenus de revente',
         currency_field='currency_id',
-        help='€ from grid sales'
+        help='Revenus générés par la revente du surplus au réseau'
     )
     purchase_cost = fields.Monetary(
-        string='Purchase Cost',
+        string="Coût d'achat réseau",
         currency_field='currency_id',
-        help='€ for grid purchases'
+        help="Coût de l'énergie achetée au réseau"
     )
     net_balance = fields.Monetary(
-        string='Net Balance',
+        string='Bilan net',
         currency_field='currency_id',
-        help='purchase_cost - sale_revenue'
+        help="Bilan net = coût d'achat − revenus de revente"
     )
 
     @api.onchange('monthly_consumption_kwh')
