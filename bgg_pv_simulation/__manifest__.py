@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Simulation PV & Rapport de devis',
-    'version': '19.0.1.0.5',
+    'version': '19.0.1.0.6',
     'category': 'Sales',
     'summary': "Simulation d'installation photovoltaïque avec calculs énergétiques et financiers",
     'description': """
