@@ -376,11 +376,11 @@
                         <page string="Consommation (Page 6)" name="page_consumption">
                             <group>
                                 <group string="Consommation Client">
-                                    <label for="default_monthly_consumption_kwh" string="Consommation mensuelle par défaut"/>
+                                    <label for="default_annual_consumption_kwh" string="Consommation annuelle par défaut"/>
                                     <div class="o_row">
-                                        <field name="default_monthly_consumption_kwh"
+                                        <field name="default_annual_consumption_kwh"
                                                class="o_field_highlight"/>
-                                        <span>kWh/mois</span>
+                                        <span>kWh/an</span>
                                     </div>
                                     <div colspan="2">
                                         <button name="action_apply_default_consumption"
@@ -388,7 +388,7 @@
                                                 type="object"
                                                 class="btn-sm btn-secondary"
                                                 invisible="not id"
-                                                confirm="Ceci va écraser les valeurs de consommation de tous les mois avec la valeur par défaut. Continuer ?"/>
+                                                confirm="Ceci va répartir la consommation annuelle par défaut sur les 12 mois et écraser les valeurs actuelles. Continuer ?"/>
                                     </div>
                                     <label for="day_consumption_ratio" string="Ratio jour/nuit"/>
                                     <div class="o_row">

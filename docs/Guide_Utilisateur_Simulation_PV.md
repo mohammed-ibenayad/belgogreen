@@ -107,7 +107,7 @@ Contient deux graphiques de synthèse annuels :
 
 C'est ici que vous pouvez **ajuster la consommation** mois par mois :
 
-- **Consommation mensuelle par défaut** : saisissez une valeur puis cliquez sur **Appliquer la consommation par défaut** pour la répliquer sur tous les mois
+- **Consommation annuelle par défaut** : saisissez une valeur puis cliquez sur **Appliquer la consommation par défaut** pour la répartir automatiquement sur les 12 mois (le total saisi est conservé exactement)
 - **Ratio jour / nuit** : ajustez puis cliquez sur **Appliquer le ratio jour/nuit** pour recalculer les consommations jour/nuit de chaque mois
 - **Tableau mensuel** : les champs en bleu clair (`Conso.`, `Conso jour`, `Conso nuit`) sont modifiables manuellement si le client a des valeurs précises (facture, historique)
 
@@ -193,7 +193,7 @@ R : Vérifiez que le produit batterie appartient à la catégorie `All / Saleabl
 R : La production est calculée par PVGIS en fonction des coordonnées GPS, de l'orientation, de l'inclinaison et de la puissance installée. Vérifiez ces quatre paramètres avant de régénérer. Vous pouvez aussi corriger manuellement la valeur **Production annuelle (PVGIS)** dans l'onglet Système PV.
 
 **Q : Le client m'a donné une consommation annuelle totale ; je ne veux pas saisir 12 valeurs mensuelles.**
-R : Saisissez la consommation annuelle dans l'assistant de création, ou utilisez le champ **Consommation mensuelle par défaut** dans l'onglet Consommation puis cliquez sur **Appliquer la consommation par défaut**. Les 12 mois seront remplis automatiquement et le total sera exact.
+R : Saisissez la valeur annuelle dans l'assistant de création, ou utilisez le champ **Consommation annuelle par défaut** dans l'onglet Consommation puis cliquez sur **Appliquer la consommation par défaut**. Les 12 mois seront remplis automatiquement et le total sera exactement celui que vous avez saisi.
 
 **Q : Je régénère la simulation et mes valeurs de consommation mensuelles saisies manuellement sont conservées ?**
 R : Oui. Les valeurs mensuelles saisies à la main sont préservées à chaque régénération ; seules les valeurs calculées (production, bilan, graphiques) sont recalculées.

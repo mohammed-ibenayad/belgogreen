@@ -328,6 +328,6 @@ class PvSimulationWizard(models.TransientModel):
             'longitude': str(longitude),
             'tilt_deg': self.tilt_deg,
             'orientation_deg': self.orientation_deg,
-            'default_monthly_consumption_kwh': (self.default_annual_consumption_kwh or 0.0) / 12.0,
+            'default_annual_consumption_kwh': self.default_annual_consumption_kwh or 0.0,
             'day_consumption_ratio': self.day_consumption_ratio,
         }
