@@ -5,7 +5,7 @@
         <field name="name">pv.report.defaults.form</field>
         <field name="model">pv.report.defaults</field>
         <field name="arch" type="xml">
-            <form string="PV Report Defaults" create="0" delete="0">
+            <form string="Paramètres du rapport PV" create="0" delete="0">
                 <sheet>
                     <group>
                         <group string="Photo de couverture par d&#233;faut">
@@ -29,7 +29,7 @@
 
     <!-- Server action to open the singleton defaults record -->
     <record id="action_pv_report_defaults" model="ir.actions.server">
-        <field name="name">Report Defaults</field>
+        <field name="name">Paramètres du rapport</field>
         <field name="model_id" ref="model_pv_report_defaults"/>
         <field name="state">code</field>
         <field name="code">

@@ -8,18 +8,18 @@ class SaleOrder(models.Model):
 
     pv_simulation_id = fields.Many2one(
         'pv.simulation',
-        string='PV Simulation',
+        string='Simulation PV',
         ondelete='set null',
         copy=False
     )
     pv_simulation_ids = fields.One2many(
         'pv.simulation',
         'sale_order_id',
-        string='PV Simulations',
+        string='Simulations PV',
     )
     pv_simulation_count = fields.Integer(
         compute='_compute_pv_simulation_count',
-        string='Simulation Count'
+        string='Nombre de simulations'
     )
 
     @api.depends('pv_simulation_ids')

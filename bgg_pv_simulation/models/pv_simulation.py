@@ -12,12 +12,12 @@ _logger = logging.getLogger(__name__)
 
 class PvSimulation(models.Model):
     _name = 'pv.simulation'
-    _description = 'PV Simulation'
+    _description = 'Simulation PV'
     _order = 'create_date desc'
 
     # Core Fields
     name = fields.Char(
-        string='Reference',
+        string='Référence',
         required=True,
         copy=False,
         readonly=True,
@@ -25,7 +25,7 @@ class PvSimulation(models.Model):
     )
     sale_order_id = fields.Many2one(
         'sale.order',
-        string='Quotation',
+        string='Devis',
         required=True,
         ondelete='restrict'
     )
@@ -37,20 +37,20 @@ class PvSimulation(models.Model):
     )
     currency_id = fields.Many2one(
         'res.currency',
-        string='Currency',
+        string='Devise',
         required=True,
         default=lambda self: self.env.company.currency_id
     )
     company_id = fields.Many2one(
         'res.company',
-        string='Company',
+        string='Société',
         required=True,
         default=lambda self: self.env.company
     )
     installation_address = fields.Text(
-        string='Installation Address',
+        string="Adresse d'installation",
         compute='_compute_installation_address',
-        help='Installation address (from customer address, read-only)'
+        help="Adresse d'installation (issue de l'adresse client, lecture seule)"
     )
     latitude = fields.Char(
         string='Latitude',
@@ -63,168 +63,168 @@ class PvSimulation(models.Model):
         compute='_compute_google_maps_url',
     )
     location_image = fields.Binary(
-        string='Location Image',
-        help='Satellite or map image of installation location'
+        string='Image de localisation',
+        help="Image satellite ou carte de l'emplacement d'installation"
     )
     location_image_filename = fields.Char(
-        string='Image Filename'
+        string="Nom du fichier image"
     )
     report_date = fields.Date(
-        string='Report Date',
+        string='Date du rapport',
         default=fields.Date.today
     )
 
     # Cover Page Customization
     cover_photo = fields.Binary(
-        string='Cover Photo',
-        help='Photo de couverture. Si vide, la photo par défaut (Configuration → Report Defaults) est utilisée.',
+        string='Photo de couverture',
+        help='Photo de couverture. Si vide, la photo par défaut (Configuration → Paramètres du rapport) est utilisée.',
     )
     cover_photo_filename = fields.Char(
-        string='Cover Photo Filename',
+        string='Nom du fichier photo de couverture',
     )
     cover_title = fields.Char(
-        string='Cover Title (Line 1)',
+        string='Titre de couverture (ligne 1)',
         default='Votre installation',
-        help='First line of cover title (dark text)'
+        help='Première ligne du titre de couverture (texte sombre)'
     )
     cover_subtitle = fields.Char(
-        string='Cover Title (Line 2)',
+        string='Titre de couverture (ligne 2)',
         default='Photovoltaïque',
-        help='Second line of cover title (green accent text)'
+        help='Deuxième ligne du titre de couverture (accent vert)'
     )
     system_image = fields.Binary(
-        string='System Image',
-        help='Image système. Si vide, l\'image par défaut (Configuration → Report Defaults) est utilisée.',
+        string='Image du système',
+        help="Image système. Si vide, l'image par défaut (Configuration → Paramètres du rapport) est utilisée.",
     )
     system_image_filename = fields.Char(
-        string='System Image Filename',
+        string='Nom du fichier image système',
     )
 
     # Section Titles (Configurable per Quotation)
     section_title_location = fields.Char(
-        string='Location Section Title',
+        string='Titre de section — Localisation',
         default='LOCALISATION DE L\'INSTALLATION',
-        help='Page 2: Installation location section'
+        help='Page Localisation : titre de la section'
     )
     section_title_system = fields.Char(
-        string='System Section Title',
+        string='Titre de section — Système',
         default='CARACTÉRISTIQUES DU SYSTÈME',
-        help='Page 3: System characteristics section'
+        help='Page Production : titre de la section caractéristiques du système'
     )
     section_title_production = fields.Char(
-        string='Production Section Title',
+        string='Titre de section — Production',
         default='PRODUCTION ESTIMÉE',
-        help='Page 3: Production section'
+        help='Page Production : titre principal'
     )
     section_title_consumption = fields.Char(
-        string='Consumption Data Section Title',
+        string='Titre de section — Consommation',
         default='DONNÉES DE CONSOMMATION',
-        help='Page 4: Consumption data and energy balance section'
+        help='Page Consommation : titre de la section données de consommation'
     )
     section_title_bilan = fields.Char(
-        string='Energy Balance Section Title',
+        string='Titre de section — Bilan énergétique',
         default='BILAN ÉNERGÉTIQUE',
-        help='Page 4: Annual energy balance section'
+        help='Page Bilan énergétique annuel : titre de la section'
     )
     section_title_bilan_annuel = fields.Char(
-        string='Annual Balance Section Title',
+        string='Titre de section — Bilan annuel',
         default='BILAN ANNUEL',
-        help='Page: Annual balance charts section (production vs consumption + energy split)'
+        help='Page Bilan annuel : titre principal (graphiques Production vs Consommation et répartition énergétique)'
     )
     section_title_bilan_annuel_prod_vs_conso = fields.Char(
-        string='Production vs Consumption Subtitle',
+        string='Sous-titre — Production vs Consommation',
         default='Production vs Consommation',
-        help='Page BILAN ANNUEL: subtitle above the production vs consumption chart'
+        help='Page BILAN ANNUEL : sous-titre du graphique Production vs Consommation'
     )
     section_title_bilan_annuel_repartition = fields.Char(
-        string='Energy Split Subtitle',
+        string='Sous-titre — Répartition énergétique',
         default='Répartition énergétique',
-        help='Page BILAN ANNUEL: subtitle above the energy split donut chart'
+        help='Page BILAN ANNUEL : sous-titre du graphique en anneau (répartition énergétique)'
     )
     section_title_monthly_data = fields.Char(
-        string='Monthly Data Subtitle',
+        string='Sous-titre — Données mensuelles',
         default='DONNÉES MENSUELLES / QUOTIDIENNES',
-        help='Page 4: Monthly data table subtitle'
+        help='Page Consommation : sous-titre du tableau des données mensuelles'
     )
     section_title_daily_balance = fields.Char(
-        string='Daily Energy Balance Subtitle',
+        string='Sous-titre — Bilan énergétique quotidien',
         default='BILAN ÉNERGÉTIQUE QUOTIDIEN',
-        help='Page 4: Daily energy balance table subtitle'
+        help='Page Consommation : sous-titre du tableau du bilan énergétique quotidien'
     )
 
     # PV System Parameters
     roof_surface_m2 = fields.Float(
-        string='Roof Surface (m²)',
-        help='Available roof surface in square meters'
+        string='Surface de toiture (m²)',
+        help='Surface de toiture disponible en m²'
     )
     number_of_panels = fields.Integer(
-        string='Number of Panels',
+        string='Nombre de panneaux',
         compute='_compute_panel_data',
         store=True,
-        help='Total number of solar panels (from sale order line items)'
+        help='Nombre total de panneaux solaires (issu des lignes du devis)'
     )
     max_panels_count = fields.Integer(
-        string='Max Panels (Roof Capacity)',
-        help='Maximum number of panels the roof can accommodate (from Google Solar API)'
+        string='Panneaux maximum (capacité toiture)',
+        help='Nombre maximum de panneaux que la toiture peut accueillir (source : Google Solar API)'
     )
     panel_unit_power_wc = fields.Float(
-        string='Panel Unit Power (Wc)',
+        string='Puissance unitaire (Wc)',
         compute='_compute_panel_data',
         store=True,
-        help='Power per panel in Wc (from product specification)'
+        help='Puissance par panneau en Wc (issue de la fiche produit)'
     )
     total_pv_power_wc = fields.Float(
-        string='Total PV Power (Wc)',
+        string='Puissance PV totale (Wc)',
         compute='_compute_panel_data',
         store=True,
-        help='Installed PV power in Wc (calculated: number of panels × unit power)'
+        help='Puissance PV installée en Wc (calculée : nombre de panneaux × puissance unitaire)'
     )
     orientation_deg = fields.Float(
         string='Orientation (°)',
-        help='Panel orientation in degrees (-180 to 180, 0=South)'
+        help='Orientation des panneaux en degrés (-180 à 180, 0 = Sud)'
     )
     tilt_deg = fields.Float(
-        string='Inclination (°)',
-        help='Panel inclination in degrees (0-90)'
+        string='Inclinaison (°)',
+        help='Inclinaison des panneaux en degrés (0 à 90)'
     )
 
     # Battery Parameters (auto-detected from sale order)
     battery_capacity_kwh = fields.Float(
-        string='Battery Capacity (kWh)',
+        string='Capacité batterie (kWh)',
         compute='_compute_battery_data',
         store=True,
-        help='Usable battery capacity in kWh (from product specification)'
+        help='Capacité utile de la batterie en kWh (issue de la fiche produit)'
     )
     battery_efficiency = fields.Float(
-        string='Battery Efficiency (%)',
+        string='Rendement batterie (%)',
         compute='_compute_battery_data',
         store=True,
-        help='Battery round-trip efficiency percentage (from product specification)'
+        help='Rendement aller-retour de la batterie en pourcentage (issu de la fiche produit)'
     )
 
     # Production Configuration
     annual_production_kwh = fields.Float(
-        string='Google Solar Annual Production (kWh)',
-        help='Yearly PV production from Google Solar API (read-only reference value)'
+        string='Production annuelle Google Solar (kWh)',
+        help='Production annuelle PV estimée par Google Solar API (valeur de référence, lecture seule)'
     )
     pvgis_annual_production_kwh = fields.Float(
-        string='Annual Production (kWh)',
-        help='Yearly PV production from PVGIS — reference value used in the report'
+        string='Production annuelle (kWh)',
+        help='Production annuelle PV issue de PVGIS — valeur de référence utilisée dans le rapport'
     )
     production_profile_id = fields.Many2one(
         'pv.production.profile',
-        string='Production Profile',
+        string='Profil de production',
         required=True,
         default=lambda self: self.env['pv.production.profile'].search([], limit=1),
-        help='Monthly percentage distribution profile for chart generation'
+        help='Profil de répartition mensuelle (%) utilisé pour la génération du graphique de production'
     )
 
     # Monthly Results (Required for chart generation)
     monthly_result_ids = fields.One2many(
         'pv.monthly.result',
         'simulation_id',
-        string='Monthly Results',
-        help='Monthly production values needed for chart on page 2'
+        string='Résultats mensuels',
+        help='Valeurs de production mensuelle nécessaires au graphique de la page Production'
     )
 
     # Bilan (computed from monthly results)
@@ -255,31 +255,31 @@ class PvSimulation(models.Model):
 
     # Chart Images
     chart_monthly_production = fields.Binary(
-        string='Monthly Production Chart',
-        help='PNG: Monthly daily production bar chart'
+        string='Graphique — Production mensuelle',
+        help='PNG : graphique en barres de la production quotidienne par mois'
     )
     chart_production_vs_consumption = fields.Binary(
-        string='Production vs Consumption Chart',
-        help='PNG: Daily production vs consumption with bilan/revente/achat overlays'
+        string='Graphique — Production vs Consommation',
+        help='PNG : production quotidienne vs consommation avec superpositions bilan/revente/achat'
     )
     chart_energy_balance = fields.Binary(
-        string='Energy Balance Donut',
-        help='PNG: Annual energy balance donut — Production (Autoconso + Vente) vs Consommation (Autoconso + Achat)'
+        string='Graphique — Répartition énergétique (anneau)',
+        help='PNG : graphique en anneau du bilan énergétique annuel — Production (Autoconso + Vente) vs Consommation (Autoconso + Achat)'
     )
 
     # Regeneration tracking
     simulation_needs_regeneration = fields.Boolean(
-        string='Simulation Needs Regeneration',
+        string='Régénération nécessaire',
         default=False,
-        help='Set to True when simulation-impacting data has changed since last generation'
+        help='Passe à Vrai lorsqu\'une donnée impactant la simulation a changé depuis la dernière génération'
     )
     version = fields.Integer(
         string='Version',
         default=1,
         readonly=True,
         copy=False,
-        help='Generation version of this simulation. Starts at 1 (v01) and is '
-             'incremented every time the user clicks "Régénérer la simulation".'
+        help='Numéro de version de cette simulation. Démarre à 1 (v01) et '
+             's\'incrémente à chaque clic sur « Régénérer la simulation ».'
     )
 
     # Tariff profile for financial calculations. The profile is only used as
@@ -327,9 +327,9 @@ class PvSimulation(models.Model):
 
     # Report section title for financial page
     section_title_financial = fields.Char(
-        string='Titre page bilan financier',
+        string='Titre — Bilan financier mensuel',
         default='BILAN FINANCIER MENSUEL',
-        help='Title for the monthly financial balance page in the PDF report'
+        help='Titre de la page Bilan financier mensuel dans le rapport PDF'
     )
     report_company_name = fields.Char(
         string='Nom de société (rapport)',
