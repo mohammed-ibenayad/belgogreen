@@ -10,16 +10,19 @@ class SaleOrder(models.Model):
         'pv.simulation',
         string='Simulation PV',
         ondelete='set null',
-        copy=False
+        copy=False,
+        groups='bgg_pv_simulation.group_pv_user',
     )
     pv_simulation_ids = fields.One2many(
         'pv.simulation',
         'sale_order_id',
         string='Simulations PV',
+        groups='bgg_pv_simulation.group_pv_user',
     )
     pv_simulation_count = fields.Integer(
         compute='_compute_pv_simulation_count',
-        string='Nombre de simulations'
+        string='Nombre de simulations',
+        groups='bgg_pv_simulation.group_pv_user',
     )
 
     @api.depends('pv_simulation_ids')
