@@ -22,13 +22,11 @@ class SaleOrder(models.Model):
     commission_count = fields.Integer(
         string='Commission Count',
         compute='_compute_commission_count',
-        groups='belgogreen_sales_commission.group_commission_user',
     )
 
     commissions_generated = fields.Boolean(
         string='Commissions Generated',
         default=False,
-        groups='belgogreen_sales_commission.group_commission_user',
         help='Indicates if commissions have been generated for this order'
     )
 

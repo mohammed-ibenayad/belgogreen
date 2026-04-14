@@ -21,7 +21,6 @@ class AccountMove(models.Model):
     commission_count = fields.Integer(
         string='Commission Count',
         compute='_compute_commission_count',
-        groups='belgogreen_sales_commission.group_commission_user',
     )
 
     @api.depends('commission_ids')
