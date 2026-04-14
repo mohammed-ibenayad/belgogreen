@@ -28,7 +28,6 @@ class ResUsers(models.Model):
         string='Commission Count',
         compute='_compute_commission_stats',
         store=True,
-        groups='belgogreen_sales_commission.group_commission_user',
     )
 
     commission_unpaid_total = fields.Monetary(
@@ -36,7 +35,6 @@ class ResUsers(models.Model):
         compute='_compute_commission_stats',
         store=True,
         currency_field='company_currency_id',
-        groups='belgogreen_sales_commission.group_commission_user',
     )
 
     commission_paid_total = fields.Monetary(
@@ -44,7 +42,6 @@ class ResUsers(models.Model):
         compute='_compute_commission_stats',
         store=True,
         currency_field='company_currency_id',
-        groups='belgogreen_sales_commission.group_commission_user',
     )
 
     company_currency_id = fields.Many2one(
@@ -57,7 +54,6 @@ class ResUsers(models.Model):
     active_commission_count = fields.Integer(
         string='Active Commissions',
         compute='_compute_active_commissions',
-        groups='belgogreen_sales_commission.group_commission_user',
         help='Number of unpaid or claimed commissions'
     )
 
