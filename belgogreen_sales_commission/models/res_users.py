@@ -10,7 +10,8 @@ class ResUsers(models.Model):
     my_commission_ids = fields.One2many(
         'sale.commission',
         'user_id',
-        string='My Commissions'
+        string='My Commissions',
+        groups='belgogreen_sales_commission.group_commission_user',
     )
 
     # Commission plan assignments (NEW - replaces global role)
@@ -18,6 +19,7 @@ class ResUsers(models.Model):
         'sale.commission.plan.user',
         'user_id',
         string='Commission Plan Assignments',
+        groups='belgogreen_sales_commission.group_commission_user',
         help='Shows which commission plans this user is assigned to and their role in each'
     )
 
@@ -25,21 +27,24 @@ class ResUsers(models.Model):
     commission_count = fields.Integer(
         string='Commission Count',
         compute='_compute_commission_stats',
-        store=True
+        store=True,
+        groups='belgogreen_sales_commission.group_commission_user',
     )
 
     commission_unpaid_total = fields.Monetary(
         string='Unpaid Commissions',
         compute='_compute_commission_stats',
         store=True,
-        currency_field='company_currency_id'
+        currency_field='company_currency_id',
+        groups='belgogreen_sales_commission.group_commission_user',
     )
 
     commission_paid_total = fields.Monetary(
         string='Paid Commissions',
         compute='_compute_commission_stats',
         store=True,
-        currency_field='company_currency_id'
+        currency_field='company_currency_id',
+        groups='belgogreen_sales_commission.group_commission_user',
     )
 
     company_currency_id = fields.Many2one(
@@ -52,6 +57,7 @@ class ResUsers(models.Model):
     active_commission_count = fields.Integer(
         string='Active Commissions',
         compute='_compute_active_commissions',
+        groups='belgogreen_sales_commission.group_commission_user',
         help='Number of unpaid or claimed commissions'
     )
 
