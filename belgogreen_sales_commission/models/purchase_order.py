@@ -32,6 +32,7 @@ class PurchaseOrder(models.Model):
         'commission_id',
         string='Direct Commissions',
         readonly=True,
+        copy=False,
         help='Commissions paid directly via this PO (without claims)'
     )
 
