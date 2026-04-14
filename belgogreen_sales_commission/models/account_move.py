@@ -14,12 +14,14 @@ class AccountMove(models.Model):
         'sale.commission',
         'invoice_id',
         string='Commissions',
+        groups='belgogreen_sales_commission.group_commission_user',
         help='Commissions generated from this invoice'
     )
 
     commission_count = fields.Integer(
         string='Commission Count',
-        compute='_compute_commission_count'
+        compute='_compute_commission_count',
+        groups='belgogreen_sales_commission.group_commission_user',
     )
 
     @api.depends('commission_ids')
