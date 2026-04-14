@@ -42,41 +42,56 @@ class PurchaseOrder(models.Model):
             claims = po.sudo().claim_ids
             po.commission_claim_id = claims[0] if claims else False
 
+    # Fields that can be safely modified on commission PO lines
+    # without affecting commission amounts
+    _COMMISSION_LINE_ALLOWED_FIELDS = {
+        'taxes_id', 'tax_ids',          # VAT / tax correction
+        'name',                          # Description
+        'date_planned',                  # Scheduled date
+        'analytic_distribution',         # Cost center / analytic accounting
+    }
+
     def write(self, vals):
-        """Warn about editing commission PO lines, but allow deletion of deduction lines"""
+        """Protect commission PO lines from amount changes, but allow safe edits"""
         for po in self:
             if po.sudo().claim_ids and po.state == 'draft' and 'order_line' in vals:
-                # Check if this is a deletion of lines (which is allowed for deductions)
-                is_deletion = False
+                deduction_product = self.env.ref(
+                    'belgogreen_sales_commission.product_commission_deduction',
+                    raise_if_not_found=False
+                )
                 for line_op in vals.get('order_line', []):
-                    if isinstance(line_op, (list, tuple)) and len(line_op) > 0:
-                        # Check for delete operations (2, id, 0) or (3, id)
-                        if line_op[0] in (2, 3):
-                            is_deletion = True
-                        # Check for create/update operations (0, 0, dict) or (1, id, dict)
-                        elif line_op[0] in (0, 1):
-                            # Get the commission deduction product
-                            deduction_product = self.env.ref('belgogreen_sales_commission.product_commission_deduction', raise_if_not_found=False)
-                            # Allow if this is modifying a deduction line (will be caught by unlink if deleting)
-                            # Otherwise, raise error for other modifications
-                            if line_op[0] == 1:  # Update operation
-                                line = self.env['purchase.order.line'].browse(line_op[1])
-                                if line.product_id != deduction_product:
-                                    raise UserError(_(
-                                        'Cannot modify commission payment lines.\n\n'
-                                        'You can only remove deduction lines. To modify commission amounts:\n'
-                                        '1. Cancel this PO\n'
-                                        '2. Adjust the claim deductions\n'
-                                        '3. Recreate the claim approval'
-                                    ))
-                            elif line_op[0] == 0:  # Create operation
-                                raise UserError(_(
-                                    'Cannot add new lines to commission payment POs.\n\n'
-                                    'To modify:\n'
-                                    '1. Cancel this PO\n'
-                                    '2. Adjust the claim deductions\n'
-                                    '3. Recreate the claim approval'
-                                ))
+                    if not isinstance(line_op, (list, tuple)) or len(line_op) == 0:
+                        continue
+                    # Allow delete operations (for deduction lines)
+                    if line_op[0] in (2, 3):
+                        continue
+                    # Block adding new lines
+                    if line_op[0] == 0:
+                        raise UserError(_(
+                            'Impossible d\'ajouter de nouvelles lignes aux bons de commande de commission.\n\n'
+                            'Pour modifier :\n'
+                            '1. Annulez ce bon de commande\n'
+                            '2. Ajustez les déductions de la réclamation\n'
+                            '3. Recréez l\'approbation de la réclamation'
+                        ))
+                    # Update operation — check what's being changed
+                    if line_op[0] == 1:
+                        line = self.env['purchase.order.line'].browse(line_op[1])
+                        # Allow all modifications on deduction lines
+                        if deduction_product and line.product_id == deduction_product:
+                            continue
+                        # On commission lines, only allow safe field changes
+                        changed_fields = set(line_op[2].keys()) if line_op[2] else set()
+                        blocked_fields = changed_fields - self._COMMISSION_LINE_ALLOWED_FIELDS
+                        if blocked_fields:
+                            raise UserError(_(
+                                'Impossible de modifier les montants de commission.\n\n'
+                                'Vous pouvez modifier : les taxes, la description, la date et la distribution analytique.\n'
+                                'Pour modifier les montants de commission :\n'
+                                '1. Annulez ce bon de commande\n'
+                                '2. Ajustez les déductions de la réclamation\n'
+                                '3. Recréez l\'approbation de la réclamation'
+                            ))
         return super(PurchaseOrder, self).write(vals)
 
     def button_confirm(self):
@@ -148,8 +163,8 @@ class PurchaseOrder(models.Model):
                 # Notify manager
                 for claim in data['claims']:
                     claim.message_post(
-                        body=_('Purchase Order %s was cancelled. Claim and deductions have been reset to pending.') % po.name,
-                        subject=_('PO Cancelled - Claim Reset'),
+                        body=_('Le bon de commande %s a été annulé. La réclamation et les déductions ont été réinitialisées en attente.') % po.name,
+                        subject=_('BC annulé - Réclamation réinitialisée'),
                     )
 
             # Reset direct commissions to unpaid
@@ -160,8 +175,8 @@ class PurchaseOrder(models.Model):
                 # Log message on first commission
                 if commissions:
                     commissions[0].message_post(
-                        body=_('Purchase Order %s was cancelled. %s commission(s) reset to unpaid.') % (po.name, len(commissions)),
-                        subject=_('PO Cancelled - Commissions Reset'),
+                        body=_('Le bon de commande %s a été annulé. %s commission(s) réinitialisée(s) à non payée.') % (po.name, len(commissions)),
+                        subject=_('BC annulé - Commissions réinitialisées'),
                     )
 
         return res
@@ -206,8 +221,8 @@ class PurchaseOrderLine(models.Model):
                     # Log message
                     for deduction in deductions:
                         deduction.sudo().message_post(
-                            body=_('Deduction removed from Purchase Order %s. Status reset to pending.') % line.order_id.name,
-                            subject=_('Deduction Removed from PO'),
+                            body=_('Déduction retirée du bon de commande %s. Statut réinitialisé en attente.') % line.order_id.name,
+                            subject=_('Déduction retirée du BC'),
                         )
 
         return super(PurchaseOrderLine, self).unlink()
