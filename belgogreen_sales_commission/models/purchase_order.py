@@ -68,11 +68,11 @@ class PurchaseOrder(models.Model):
                     # Block adding new lines
                     if line_op[0] == 0:
                         raise UserError(_(
-                            'Cannot add new lines to commission payment POs.\n\n'
-                            'To modify:\n'
-                            '1. Cancel this PO\n'
-                            '2. Adjust the claim deductions\n'
-                            '3. Recreate the claim approval'
+                            'Impossible d\'ajouter de nouvelles lignes aux bons de commande de commission.\n\n'
+                            'Pour modifier :\n'
+                            '1. Annulez ce bon de commande\n'
+                            '2. Ajustez les déductions de la réclamation\n'
+                            '3. Recréez l\'approbation de la réclamation'
                         ))
                     # Update operation — check what's being changed
                     if line_op[0] == 1:
@@ -85,12 +85,12 @@ class PurchaseOrder(models.Model):
                         blocked_fields = changed_fields - self._COMMISSION_LINE_ALLOWED_FIELDS
                         if blocked_fields:
                             raise UserError(_(
-                                'Cannot modify commission payment amounts.\n\n'
-                                'You can change: taxes, description, date, and analytic distribution.\n'
-                                'To modify commission amounts:\n'
-                                '1. Cancel this PO\n'
-                                '2. Adjust the claim deductions\n'
-                                '3. Recreate the claim approval'
+                                'Impossible de modifier les montants de commission.\n\n'
+                                'Vous pouvez modifier : les taxes, la description, la date et la distribution analytique.\n'
+                                'Pour modifier les montants de commission :\n'
+                                '1. Annulez ce bon de commande\n'
+                                '2. Ajustez les déductions de la réclamation\n'
+                                '3. Recréez l\'approbation de la réclamation'
                             ))
         return super(PurchaseOrder, self).write(vals)
 
@@ -163,8 +163,8 @@ class PurchaseOrder(models.Model):
                 # Notify manager
                 for claim in data['claims']:
                     claim.message_post(
-                        body=_('Purchase Order %s was cancelled. Claim and deductions have been reset to pending.') % po.name,
-                        subject=_('PO Cancelled - Claim Reset'),
+                        body=_('Le bon de commande %s a été annulé. La réclamation et les déductions ont été réinitialisées en attente.') % po.name,
+                        subject=_('BC annulé - Réclamation réinitialisée'),
                     )
 
             # Reset direct commissions to unpaid
@@ -175,8 +175,8 @@ class PurchaseOrder(models.Model):
                 # Log message on first commission
                 if commissions:
                     commissions[0].message_post(
-                        body=_('Purchase Order %s was cancelled. %s commission(s) reset to unpaid.') % (po.name, len(commissions)),
-                        subject=_('PO Cancelled - Commissions Reset'),
+                        body=_('Le bon de commande %s a été annulé. %s commission(s) réinitialisée(s) à non payée.') % (po.name, len(commissions)),
+                        subject=_('BC annulé - Commissions réinitialisées'),
                     )
 
         return res
@@ -221,8 +221,8 @@ class PurchaseOrderLine(models.Model):
                     # Log message
                     for deduction in deductions:
                         deduction.sudo().message_post(
-                            body=_('Deduction removed from Purchase Order %s. Status reset to pending.') % line.order_id.name,
-                            subject=_('Deduction Removed from PO'),
+                            body=_('Déduction retirée du bon de commande %s. Statut réinitialisé en attente.') % line.order_id.name,
+                            subject=_('Déduction retirée du BC'),
                         )
 
         return super(PurchaseOrderLine, self).unlink()
