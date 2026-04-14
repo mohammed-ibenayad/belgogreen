@@ -14,6 +14,7 @@ class PurchaseOrder(models.Model):
         readonly=True,
         compute='_compute_commission_claim_id',
         store=True,
+        groups='belgogreen_sales_commission.group_commission_user',
         help='Commission claim that generated this purchase order (deprecated, use claim_ids)'
     )
 
@@ -22,6 +23,7 @@ class PurchaseOrder(models.Model):
         'purchase_order_id',
         string='Commission Claims',
         readonly=True,
+        groups='belgogreen_sales_commission.group_commission_user',
         help='Commission claims associated with this purchase order'
     )
 
@@ -32,6 +34,8 @@ class PurchaseOrder(models.Model):
         'commission_id',
         string='Direct Commissions',
         readonly=True,
+        copy=False,
+        groups='belgogreen_sales_commission.group_commission_user',
         help='Commissions paid directly via this PO (without claims)'
     )
 

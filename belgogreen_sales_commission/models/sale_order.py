@@ -15,12 +15,13 @@ class SaleOrder(models.Model):
         'sale.commission',
         'sale_order_id',
         string='Commissions',
+        groups='belgogreen_sales_commission.group_commission_user',
         help='Commissions generated from this sale order'
     )
 
     commission_count = fields.Integer(
         string='Commission Count',
-        compute='_compute_commission_count'
+        compute='_compute_commission_count',
     )
 
     commissions_generated = fields.Boolean(
