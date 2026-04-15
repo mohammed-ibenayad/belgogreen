@@ -406,7 +406,10 @@ class SaleCommissionClaim(models.Model):
                 'processed_by': self.env.user.id,
                 'processed_date': fields.Datetime.now()
             })
-            claim.commission_ids.write({'status': 'unpaid'})
+            # Cancelled commissions stay cancelled; only revert the rest.
+            claim.commission_ids.filtered(
+                lambda c: c.status != 'cancelled'
+            ).write({'status': 'unpaid'})
 
             # Send notification to claimant
             claim._notify_claimant('rejected')
