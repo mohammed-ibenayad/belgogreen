@@ -182,17 +182,19 @@ class SaleCommissionClaim(models.Model):
         results = super(SaleCommissionClaim, self).create(vals_list)
         return results
 
-    @api.depends('commission_ids', 'commission_ids.commission_amount')
+    @api.depends('commission_ids', 'commission_ids.commission_amount', 'commission_ids.status')
     def _compute_total_amount(self):
-        """Compute total claimed amount"""
+        """Compute total claimed amount (excluding cancelled commissions)"""
         for claim in self:
-            claim.total_amount = sum(claim.commission_ids.mapped('commission_amount'))
+            active_commissions = claim.commission_ids.filtered(lambda c: c.status != 'cancelled')
+            claim.total_amount = sum(active_commissions.mapped('commission_amount'))
 
-    @api.depends('commission_ids')
+    @api.depends('commission_ids', 'commission_ids.status')
     def _compute_commission_count(self):
-        """Count commissions in this claim"""
+        """Count active commissions in this claim (excluding cancelled)"""
         for claim in self:
-            claim.commission_count = len(claim.commission_ids)
+            active_commissions = claim.commission_ids.filtered(lambda c: c.status != 'cancelled')
+            claim.commission_count = len(active_commissions)
 
     @api.depends('user_id', 'state')
     def _compute_deductions(self):
@@ -225,14 +227,15 @@ class SaleCommissionClaim(models.Model):
                 claim.mandatory_deduction_ids = False
                 claim.optional_deduction_ids = False
 
-    @api.depends('commission_ids', 'commission_ids.commission_amount',
+    @api.depends('commission_ids', 'commission_ids.commission_amount', 'commission_ids.status',
                  'mandatory_deduction_ids', 'mandatory_deduction_ids.amount',
                  'optional_deduction_ids', 'optional_deduction_ids.amount')
     def _compute_totals(self):
-        """Compute all totals including deductions"""
+        """Compute all totals including deductions (excluding cancelled commissions)"""
         for claim in self:
-            # Gross commission amount
-            claim.total_amount = sum(claim.commission_ids.mapped('commission_amount'))
+            # Gross commission amount (exclude cancelled commissions)
+            active_commissions = claim.commission_ids.filtered(lambda c: c.status != 'cancelled')
+            claim.total_amount = sum(active_commissions.mapped('commission_amount'))
 
             # Mandatory deductions
             claim.total_mandatory_deductions = sum(claim.mandatory_deduction_ids.mapped('amount'))
@@ -561,8 +564,8 @@ class SaleCommissionClaim(models.Model):
         """Generate notes for PO with commission list and deduction breakdown"""
         lines = []
 
-        # List all commissions - format: COM/00004: 373.94 € - Customer Name (only if customer exists)
-        all_commissions = self.mapped('commission_ids')
+        # List active commissions (exclude cancelled)
+        all_commissions = self.mapped('commission_ids').filtered(lambda c: c.status != 'cancelled')
         for commission in all_commissions:
             if commission.customer_id:
                 lines.append('%s: %s %s - %s' % (
