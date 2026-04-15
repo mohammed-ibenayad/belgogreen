@@ -29,64 +29,14 @@ class AccountMove(models.Model):
         for move in self:
             move.commission_count = len(move.sudo().commission_ids)
 
-    def write(self, vals):
-        """Override write to mark commissions paid when vendor bill is paid"""
-        # Store previous payment states before write
-        # CRITICAL: Always track vendor bills because payment_state is a computed field
-        # that can change due to reconciliation without being in vals!
-        previous_states = {}
-        for move in self:
-            # Track ALL vendor bills (in_invoice) regardless of what's being written
-            if move.move_type == 'in_invoice':
-                previous_states[move.id] = move.payment_state
-                _logger.info(
-                    "Commission Payment: [BEFORE] Tracking vendor bill %s (ID: %s, Previous state: %s, vals keys: %s)",
-                    move.name, move.id, move.payment_state, list(vals.keys())
-                )
-
-        result = super(AccountMove, self).write(vals)
-
-        for move in self:
-            # Only process vendor bills that we tracked
-            if move.id not in previous_states:
-                continue
-
-            previous_payment_state = previous_states[move.id]
-            current_payment_state = move.payment_state
-
-            # Check if payment_state changed to paid
-            payment_state_changed = (
-                previous_payment_state != 'paid' and
-                current_payment_state == 'paid'
-            )
-
-            _logger.info(
-                "Commission Payment: [AFTER] Move %s (ID: %s) - Previous: %s, Current: %s, Changed: %s, Origin: %s",
-                move.name, move.id,
-                previous_payment_state,
-                current_payment_state,
-                payment_state_changed,
-                move.invoice_origin or 'N/A'
-            )
-
-            if payment_state_changed:
-                _logger.info(
-                    "Commission Payment: ✅ Payment state changed! Triggering _mark_commissions_paid for %s",
-                    move.name
-                )
-                move._mark_commissions_paid()
-
-        return result
-
     def _compute_payment_state(self):
         """Override compute to mark commissions paid when vendor bill transitions to 'paid'.
 
-        In Odoo 19, payment_state is a stored computed field that updates via the ORM's
-        internal _write() path (not the public write()) during reconciliation recompute.
-        That means our write() override misses most real payment flows
-        (account.payment.action_post and partial reconcile creation both go through
-        _compute_payment_state, not write). Hooking the compute guarantees commissions
-        get marked 'paid' regardless of which reconciliation path Odoo takes.
+        In Odoo 19, payment_state is a stored computed field. Reconciliation updates it
+        via the ORM's internal _write() path (not the public write()), so overriding
+        write() or reconcile() misses the normal payment flow (account.payment.action_post
+        → partial reconcile creation → field recompute). Hooking the compute itself is the
+        one place guaranteed to fire for every path that changes payment_state.
         """
         # Capture previous payment_state for vendor bills (only persisted records)
         previous_states = {}
