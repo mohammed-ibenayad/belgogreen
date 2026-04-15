@@ -78,6 +78,44 @@ class AccountMove(models.Model):
 
         return result
 
+    def _compute_payment_state(self):
+        """Override compute to mark commissions paid when vendor bill transitions to 'paid'.
+
+        In Odoo 19, payment_state is a stored computed field that updates via the ORM's
+        internal _write() path (not the public write()) during reconciliation recompute.
+        That means our write() override misses most real payment flows
+        (account.payment.action_post and partial reconcile creation both go through
+        _compute_payment_state, not write). Hooking the compute guarantees commissions
+        get marked 'paid' regardless of which reconciliation path Odoo takes.
+        """
+        # Capture previous payment_state for vendor bills (only persisted records)
+        previous_states = {}
+        for move in self:
+            if move.id and move.move_type == 'in_invoice':
+                previous_states[move.id] = move.payment_state
+
+        super()._compute_payment_state()
+
+        # Detect transitions to 'paid' and trigger the hook
+        for move in self:
+            if move.id not in previous_states:
+                continue
+            previous = previous_states[move.id]
+            current = move.payment_state
+            if previous != 'paid' and current == 'paid':
+                _logger.info(
+                    "Commission Payment: ✅ _compute_payment_state transitioned %s from %s to paid; triggering _mark_commissions_paid",
+                    move.name, previous,
+                )
+                try:
+                    move._mark_commissions_paid()
+                except Exception:
+                    # Never let commission bookkeeping break the payment flow
+                    _logger.exception(
+                        "Commission Payment: _mark_commissions_paid failed for bill %s (ID: %s)",
+                        move.name, move.id,
+                    )
+
     def _mark_commissions_paid(self):
         """Mark commissions as paid when vendor bill is paid"""
         self.ensure_one()
@@ -199,8 +237,19 @@ class AccountMove(models.Model):
             )
             return  # No commissions to mark as paid
 
+        # Idempotency: only act on commissions not already paid so this hook can be
+        # safely invoked from multiple entry points (write / reconcile / compute)
+        # without duplicating messages or overwriting existing payment data.
+        commissions_to_update = commissions.filtered(lambda c: c.status != 'paid')
+        if not commissions_to_update:
+            _logger.info(
+                "Commission Payment: All commissions for PO %s already paid, skipping",
+                po.name
+            )
+            return
+
         # Log commission details before update
-        for comm in commissions:
+        for comm in commissions_to_update:
             _logger.info(
                 "Commission Payment: Commission %s (ID: %s) - Current status: %s, Amount: %s, User: %s",
                 comm.name, comm.id, comm.status, comm.commission_amount, comm.user_id.name
@@ -215,7 +264,7 @@ class AccountMove(models.Model):
             payment_id_to_set, payment_date_to_set
         )
 
-        commissions.write({
+        commissions_to_update.write({
             'status': 'paid',
             'payment_date': payment_date_to_set,
             'payment_id': payment_id_to_set,  # Link to first payment
@@ -223,8 +272,10 @@ class AccountMove(models.Model):
 
         _logger.info(
             "Commission Payment: Successfully updated %s commission(s) to paid status",
-            len(commissions)
+            len(commissions_to_update)
         )
+        # Use the filtered set for downstream messaging
+        commissions = commissions_to_update
 
         # Log success with appropriate message
         if po_sudo.claim_ids:
