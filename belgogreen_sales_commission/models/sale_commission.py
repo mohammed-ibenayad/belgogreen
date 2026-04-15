@@ -329,6 +329,12 @@ class SaleCommission(models.Model):
     def _compute_claim_ids(self):
         """Find claims that include this commission"""
         for commission in self:
+            # Unsaved records (NewId) can't appear in an existing claim's
+            # commission_ids; domains reject NewId values. Skip them.
+            if not isinstance(commission.id, int):
+                commission.claim_ids = False
+                commission.claim_count = 0
+                continue
             claims = self.env['sale.commission.claim'].search([
                 ('commission_ids', 'in', commission.id)
             ])

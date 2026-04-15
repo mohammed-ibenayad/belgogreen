@@ -171,8 +171,16 @@ class AccountMove(models.Model):
                 self.name
             )
 
-        # Get ALL commissions (from claims or direct) - unified approach
-        commissions = po_sudo.claim_ids.mapped('commission_ids') | po_sudo.commission_ids
+        # Get ALL commissions (from claims or direct) - unified approach.
+        # Exclude cancelled commissions: when a commission is cancelled before the
+        # claim's PO is approved, its amount is not included in the PO total and
+        # not listed in the PO note (see sale_commission_claim._create_purchase_order
+        # and _generate_batch_po_notes which both filter status != 'cancelled').
+        # The bill therefore never pays the cancelled commission, so we must not
+        # flip it to 'paid' here.
+        commissions = (po_sudo.claim_ids.mapped('commission_ids') | po_sudo.commission_ids).filtered(
+            lambda c: c.status != 'cancelled'
+        )
 
         _logger.info(
             "Commission Payment: Found %s commission(s) to mark as paid: %s",
