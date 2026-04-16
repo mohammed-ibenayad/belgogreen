@@ -106,16 +106,25 @@ class PurchaseOrder(models.Model):
             po_sudo = po.sudo()
             # Handle claim-based commissions
             if po_sudo.claim_ids:
-                # Get all commissions from all claims
-                all_commissions = po_sudo.claim_ids.mapped('commission_ids')
+                # Only touch commissions whose amount is actually in this PO.
+                # Cancelled commissions were excluded from the PO total and note
+                # (see sale_commission_claim._create_purchase_order), so leave
+                # their status alone — otherwise they silently get resurrected
+                # to 'processing' and later flipped to 'paid' when the bill is
+                # paid, even though no money was ever paid for them.
+                all_commissions = po_sudo.claim_ids.mapped('commission_ids').filtered(
+                    lambda c: c.status != 'cancelled'
+                )
                 # Update commission status to processing
                 all_commissions.write({'status': 'processing'})
 
             # Handle direct commissions (no claims)
             if po_sudo.commission_ids:
                 # Already in processing status from action_create_po_from_commissions
-                # Just ensure consistency
-                po_sudo.commission_ids.filtered(lambda c: c.status != 'processing').write({'status': 'processing'})
+                # Just ensure consistency; never overwrite a cancelled commission.
+                po_sudo.commission_ids.filtered(
+                    lambda c: c.status not in ('processing', 'cancelled')
+                ).write({'status': 'processing'})
 
         return res
 
@@ -171,9 +180,11 @@ class PurchaseOrder(models.Model):
                         subject=_('BC annulé - Réclamation réinitialisée'),
                     )
 
-            # Reset direct commissions to unpaid
+            # Reset direct commissions to unpaid (cancelled stays cancelled)
             if po.id in direct_commissions_to_reset:
-                commissions = direct_commissions_to_reset[po.id]
+                commissions = direct_commissions_to_reset[po.id].filtered(
+                    lambda c: c.status != 'cancelled'
+                )
                 commissions.write({'status': 'unpaid'})
 
                 # Log message on first commission
