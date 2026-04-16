@@ -112,6 +112,26 @@ class TestCommissionClaim(TransactionCase):
         with self.assertRaises(UserError):
             claim.action_submit()
 
+    def test_claim_submit_with_cancelled_commission_raises(self):
+        """Submitting a claim that still contains a cancelled commission must
+        raise instead of silently resurrecting it to 'claimed'."""
+        active = self._create_commission()
+        cancelled = self._create_commission()
+        cancelled.action_cancel()
+        self.assertEqual(cancelled.status, 'cancelled')
+
+        claim = self.env['sale.commission.claim'].with_user(self.commission_user).create({
+            'user_id': self.commission_user.id,
+            'commission_ids': [(6, 0, [active.id, cancelled.id])],
+        })
+        with self.assertRaises(UserError):
+            claim.action_submit()
+
+        # Cancelled commission must remain cancelled; claim must stay draft.
+        self.assertEqual(cancelled.status, 'cancelled')
+        self.assertEqual(active.status, 'unpaid')
+        self.assertEqual(claim.state, 'draft')
+
     # ---------------------------------------------------------------
     # Test 3: Claim rejection
     # ---------------------------------------------------------------
