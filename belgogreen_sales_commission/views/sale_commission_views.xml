@@ -43,8 +43,13 @@
                                 invisible="status != 'unpaid'"
                                 groups="belgogreen_sales_commission.group_commission_manager"/>
                         <button name="action_manual_pay" string="Marquer comme payée" type="object" class="oe_highlight"
-                                invisible="status in ['paid', 'cancelled'] or not is_adjustment"
-                                groups="belgogreen_sales_commission.group_commission_manager"/>
+                                invisible="status != 'unpaid'"
+                                groups="belgogreen_sales_commission.group_commission_manager"
+                                confirm="Marquer cette commission comme payée sans passer par un bon de commande ni une facture ? Aucune écriture comptable ne sera créée."/>
+                        <button name="action_reverse_manual_pay" string="Annuler le marquage comme payée" type="object"
+                                invisible="status != 'paid' or payment_id"
+                                groups="belgogreen_sales_commission.group_commission_manager"
+                                confirm="Annuler le marquage manuel comme payée et revenir en 'Non payée' ?"/>
                         <button name="action_cancel" string="Annuler" type="object"
                                 invisible="status not in ['unpaid', 'claimed', 'approved']"
                                 groups="belgogreen_sales_commission.group_commission_manager"/>
