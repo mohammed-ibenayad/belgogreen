@@ -281,8 +281,20 @@ class SaleCommissionClaim(models.Model):
         if self.net_amount <= 0:
             raise UserError(_('Net claim amount must be positive.'))
 
-        # Update commission status to claimed
-        self.commission_ids.write({'status': 'claimed'})
+        # Refuse cancelled commissions: they must not be resurrected to 'claimed'
+        # by the status write below (which would then cascade through approval,
+        # PO confirmation and bill payment, ending up marked as 'paid' even though
+        # they were explicitly cancelled). Ask the user to remove them first.
+        cancelled = self.commission_ids.filtered(lambda c: c.status == 'cancelled')
+        if cancelled:
+            raise UserError(_(
+                'The following cancelled commissions are still in this claim. '
+                'Please remove them (✗ icon on each row) before submitting:\n%s'
+            ) % '\n'.join(['- %s' % c.name for c in cancelled]))
+
+        # Update commission status to claimed (defensive filter: never touch
+        # cancelled even if the guard above is somehow bypassed)
+        self.commission_ids.filtered(lambda c: c.status != 'cancelled').write({'status': 'claimed'})
 
         self.write({'state': 'pending'})
         return True
@@ -326,6 +338,23 @@ class SaleCommissionClaim(models.Model):
         # Validate no existing POs
         if any(claim.purchase_order_id for claim in self):
             raise UserError(_('Some claims already have purchase orders.'))
+
+        # Refuse if any claim still contains cancelled commissions. action_submit
+        # now blocks this up-front, but claims submitted before that guard was
+        # in place can still reach approval in this state.
+        claims_with_cancelled = {
+            claim: claim.commission_ids.filtered(lambda c: c.status == 'cancelled')
+            for claim in self
+        }
+        claims_with_cancelled = {k: v for k, v in claims_with_cancelled.items() if v}
+        if claims_with_cancelled:
+            raise UserError(_(
+                'The following claims contain cancelled commissions and cannot be approved. '
+                'Reject each claim so the claimant can re-submit without them:\n%s'
+            ) % '\n'.join([
+                '- %s: %s' % (claim.name, ', '.join(cancelled.mapped('name')))
+                for claim, cancelled in claims_with_cancelled.items()
+            ]))
 
         # Get the user (all claims should be from same user)
         user = self.mapped('user_id')
