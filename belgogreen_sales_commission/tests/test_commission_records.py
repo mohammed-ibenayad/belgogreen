@@ -300,8 +300,8 @@ class TestCommissionRecords(TransactionCase):
     # Test 9: Manual pay action
     # ---------------------------------------------------------------
 
-    def test_manual_pay_non_adjustment_raises(self):
-        """Test that manual pay on non-adjustment commission raises error"""
+    def test_manual_pay_plan_commission_unpaid_succeeds(self):
+        """Plan commissions in 'unpaid' can be manually marked paid by a manager."""
         commission = self.env['sale.commission'].create({
             'user_id': self.user_sp.id,
             'role_id': self.role_sp.id,
@@ -311,5 +311,59 @@ class TestCommissionRecords(TransactionCase):
             'company_id': self.company.id,
         })
         # Run as admin (commission manager)
+        commission.action_manual_pay()
+        self.assertEqual(commission.status, 'paid')
+        self.assertTrue(commission.payment_date)
+        # No accounting linkage — it's a direct flag
+        self.assertFalse(commission.payment_id)
+
+    def test_manual_pay_non_unpaid_raises(self):
+        """Commissions past 'unpaid' can't be hijacked into direct-paid."""
+        commission = self.env['sale.commission'].create({
+            'user_id': self.user_sp.id,
+            'role_id': self.role_sp.id,
+            'plan_id': self.plan.id,
+            'base_amount': 1000.0,
+            'currency_id': self.currency.id,
+            'company_id': self.company.id,
+        })
+        commission.write({'status': 'claimed'})
         with self.assertRaises(UserError):
             commission.action_manual_pay()
+
+    def test_reverse_manual_pay_succeeds(self):
+        """Manually-paid commissions can be reverted to 'unpaid'."""
+        commission = self.env['sale.commission'].create({
+            'user_id': self.user_sp.id,
+            'role_id': self.role_sp.id,
+            'plan_id': self.plan.id,
+            'base_amount': 1000.0,
+            'currency_id': self.currency.id,
+            'company_id': self.company.id,
+        })
+        commission.action_manual_pay()
+        commission.action_reverse_manual_pay()
+        self.assertEqual(commission.status, 'unpaid')
+        self.assertFalse(commission.payment_date)
+
+    def test_reverse_manual_pay_on_bill_paid_raises(self):
+        """Commissions paid via the PO/bill workflow can't be reversed here."""
+        commission = self.env['sale.commission'].create({
+            'user_id': self.user_sp.id,
+            'role_id': self.role_sp.id,
+            'plan_id': self.plan.id,
+            'base_amount': 1000.0,
+            'currency_id': self.currency.id,
+            'company_id': self.company.id,
+            'status': 'paid',
+            'payment_date': '2026-01-01',
+        })
+        # Simulate a bill-paid commission by attaching a payment_id.
+        # We fake this by creating a minimal account.payment record.
+        payment = self.env['account.payment'].create({
+            'amount': 1000.0,
+            'payment_type': 'outbound',
+        })
+        commission.write({'payment_id': payment.id})
+        with self.assertRaises(UserError):
+            commission.action_reverse_manual_pay()
