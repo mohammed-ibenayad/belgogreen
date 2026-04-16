@@ -9,7 +9,8 @@
                 <button name="action_open_pv_simulation"
                         type="object"
                         class="oe_stat_button"
-                        icon="fa-solar-panel">
+                        icon="fa-solar-panel"
+                        groups="bgg_pv_simulation.group_pv_user">
                     <field name="pv_simulation_count" widget="statinfo" string="Simulations PV"/>
                 </button>
             </xpath>

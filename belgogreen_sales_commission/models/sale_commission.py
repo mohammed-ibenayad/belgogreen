@@ -329,6 +329,12 @@ class SaleCommission(models.Model):
     def _compute_claim_ids(self):
         """Find claims that include this commission"""
         for commission in self:
+            # Unsaved records (NewId) can't appear in an existing claim's
+            # commission_ids; domains reject NewId values. Skip them.
+            if not isinstance(commission.id, int):
+                commission.claim_ids = False
+                commission.claim_count = 0
+                continue
             claims = self.env['sale.commission.claim'].search([
                 ('commission_ids', 'in', commission.id)
             ])
@@ -429,29 +435,45 @@ class SaleCommission(models.Model):
 
     def action_manual_pay(self):
         """
-        Mark commission(s) as paid directly, bypassing the standard payment workflow.
-        Restricted to Commission Managers only.
-        Only allowed for manual/adjustment commissions (not plan-generated ones).
-        Can be applied to commissions in any active status (unpaid, claimed, approved, processing).
+        Mark commission as paid directly, bypassing the PO/bill workflow.
+
+        Restricted to Commission Managers. No accounting record is created — this is
+        a bookkeeping flag for payments handled outside Odoo. Only allowed on
+        commissions in 'unpaid' status that aren't in any open claim. Can be
+        reversed with action_reverse_manual_pay.
         """
         if not self.env.user.has_group('belgogreen_sales_commission.group_commission_manager'):
             raise UserError(_('Only Commission Managers can manually mark commissions as paid.'))
 
-        non_manual = self.filtered(lambda c: not c.is_adjustment)
-        if non_manual:
-            raise UserError(_(
-                'Only manual commissions can be marked as paid directly.\n'
-                'The following commissions were generated from a commission plan '
-                'and must go through the standard payment workflow:\n%s'
-            ) % '\n'.join(['- %s' % c.name for c in non_manual]))
-
-        invalid = self.filtered(lambda c: c.status in ['paid', 'cancelled'])
+        # Only unpaid commissions are eligible — everything else is already in or
+        # past the PO/bill flow and must complete it to stay consistent.
+        invalid = self.filtered(lambda c: c.status != 'unpaid')
         if invalid:
             raise UserError(_(
-                'The following commissions cannot be marked as paid because they are already '
-                'paid or cancelled:\n%s'
+                'Only commissions in "Non payée" status can be marked as paid directly.\n'
+                'The following commissions are already in another workflow:\n%s'
             ) % '\n'.join(['- %s (%s)' % (c.name, dict(c._fields['status'].selection).get(c.status))
                            for c in invalid]))
+
+        # Refuse if the commission is sitting in any open claim. An unpaid commission
+        # should not already be in a pending/approved claim (those transitions move
+        # status past 'unpaid'), but it can be in a draft claim a user is preparing.
+        # In that case the claim must be cancelled/deleted before the manager can
+        # bypass the workflow.
+        for commission in self:
+            open_claim = self.env['sale.commission.claim'].sudo().search([
+                ('commission_ids', 'in', commission.id),
+                ('state', 'in', ['draft', 'pending', 'approved']),
+            ], limit=1)
+            if open_claim:
+                raise UserError(_(
+                    'Commission %(commission)s is in claim %(claim)s (%(state)s). '
+                    'Cancel or delete the claim before marking the commission paid directly.'
+                ) % {
+                    'commission': commission.name,
+                    'claim': open_claim.name,
+                    'state': dict(open_claim._fields['state'].selection).get(open_claim.state),
+                })
 
         today = fields.Date.today()
         for commission in self:
@@ -460,8 +482,44 @@ class SaleCommission(models.Model):
                 'payment_date': today,
             })
             commission.message_post(
-                body=_('Commission marked as paid manually by %s on %s.')
+                body=_('Commission marked as paid manually by %s on %s (no accounting record).')
                      % (self.env.user.name, today),
+                message_type='comment',
+                subtype_xmlid='mail.mt_note',
+            )
+
+    def action_reverse_manual_pay(self):
+        """
+        Reverse a manual mark-as-paid: revert status to 'unpaid' and clear the
+        payment date. Only allowed on commissions that were paid manually
+        (identified by an empty payment_id — bill-paid commissions always have
+        payment_id linked to the account.payment). Restricted to Commission Managers.
+        """
+        if not self.env.user.has_group('belgogreen_sales_commission.group_commission_manager'):
+            raise UserError(_('Only Commission Managers can reverse a manual payment.'))
+
+        invalid = self.filtered(lambda c: c.status != 'paid' or c.payment_id)
+        if invalid:
+            raise UserError(_(
+                'Can only reverse commissions that were manually marked as paid.\n'
+                'The following commissions were paid through the PO/bill workflow '
+                'and cannot be reversed here:\n%s'
+            ) % '\n'.join(['- %s' % c.name for c in invalid]))
+
+        today = fields.Date.today()
+        for commission in self:
+            previous_payment_date = commission.payment_date
+            commission.write({
+                'status': 'unpaid',
+                'payment_date': False,
+            })
+            commission.message_post(
+                body=_('Manual payment reversed by %(user)s on %(today)s '
+                       '(was marked paid on %(prev)s).') % {
+                    'user': self.env.user.name,
+                    'today': today,
+                    'prev': previous_payment_date or _('unknown'),
+                },
                 message_type='comment',
                 subtype_xmlid='mail.mt_note',
             )
