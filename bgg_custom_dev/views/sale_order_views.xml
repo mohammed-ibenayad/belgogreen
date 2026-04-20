@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_order_tree_inherit_call_center_owner" model="ir.ui.view">
+        <field name="name">sale.order.list.inherit.call.center.owner</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='state']" position="after">
+                <field name="x_call_center_sale_owner_id"
+                       optional="show"
+                       readonly="True"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -55,6 +55,7 @@
         # Views
         'views/calendar_event_views.xml',
         'views/commercial_dashboard_views.xml',
+        'views/sale_order_views.xml',
 
         # Reports (action must be loaded before menu that references it)
         'report/avis_count_report_views.xml',
