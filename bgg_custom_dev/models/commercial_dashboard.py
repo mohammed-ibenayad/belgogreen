@@ -180,20 +180,23 @@ class CommercialDashboard(models.TransientModel):
             total_com = com.get('total', 0)
 
             nbre_vies = fin.get('nbre_vies', 0)
+            ventes_annulees = fin.get('ventes_annulees', 0)
             ca_brut = fin.get('ca_brut', 0)
             ca_annule = fin.get('ca_annule', 0)
             ca_net = ca_brut - ca_annule
+            ventes_signees = nbre_vies + ventes_annulees
 
             tx_presence_call = (total_present_call / total_call * 100) if total_call else 0
             tx_presence_com = (total_present_com / total_com * 100) if total_com else 0
             tx_annulation = (ca_annule / ca_brut * 100) if ca_brut else 0
             panier_moyen = (ca_net / nbre_vies) if nbre_vies else 0
-            tx_conversion = (nbre_vies / total_present * 100) if total_present else 0
+            tx_conversion = (ventes_signees / total_present * 100) if total_present else 0
 
             derived_data[uid] = {
                 'tx_presence_call': round(tx_presence_call),
                 'tx_presence_com': round(tx_presence_com),
                 'nbre_vies': nbre_vies,
+                'ventes_annulees': ventes_annulees,
                 'ca_brut': round(ca_brut, 2),
                 'ca_net': round(ca_net, 2),
                 'ca_annule': round(ca_annule, 2),
@@ -210,20 +213,23 @@ class CommercialDashboard(models.TransientModel):
         total_com_all = rdv_commercial_total.get('total', 0)
 
         total_nbre_vies = financial_total.get('nbre_vies', 0)
+        total_ventes_annulees = financial_total.get('ventes_annulees', 0)
         total_ca_brut = financial_total.get('ca_brut', 0)
         total_ca_annule = financial_total.get('ca_annule', 0)
         total_ca_net = total_ca_brut - total_ca_annule
+        total_ventes_signees = total_nbre_vies + total_ventes_annulees
 
         derived_total = {
             'tx_presence_call': round((total_present_call / total_call_all * 100) if total_call_all else 0),
             'tx_presence_com': round((total_present_com / total_com_all * 100) if total_com_all else 0),
             'nbre_vies': total_nbre_vies,
+            'ventes_annulees': total_ventes_annulees,
             'ca_brut': round(total_ca_brut, 2),
             'ca_net': round(total_ca_net, 2),
             'ca_annule': round(total_ca_annule, 2),
             'tx_annulation': round((total_ca_annule / total_ca_brut * 100) if total_ca_brut else 0),
             'panier_moyen': round((total_ca_net / total_nbre_vies) if total_nbre_vies else 0, 2),
-            'tx_conversion': round((total_nbre_vies / total_present_all * 100) if total_present_all else 0),
+            'tx_conversion': round((total_ventes_signees / total_present_all * 100) if total_present_all else 0),
         }
 
         # Currency info
@@ -410,12 +416,16 @@ class CommercialDashboard(models.TransientModel):
         ]
         row = write_section(row, 'TAUX PRÉSENCE', blue_fmt, presence_rows, is_percent=True)
 
-        # NBRE VENTES
+        # VENTES CONFIRMÉES
         row += 1
-        ventes_rows = [
+        row = write_section(row, 'VENTES CONFIRMÉES', blue_fmt, [
             ('', get_user_vals(derived, 'nbre_vies'), derived_total.get('nbre_vies', 0)),
-        ]
-        row = write_section(row, 'NBRE VENTES', blue_fmt, ventes_rows)
+        ])
+
+        # VENTES ANNULÉES
+        row = write_section(row, 'VENTES ANNULÉES', red_fmt, [
+            ('', get_user_vals(derived, 'ventes_annulees'), derived_total.get('ventes_annulees', 0)),
+        ])
 
         # CA BRUT
         row += 1
@@ -448,6 +458,73 @@ class CommercialDashboard(models.TransientModel):
             ('', get_user_vals(derived, 'tx_conversion'), derived_total.get('tx_conversion', 0)),
         ], is_percent=True)
 
+        # === Second sheet: Calculs (formula reference) ===
+        calc_sheet = workbook.add_worksheet('Calculs')
+        calc_sheet.set_column(0, 0, 26)
+        calc_sheet.set_column(1, 1, 52)
+        calc_sheet.set_column(2, 2, 70)
+
+        wrap_cell_fmt = workbook.add_format({
+            'border': 1, 'align': 'left', 'valign': 'top', 'text_wrap': True,
+            'font_name': 'Arial', 'font_size': 10,
+        })
+        wrap_label_fmt = workbook.add_format({
+            'bold': True, 'bg_color': '#f8f9fa', 'border': 1,
+            'align': 'left', 'valign': 'top', 'text_wrap': True,
+            'font_name': 'Arial', 'font_size': 10,
+        })
+
+        # Header row
+        calc_sheet.write(0, 0, 'Champ', header_fmt)
+        calc_sheet.write(0, 1, 'Formule', header_fmt)
+        calc_sheet.write(0, 2, 'Description', header_fmt)
+
+        # Color-coded rows using the same info colors as the main dashboard
+        # blue_fmt (#17a2b8) for presence / ventes confirmées
+        # red_fmt (#dc3545) for annulations
+        # green_fmt (#28a745) for CA
+        # section_fmt (#2c3e50) for derived rates
+        calc_rows = [
+            (blue_fmt,    'TAUX PRÉSENCE (Call)',
+             'Présents Call Center / Total RDV Call Center',
+             "Part des RDV Call Center où le client s'est présenté."),
+            (blue_fmt,    'TAUX PRÉSENCE (Commercial)',
+             'Présents Commercial / Total RDV Commercial',
+             "Part des RDV Commercial où le client s'est présenté."),
+            (blue_fmt,    'VENTES CONFIRMÉES',
+             "Count(sale.order) où state ∈ {sale, done}",
+             "Nombre de commandes confirmées (et non annulées) dans la période."),
+            (red_fmt,     'VENTES ANNULÉES',
+             "Count(sale.order) où state = cancel",
+             "Nombre de commandes annulées dans la période."),
+            (green_fmt,   'CA BRUT',
+             'Σ amount_untaxed (toutes les commandes, confirmées + annulées)',
+             "Chiffre d'affaires brut HT de la période."),
+            (green_fmt,   'CA NET',
+             'CA BRUT − CA ANNULÉ',
+             "Chiffre d'affaires net HT après déduction des annulations."),
+            (red_fmt,     'CA ANNULÉ',
+             "Σ amount_untaxed des commandes où state = cancel",
+             "Montant HT total des commandes annulées."),
+            (section_fmt, 'TX ANNULATION',
+             'CA ANNULÉ / CA BRUT',
+             "Part du CA brut perdue en annulations."),
+            (section_fmt, 'PANIER MOYEN',
+             'CA NET / VENTES CONFIRMÉES',
+             "Montant HT moyen par commande confirmée."),
+            (section_fmt, 'TX CONVERSION',
+             '(VENTES CONFIRMÉES + VENTES ANNULÉES) / (Présents Call + Présents Commercial)',
+             "Part des clients rencontrés qui ont signé. Les annulations ultérieures sont incluses au numérateur pour refléter la capacité de transformation du commercial, indépendamment des annulations post-signature (suivies séparément via TX ANNULATION)."),
+        ]
+
+        calc_row = 1
+        for label_fmt_used, name, formula, description in calc_rows:
+            calc_sheet.write(calc_row, 0, name, label_fmt_used)
+            calc_sheet.write(calc_row, 1, formula, wrap_label_fmt)
+            calc_sheet.write(calc_row, 2, description, wrap_cell_fmt)
+            calc_sheet.set_row(calc_row, 42)
+            calc_row += 1
+
         workbook.close()
         output.seek(0)
 
@@ -476,6 +553,8 @@ class CommercialDashboard(models.TransientModel):
         CA BRUT = total of all orders (confirmed + cancelled)
         CA ANNULE = total of cancelled orders
         CA NET = CA BRUT - CA ANNULE (computed downstream)
+        nbre_vies = count of confirmed sales (state in sale/done)
+        ventes_annulees = count of cancelled sales (state == cancel)
         """
         confirmed_orders = orders.filtered(lambda o: o.state in ('sale', 'done'))
         cancelled_orders = orders.filtered(lambda o: o.state == 'cancel')
@@ -483,9 +562,11 @@ class CommercialDashboard(models.TransientModel):
         ca_brut = sum(orders.mapped('amount_untaxed'))
         ca_annule = sum(cancelled_orders.mapped('amount_untaxed'))
         nbre_vies = len(confirmed_orders)
+        ventes_annulees = len(cancelled_orders)
 
         return {
             'nbre_vies': nbre_vies,
+            'ventes_annulees': ventes_annulees,
             'ca_brut': ca_brut,
             'ca_annule': ca_annule,
         }
@@ -500,7 +581,7 @@ class CommercialDashboard(models.TransientModel):
 
     def _sum_financial_data(self, data_dict):
         """Sum financial data across all users."""
-        total = {'nbre_vies': 0, 'ca_brut': 0, 'ca_annule': 0}
+        total = {'nbre_vies': 0, 'ventes_annulees': 0, 'ca_brut': 0, 'ca_annule': 0}
         for user_data in data_dict.values():
             for key in total:
                 total[key] += user_data.get(key, 0)
