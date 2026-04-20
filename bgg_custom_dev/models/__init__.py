@@ -8,3 +8,4 @@ from . import project_project
 from . import project_task
 from . import commercial_dashboard
 from . import res_partner
+from . import sale_order
