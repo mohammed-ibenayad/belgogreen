@@ -38,16 +38,19 @@ class CommercialDashboard(models.TransientModel):
 
     @api.model
     def get_dashboard_data(self, month=None, year=None, period_type='month',
-                           quarter=None, user_id=None, company_id=None):
+                           quarter=None, user_id=None, company_id=None,
+                           date_from=None, date_to=None):
         """Get commercial dashboard data for the given period.
 
         Args:
             month: month number (1-12)
             year: year number
-            period_type: 'month', 'quarter', or 'year'
+            period_type: 'month', 'quarter', 'year', or 'custom'
             quarter: quarter number (1-4), used when period_type='quarter'
             user_id: filter by specific user
             company_id: filter by specific company
+            date_from: ISO date 'YYYY-MM-DD' (inclusive), used when period_type='custom'
+            date_to:   ISO date 'YYYY-MM-DD' (inclusive), used when period_type='custom'
         """
         today = fields.Date.today()
         if not year:
@@ -56,7 +59,18 @@ class CommercialDashboard(models.TransientModel):
             month = today.month
 
         # Compute date range based on period type
-        if period_type == 'quarter':
+        if period_type == 'custom' and date_from and date_to:
+            df = fields.Date.to_date(date_from)
+            dt = fields.Date.to_date(date_to)
+            if dt < df:
+                df, dt = dt, df
+            date_start = df
+            date_end = dt + relativedelta(days=1)  # inclusive upper bound
+            period_label = f"DU {df.strftime('%d/%m/%Y')} AU {dt.strftime('%d/%m/%Y')}"
+            month = df.month
+            year = df.year
+            quarter = (df.month - 1) // 3 + 1
+        elif period_type == 'quarter':
             if not quarter:
                 quarter = (month - 1) // 3 + 1
             q_start_month = (quarter - 1) * 3 + 1
@@ -257,13 +271,15 @@ class CommercialDashboard(models.TransientModel):
 
     @api.model
     def export_excel(self, month=None, year=None, period_type='month',
-                     quarter=None, user_id=None, company_id=None):
+                     quarter=None, user_id=None, company_id=None,
+                     date_from=None, date_to=None):
         """Generate Excel file from dashboard data and return base64."""
         import xlsxwriter
 
         data = self.get_dashboard_data(
             month=month, year=year, period_type=period_type,
             quarter=quarter, user_id=user_id, company_id=company_id,
+            date_from=date_from, date_to=date_to,
         )
 
         output = io.BytesIO()
