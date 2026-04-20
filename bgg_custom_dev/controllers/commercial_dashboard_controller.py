@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import base64
-from odoo import http
+from odoo import fields, http
 from odoo.http import request
 
 
@@ -43,7 +43,18 @@ class CommercialDashboardController(http.Controller):
             quarter=quarter, user_id=user_id, company_id=company_id,
         )
         file_content = base64.b64decode(b64_data)
-        filename = 'suivi_commercial.xlsx'
+
+        # Build filename with the selected period (fallback to today for defaults)
+        today = fields.Date.today()
+        eff_year = year or today.year
+        eff_month = month or today.month
+        if period_type == 'year':
+            filename = f'suivi_commercial_{eff_year}.xlsx'
+        elif period_type == 'quarter':
+            eff_quarter = quarter or ((eff_month - 1) // 3 + 1)
+            filename = f'suivi_commercial_T{eff_quarter}_{eff_year}.xlsx'
+        else:
+            filename = f'suivi_commercial_{eff_month:02d}_{eff_year}.xlsx'
 
         return request.make_response(
             file_content,
