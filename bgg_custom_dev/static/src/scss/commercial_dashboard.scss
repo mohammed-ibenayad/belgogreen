@@ -86,7 +86,8 @@
             white-space: nowrap;
         }
 
-        select {
+        select,
+        input[type="date"] {
             font-family: inherit;
             font-size: 13px;
             padding: 4px 8px;
@@ -244,6 +245,24 @@
                 &.cd_status_booked {
                     color: #17a2b8;
                 }
+            }
+
+            /* Info icon next to calculated-row labels */
+            .cd_info_icon {
+                margin-left: 4px;
+                color: #17a2b8;
+                cursor: help;
+                font-size: 12px;
+
+                &:hover {
+                    color: #0f6674;
+                }
+            }
+
+            /* Hover cursor for all tooltip-bearing labels */
+            .cd_section_label[title],
+            .cd_row_label[title] {
+                cursor: help;
             }
 
             /* Data cells */
