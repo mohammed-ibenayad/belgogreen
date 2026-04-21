@@ -48,6 +48,10 @@ class SaleOrder(models.Model):
         call_center_type_ids = self.env['appointment.type'].search([
             ('x_appointment_ref', 'in', CALL_CENTER_APPOINTMENT_REFS),
         ]).ids
+        call_center_group = self.env['res.groups'].search([
+            ('name', '=', 'Call Center'),
+        ], limit=1)
+        call_center_group_id = call_center_group.id if call_center_group else False
         CalendarEvent = self.env['calendar.event']
 
         for order in self:
@@ -72,46 +76,52 @@ class SaleOrder(models.Model):
                 ])
                 event = self._select_best_call_center_event(candidates, order.date_order)
 
-            # 3) Resolve: "pris à la place de" on the event wins over its create_uid
+            # 3) Resolve the selected event to a call-center partner.
+            #    - pris-à-la-place-de wins if set (already a partner).
+            #    - else create_uid.partner_id, but only if create_uid is in the
+            #      "Call Center" res.groups. Otherwise leave empty.
+            owner = self.env['res.partner']
             if event:
-                pris_a_la_place = event.x_studio_rendez_vous_pris_la_place_de
-                if pris_a_la_place:
-                    order.x_call_center_sale_owner_id = pris_a_la_place
-                elif event.create_uid:
-                    order.x_call_center_sale_owner_id = event.create_uid.partner_id
-                else:
-                    order.x_call_center_sale_owner_id = False
-            else:
-                order.x_call_center_sale_owner_id = False
+                if event.x_studio_rendez_vous_pris_la_place_de:
+                    owner = event.x_studio_rendez_vous_pris_la_place_de
+                elif (event.create_uid
+                      and call_center_group_id
+                      and call_center_group_id in event.create_uid.group_ids.ids):
+                    owner = event.create_uid.partner_id
+            order.x_call_center_sale_owner_id = owner or False
 
     @api.model
     def _select_best_call_center_event(self, events, date_order):
         """Pick one calendar.event from `events` using the agreed tiebreakers.
 
-        1. Prefer events in the same month/year as `date_order` with
-           appointment_status == 'attended'. If non-empty, restrict to that subset.
-        2. Among the remaining, pick the one whose `start` is closest to
-           `date_order`. Events without a `start` are pushed to the end.
+        Rule:
+        - Keep only events whose `start` is in the sale's month/year AND whose
+          `appointment_status == 'attended'`. If that subset is empty, return
+          an empty recordset (no attribution).
+        - Among the remaining, pick the one whose `start` is closest to
+          `date_order` in absolute time. Ties fall back to recordset order.
         """
-        if not events or len(events) == 1:
+        if not events:
             return events
-
-        if date_order:
-            same_month_attended = events.filtered(
-                lambda e: e.appointment_status == 'attended'
-                and e.start
-                and e.start.month == date_order.month
-                and e.start.year == date_order.year
-            )
-            if same_month_attended:
-                events = same_month_attended
-
-        if len(events) == 1 or not date_order:
+        if not date_order:
+            # Without a sale date we cannot apply the month/distance filters;
+            # fall back to the first candidate.
             return events[:1]
 
+        same_month_attended = events.filtered(
+            lambda e: e.appointment_status == 'attended'
+            and e.start
+            and e.start.month == date_order.month
+            and e.start.year == date_order.year
+        )
+        if not same_month_attended:
+            return events.browse()
+        events = same_month_attended
+
+        if len(events) == 1:
+            return events
+
         def distance(ev):
-            if not ev.start:
-                return float('inf')
             return abs((ev.start - date_order).total_seconds())
 
         return events.sorted(key=distance)[:1]
