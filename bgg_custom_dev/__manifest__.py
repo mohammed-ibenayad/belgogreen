@@ -63,6 +63,9 @@
         # Menus
         'views/menu_views.xml',
         'views/res_partner_views.xml',
+
+        # Server actions
+        'data/sale_order_server_actions.xml',
     ],
     'assets': {
         'web.assets_backend': [
