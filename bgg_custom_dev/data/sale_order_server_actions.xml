@@ -26,6 +26,7 @@ action = {
         'message': '%d commande(s) recalculée(s).' % len(targets),
         'type': 'success',
         'sticky': False,
+        'next': {'type': 'ir.actions.client', 'tag': 'soft_reload'},
     },
 }
         </field>
