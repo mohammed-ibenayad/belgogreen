@@ -19,13 +19,16 @@ class SaleOrder(models.Model):
         store=True,
         readonly=True,
         help=(
-            "Call center credited for this sale. Resolution order: "
-            "(1) x_studio_rendez_vous_pris_la_place_de on the sale order if set; "
-            "(2) creator of the call-center appointment linked to the sale's "
-            "opportunity; (3) creator of a call-center appointment matching the "
-            "sale's salesperson + client. When multiple appointments match, "
-            "prefer those in the sale's month with status 'attended', then the "
-            "one whose start is closest to date_order."
+            "Call center credited for this sale. Resolution: "
+            "(1) find the relevant call-center appointment — via the sale's "
+            "opportunity if present, otherwise by matching the sale's "
+            "salesperson + client. "
+            "(2) On that appointment, if `x_studio_rendez_vous_pris_la_place_de` "
+            "is set, use it (the real call center the RDV was booked on behalf "
+            "of); otherwise fall back to `create_uid.partner_id` (the booker). "
+            "When multiple appointments match, prefer those in the sale's month "
+            "with status 'attended', then the one whose start is closest to "
+            "date_order."
         ),
     )
 
@@ -48,24 +51,16 @@ class SaleOrder(models.Model):
         CalendarEvent = self.env['calendar.event']
 
         for order in self:
-            # 1) Override: "pris à la place de" on the sale order
-            override_partner = getattr(
-                order, 'x_studio_rendez_vous_pris_la_place_de', False
-            )
-            if override_partner:
-                order.x_call_center_sale_owner_id = override_partner
-                continue
-
             event = CalendarEvent
 
-            # 2) Main case: via opportunity
+            # 1) Main case: via opportunity
             if order.opportunity_id and call_center_type_ids:
                 events = order.opportunity_id.calendar_event_ids.filtered(
                     lambda e: e.appointment_type_id.id in call_center_type_ids
                 )
                 event = self._select_best_call_center_event(events, order.date_order)
 
-            # 3) Fallback: no opportunity or no matching event → search by seller + client
+            # 2) Fallback: no opportunity or no matching event → search by seller + client
             if (not event
                     and call_center_type_ids
                     and order.user_id
@@ -77,8 +72,15 @@ class SaleOrder(models.Model):
                 ])
                 event = self._select_best_call_center_event(candidates, order.date_order)
 
-            if event and event.create_uid:
-                order.x_call_center_sale_owner_id = event.create_uid.partner_id
+            # 3) Resolve: "pris à la place de" on the event wins over its create_uid
+            if event:
+                pris_a_la_place = event.x_studio_rendez_vous_pris_la_place_de
+                if pris_a_la_place:
+                    order.x_call_center_sale_owner_id = pris_a_la_place
+                elif event.create_uid:
+                    order.x_call_center_sale_owner_id = event.create_uid.partner_id
+                else:
+                    order.x_call_center_sale_owner_id = False
             else:
                 order.x_call_center_sale_owner_id = False
 
