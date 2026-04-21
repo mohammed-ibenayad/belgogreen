@@ -94,23 +94,31 @@ class SaleOrder(models.Model):
     def _select_best_call_center_event(self, events, date_order):
         """Pick one calendar.event from `events` using the agreed tiebreakers.
 
-        Rule:
+        Rules applied in order:
+        - RDV must have happened at or before `date_order`. Future RDVs can't
+          have driven the sale, so they're dropped.
         - Keep only events whose `start` is in the sale's month/year AND whose
           `appointment_status == 'attended'`. If that subset is empty, return
           an empty recordset (no attribution).
-        - Among the remaining, pick the one whose `start` is closest to
-          `date_order` in absolute time. Ties fall back to recordset order.
+        - Among the remaining, pick the event whose `start` is closest to
+          `date_order`. Ties fall back to recordset order.
         """
         if not events:
             return events
         if not date_order:
-            # Without a sale date we cannot apply the month/distance filters;
+            # Without a sale date we cannot apply the ordering filters;
             # fall back to the first candidate.
             return events[:1]
 
+        # Drop RDVs after the sale — they can't have originated it.
+        events = events.filtered(
+            lambda e: e.start and e.start <= date_order
+        )
+        if not events:
+            return events.browse()
+
         same_month_attended = events.filtered(
             lambda e: e.appointment_status == 'attended'
-            and e.start
             and e.start.month == date_order.month
             and e.start.year == date_order.year
         )
