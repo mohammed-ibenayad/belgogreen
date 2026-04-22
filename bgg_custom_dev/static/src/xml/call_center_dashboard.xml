@@ -31,6 +31,9 @@
                         </button>
                     </div>
                     <div class="cd_header_right" style="display:flex;gap:8px;">
+                        <button class="btn btn-success btn-sm" t-on-click="onExportExcel">
+                            <i class="fa fa-file-excel-o"/> Excel
+                        </button>
                         <button class="btn btn-primary btn-sm" t-on-click="onRefresh">
                             <i class="fa fa-refresh"/> Actualiser
                         </button>
@@ -126,11 +129,11 @@
                             <!-- Revenu confirmé -->
                             <tr class="cd_financial_row">
                                 <td class="cd_section_label cd_section_green" colspan="1"
-                                    title="Somme TTC des commandes confirmées (state sale/done) attribuées au call center.">
-                                    REVENU
+                                    title="Somme HT des commandes confirmées (state sale/done) attribuées au call center.">
+                                    REVENU (HT)
                                 </td>
                                 <td class="cd_row_label">
-                                    <i class="fa fa-info-circle cd_info_icon" title="REVENU = Σ amount_total des commandes confirmées attribuées au call center."/>
+                                    <i class="fa fa-info-circle cd_info_icon" title="REVENU (HT) = Σ amount_untaxed des commandes confirmées attribuées au call center."/>
                                 </td>
                                 <t t-foreach="state.data.call_centers" t-as="cc" t-key="cc.id">
                                     <td class="cd_cell cd_currency cd_bold">
@@ -164,11 +167,11 @@
                             <!-- Montant annulé -->
                             <tr class="cd_financial_row cd_annule_row">
                                 <td class="cd_section_label cd_section_red" colspan="1"
-                                    title="Somme TTC des commandes annulées (state cancel) attribuées au call center.">
-                                    MONTANT ANNULÉ
+                                    title="Somme HT des commandes annulées (state cancel) attribuées au call center.">
+                                    MONTANT ANNULÉ (HT)
                                 </td>
                                 <td class="cd_row_label">
-                                    <i class="fa fa-info-circle cd_info_icon" title="MONTANT ANNULÉ = Σ amount_total des commandes annulées attribuées au call center."/>
+                                    <i class="fa fa-info-circle cd_info_icon" title="MONTANT ANNULÉ (HT) = Σ amount_untaxed des commandes annulées attribuées au call center."/>
                                 </td>
                                 <t t-foreach="state.data.call_centers" t-as="cc" t-key="cc.id">
                                     <td class="cd_cell cd_currency">
@@ -195,7 +198,7 @@
                                 <th>Client</th>
                                 <th>Société</th>
                                 <th>Call Center</th>
-                                <th class="text-end">Total</th>
+                                <th class="text-end">Total HT</th>
                                 <th>Statut facturation</th>
                                 <th>Statut</th>
                                 <th>Date de commande</th>
@@ -213,7 +216,7 @@
                                     <td><t t-esc="order.partner_name"/></td>
                                     <td><t t-esc="order.company_name"/></td>
                                     <td><t t-esc="order.call_center_name"/></td>
-                                    <td class="text-end cd_currency"><t t-esc="formatCurrency(order.amount_total)"/></td>
+                                    <td class="text-end cd_currency"><t t-esc="formatCurrency(order.amount_untaxed)"/></td>
                                     <td><t t-esc="order.invoice_status_label"/></td>
                                     <td><t t-esc="order.state_label"/></td>
                                     <td><t t-esc="order.date_order"/></td>

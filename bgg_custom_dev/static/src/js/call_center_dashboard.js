@@ -188,6 +188,25 @@ export class CallCenterDashboard extends Component {
         await this.loadDashboardData(this.state.currentMonth, this.state.currentYear);
     }
 
+    onExportExcel() {
+        const params = new URLSearchParams();
+        if (this.state.currentMonth) params.set('month', this.state.currentMonth);
+        if (this.state.currentYear) params.set('year', this.state.currentYear);
+        params.set('period_type', this.state.periodType);
+        if (this.state.currentQuarter) params.set('quarter', this.state.currentQuarter);
+        if (this.state.periodType === 'custom') {
+            if (!this.state.dateFrom || !this.state.dateTo) {
+                return;
+            }
+            params.set('date_from', this.state.dateFrom);
+            params.set('date_to', this.state.dateTo);
+        }
+        if (this.state.filterCallCenterId) {
+            params.set('call_center_id', this.state.filterCallCenterId);
+        }
+        window.open('/call_center/dashboard/export?' + params.toString(), '_blank');
+    }
+
     async onPeriodTypeChange(ev) {
         this.state.periodType = ev.target.value;
         const now = new Date();
