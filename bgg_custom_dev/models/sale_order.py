@@ -2,11 +2,13 @@
 
 import logging
 
-from odoo import api, fields, models
+from odoo import _, api, fields, models
 
 from .calendar_event import CALL_CENTER_APPOINTMENT_REFS
 
 _logger = logging.getLogger(__name__)
+
+DASHBOARD_GROUP = 'bgg_custom_dev.group_bgg_dashboard'
 
 
 class SaleOrder(models.Model):
@@ -15,9 +17,10 @@ class SaleOrder(models.Model):
     x_call_center_sale_owner_id = fields.Many2one(
         'res.partner',
         string='Call Center (Sale Owner)',
-        compute='_compute_x_call_center_sale_owner_id',
+        compute='_compute_call_center_attribution',
         store=True,
         readonly=True,
+        groups=DASHBOARD_GROUP,
         help=(
             "Call center credited for this sale. Resolution: "
             "(1) find the relevant call-center appointment — via the sale's "
@@ -32,6 +35,72 @@ class SaleOrder(models.Model):
         ),
     )
 
+    x_call_center_source_event_id = fields.Many2one(
+        'calendar.event',
+        string='RDV retenu (Call Center)',
+        compute='_compute_call_center_attribution',
+        store=True,
+        readonly=True,
+        groups=DASHBOARD_GROUP,
+        help="The calendar event that drove the Call Center (Sale Owner) attribution.",
+    )
+
+    x_call_center_candidate_event_ids = fields.Many2many(
+        'calendar.event',
+        string='RDV candidats (Call Center)',
+        compute='_compute_call_center_candidate_event_ids',
+        store=False,
+        groups=DASHBOARD_GROUP,
+        help="All call-center appointments considered by the attribution logic for this sale.",
+    )
+
+    x_call_center_event_count = fields.Integer(
+        string='RDV Call Center',
+        compute='_compute_call_center_event_count',
+        store=False,
+        groups=DASHBOARD_GROUP,
+    )
+
+    # ------------------------------------------------------------------
+    # Helper shared by every compute: gather the candidate calendar.events
+    # ------------------------------------------------------------------
+
+    def _get_call_center_candidate_events(self):
+        """Return the calendar.event recordset considered for attribution.
+
+        Uses the same input rules as the compute so "what is shown" and
+        "what was picked" never disagree:
+        - Via opportunity if set, otherwise fallback seller + client search.
+        - Always restricted to call-center appointment types.
+        - No tiebreakers applied here — returns the full candidate list.
+        """
+        self.ensure_one()
+        call_center_type_ids = self.env['appointment.type'].search([
+            ('x_appointment_ref', 'in', CALL_CENTER_APPOINTMENT_REFS),
+        ]).ids
+        CalendarEvent = self.env['calendar.event']
+
+        if not call_center_type_ids:
+            return CalendarEvent.browse()
+
+        if self.opportunity_id:
+            return self.opportunity_id.calendar_event_ids.filtered(
+                lambda e: e.appointment_type_id.id in call_center_type_ids
+            )
+
+        if self.user_id and self.partner_id:
+            return CalendarEvent.search([
+                ('user_id', '=', self.user_id.id),
+                ('partner_ids', 'in', self.partner_id.id),
+                ('appointment_type_id', 'in', call_center_type_ids),
+            ])
+
+        return CalendarEvent.browse()
+
+    # ------------------------------------------------------------------
+    # Computes
+    # ------------------------------------------------------------------
+
     @api.depends(
         'opportunity_id',
         'opportunity_id.calendar_event_ids',
@@ -44,42 +113,17 @@ class SaleOrder(models.Model):
         'partner_id',
         'date_order',
     )
-    def _compute_x_call_center_sale_owner_id(self):
-        call_center_type_ids = self.env['appointment.type'].search([
-            ('x_appointment_ref', 'in', CALL_CENTER_APPOINTMENT_REFS),
-        ]).ids
+    def _compute_call_center_attribution(self):
+        """Compute both the owner partner and the winning event together."""
         call_center_group = self.env['res.groups'].search([
             ('name', '=', 'Call Center'),
         ], limit=1)
         call_center_group_id = call_center_group.id if call_center_group else False
-        CalendarEvent = self.env['calendar.event']
 
         for order in self:
-            event = CalendarEvent
+            candidates = order._get_call_center_candidate_events()
+            event = self._select_best_call_center_event(candidates, order.date_order)
 
-            # 1) Main case: via opportunity
-            if order.opportunity_id and call_center_type_ids:
-                events = order.opportunity_id.calendar_event_ids.filtered(
-                    lambda e: e.appointment_type_id.id in call_center_type_ids
-                )
-                event = self._select_best_call_center_event(events, order.date_order)
-
-            # 2) Fallback: no opportunity or no matching event → search by seller + client
-            if (not event
-                    and call_center_type_ids
-                    and order.user_id
-                    and order.partner_id):
-                candidates = CalendarEvent.search([
-                    ('user_id', '=', order.user_id.id),
-                    ('partner_ids', 'in', order.partner_id.id),
-                    ('appointment_type_id', 'in', call_center_type_ids),
-                ])
-                event = self._select_best_call_center_event(candidates, order.date_order)
-
-            # 3) Resolve the selected event to a call-center partner.
-            #    - pris-à-la-place-de wins if set (already a partner).
-            #    - else create_uid.partner_id, but only if create_uid is in the
-            #      "Call Center" res.groups. Otherwise leave empty.
             owner = self.env['res.partner']
             if event:
                 if event.x_studio_rendez_vous_pris_la_place_de:
@@ -88,7 +132,29 @@ class SaleOrder(models.Model):
                       and call_center_group_id
                       and call_center_group_id in event.create_uid.group_ids.ids):
                     owner = event.create_uid.partner_id
+
             order.x_call_center_sale_owner_id = owner or False
+            order.x_call_center_source_event_id = event or False
+
+    @api.depends(
+        'opportunity_id',
+        'opportunity_id.calendar_event_ids',
+        'opportunity_id.calendar_event_ids.appointment_type_id',
+        'user_id',
+        'partner_id',
+    )
+    def _compute_call_center_candidate_event_ids(self):
+        for order in self:
+            order.x_call_center_candidate_event_ids = order._get_call_center_candidate_events()
+
+    @api.depends('x_call_center_candidate_event_ids')
+    def _compute_call_center_event_count(self):
+        for order in self:
+            order.x_call_center_event_count = len(order.x_call_center_candidate_event_ids)
+
+    # ------------------------------------------------------------------
+    # Tiebreakers (unchanged behavior)
+    # ------------------------------------------------------------------
 
     @api.model
     def _select_best_call_center_event(self, events, date_order):
@@ -106,11 +172,8 @@ class SaleOrder(models.Model):
         if not events:
             return events
         if not date_order:
-            # Without a sale date we cannot apply the ordering filters;
-            # fall back to the first candidate.
             return events[:1]
 
-        # Drop RDVs after the sale — they can't have originated it.
         events = events.filtered(
             lambda e: e.start and e.start <= date_order
         )
@@ -133,3 +196,20 @@ class SaleOrder(models.Model):
             return abs((ev.start - date_order).total_seconds())
 
         return events.sorted(key=distance)[:1]
+
+    # ------------------------------------------------------------------
+    # Action for the smart button
+    # ------------------------------------------------------------------
+
+    def action_open_call_center_events(self):
+        """Open the list of call-center appointments considered for this sale."""
+        self.ensure_one()
+        event_ids = self.x_call_center_candidate_event_ids.ids
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('RDV Call Center'),
+            'res_model': 'calendar.event',
+            'view_mode': 'list,form',
+            'domain': [('id', 'in', event_ids)],
+            'context': {'create': False},
+        }
