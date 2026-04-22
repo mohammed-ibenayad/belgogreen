@@ -17,7 +17,7 @@
         <field name="state">code</field>
         <field name="code">
 targets = records if records else env['sale.order'].search([])
-targets._compute_x_call_center_sale_owner_id()
+targets._compute_call_center_attribution()
 action = {
     'type': 'ir.actions.client',
     'tag': 'display_notification',
