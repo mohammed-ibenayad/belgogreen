@@ -17,6 +17,11 @@ export class CallCenterDashboard extends Component {
         } catch (e) {
             this.rpc = null;
         }
+        try {
+            this.action = useService("action");
+        } catch (e) {
+            this.action = null;
+        }
 
         this.state = useState({
             data: null,
@@ -246,6 +251,30 @@ export class CallCenterDashboard extends Component {
         // Force orders reload on next visit to Details
         this.state.orders = null;
         await this.loadDashboardData(this.state.currentMonth, this.state.currentYear);
+    }
+
+    openRecord(resModel, resId) {
+        if (!resId) return;
+        if (this.action && this.action.doAction) {
+            this.action.doAction({
+                type: 'ir.actions.act_window',
+                res_model: resModel,
+                res_id: resId,
+                views: [[false, 'form']],
+                target: 'current',
+            });
+            return;
+        }
+        // Fallback if the action service is unavailable
+        window.open(`/odoo/action-base.action_ui?model=${resModel}&res_id=${resId}`, '_self');
+    }
+
+    onOrderClick(orderId) {
+        this.openRecord('sale.order', orderId);
+    }
+
+    onEventClick(eventId) {
+        this.openRecord('calendar.event', eventId);
     }
 
     formatCurrency(value) {

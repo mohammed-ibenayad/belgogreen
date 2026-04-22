@@ -188,6 +188,7 @@ class CallCenterDashboard(models.TransientModel):
                     'date_order': fields.Datetime.to_string(so.date_order) if so.date_order else '',
                     'call_center_id': so.x_call_center_sale_owner_id.id,
                     'call_center_name': so.x_call_center_sale_owner_id.name or '',
+                    'source_event_id': so.x_call_center_source_event_id.id or False,
                 })
             return {'orders': data}
         except Exception as exc:
