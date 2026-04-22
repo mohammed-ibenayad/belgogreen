@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_call_center_dashboard" model="ir.actions.client">
+        <field name="name">Suivi Call Center</field>
+        <field name="tag">call_center_dashboard</field>
+    </record>
+</odoo>
