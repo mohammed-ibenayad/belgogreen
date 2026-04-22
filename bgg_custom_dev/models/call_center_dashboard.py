@@ -153,41 +153,46 @@ class CallCenterDashboard(models.TransientModel):
                         quarter=None, date_from=None, date_to=None,
                         call_center_id=None):
         """Return the plain order list for the Details tab (HT amount)."""
-        date_start, date_end, _pl, _m, _y, _q = self._resolve_period(
-            month, year, period_type, quarter, date_from, date_to,
-        )
+        try:
+            date_start, date_end, _pl, _m, _y, _q = self._resolve_period(
+                month, year, period_type, quarter, date_from, date_to,
+            )
 
-        so_domain = [
-            ('date_order', '>=', fields.Datetime.to_string(date_start)),
-            ('date_order', '<', fields.Datetime.to_string(date_end)),
-            ('state', 'in', ['sale', 'done', 'cancel']),
-            ('x_call_center_sale_owner_id', '!=', False),
-        ]
-        if call_center_id:
-            so_domain.append(('x_call_center_sale_owner_id', '=', call_center_id))
+            so_domain = [
+                ('date_order', '>=', fields.Datetime.to_string(date_start)),
+                ('date_order', '<', fields.Datetime.to_string(date_end)),
+                ('state', 'in', ['sale', 'done', 'cancel']),
+                ('x_call_center_sale_owner_id', '!=', False),
+            ]
+            if call_center_id:
+                so_domain.append(('x_call_center_sale_owner_id', '=', call_center_id))
 
-        orders = self.env['sale.order'].search(so_domain, order='date_order desc, name desc')
+            orders = self.env['sale.order'].search(so_domain, order='date_order desc, name desc')
 
-        state_labels = dict(self.env['sale.order']._fields['state']._description_selection(self.env))
-        invoice_labels = dict(self.env['sale.order']._fields['invoice_status']._description_selection(self.env))
+            fg = self.env['sale.order'].fields_get(['state', 'invoice_status'])
+            state_labels = dict(fg.get('state', {}).get('selection') or [])
+            invoice_labels = dict(fg.get('invoice_status', {}).get('selection') or [])
 
-        data = []
-        for so in orders:
-            data.append({
-                'id': so.id,
-                'name': so.name,
-                'partner_name': so.partner_id.display_name or '',
-                'company_name': so.company_id.name or '',
-                'amount_untaxed': round(so.amount_untaxed, 2),
-                'invoice_status': so.invoice_status,
-                'invoice_status_label': invoice_labels.get(so.invoice_status, so.invoice_status or ''),
-                'state': so.state,
-                'state_label': state_labels.get(so.state, so.state or ''),
-                'date_order': fields.Datetime.to_string(so.date_order) if so.date_order else '',
-                'call_center_id': so.x_call_center_sale_owner_id.id,
-                'call_center_name': so.x_call_center_sale_owner_id.name or '',
-            })
-        return {'orders': data}
+            data = []
+            for so in orders:
+                data.append({
+                    'id': so.id,
+                    'name': so.name,
+                    'partner_name': so.partner_id.display_name or '',
+                    'company_name': so.company_id.name or '',
+                    'amount_untaxed': round(so.amount_untaxed, 2),
+                    'invoice_status': so.invoice_status or '',
+                    'invoice_status_label': invoice_labels.get(so.invoice_status, so.invoice_status or ''),
+                    'state': so.state or '',
+                    'state_label': state_labels.get(so.state, so.state or ''),
+                    'date_order': fields.Datetime.to_string(so.date_order) if so.date_order else '',
+                    'call_center_id': so.x_call_center_sale_owner_id.id,
+                    'call_center_name': so.x_call_center_sale_owner_id.name or '',
+                })
+            return {'orders': data}
+        except Exception as exc:
+            _logger.exception("call_center_dashboard.get_orders_list failed: %s", exc)
+            return {'orders': [], 'error': str(exc)}
 
     # ------------------------------------------------------------------
     # Excel export (3 sheets: Synthèse, Commandes, Calculs)
