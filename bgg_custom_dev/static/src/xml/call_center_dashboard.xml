@@ -194,14 +194,14 @@
                     <table t-if="!state.loadingOrders" class="cd_table ccd_orders_table">
                         <thead>
                             <tr>
-                                <th>Référence</th>
-                                <th>Client</th>
+                                <th class="ccd_col_ref">Référence</th>
+                                <th class="ccd_col_client">Client</th>
+                                <th class="ccd_col_date">Date de commande</th>
                                 <th>Société</th>
-                                <th>Call Center</th>
+                                <th>Call Center RDV</th>
                                 <th class="text-end">Total HT</th>
                                 <th>Statut facturation</th>
                                 <th>Statut</th>
-                                <th>Date de commande</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -212,14 +212,33 @@
                             </t>
                             <t t-foreach="state.orders || []" t-as="order" t-key="order.id">
                                 <tr t-att-class="order.state === 'cancel' ? 'ccd_row_cancelled' : ''">
-                                    <td><t t-esc="order.name"/></td>
-                                    <td><t t-esc="order.partner_name"/></td>
+                                    <td>
+                                        <a href="#"
+                                           class="ccd_link"
+                                           t-on-click.prevent="() => this.onOrderClick(order.id)">
+                                            <t t-esc="order.name"/>
+                                        </a>
+                                    </td>
+                                    <td class="ccd_col_client ccd_truncate" t-att-title="order.partner_name">
+                                        <t t-esc="order.partner_name"/>
+                                    </td>
+                                    <td class="ccd_col_date"><t t-esc="order.date_order"/></td>
                                     <td><t t-esc="order.company_name"/></td>
-                                    <td><t t-esc="order.call_center_name"/></td>
+                                    <td>
+                                        <t t-if="order.source_event_id">
+                                            <a href="#"
+                                               class="ccd_link"
+                                               t-on-click.prevent="() => this.onEventClick(order.source_event_id)">
+                                                <t t-esc="order.call_center_name"/>
+                                            </a>
+                                        </t>
+                                        <t t-else="">
+                                            <t t-esc="order.call_center_name"/>
+                                        </t>
+                                    </td>
                                     <td class="text-end cd_currency"><t t-esc="formatCurrency(order.amount_untaxed)"/></td>
                                     <td><t t-esc="order.invoice_status_label"/></td>
                                     <td><t t-esc="order.state_label"/></td>
-                                    <td><t t-esc="order.date_order"/></td>
                                 </tr>
                             </t>
                         </tbody>

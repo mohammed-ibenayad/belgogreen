@@ -38,6 +38,31 @@
 
     .ccd_orders_table {
         width: 100%;
+        table-layout: auto;
+
+        .ccd_col_ref   { width: 110px; }
+        .ccd_col_date  { width: 160px; white-space: nowrap; }
+        .ccd_col_client {
+            width: 260px;
+            max-width: 260px;
+        }
+        .ccd_truncate {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 260px;
+        }
+
+        .ccd_link {
+            color: #017e84;
+            cursor: pointer;
+            text-decoration: none;
+
+            &:hover {
+                text-decoration: underline;
+                color: #01666b;
+            }
+        }
 
         thead th {
             background: #f8f9fa;
