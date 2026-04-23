@@ -359,10 +359,7 @@ class CallCenterDashboard(models.TransientModel):
             cc_name = o.get('call_center_name') or ''
             source_event_id = o.get('source_event_id')
             if base_url and source_event_id and cc_name:
-                event_url = (
-                    f"{base_url}/odoo/action-base.action_ui"
-                    f"?model=calendar.event&res_id={source_event_id}"
-                )
+                event_url = f"{base_url}/odoo/calendar/{source_event_id}"
                 orders_sheet.write_url(r, 3, event_url, link_fmt, cc_name)
             else:
                 orders_sheet.write(r, 3, cc_name, cell_fmt)
