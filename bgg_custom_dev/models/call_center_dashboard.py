@@ -333,7 +333,7 @@ class CallCenterDashboard(models.TransientModel):
             ('Référence', 14),
             ('Client', 28),
             ('Société', 22),
-            ('Call Center', 22),
+            ('Call Center RDV', 22),
             ('Total HT', 14),
             ('Statut facturation', 18),
             ('Statut', 14),
@@ -343,11 +343,30 @@ class CallCenterDashboard(models.TransientModel):
             orders_sheet.set_column(idx, idx, width)
             orders_sheet.write(0, idx, name, header_fmt)
 
+        base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url') or ''
+        link_fmt = workbook.add_format({
+            'border': 1, 'align': 'center',
+            'font_color': '#017e84', 'underline': 1,
+            'font_name': 'Arial', 'font_size': 10,
+        })
+
         for r, o in enumerate(details['orders'], start=1):
             orders_sheet.write(r, 0, o['name'], cell_fmt)
             orders_sheet.write(r, 1, o['partner_name'], cell_fmt)
             orders_sheet.write(r, 2, o['company_name'], cell_fmt)
-            orders_sheet.write(r, 3, o['call_center_name'], cell_fmt)
+
+            # Call Center RDV — clickable link to the source calendar event
+            cc_name = o.get('call_center_name') or ''
+            source_event_id = o.get('source_event_id')
+            if base_url and source_event_id and cc_name:
+                event_url = (
+                    f"{base_url}/odoo/action-base.action_ui"
+                    f"?model=calendar.event&res_id={source_event_id}"
+                )
+                orders_sheet.write_url(r, 3, event_url, link_fmt, cc_name)
+            else:
+                orders_sheet.write(r, 3, cc_name, cell_fmt)
+
             orders_sheet.write_number(r, 4, o['amount_untaxed'], currency_fmt)
             orders_sheet.write(r, 5, o['invoice_status_label'], cell_fmt)
             orders_sheet.write(r, 6, o['state_label'], cell_fmt)
