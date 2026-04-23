@@ -87,6 +87,13 @@
                     </div>
                 </div>
 
+                <!-- Tabs (single tab kept for UX consistency with Suivi Call Center) -->
+                <div class="ccd_tabs">
+                    <button class="ccd_tab ccd_tab_active" type="button">
+                        Vue d'ensemble
+                    </button>
+                </div>
+
                 <!-- Main Table -->
                 <div class="cd_table_wrapper">
                     <table class="cd_table">
