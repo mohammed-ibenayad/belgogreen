@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_bgg_staging_rebuild_root"
+              name="Staging"
+              groups="bgg_staging_rebuild.group_bgg_staging_rebuild_user"
+              web_icon="fa-refresh,#017e84,#ffffff"
+              sequence="105"/>
+
+    <menuitem id="menu_bgg_staging_rebuild_action"
+              name="Rebuild Staging"
+              parent="menu_bgg_staging_rebuild_root"
+              action="bgg_staging_rebuild.action_bgg_staging_rebuild_wizard"
+              groups="bgg_staging_rebuild.group_bgg_staging_rebuild_user"
+              sequence="10"/>
+
+    <menuitem id="menu_bgg_staging_rebuild_log"
+              name="Rebuild History"
+              parent="menu_bgg_staging_rebuild_root"
+              action="bgg_staging_rebuild.action_bgg_staging_rebuild_log"
+              groups="bgg_staging_rebuild.group_bgg_staging_rebuild_user"
+              sequence="20"/>
+</odoo>

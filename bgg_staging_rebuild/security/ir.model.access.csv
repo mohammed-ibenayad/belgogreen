@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_bgg_staging_rebuild_log_user,bgg.staging.rebuild.log.user,model_bgg_staging_rebuild_log,bgg_staging_rebuild.group_bgg_staging_rebuild_user,1,0,0,0
+access_bgg_staging_rebuild_log_admin,bgg.staging.rebuild.log.admin,model_bgg_staging_rebuild_log,base.group_system,1,1,1,1
+access_bgg_staging_rebuild_wizard,bgg.staging.rebuild.wizard,model_bgg_staging_rebuild_wizard,bgg_staging_rebuild.group_bgg_staging_rebuild_user,1,1,1,1
