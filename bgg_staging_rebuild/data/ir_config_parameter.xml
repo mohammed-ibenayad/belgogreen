@@ -40,4 +40,16 @@
         <field name="key">bgg_staging_rebuild.cooldown_minutes</field>
         <field name="value">5</field>
     </record>
+
+    <!--
+        Shared secret for the inbound Odoo.sh webhook. Empty by default;
+        the controller refuses every request until this is set. Generate
+        a 32-byte hex string (e.g. `python -c "import secrets;
+        print(secrets.token_hex(32))"`) and paste the same value into
+        Odoo.sh's webhook configuration on the project.
+    -->
+    <record id="param_webhook_secret" model="ir.config_parameter">
+        <field name="key">bgg_staging_rebuild.webhook_secret</field>
+        <field name="value"></field>
+    </record>
 </odoo>
