@@ -71,17 +71,6 @@ class StagingRebuildLog(models.Model):
     last_status_check = fields.Datetime(
         string='Last Status Check', readonly=True,
     )
-    odoo_sh_project_url = fields.Char(
-        string='Odoo.sh Project',
-        compute='_compute_odoo_sh_project_url',
-    )
-
-    def _compute_odoo_sh_project_url(self):
-        url = self.env['ir.config_parameter'].sudo().get_param(
-            'bgg_staging_rebuild.odoo_sh_project_url', '',
-        )
-        for rec in self:
-            rec.odoo_sh_project_url = url or False
 
     @api.model
     def log_attempt(self, strategy, branch, source_branch, status,
@@ -109,12 +98,11 @@ class StagingRebuildLog(models.Model):
 
     def action_open_build(self):
         self.ensure_one()
-        url = self.build_url or self.odoo_sh_project_url
-        if not url:
+        if not self.build_url:
             return False
         return {
             'type': 'ir.actions.act_url',
-            'url': url,
+            'url': self.build_url,
             'target': 'new',
         }
 

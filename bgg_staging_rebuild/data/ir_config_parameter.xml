@@ -40,9 +40,4 @@
         <field name="key">bgg_staging_rebuild.cooldown_minutes</field>
         <field name="value">5</field>
     </record>
-
-    <record id="param_odoo_sh_project_url" model="ir.config_parameter">
-        <field name="key">bgg_staging_rebuild.odoo_sh_project_url</field>
-        <field name="value">https://www.odoo.sh/project/belgogreen/branches/main-staging</field>
-    </record>
 </odoo>
