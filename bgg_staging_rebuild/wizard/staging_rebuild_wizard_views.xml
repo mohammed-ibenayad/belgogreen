@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_bgg_staging_rebuild_wizard_form" model="ir.ui.view">
+        <field name="name">bgg.staging.rebuild.wizard.form</field>
+        <field name="model">bgg.staging.rebuild.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Rebuild Staging">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>Rebuild the Staging Environment</h1>
+                        <p class="text-muted">
+                            This will trigger Odoo.sh to rebuild the staging
+                            environment based on the configured strategy.
+                            The current staging database content will be
+                            replaced with a fresh build.
+                        </p>
+                    </div>
+                    <group>
+                        <group string="What will happen">
+                            <field name="strategy_preview" readonly="1"/>
+                            <field name="staging_branch_preview" readonly="1"/>
+                            <field name="production_branch_preview" readonly="1"
+                                   invisible="strategy_preview != 'refresh'"/>
+                        </group>
+                        <group string="Last rebuild">
+                            <field name="last_log_id" readonly="1"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="confirm"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_rebuild" type="object"
+                            string="Rebuild Staging Now"
+                            class="btn-danger"
+                            confirm="This will overwrite the staging environment. Continue?"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_bgg_staging_rebuild_wizard" model="ir.actions.act_window">
+        <field name="name">Rebuild Staging</field>
+        <field name="res_model">bgg.staging.rebuild.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

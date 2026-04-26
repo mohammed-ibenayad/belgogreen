@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="group_bgg_staging_rebuild_user" model="res.groups">
+        <field name="name">BGG Staging Rebuild</field>
+        <field name="comment">Allowed to trigger an Odoo.sh staging rebuild and see the audit log.</field>
+    </record>
+
+    <record id="rule_bgg_staging_rebuild_log" model="ir.rule">
+        <field name="name">Staging rebuild log: visible to allowed group only</field>
+        <field name="model_id" ref="model_bgg_staging_rebuild_log"/>
+        <field name="groups" eval="[(4, ref('group_bgg_staging_rebuild_user'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+</odoo>

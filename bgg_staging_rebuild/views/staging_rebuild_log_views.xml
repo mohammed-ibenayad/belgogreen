@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_bgg_staging_rebuild_log_list" model="ir.ui.view">
+        <field name="name">bgg.staging.rebuild.log.list</field>
+        <field name="model">bgg.staging.rebuild.log</field>
+        <field name="arch" type="xml">
+            <list string="Staging Rebuild Logs" create="false" edit="false" delete="false">
+                <field name="create_date"/>
+                <field name="user_id"/>
+                <field name="strategy"/>
+                <field name="branch"/>
+                <field name="source_branch"/>
+                <field name="commit_sha"/>
+                <field name="status" decoration-success="status == 'success'" decoration-danger="status == 'error'"/>
+                <field name="http_status"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_bgg_staging_rebuild_log_form" model="ir.ui.view">
+        <field name="name">bgg.staging.rebuild.log.form</field>
+        <field name="model">bgg.staging.rebuild.log</field>
+        <field name="arch" type="xml">
+            <form string="Staging Rebuild Log" create="false" edit="false">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="create_date"/>
+                            <field name="user_id"/>
+                            <field name="status"/>
+                            <field name="http_status"/>
+                        </group>
+                        <group>
+                            <field name="strategy"/>
+                            <field name="branch"/>
+                            <field name="source_branch"/>
+                            <field name="commit_sha"/>
+                        </group>
+                    </group>
+                    <group string="Message">
+                        <field name="message" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_bgg_staging_rebuild_log" model="ir.actions.act_window">
+        <field name="name">Staging Rebuild Logs</field>
+        <field name="res_model">bgg.staging.rebuild.log</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>
