@@ -29,9 +29,9 @@ class SaleOrder(models.Model):
             "(2) On that appointment, if `x_studio_rendez_vous_pris_la_place_de` "
             "is set, use it (the real call center the RDV was booked on behalf "
             "of); otherwise fall back to `create_uid.partner_id` (the booker). "
-            "When multiple appointments match, prefer those in the sale's month "
-            "with status 'attended', then the one whose start is closest to "
-            "date_order."
+            "RDVs after the sale are excluded; appointment_status is not "
+            "considered. When multiple appointments remain, the one whose "
+            "start is closest to date_order wins."
         ),
     )
 
@@ -158,16 +158,18 @@ class SaleOrder(models.Model):
 
     @api.model
     def _select_best_call_center_event(self, events, date_order):
-        """Pick one calendar.event from `events` using the agreed tiebreakers.
+        """Pick one calendar.event from `events`.
 
         Rules applied in order:
-        - RDV must have happened at or before `date_order`. Future RDVs can't
-          have driven the sale, so they're dropped.
-        - Keep only events whose `start` is in the sale's month/year AND whose
-          `appointment_status == 'attended'`. If that subset is empty, return
-          an empty recordset (no attribution).
+        - RDV must have happened at or before `date_order`. Future RDVs
+          can't have driven the sale, so they're dropped.
         - Among the remaining, pick the event whose `start` is closest to
           `date_order`. Ties fall back to recordset order.
+
+        Status (`appointment_status`) and same-month-as-sale are
+        intentionally not considered. Every RDV before the sale is
+        eligible regardless of whether it was marked attended, booked,
+        no_show or cancelled.
         """
         if not events:
             return events
@@ -179,15 +181,6 @@ class SaleOrder(models.Model):
         )
         if not events:
             return events.browse()
-
-        same_month_attended = events.filtered(
-            lambda e: e.appointment_status == 'attended'
-            and e.start.month == date_order.month
-            and e.start.year == date_order.year
-        )
-        if not same_month_attended:
-            return events.browse()
-        events = same_month_attended
 
         if len(events) == 1:
             return events
