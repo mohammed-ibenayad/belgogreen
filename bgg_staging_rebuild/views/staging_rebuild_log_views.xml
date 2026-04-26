@@ -71,8 +71,6 @@
                             <field name="last_status_check"/>
                             <field name="build_context"/>
                             <field name="build_url" widget="url"/>
-                            <field name="odoo_sh_project_url" widget="url"
-                                   invisible="not odoo_sh_project_url"/>
                         </group>
                     </group>
                     <group string="Trigger Message" invisible="not message">
