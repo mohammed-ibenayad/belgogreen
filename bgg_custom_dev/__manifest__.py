@@ -55,6 +55,8 @@
         # Views
         'views/calendar_event_views.xml',
         'views/commercial_dashboard_views.xml',
+        'views/call_center_dashboard_views.xml',
+        'views/sale_order_views.xml',
 
         # Reports (action must be loaded before menu that references it)
         'report/avis_count_report_views.xml',
@@ -62,12 +64,18 @@
         # Menus
         'views/menu_views.xml',
         'views/res_partner_views.xml',
+
+        # Server actions
+        'data/sale_order_server_actions.xml',
     ],
     'assets': {
         'web.assets_backend': [
             'bgg_custom_dev/static/src/js/commercial_dashboard.js',
             'bgg_custom_dev/static/src/xml/commercial_dashboard.xml',
             'bgg_custom_dev/static/src/scss/commercial_dashboard.scss',
+            'bgg_custom_dev/static/src/js/call_center_dashboard.js',
+            'bgg_custom_dev/static/src/xml/call_center_dashboard.xml',
+            'bgg_custom_dev/static/src/scss/call_center_dashboard.scss',
         ],
     },
     'installable': True,

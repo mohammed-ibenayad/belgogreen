@@ -1,0 +1,69 @@
+/* Call Center Dashboard Styles — extends commercial_dashboard.scss */
+
+.call_center_dashboard {
+    .ccd_orders_table {
+        width: 100%;
+        table-layout: auto;
+
+        .ccd_col_ref   { width: 110px; }
+        .ccd_col_date  { width: 160px; white-space: nowrap; }
+        .ccd_col_client {
+            width: 260px;
+            max-width: 260px;
+        }
+        .ccd_truncate {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 260px;
+        }
+
+        .ccd_link {
+            color: #017e84;
+            cursor: pointer;
+            text-decoration: none;
+
+            &:hover {
+                text-decoration: underline;
+                color: #01666b;
+            }
+        }
+
+        thead th {
+            background: #f8f9fa;
+            color: #212529;
+            font-weight: 700;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 10px 12px;
+            border: 1px solid #dee2e6;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            white-space: nowrap;
+        }
+
+        tbody td {
+            padding: 8px 12px;
+            border: 1px solid #dee2e6;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .text-end {
+            text-align: right;
+        }
+
+        .ccd_row_cancelled {
+            td {
+                color: #dc3545;
+                background: #fff5f5;
+            }
+        }
+
+        tbody tr:hover td {
+            background: #f0f8f8;
+        }
+    }
+}

@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="call_center.dashboard">
+        <div class="call_center_dashboard commercial_dashboard" t-ref="root">
+            <!-- Error -->
+            <div t-if="state.error" class="alert alert-danger m-3" role="alert">
+                <strong>Erreur:</strong> <t t-esc="state.error"/>
+            </div>
+
+            <!-- Loading -->
+            <div t-if="state.loading and !state.error" class="text-center p-5">
+                <i class="fa fa-spinner fa-spin fa-3x text-muted"/>
+                <p class="mt-3 text-muted">Chargement...</p>
+            </div>
+
+            <!-- Dashboard -->
+            <div t-if="!state.loading and state.data and !state.error" style="display:flex;flex-direction:column;height:100%;">
+
+                <!-- Header -->
+                <div class="cd_header">
+                    <div class="cd_header_left">
+                        <h1>Suivi Call Center</h1>
+                    </div>
+                    <div class="cd_header_center">
+                        <button class="btn btn-sm btn-outline-secondary" t-on-click="onPrevPeriod">
+                            <i class="fa fa-chevron-left"/>
+                        </button>
+                        <span class="cd_month_label" t-esc="state.data.period_label"/>
+                        <button class="btn btn-sm btn-outline-secondary" t-on-click="onNextPeriod">
+                            <i class="fa fa-chevron-right"/>
+                        </button>
+                    </div>
+                    <div class="cd_header_right" style="display:flex;gap:8px;">
+                        <button class="btn btn-success btn-sm" t-on-click="onExportExcel">
+                            <i class="fa fa-file-excel-o"/> Excel
+                        </button>
+                        <button class="btn btn-primary btn-sm" t-on-click="onRefresh">
+                            <i class="fa fa-refresh"/> Actualiser
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="cd_filters">
+                    <div class="cd_filter_group">
+                        <label>Période :</label>
+                        <select t-on-change="onPeriodTypeChange">
+                            <option value="month" t-att-selected="state.periodType === 'month' ? 'selected' : undefined">Mois</option>
+                            <option value="quarter" t-att-selected="state.periodType === 'quarter' ? 'selected' : undefined">Trimestre</option>
+                            <option value="year" t-att-selected="state.periodType === 'year' ? 'selected' : undefined">Année</option>
+                            <option value="custom" t-att-selected="state.periodType === 'custom' ? 'selected' : undefined">Personnalisé</option>
+                        </select>
+                    </div>
+                    <t t-if="state.periodType === 'custom'">
+                        <div class="cd_filter_sep"/>
+                        <div class="cd_filter_group">
+                            <label>Du :</label>
+                            <input type="date" t-att-value="state.dateFrom" t-on-change="onDateFromChange"/>
+                        </div>
+                        <div class="cd_filter_group">
+                            <label>Au :</label>
+                            <input type="date" t-att-value="state.dateTo" t-on-change="onDateToChange"/>
+                        </div>
+                    </t>
+                    <div class="cd_filter_sep"/>
+                    <div class="cd_filter_group">
+                        <label>Call Center :</label>
+                        <select t-on-change="onCallCenterFilterChange">
+                            <option value="">Tous</option>
+                            <t t-foreach="state.availableCallCenters" t-as="cc" t-key="cc.id">
+                                <option t-att-value="cc.id" t-att-selected="state.filterCallCenterId === cc.id ? 'selected' : undefined">
+                                    <t t-esc="cc.name"/>
+                                </option>
+                            </t>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="ccd_tabs">
+                    <button class="ccd_tab"
+                            t-att-class="state.activeTab === 'overview' ? 'ccd_tab_active' : ''"
+                            t-on-click="() => this.onTabChange('overview')">
+                        Vue d'ensemble
+                    </button>
+                    <button class="ccd_tab"
+                            t-att-class="state.activeTab === 'details' ? 'ccd_tab_active' : ''"
+                            t-on-click="() => this.onTabChange('details')">
+                        Détails des commandes
+                    </button>
+                </div>
+
+                <!-- Overview tab -->
+                <div t-if="state.activeTab === 'overview'" class="cd_table_wrapper">
+                    <table class="cd_table">
+                        <thead>
+                            <tr>
+                                <th class="cd_section_header" colspan="2">
+                                    <t t-esc="state.data.period_label"/>
+                                </th>
+                                <t t-foreach="state.data.call_centers" t-as="cc" t-key="cc.id">
+                                    <th class="cd_user_header">
+                                        <t t-esc="cc.name"/>
+                                    </th>
+                                </t>
+                                <th class="cd_total_header">TOTAL</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Nombre de ventes confirmées -->
+                            <tr class="cd_highlight_row">
+                                <td class="cd_section_label cd_section_blue" colspan="1"
+                                    title="Nombre de commandes confirmées (state sale/done) attribuées au call center dans la période.">
+                                    VENTES CONFIRMÉES
+                                </td>
+                                <td class="cd_row_label">
+                                    <i class="fa fa-info-circle cd_info_icon" title="Nombre de commandes confirmées (state ∈ {sale, done}) attribuées au call center."/>
+                                </td>
+                                <t t-foreach="state.data.call_centers" t-as="cc" t-key="cc.id">
+                                    <td class="cd_cell cd_bold">
+                                        <t t-esc="getRevenueCount(cc.id)"/>
+                                    </td>
+                                </t>
+                                <td class="cd_cell cd_total_cell cd_bold">
+                                    <t t-esc="state.data.revenue_count_total"/>
+                                </td>
+                            </tr>
+
+                            <!-- Revenu confirmé -->
+                            <tr class="cd_financial_row">
+                                <td class="cd_section_label cd_section_green" colspan="1"
+                                    title="Somme HT des commandes confirmées (state sale/done) attribuées au call center.">
+                                    REVENU (HT)
+                                </td>
+                                <td class="cd_row_label">
+                                    <i class="fa fa-info-circle cd_info_icon" title="REVENU (HT) = Σ amount_untaxed des commandes confirmées attribuées au call center."/>
+                                </td>
+                                <t t-foreach="state.data.call_centers" t-as="cc" t-key="cc.id">
+                                    <td class="cd_cell cd_currency cd_bold">
+                                        <t t-esc="formatCurrency(getRevenue(cc.id))"/>
+                                    </td>
+                                </t>
+                                <td class="cd_cell cd_total_cell cd_currency cd_bold">
+                                    <t t-esc="formatCurrency(state.data.revenue_total)"/>
+                                </td>
+                            </tr>
+
+                            <!-- Ventes annulées -->
+                            <tr class="cd_highlight_row cd_annule_row">
+                                <td class="cd_section_label cd_section_red" colspan="1"
+                                    title="Nombre de commandes annulées (state cancel) attribuées au call center.">
+                                    VENTES ANNULÉES
+                                </td>
+                                <td class="cd_row_label">
+                                    <i class="fa fa-info-circle cd_info_icon" title="Nombre de commandes annulées (state = cancel) attribuées au call center."/>
+                                </td>
+                                <t t-foreach="state.data.call_centers" t-as="cc" t-key="cc.id">
+                                    <td class="cd_cell cd_bold">
+                                        <t t-esc="getCancelledCount(cc.id)"/>
+                                    </td>
+                                </t>
+                                <td class="cd_cell cd_total_cell cd_bold">
+                                    <t t-esc="state.data.cancelled_count_total"/>
+                                </td>
+                            </tr>
+
+                            <!-- Montant annulé -->
+                            <tr class="cd_financial_row cd_annule_row">
+                                <td class="cd_section_label cd_section_red" colspan="1"
+                                    title="Somme HT des commandes annulées (state cancel) attribuées au call center.">
+                                    MONTANT ANNULÉ (HT)
+                                </td>
+                                <td class="cd_row_label">
+                                    <i class="fa fa-info-circle cd_info_icon" title="MONTANT ANNULÉ (HT) = Σ amount_untaxed des commandes annulées attribuées au call center."/>
+                                </td>
+                                <t t-foreach="state.data.call_centers" t-as="cc" t-key="cc.id">
+                                    <td class="cd_cell cd_currency">
+                                        <t t-esc="formatCurrency(getCancelled(cc.id))"/>
+                                    </td>
+                                </t>
+                                <td class="cd_cell cd_total_cell cd_currency">
+                                    <t t-esc="formatCurrency(state.data.cancelled_total)"/>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Details tab -->
+                <div t-if="state.activeTab === 'details'" class="cd_table_wrapper">
+                    <div t-if="state.loadingOrders" class="text-center p-4">
+                        <i class="fa fa-spinner fa-spin"/> Chargement...
+                    </div>
+                    <table t-if="!state.loadingOrders" class="cd_table ccd_orders_table">
+                        <thead>
+                            <tr>
+                                <th class="ccd_col_ref">Référence</th>
+                                <th class="ccd_col_client">Client</th>
+                                <th class="ccd_col_date">Date de commande</th>
+                                <th>Société</th>
+                                <th>Call Center RDV</th>
+                                <th class="text-end">Total HT</th>
+                                <th>Statut facturation</th>
+                                <th>Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-if="!state.orders or state.orders.length === 0">
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted p-4">Aucune commande sur cette période.</td>
+                                </tr>
+                            </t>
+                            <t t-foreach="state.orders || []" t-as="order" t-key="order.id">
+                                <tr t-att-class="order.state === 'cancel' ? 'ccd_row_cancelled' : ''">
+                                    <td>
+                                        <a href="#"
+                                           class="ccd_link"
+                                           t-on-click.prevent="() => this.onOrderClick(order.id)">
+                                            <t t-esc="order.name"/>
+                                        </a>
+                                    </td>
+                                    <td class="ccd_col_client ccd_truncate" t-att-title="order.partner_name">
+                                        <t t-esc="order.partner_name"/>
+                                    </td>
+                                    <td class="ccd_col_date"><t t-esc="order.date_order"/></td>
+                                    <td><t t-esc="order.company_name"/></td>
+                                    <td>
+                                        <t t-if="order.source_event_id">
+                                            <a href="#"
+                                               class="ccd_link"
+                                               t-on-click.prevent="() => this.onEventClick(order.source_event_id)">
+                                                <t t-esc="order.call_center_name"/>
+                                            </a>
+                                        </t>
+                                        <t t-else="">
+                                            <t t-esc="order.call_center_name"/>
+                                        </t>
+                                    </td>
+                                    <td class="text-end cd_currency"><t t-esc="formatCurrency(order.amount_untaxed)"/></td>
+                                    <td><t t-esc="order.invoice_status_label"/></td>
+                                    <td><t t-esc="order.state_label"/></td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+    </t>
+</templates>

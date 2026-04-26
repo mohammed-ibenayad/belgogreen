@@ -86,7 +86,8 @@
             white-space: nowrap;
         }
 
-        select {
+        select,
+        input[type="date"] {
             font-family: inherit;
             font-size: 13px;
             padding: 4px 8px;
@@ -246,6 +247,24 @@
                 }
             }
 
+            /* Info icon next to calculated-row labels */
+            .cd_info_icon {
+                margin-left: 4px;
+                color: #17a2b8;
+                cursor: help;
+                font-size: 12px;
+
+                &:hover {
+                    color: #0f6674;
+                }
+            }
+
+            /* Hover cursor for all tooltip-bearing labels */
+            .cd_section_label[title],
+            .cd_row_label[title] {
+                cursor: help;
+            }
+
             /* Data cells */
             .cd_cell {
                 padding: 6px 12px;
@@ -321,6 +340,42 @@
                     color: #212529;
                 }
             }
+        }
+    }
+
+    /* Tabs (used by Suivi Commercial and Suivi Call Center) */
+    .ccd_tabs {
+        display: flex;
+        gap: 4px;
+        padding: 0 16px;
+        margin-bottom: 8px;
+        flex-shrink: 0;
+    }
+
+    .ccd_tab {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-bottom: none;
+        border-radius: 4px 4px 0 0;
+        padding: 8px 16px;
+        font-weight: 600;
+        font-size: 13px;
+        color: #495057;
+        cursor: pointer;
+        font-family: inherit;
+
+        &:hover {
+            background: #f8f9fa;
+        }
+    }
+
+    .ccd_tab_active {
+        background: #017e84;
+        color: white;
+        border-color: #017e84;
+
+        &:hover {
+            background: #017e84;
         }
     }
 
