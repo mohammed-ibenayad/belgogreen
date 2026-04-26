@@ -21,6 +21,13 @@
               groups="bgg_custom_dev.group_bgg_dashboard"
               sequence="10"/>
 
+    <menuitem id="menu_bgg_call_center_dashboard"
+              name="Suivi Call Center"
+              parent="menu_bgg_appointment_tracking"
+              action="bgg_custom_dev.action_call_center_dashboard"
+              groups="bgg_custom_dev.group_bgg_dashboard"
+              sequence="20"/>
+
     <menuitem id="menu_bgg_avis_count"
               name="Avis &amp; Recommandations (Pivot)"
               parent="menu_bgg_appointment_tracking"

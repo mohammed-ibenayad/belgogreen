@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- List: add Call Center (Sale Owner) column, dashboard group only -->
+    <record id="view_order_tree_inherit_call_center_owner" model="ir.ui.view">
+        <field name="name">sale.order.list.inherit.call.center.owner</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='state']" position="after">
+                <field name="x_call_center_sale_owner_id"
+                       optional="show"
+                       readonly="True"
+                       groups="bgg_custom_dev.group_bgg_dashboard"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Form: smart button linking to the candidate call-center appointments -->
+    <record id="view_order_form_inherit_call_center_button" model="ir.ui.view">
+        <field name="name">sale.order.form.inherit.call.center.button</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_open_call_center_events"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-phone"
+                        groups="bgg_custom_dev.group_bgg_dashboard">
+                    <field name="x_call_center_event_count"
+                           widget="statinfo"
+                           string="RDV Call Center"/>
+                </button>
+            </xpath>
+        </field>
+    </record>
+</odoo>

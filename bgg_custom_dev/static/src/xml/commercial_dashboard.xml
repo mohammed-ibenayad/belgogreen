@@ -47,8 +47,20 @@
                             <option value="month" t-att-selected="state.periodType === 'month' ? 'selected' : undefined">Mois</option>
                             <option value="quarter" t-att-selected="state.periodType === 'quarter' ? 'selected' : undefined">Trimestre</option>
                             <option value="year" t-att-selected="state.periodType === 'year' ? 'selected' : undefined">Année</option>
+                            <option value="custom" t-att-selected="state.periodType === 'custom' ? 'selected' : undefined">Personnalisé</option>
                         </select>
                     </div>
+                    <t t-if="state.periodType === 'custom'">
+                        <div class="cd_filter_sep"/>
+                        <div class="cd_filter_group">
+                            <label>Du :</label>
+                            <input type="date" t-att-value="state.dateFrom" t-on-change="onDateFromChange"/>
+                        </div>
+                        <div class="cd_filter_group">
+                            <label>Au :</label>
+                            <input type="date" t-att-value="state.dateTo" t-on-change="onDateToChange"/>
+                        </div>
+                    </t>
                     <div class="cd_filter_sep"/>
                     <div class="cd_filter_group">
                         <label>Commercial :</label>
@@ -73,6 +85,13 @@
                             </t>
                         </select>
                     </div>
+                </div>
+
+                <!-- Tabs (single tab kept for UX consistency with Suivi Call Center) -->
+                <div class="ccd_tabs">
+                    <button class="ccd_tab ccd_tab_active" type="button">
+                        Vue d'ensemble
+                    </button>
                 </div>
 
                 <!-- Main Table -->
@@ -176,15 +195,21 @@
 
                             <!-- TAUX PRÉSENCE -->
                             <tr class="cd_section_row">
-                                <td class="cd_section_label cd_section_blue" rowspan="2">TAUX PRÉSENCE</td>
-                                <td class="cd_row_label">Call</td>
+                                <td class="cd_section_label cd_section_blue" rowspan="2" title="Taux de présence = Présents / Total RDV">TAUX PRÉSENCE</td>
+                                <td class="cd_row_label">
+                                    Call
+                                    <i class="fa fa-info-circle cd_info_icon" title="Taux de présence Call = Présents Call Center / Total RDV Call Center"/>
+                                </td>
                                 <t t-foreach="state.data.users" t-as="user" t-key="user.id">
                                     <td class="cd_cell"><t t-esc="formatPercent(getUserDerived(user.id).tx_presence_call)"/></td>
                                 </t>
                                 <td class="cd_cell cd_total_cell"><t t-esc="formatPercent(state.data.derived_total.tx_presence_call)"/></td>
                             </tr>
                             <tr>
-                                <td class="cd_row_label">Commercial</td>
+                                <td class="cd_row_label">
+                                    Commercial
+                                    <i class="fa fa-info-circle cd_info_icon" title="Taux de présence Commercial = Présents Commercial / Total RDV Commercial"/>
+                                </td>
                                 <t t-foreach="state.data.users" t-as="user" t-key="user.id">
                                     <td class="cd_cell"><t t-esc="formatPercent(getUserDerived(user.id).tx_presence_com)"/></td>
                                 </t>
@@ -194,14 +219,28 @@
                             <!-- Spacer -->
                             <tr class="cd_spacer_row"><td t-att-colspan="state.data.users.length + 3"/></tr>
 
-                            <!-- Nbre de vies -->
+                            <!-- Ventes Confirmées -->
                             <tr class="cd_highlight_row">
-                                <td class="cd_section_label cd_section_blue" colspan="1">NBRE VENTES</td>
-                                <td class="cd_row_label"/>
+                                <td class="cd_section_label cd_section_blue" colspan="1" title="Nombre de commandes dont l'état est 'Confirmé' ou 'Verrouillé' (state sale / done)">VENTES CONFIRMÉES</td>
+                                <td class="cd_row_label">
+                                    <i class="fa fa-info-circle cd_info_icon" title="Ventes Confirmées = nombre de commandes à l'état Confirmé ou Verrouillé (state ∈ {sale, done})."/>
+                                </td>
                                 <t t-foreach="state.data.users" t-as="user" t-key="user.id">
                                     <td class="cd_cell cd_bold"><t t-esc="getUserDerived(user.id).nbre_vies || 0"/></td>
                                 </t>
                                 <td class="cd_cell cd_total_cell cd_bold"><t t-esc="state.data.derived_total.nbre_vies || 0"/></td>
+                            </tr>
+
+                            <!-- Ventes Annulées -->
+                            <tr class="cd_highlight_row cd_annule_row">
+                                <td class="cd_section_label cd_section_red" colspan="1" title="Nombre de commandes dont l'état est 'Annulé' (state cancel)">VENTES ANNULÉES</td>
+                                <td class="cd_row_label">
+                                    <i class="fa fa-info-circle cd_info_icon" title="Ventes Annulées = nombre de commandes à l'état Annulé (state = cancel)."/>
+                                </td>
+                                <t t-foreach="state.data.users" t-as="user" t-key="user.id">
+                                    <td class="cd_cell cd_bold"><t t-esc="getUserDerived(user.id).ventes_annulees || 0"/></td>
+                                </t>
+                                <td class="cd_cell cd_total_cell cd_bold"><t t-esc="state.data.derived_total.ventes_annulees || 0"/></td>
                             </tr>
 
                             <!-- Spacer -->
@@ -209,48 +248,60 @@
 
                             <!-- Financial KPIs -->
                             <tr class="cd_financial_row">
-                                <td class="cd_section_label cd_section_green" colspan="1">CA BRUT</td>
-                                <td class="cd_row_label"/>
+                                <td class="cd_section_label cd_section_green" colspan="1" title="Somme HT de toutes les commandes de la période (confirmées + annulées)">CA BRUT</td>
+                                <td class="cd_row_label">
+                                    <i class="fa fa-info-circle cd_info_icon" title="CA BRUT = somme HT de toutes les commandes de la période (confirmées + annulées)."/>
+                                </td>
                                 <t t-foreach="state.data.users" t-as="user" t-key="user.id">
                                     <td class="cd_cell cd_currency"><t t-esc="formatCurrency(getUserDerived(user.id).ca_brut)"/></td>
                                 </t>
                                 <td class="cd_cell cd_total_cell cd_currency"><t t-esc="formatCurrency(state.data.derived_total.ca_brut)"/></td>
                             </tr>
                             <tr class="cd_financial_row">
-                                <td class="cd_section_label cd_section_green" colspan="1">CA NET</td>
-                                <td class="cd_row_label"/>
+                                <td class="cd_section_label cd_section_green" colspan="1" title="CA NET = CA BRUT − CA ANNULÉ">CA NET</td>
+                                <td class="cd_row_label">
+                                    <i class="fa fa-info-circle cd_info_icon" title="CA NET = CA BRUT − CA ANNULÉ."/>
+                                </td>
                                 <t t-foreach="state.data.users" t-as="user" t-key="user.id">
                                     <td class="cd_cell cd_currency"><t t-esc="formatCurrency(getUserDerived(user.id).ca_net)"/></td>
                                 </t>
                                 <td class="cd_cell cd_total_cell cd_currency"><t t-esc="formatCurrency(state.data.derived_total.ca_net)"/></td>
                             </tr>
                             <tr class="cd_financial_row cd_annule_row">
-                                <td class="cd_section_label cd_section_red" colspan="1">ANNULÉ</td>
-                                <td class="cd_row_label"/>
+                                <td class="cd_section_label cd_section_red" colspan="1" title="Somme HT des commandes annulées">ANNULÉ</td>
+                                <td class="cd_row_label">
+                                    <i class="fa fa-info-circle cd_info_icon" title="ANNULÉ = somme HT des commandes annulées."/>
+                                </td>
                                 <t t-foreach="state.data.users" t-as="user" t-key="user.id">
                                     <td class="cd_cell cd_currency"><t t-esc="formatCurrency(getUserDerived(user.id).ca_annule)"/></td>
                                 </t>
                                 <td class="cd_cell cd_total_cell cd_currency"><t t-esc="formatCurrency(state.data.derived_total.ca_annule)"/></td>
                             </tr>
                             <tr class="cd_financial_row">
-                                <td class="cd_section_label" colspan="1">TX ANNULATION</td>
-                                <td class="cd_row_label"/>
+                                <td class="cd_section_label" colspan="1" title="Taux d'annulation = CA ANNULÉ / CA BRUT">TX ANNULATION</td>
+                                <td class="cd_row_label">
+                                    <i class="fa fa-info-circle cd_info_icon" title="TX ANNULATION = CA ANNULÉ / CA BRUT."/>
+                                </td>
                                 <t t-foreach="state.data.users" t-as="user" t-key="user.id">
                                     <td class="cd_cell"><t t-esc="formatPercent(getUserDerived(user.id).tx_annulation)"/></td>
                                 </t>
                                 <td class="cd_cell cd_total_cell"><t t-esc="formatPercent(state.data.derived_total.tx_annulation)"/></td>
                             </tr>
                             <tr class="cd_financial_row">
-                                <td class="cd_section_label" colspan="1">PANIER MOYEN</td>
-                                <td class="cd_row_label"/>
+                                <td class="cd_section_label" colspan="1" title="Panier moyen = CA NET / Ventes Confirmées">PANIER MOYEN</td>
+                                <td class="cd_row_label">
+                                    <i class="fa fa-info-circle cd_info_icon" title="PANIER MOYEN = CA NET / Ventes Confirmées."/>
+                                </td>
                                 <t t-foreach="state.data.users" t-as="user" t-key="user.id">
                                     <td class="cd_cell cd_currency"><t t-esc="formatCurrency(getUserDerived(user.id).panier_moyen)"/></td>
                                 </t>
                                 <td class="cd_cell cd_total_cell cd_currency"><t t-esc="formatCurrency(state.data.derived_total.panier_moyen)"/></td>
                             </tr>
                             <tr class="cd_financial_row cd_conversion_row">
-                                <td class="cd_section_label" colspan="1">TX CONVERSION</td>
-                                <td class="cd_row_label"/>
+                                <td class="cd_section_label" colspan="1" title="Taux de conversion = (Ventes Confirmées + Ventes Annulées) / Total Présents. Les annulations sont incluses pour refléter la capacité de transformation du commercial, indépendamment des annulations ultérieures.">TX CONVERSION</td>
+                                <td class="cd_row_label">
+                                    <i class="fa fa-info-circle cd_info_icon" title="TX CONVERSION = (Ventes Confirmées + Ventes Annulées) / (Présents Call + Présents Commercial). Les annulations ultérieures sont incluses au numérateur pour refléter la capacité de transformation du commercial (le suivi des annulations se fait via TX ANNULATION)."/>
+                                </td>
                                 <t t-foreach="state.data.users" t-as="user" t-key="user.id">
                                     <td class="cd_cell cd_bold"><t t-esc="formatPercent(getUserDerived(user.id).tx_conversion)"/></td>
                                 </t>

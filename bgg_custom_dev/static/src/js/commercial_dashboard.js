@@ -27,6 +27,8 @@ export class CommercialDashboard extends Component {
             currentYear: null,
             currentQuarter: null,
             periodType: 'month',
+            dateFrom: null,
+            dateTo: null,
             filterUserId: null,
             filterCompanyId: null,
             availableUsers: [],
@@ -86,6 +88,15 @@ export class CommercialDashboard extends Component {
             if (this.state.periodType === 'quarter' && this.state.currentQuarter) {
                 params.quarter = this.state.currentQuarter;
             }
+            if (this.state.periodType === 'custom') {
+                if (!this.state.dateFrom || !this.state.dateTo) {
+                    // Wait for the user to pick both dates
+                    this.state.loading = false;
+                    return;
+                }
+                params.date_from = this.state.dateFrom;
+                params.date_to = this.state.dateTo;
+            }
             if (this.state.filterUserId) params.user_id = this.state.filterUserId;
             if (this.state.filterCompanyId) params.company_id = this.state.filterCompanyId;
 
@@ -108,6 +119,7 @@ export class CommercialDashboard extends Component {
     }
 
     async onPrevPeriod() {
+        if (this.state.periodType === 'custom') return;
         let m = this.state.currentMonth;
         let y = this.state.currentYear;
         let q = this.state.currentQuarter;
@@ -129,6 +141,7 @@ export class CommercialDashboard extends Component {
     }
 
     async onNextPeriod() {
+        if (this.state.periodType === 'custom') return;
         let m = this.state.currentMonth;
         let y = this.state.currentYear;
         let q = this.state.currentQuarter;
@@ -159,6 +172,13 @@ export class CommercialDashboard extends Component {
         if (this.state.currentYear) params.set('year', this.state.currentYear);
         params.set('period_type', this.state.periodType);
         if (this.state.currentQuarter) params.set('quarter', this.state.currentQuarter);
+        if (this.state.periodType === 'custom') {
+            if (!this.state.dateFrom || !this.state.dateTo) {
+                return;  // Nothing to export until both dates are set
+            }
+            params.set('date_from', this.state.dateFrom);
+            params.set('date_to', this.state.dateTo);
+        }
         if (this.state.filterUserId) params.set('user_id', this.state.filterUserId);
         if (this.state.filterCompanyId) params.set('company_id', this.state.filterCompanyId);
         window.open('/commercial/dashboard/export?' + params.toString(), '_blank');
@@ -170,7 +190,33 @@ export class CommercialDashboard extends Component {
         if (this.state.periodType === 'quarter') {
             this.state.currentQuarter = Math.ceil((this.state.currentMonth || now.getMonth() + 1) / 3);
         }
+        if (this.state.periodType === 'custom') {
+            // Default range to the current month so the user has a starting point
+            if (!this.state.dateFrom || !this.state.dateTo) {
+                const y = now.getFullYear();
+                const m = now.getMonth();
+                const pad = (n) => String(n).padStart(2, '0');
+                const first = new Date(y, m, 1);
+                const last = new Date(y, m + 1, 0);
+                this.state.dateFrom = `${first.getFullYear()}-${pad(first.getMonth() + 1)}-${pad(first.getDate())}`;
+                this.state.dateTo = `${last.getFullYear()}-${pad(last.getMonth() + 1)}-${pad(last.getDate())}`;
+            }
+        }
         await this.loadDashboardData(this.state.currentMonth, this.state.currentYear);
+    }
+
+    async onDateFromChange(ev) {
+        this.state.dateFrom = ev.target.value || null;
+        if (this.state.dateFrom && this.state.dateTo) {
+            await this.loadDashboardData(this.state.currentMonth, this.state.currentYear);
+        }
+    }
+
+    async onDateToChange(ev) {
+        this.state.dateTo = ev.target.value || null;
+        if (this.state.dateFrom && this.state.dateTo) {
+            await this.loadDashboardData(this.state.currentMonth, this.state.currentYear);
+        }
     }
 
     async onUserFilterChange(ev) {

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Server action to recompute x_call_center_sale_owner_id on sale.order.
+        Binds to the sale.order list + form views so it's reachable from the
+        Actions (⚙) dropdown in developer mode without recreating a custom
+        action by hand.
+
+        - No records selected → recompute every sale.order.
+        - Records selected     → recompute only those.
+    -->
+    <record id="action_recompute_call_center_sale_owner" model="ir.actions.server">
+        <field name="name">Recalculer Call Center (Sale Owner)</field>
+        <field name="model_id" ref="sale.model_sale_order"/>
+        <field name="binding_model_id" ref="sale.model_sale_order"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">
+targets = records if records else env['sale.order'].search([])
+targets._compute_call_center_attribution()
+action = {
+    'type': 'ir.actions.client',
+    'tag': 'display_notification',
+    'params': {
+        'title': 'Call Center (Sale Owner)',
+        'message': '%d commande(s) recalculée(s).' % len(targets),
+        'type': 'success',
+        'sticky': False,
+        'next': {'type': 'ir.actions.client', 'tag': 'soft_reload'},
+    },
+}
+        </field>
+    </record>
+</odoo>
