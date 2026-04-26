@@ -9,10 +9,20 @@
                 <field name="user_id"/>
                 <field name="strategy"/>
                 <field name="branch"/>
-                <field name="source_branch"/>
                 <field name="commit_sha"/>
-                <field name="status" decoration-success="status == 'success'" decoration-danger="status == 'error'"/>
-                <field name="http_status"/>
+                <field name="build_state"
+                       decoration-info="build_state in ('pending','building')"
+                       decoration-success="build_state == 'success'"
+                       decoration-danger="build_state == 'failure'"
+                       decoration-muted="build_state == 'unknown'"
+                       widget="badge"/>
+                <field name="build_description" optional="show"/>
+                <field name="build_url" widget="url" optional="show"/>
+                <field name="last_status_check" optional="hide"/>
+                <field name="status"
+                       decoration-success="status == 'success'"
+                       decoration-danger="status == 'error'"
+                       optional="hide"/>
             </list>
         </field>
     </record>
@@ -21,24 +31,52 @@
         <field name="name">bgg.staging.rebuild.log.form</field>
         <field name="model">bgg.staging.rebuild.log</field>
         <field name="arch" type="xml">
-            <form string="Staging Rebuild Log" create="false" edit="false">
+            <form string="Staging Rebuild" create="false" edit="false">
+                <header>
+                    <button name="action_refresh_status" type="object"
+                            string="Refresh Status" class="btn-primary"
+                            invisible="status != 'success'"/>
+                    <button name="action_open_build" type="object"
+                            string="Open Build" class="btn-secondary"
+                            invisible="not build_url"/>
+                    <field name="build_state" widget="statusbar"
+                           statusbar_visible="pending,building,success,failure"/>
+                </header>
                 <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <span invisible="build_state != 'pending'">Rebuild queued</span>
+                            <span invisible="build_state != 'building'">Building staging&#8230;</span>
+                            <span invisible="build_state != 'success'">Staging is up</span>
+                            <span invisible="build_state != 'failure'">Build failed</span>
+                            <span invisible="build_state != 'unknown'">Status unknown</span>
+                        </h1>
+                        <p class="text-muted" invisible="not build_description">
+                            <field name="build_description" readonly="1" nolabel="1"/>
+                        </p>
+                    </div>
                     <group>
                         <group>
                             <field name="create_date"/>
                             <field name="user_id"/>
-                            <field name="status"/>
-                            <field name="http_status"/>
-                        </group>
-                        <group>
                             <field name="strategy"/>
                             <field name="branch"/>
-                            <field name="source_branch"/>
+                            <field name="source_branch"
+                                   invisible="strategy != 'refresh'"/>
                             <field name="commit_sha"/>
                         </group>
+                        <group>
+                            <field name="status"/>
+                            <field name="http_status"/>
+                            <field name="last_status_check"/>
+                            <field name="build_context"/>
+                            <field name="build_url" widget="url"/>
+                            <field name="odoo_sh_project_url" widget="url"
+                                   invisible="not odoo_sh_project_url"/>
+                        </group>
                     </group>
-                    <group string="Message">
-                        <field name="message" nolabel="1"/>
+                    <group string="Trigger Message" invisible="not message">
+                        <field name="message" nolabel="1" readonly="1"/>
                     </group>
                 </sheet>
             </form>

@@ -1,6 +1,25 @@
 # -*- coding: utf-8 -*-
 
-from odoo import api, fields, models
+from odoo import _, api, fields, models
+
+# Mapping from raw GitHub commit-status states to our normalized states.
+# GitHub combined status: pending | success | failure | error
+# Check runs status:      queued | in_progress | completed
+# Check runs conclusion:  success | failure | neutral | cancelled | skipped |
+#                         timed_out | action_required
+GITHUB_STATE_MAP = {
+    'pending': 'building',
+    'queued': 'building',
+    'in_progress': 'building',
+    'success': 'success',
+    'failure': 'failure',
+    'error': 'failure',
+    'cancelled': 'failure',
+    'timed_out': 'failure',
+    'action_required': 'failure',
+    'neutral': 'success',
+    'skipped': 'success',
+}
 
 
 class StagingRebuildLog(models.Model):
@@ -27,13 +46,42 @@ class StagingRebuildLog(models.Model):
     source_branch = fields.Char(string='Source Branch', readonly=True)
     commit_sha = fields.Char(string='Resulting Commit SHA', readonly=True)
     status = fields.Selection(
-        [('success', 'Success'),
-         ('error', 'Error')],
-        string='Status',
+        [('success', 'Trigger Sent'),
+         ('error', 'Trigger Failed')],
+        string='Trigger Status',
         readonly=True,
     )
     http_status = fields.Integer(string='HTTP Status', readonly=True)
     message = fields.Text(string='Message', readonly=True)
+
+    # ---- Build tracking (populated by polling GitHub commit statuses) -------
+    build_state = fields.Selection(
+        [('pending', 'Pending'),
+         ('building', 'Building'),
+         ('success', 'Build Successful'),
+         ('failure', 'Build Failed'),
+         ('unknown', 'Unknown')],
+        string='Build State',
+        default='pending',
+        readonly=True,
+    )
+    build_description = fields.Char(string='Build Description', readonly=True)
+    build_url = fields.Char(string='Build URL', readonly=True)
+    build_context = fields.Char(string='Build Context', readonly=True)
+    last_status_check = fields.Datetime(
+        string='Last Status Check', readonly=True,
+    )
+    odoo_sh_project_url = fields.Char(
+        string='Odoo.sh Project',
+        compute='_compute_odoo_sh_project_url',
+    )
+
+    def _compute_odoo_sh_project_url(self):
+        url = self.env['ir.config_parameter'].sudo().get_param(
+            'bgg_staging_rebuild.odoo_sh_project_url', '',
+        )
+        for rec in self:
+            rec.odoo_sh_project_url = url or False
 
     @api.model
     def log_attempt(self, strategy, branch, source_branch, status,
@@ -46,4 +94,45 @@ class StagingRebuildLog(models.Model):
             'http_status': http_status or 0,
             'commit_sha': commit_sha or False,
             'message': (message or '')[:4000],
+            'build_state': 'pending' if status == 'success' else 'unknown',
         })
+
+    # ---- Status refresh ------------------------------------------------------
+    def action_refresh_status(self):
+        for rec in self:
+            if rec.commit_sha and rec.status == 'success':
+                self.env['bgg.staging.rebuild.service'].refresh_log_status(rec)
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'soft_reload',
+        }
+
+    def action_open_build(self):
+        self.ensure_one()
+        url = self.build_url or self.odoo_sh_project_url
+        if not url:
+            return False
+        return {
+            'type': 'ir.actions.act_url',
+            'url': url,
+            'target': 'new',
+        }
+
+    @api.model
+    def _cron_refresh_active_builds(self):
+        """Refresh build state for recent triggers that aren't terminal yet."""
+        from datetime import timedelta
+        threshold = fields.Datetime.now() - timedelta(hours=1)
+        active = self.search([
+            ('status', '=', 'success'),
+            ('create_date', '>=', threshold),
+            ('build_state', 'in', ('pending', 'building', 'unknown')),
+            ('commit_sha', '!=', False),
+        ])
+        service = self.env['bgg.staging.rebuild.service']
+        for rec in active:
+            try:
+                service.refresh_log_status(rec)
+            except Exception:  # noqa: BLE001
+                # Cron must not crash; the service already logs.
+                continue

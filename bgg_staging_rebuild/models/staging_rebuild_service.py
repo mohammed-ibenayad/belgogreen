@@ -9,6 +9,8 @@ import requests
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
+from .staging_rebuild_log import GITHUB_STATE_MAP
+
 _logger = logging.getLogger(__name__)
 
 GITHUB_API = 'https://api.github.com'
@@ -18,6 +20,9 @@ DEFAULT_PRODUCTION_BRANCH = 'production'
 DEFAULT_STRATEGY = 'refresh'
 DEFAULT_COOLDOWN_MINUTES = 5
 PARAM_PREFIX = 'bgg_staging_rebuild.'
+# A status/check whose context contains any of these is considered an
+# Odoo.sh build status (rather than e.g. an unrelated CI integration).
+ODOO_SH_CONTEXT_HINTS = ('odoo.sh', 'odoo-sh', 'odoosh', 'runbot')
 
 
 class StagingRebuildService(models.AbstractModel):
@@ -248,4 +253,107 @@ class StagingRebuildService(models.AbstractModel):
             "Staging rebuild triggered by %s (strategy=%s, sha=%s)",
             self.env.user.login, cfg['strategy'], log.commit_sha,
         )
+
+        # Best-effort initial poll so the user sees "Building" right away.
+        try:
+            self.refresh_log_status(log)
+        except Exception:  # noqa: BLE001
+            _logger.exception("Initial build-status poll failed")
         return log
+
+    # ------------------------------------------------------- build status API
+    @api.model
+    def _pick_odoo_sh_status(self, statuses):
+        """Pick the most relevant entry from GitHub combined-status statuses[].
+
+        Prefers a context that looks like Odoo.sh; falls back to the first.
+        """
+        if not statuses:
+            return None
+        for st in statuses:
+            ctx = (st.get('context') or '').lower()
+            if any(hint in ctx for hint in ODOO_SH_CONTEXT_HINTS):
+                return st
+        return statuses[0]
+
+    @api.model
+    def _pick_odoo_sh_check_run(self, check_runs):
+        if not check_runs:
+            return None
+        for cr in check_runs:
+            name = (cr.get('name') or '').lower()
+            app = ((cr.get('app') or {}).get('slug') or '').lower()
+            if any(h in name for h in ODOO_SH_CONTEXT_HINTS) \
+               or any(h in app for h in ODOO_SH_CONTEXT_HINTS):
+                return cr
+        return check_runs[0]
+
+    @api.model
+    def _fetch_build_state(self, cfg, sha):
+        """Return dict with normalized build state for a commit SHA, or None.
+
+        Tries the Check Runs API first (richer, queued/in_progress/completed)
+        then falls back to the legacy combined-status endpoint.
+        """
+        # 1) Check runs
+        url = '%s/repos/%s/%s/commits/%s/check-runs' % (
+            GITHUB_API, cfg['owner'], cfg['repo'], sha,
+        )
+        resp = self._request('GET', url, cfg['token'])
+        if resp.status_code == 200:
+            cr = self._pick_odoo_sh_check_run(
+                resp.json().get('check_runs') or [],
+            )
+            if cr:
+                raw = (cr.get('conclusion') or cr.get('status') or '').lower()
+                state = GITHUB_STATE_MAP.get(raw, 'unknown')
+                return {
+                    'state': state,
+                    'description': (cr.get('output') or {}).get('title')
+                                   or cr.get('status') or '',
+                    'url': cr.get('details_url') or cr.get('html_url'),
+                    'context': cr.get('name'),
+                }
+
+        # 2) Combined status (fallback)
+        url = '%s/repos/%s/%s/commits/%s/status' % (
+            GITHUB_API, cfg['owner'], cfg['repo'], sha,
+        )
+        resp = self._request('GET', url, cfg['token'])
+        if resp.status_code != 200:
+            return None
+        data = resp.json()
+        st = self._pick_odoo_sh_status(data.get('statuses') or [])
+        if not st:
+            # No reporter has posted yet — still pending.
+            return {
+                'state': 'pending',
+                'description': 'Awaiting Odoo.sh build status',
+                'url': False,
+                'context': False,
+            }
+        raw = (st.get('state') or '').lower()
+        return {
+            'state': GITHUB_STATE_MAP.get(raw, 'unknown'),
+            'description': st.get('description') or '',
+            'url': st.get('target_url'),
+            'context': st.get('context'),
+        }
+
+    @api.model
+    def refresh_log_status(self, log):
+        """Refresh a single log record's build state from GitHub."""
+        if not log or not log.commit_sha:
+            return False
+        cfg = self._read_config()
+        info = self._fetch_build_state(cfg, log.commit_sha)
+        if not info:
+            return False
+        log.sudo().write({
+            'build_state': info['state'],
+            'build_description': (info.get('description') or '')[:255],
+            'build_url': info.get('url') or log.build_url,
+            'build_context': info.get('context') or log.build_context,
+            'last_status_check': fields.Datetime.now(),
+        })
+        return True

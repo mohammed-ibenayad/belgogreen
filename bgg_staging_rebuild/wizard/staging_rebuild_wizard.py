@@ -70,18 +70,10 @@ class StagingRebuildWizard(models.TransientModel):
             }
         log = self.env['bgg.staging.rebuild.service'].trigger_rebuild()
         return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'type': 'success',
-                'title': _("Staging rebuild triggered"),
-                'message': log.message or _("Odoo.sh will rebuild shortly."),
-                'sticky': True,
-                'next': {
-                    'type': 'ir.actions.act_window',
-                    'res_model': 'bgg.staging.rebuild.log',
-                    'view_mode': 'list,form',
-                    'name': _("Staging Rebuild Logs"),
-                },
-            },
+            'type': 'ir.actions.act_window',
+            'name': _("Staging Rebuild"),
+            'res_model': 'bgg.staging.rebuild.log',
+            'res_id': log.id,
+            'view_mode': 'form',
+            'target': 'current',
         }

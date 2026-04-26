@@ -41,6 +41,7 @@
         'security/groups.xml',
         'security/ir.model.access.csv',
         'data/ir_config_parameter.xml',
+        'data/ir_cron_data.xml',
         'views/staging_rebuild_log_views.xml',
         'wizard/staging_rebuild_wizard_views.xml',
         'views/menu_views.xml',
