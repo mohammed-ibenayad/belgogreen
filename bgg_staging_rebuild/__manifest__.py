@@ -26,6 +26,14 @@
             bgg_staging_rebuild.production_branch   (default: production)
             bgg_staging_rebuild.strategy            (refresh | empty_commit)
             bgg_staging_rebuild.cooldown_minutes    (default: 5)
+            bgg_staging_rebuild.webhook_secret      (sensitive, optional)
+
+        Build progress is detected in two complementary ways:
+        - polling GitHub's commit-status / check-runs API (always on);
+        - a public webhook endpoint
+              POST /bgg_staging_rebuild/webhook/odoosh
+          that Odoo.sh can call directly (real-time; requires
+          webhook_secret to be set). Both update the same log record.
 
         Every trigger is logged in bgg.staging.rebuild.log for audit.
     """,
