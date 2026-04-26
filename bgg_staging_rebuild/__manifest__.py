@@ -26,6 +26,7 @@
             bgg_staging_rebuild.production_branch   (default: production)
             bgg_staging_rebuild.strategy            (refresh | empty_commit)
             bgg_staging_rebuild.cooldown_minutes    (default: 5)
+            bgg_staging_rebuild.odoo_sh_project_url (e.g. https://www.odoo.sh/project/<slug>)
             bgg_staging_rebuild.webhook_secret      (sensitive, optional)
 
         Build progress is detected in two complementary ways:

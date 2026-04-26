@@ -42,6 +42,18 @@
     </record>
 
     <!--
+        Base URL of the Odoo.sh project (no trailing slash). The module
+        appends "/branches/<staging_branch>" to build the link the user
+        opens after clicking Rebuild. Independent of any commit-status
+        / webhook integration: this URL is filled in immediately at
+        trigger time so the user has something clickable right away.
+    -->
+    <record id="param_odoo_sh_project_url" model="ir.config_parameter">
+        <field name="key">bgg_staging_rebuild.odoo_sh_project_url</field>
+        <field name="value">https://www.odoo.sh/project/belgogreen</field>
+    </record>
+
+    <!--
         Shared secret for the inbound Odoo.sh webhook. Empty by default;
         the controller refuses every request until this is set. Generate
         a 32-byte hex string (e.g. `python -c "import secrets;
