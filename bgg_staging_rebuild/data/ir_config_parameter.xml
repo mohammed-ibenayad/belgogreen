@@ -8,7 +8,7 @@
     -->
     <record id="param_github_owner" model="ir.config_parameter">
         <field name="key">bgg_staging_rebuild.github_owner</field>
-        <field name="value">mohammed-ibenayad</field>
+        <field name="value">bsimprovement</field>
     </record>
 
     <record id="param_github_repo" model="ir.config_parameter">
@@ -23,12 +23,12 @@
 
     <record id="param_staging_branch" model="ir.config_parameter">
         <field name="key">bgg_staging_rebuild.staging_branch</field>
-        <field name="value">staging</field>
+        <field name="value">main-staging</field>
     </record>
 
     <record id="param_production_branch" model="ir.config_parameter">
         <field name="key">bgg_staging_rebuild.production_branch</field>
-        <field name="value">production</field>
+        <field name="value">main</field>
     </record>
 
     <record id="param_strategy" model="ir.config_parameter">
@@ -43,6 +43,6 @@
 
     <record id="param_odoo_sh_project_url" model="ir.config_parameter">
         <field name="key">bgg_staging_rebuild.odoo_sh_project_url</field>
-        <field name="value">https://www.odoo.sh/project/belgogreen</field>
+        <field name="value">https://www.odoo.sh/project/belgogreen/branches/main-staging</field>
     </record>
 </odoo>
