@@ -22,16 +22,18 @@ class SaleOrder(models.Model):
         readonly=True,
         groups=DASHBOARD_GROUP,
         help=(
-            "Call center credited for this sale. Resolution: "
-            "(1) find the relevant call-center appointment — via the sale's "
-            "opportunity if present, otherwise by matching the sale's "
-            "salesperson + client. "
-            "(2) On that appointment, if `x_studio_rendez_vous_pris_la_place_de` "
-            "is set, use it (the real call center the RDV was booked on behalf "
-            "of); otherwise fall back to `create_uid.partner_id` (the booker). "
-            "RDVs after the sale are excluded; appointment_status is not "
-            "considered. When multiple appointments remain, the one whose "
-            "start is closest to date_order wins."
+            "Call center credited for this sale. "
+            "Candidates are every RDV related to the sale (linked to its "
+            "opportunity, or matching seller + client) whose start is at or "
+            "before date_order — regardless of appointment type. "
+            "If multiple candidates exist, the ones with appointment_status "
+            "= 'attended' are preferred; among those, the one whose start is "
+            "closest to date_order wins. "
+            "From the winning RDV: x_studio_rendez_vous_pris_la_place_de "
+            "wins if set; otherwise the winner must be of a call-center "
+            "appointment type AND its create_uid must be in the 'Call Center' "
+            "group, in which case create_uid.partner_id is the call center. "
+            "Anything else leaves the field empty."
         ),
     )
 
@@ -68,34 +70,33 @@ class SaleOrder(models.Model):
     def _get_call_center_candidate_events(self):
         """Return the calendar.event recordset considered for attribution.
 
-        Uses the same input rules as the compute so "what is shown" and
-        "what was picked" never disagree:
-        - Via opportunity if set, otherwise fallback seller + client search.
-        - Always restricted to call-center appointment types.
-        - No tiebreakers applied here — returns the full candidate list.
+        Pattern B scope: any RDV related to the sale, regardless of
+        appointment type, whose start is at or before date_order.
+        - Linked to opportunity_id.calendar_event_ids if there is one,
+        - otherwise found by (user_id = sale.user_id, partner_ids ∋ sale.partner_id).
+
+        Selection (which one wins) and resolution (whether it produces a
+        call-center attribution) live in _select_best_call_center_event and
+        _compute_call_center_attribution respectively.
         """
         self.ensure_one()
-        call_center_type_ids = self.env['appointment.type'].search([
-            ('x_appointment_ref', 'in', CALL_CENTER_APPOINTMENT_REFS),
-        ]).ids
         CalendarEvent = self.env['calendar.event']
 
-        if not call_center_type_ids:
-            return CalendarEvent.browse()
-
         if self.opportunity_id:
-            return self.opportunity_id.calendar_event_ids.filtered(
-                lambda e: e.appointment_type_id.id in call_center_type_ids
-            )
-
-        if self.user_id and self.partner_id:
-            return CalendarEvent.search([
+            events = self.opportunity_id.calendar_event_ids
+        elif self.user_id and self.partner_id:
+            events = CalendarEvent.search([
                 ('user_id', '=', self.user_id.id),
                 ('partner_ids', 'in', self.partner_id.id),
-                ('appointment_type_id', 'in', call_center_type_ids),
             ])
+        else:
+            return CalendarEvent.browse()
 
-        return CalendarEvent.browse()
+        if self.date_order:
+            events = events.filtered(
+                lambda e: e.start and e.start <= self.date_order
+            )
+        return events
 
     # ------------------------------------------------------------------
     # Computes
@@ -115,6 +116,9 @@ class SaleOrder(models.Model):
     )
     def _compute_call_center_attribution(self):
         """Compute both the owner partner and the winning event together."""
+        call_center_type_ids = self.env['appointment.type'].search([
+            ('x_appointment_ref', 'in', CALL_CENTER_APPOINTMENT_REFS),
+        ]).ids
         call_center_group = self.env['res.groups'].search([
             ('name', '=', 'Call Center'),
         ], limit=1)
@@ -126,9 +130,16 @@ class SaleOrder(models.Model):
 
             owner = self.env['res.partner']
             if event:
+                # 1) Explicit override on the winning RDV — takes precedence
+                #    regardless of appointment type.
                 if event.x_studio_rendez_vous_pris_la_place_de:
                     owner = event.x_studio_rendez_vous_pris_la_place_de
-                elif (event.create_uid
+                # 2) Default attribution: only if the winner is of a
+                #    call-center appointment type AND was created by a user in
+                #    the "Call Center" group. This is what voids attribution
+                #    when the salesperson took over with a commercial RDV.
+                elif (event.appointment_type_id.id in call_center_type_ids
+                      and event.create_uid
                       and call_center_group_id
                       and call_center_group_id in event.create_uid.group_ids.ids):
                     owner = event.create_uid.partner_id
@@ -139,9 +150,10 @@ class SaleOrder(models.Model):
     @api.depends(
         'opportunity_id',
         'opportunity_id.calendar_event_ids',
-        'opportunity_id.calendar_event_ids.appointment_type_id',
+        'opportunity_id.calendar_event_ids.start',
         'user_id',
         'partner_id',
+        'date_order',
     )
     def _compute_call_center_candidate_event_ids(self):
         for order in self:
@@ -158,35 +170,26 @@ class SaleOrder(models.Model):
 
     @api.model
     def _select_best_call_center_event(self, events, date_order):
-        """Pick one calendar.event from `events`.
+        """Pick one calendar.event from `events` (already pre-filtered to
+        start <= date_order by `_get_call_center_candidate_events`).
 
-        Rules applied in order:
-        - RDV must have happened at or before `date_order`. Future RDVs
-          can't have driven the sale, so they're dropped.
-        - Among the remaining, pick the event whose `start` is closest to
-          `date_order`. Ties fall back to recordset order.
-
-        Status (`appointment_status`) and same-month-as-sale are
-        intentionally not considered. Every RDV before the sale is
-        eligible regardless of whether it was marked attended, booked,
-        no_show or cancelled.
+        - 0 candidates → return empty.
+        - 1 candidate → it wins, status-blind.
+        - 2+ candidates → prefer those with appointment_status = 'attended';
+          if any qualify, restrict to that subset. Then pick the one whose
+          start is closest to date_order.
         """
         if not events:
             return events
-        if not date_order:
+        if len(events) == 1 or not date_order:
             return events[:1]
 
-        events = events.filtered(
-            lambda e: e.start and e.start <= date_order
-        )
-        if not events:
-            return events.browse()
-
-        if len(events) == 1:
-            return events
+        attended = events.filtered(lambda e: e.appointment_status == 'attended')
+        if attended:
+            events = attended
 
         def distance(ev):
-            return abs((ev.start - date_order).total_seconds())
+            return abs((ev.start - date_order).total_seconds()) if ev.start else float('inf')
 
         return events.sorted(key=distance)[:1]
 
