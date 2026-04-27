@@ -254,28 +254,12 @@ class StagingRebuildService(models.AbstractModel):
             self.env.user.login, cfg['strategy'], log.commit_sha,
         )
 
-        # Always populate a deterministic build URL right now so the user has
-        # a clickable link without waiting for any external integration.
-        # Polling / webhook may later overwrite this with a per-build URL.
-        branch_url = self._build_branch_url(cfg['staging_branch'])
-        if branch_url:
-            log.sudo().write({'build_url': branch_url})
-
         # Best-effort initial poll so the user sees "Building" right away.
         try:
             self.refresh_log_status(log)
         except Exception:  # noqa: BLE001
             _logger.exception("Initial build-status poll failed")
         return log
-
-    @api.model
-    def _build_branch_url(self, branch):
-        """Construct the Odoo.sh URL for the given branch from the configured
-        project base URL. Returns False if not configured."""
-        base = (self._get_param('odoo_sh_project_url') or '').strip()
-        if not base or not branch:
-            return False
-        return '%s/branches/%s' % (base.rstrip('/'), branch)
 
     # ------------------------------------------------------- build status API
     @api.model
