@@ -58,23 +58,26 @@
                         </group>
                     </group>
 
-                    <!-- Détails techniques, visibles uniquement en mode développeur -->
-                    <group string="Détails techniques" groups="base.group_no_one">
-                        <group>
-                            <field name="branch"/>
-                            <field name="source_branch"/>
-                            <field name="commit_sha"/>
-                            <field name="build_context"/>
-                        </group>
-                        <group>
-                            <field name="status"/>
-                            <field name="http_status"/>
-                            <field name="last_status_check"/>
-                        </group>
-                    </group>
-                    <group string="Message" invisible="not message" groups="base.group_no_one">
-                        <field name="message" nolabel="1" readonly="1"/>
-                    </group>
+                    <notebook>
+                        <page string="Détails techniques" groups="base.group_no_one">
+                            <group>
+                                <group>
+                                    <field name="branch"/>
+                                    <field name="source_branch"/>
+                                    <field name="commit_sha"/>
+                                    <field name="build_context"/>
+                                </group>
+                                <group>
+                                    <field name="status"/>
+                                    <field name="http_status"/>
+                                    <field name="last_status_check"/>
+                                </group>
+                            </group>
+                            <group string="Message" invisible="not message">
+                                <field name="message" nolabel="1" readonly="1"/>
+                            </group>
+                        </page>
+                    </notebook>
                 </sheet>
             </form>
         </field>
