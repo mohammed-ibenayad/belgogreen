@@ -34,7 +34,7 @@ class StagingRebuildService(models.AbstractModel):
     (empty_commit strategy).
     """
     _name = 'bgg.staging.rebuild.service'
-    _description = 'Staging Rebuild Service'
+    _description = 'Service de reconstruction Staging'
 
     # ---------------------------------------------------------------- helpers
     @api.model
@@ -64,14 +64,15 @@ class StagingRebuildService(models.AbstractModel):
         ) if not v]
         if missing:
             raise UserError(_(
-                "Staging rebuild is not fully configured. Missing system "
-                "parameter(s): %s"
-            ) % ', '.join(PARAM_PREFIX + m for m in missing))
+                "La reconstruction Staging n'est pas entièrement configurée. "
+                "Veuillez contacter votre administrateur technique."
+            ))
 
         if strategy not in ('refresh', 'empty_commit'):
             raise UserError(_(
-                "Invalid strategy '%s'. Use 'refresh' or 'empty_commit'."
-            ) % strategy)
+                "Configuration invalide. Veuillez contacter votre "
+                "administrateur technique."
+            ))
 
         return {
             'owner': owner,
@@ -103,8 +104,8 @@ class StagingRebuildService(models.AbstractModel):
         ])
         if recent:
             raise UserError(_(
-                "A rebuild was already triggered in the last %s minute(s). "
-                "Please wait before retrying."
+                "Une reconstruction a déjà été lancée dans les "
+                "%s dernière(s) minute(s). Merci de patienter."
             ) % cooldown_minutes)
 
     @api.model
@@ -119,7 +120,9 @@ class StagingRebuildService(models.AbstractModel):
             )
         except requests.RequestException as exc:
             _logger.exception("GitHub %s %s failed", method, url)
-            raise UserError(_("GitHub request failed: %s") % exc)
+            raise UserError(_(
+                "Connexion au serveur impossible. Merci de réessayer."
+            ))
         return response
 
     # --------------------------------------------------------------- API calls
@@ -131,8 +134,9 @@ class StagingRebuildService(models.AbstractModel):
         resp = self._request('GET', url, cfg['token'])
         if resp.status_code != 200:
             raise UserError(_(
-                "Could not read branch '%s' (HTTP %s): %s"
-            ) % (branch, resp.status_code, resp.text[:500]))
+                "Branche introuvable. Veuillez contacter votre "
+                "administrateur technique."
+            ))
         return resp.json().get('object', {}).get('sha')
 
     @api.model
@@ -153,11 +157,15 @@ class StagingRebuildService(models.AbstractModel):
         resp = self._request('GET', url_commit, cfg['token'])
         if resp.status_code != 200:
             raise UserError(_(
-                "Could not read parent commit (HTTP %s): %s"
-            ) % (resp.status_code, resp.text[:500]))
+                "Impossible de préparer la reconstruction. Veuillez "
+                "contacter votre administrateur technique."
+            ))
         tree_sha = resp.json().get('tree', {}).get('sha')
         if not tree_sha:
-            raise UserError(_("Parent commit has no tree SHA."))
+            raise UserError(_(
+                "Impossible de préparer la reconstruction. Veuillez "
+                "contacter votre administrateur technique."
+            ))
 
         url_create = '%s/repos/%s/%s/git/commits' % (
             GITHUB_API, cfg['owner'], cfg['repo'],
@@ -172,8 +180,9 @@ class StagingRebuildService(models.AbstractModel):
         })
         if resp.status_code not in (200, 201):
             raise UserError(_(
-                "Could not create empty commit (HTTP %s): %s"
-            ) % (resp.status_code, resp.text[:500]))
+                "Impossible de lancer la reconstruction. Veuillez "
+                "contacter votre administrateur technique."
+            ))
         return resp.json().get('sha')
 
     # ----------------------------------------------------------------- public
@@ -193,17 +202,14 @@ class StagingRebuildService(models.AbstractModel):
                 )
                 if resp.status_code != 200:
                     raise UserError(_(
-                        "Could not update staging branch (HTTP %s): %s"
-                    ) % (resp.status_code, resp.text[:500]))
+                        "La reconstruction n'a pas pu être lancée. "
+                        "Veuillez contacter votre administrateur technique."
+                    ))
                 new_sha = resp.json().get('object', {}).get('sha') or source_sha
                 msg = _(
-                    "Staging branch '%(staging)s' fast-forwarded to "
-                    "production '%(prod)s' (sha %(sha)s). Odoo.sh will rebuild."
-                ) % {
-                    'staging': cfg['staging_branch'],
-                    'prod': cfg['production_branch'],
-                    'sha': new_sha[:8] if new_sha else '?',
-                }
+                    "Reconstruction lancée. Odoo.sh va reconstruire "
+                    "l'environnement Staging dans quelques minutes."
+                )
                 log = log_model.log_attempt(
                     strategy='refresh',
                     branch=cfg['staging_branch'],
@@ -221,15 +227,13 @@ class StagingRebuildService(models.AbstractModel):
                 )
                 if resp.status_code != 200:
                     raise UserError(_(
-                        "Could not move staging ref (HTTP %s): %s"
-                    ) % (resp.status_code, resp.text[:500]))
+                        "La reconstruction n'a pas pu être lancée. "
+                        "Veuillez contacter votre administrateur technique."
+                    ))
                 msg = _(
-                    "Empty commit %(sha)s pushed to '%(staging)s'. "
-                    "Odoo.sh will rebuild."
-                ) % {
-                    'sha': new_sha[:8] if new_sha else '?',
-                    'staging': cfg['staging_branch'],
-                }
+                    "Reconstruction lancée. Odoo.sh va reconstruire "
+                    "l'environnement Staging dans quelques minutes."
+                )
                 log = log_model.log_attempt(
                     strategy='empty_commit',
                     branch=cfg['staging_branch'],

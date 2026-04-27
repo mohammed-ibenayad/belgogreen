@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo noupdate="1">
     <record id="cron_refresh_active_builds" model="ir.cron">
-        <field name="name">BGG: Refresh staging build statuses</field>
+        <field name="name">Mise à jour des statuts de reconstruction Staging</field>
         <field name="model_id" ref="model_bgg_staging_rebuild_log"/>
         <field name="state">code</field>
         <field name="code">model._cron_refresh_active_builds()</field>
