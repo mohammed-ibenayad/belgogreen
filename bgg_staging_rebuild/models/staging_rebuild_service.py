@@ -197,15 +197,21 @@ class StagingRebuildService(models.AbstractModel):
         try:
             if cfg['strategy'] == 'refresh':
                 source_sha = self._get_branch_sha(cfg, cfg['production_branch'])
+                # Always create a fresh empty commit on top of production.
+                # Reason: GitHub's PATCH ref API returns 200 (success) even
+                # when the target SHA equals the current SHA, but it does
+                # NOT fire a push event in that case — so Odoo.sh would
+                # not rebuild. By creating a new commit we guarantee a
+                # unique SHA every time, which always triggers a rebuild.
+                new_sha = self._create_empty_commit(cfg, source_sha)
                 resp = self._update_ref(
-                    cfg, cfg['staging_branch'], source_sha, force=True,
+                    cfg, cfg['staging_branch'], new_sha, force=True,
                 )
                 if resp.status_code != 200:
                     raise UserError(_(
                         "La reconstruction n'a pas pu être lancée. "
                         "Veuillez contacter votre administrateur technique."
                     ))
-                new_sha = resp.json().get('object', {}).get('sha') or source_sha
                 msg = _(
                     "Reconstruction lancée. Odoo.sh va reconstruire "
                     "l'environnement Staging dans quelques minutes."
