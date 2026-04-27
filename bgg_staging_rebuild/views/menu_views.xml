@@ -7,14 +7,14 @@
               sequence="105"/>
 
     <menuitem id="menu_bgg_staging_rebuild_action"
-              name="Rebuild Staging"
+              name="Reconstruire le Staging"
               parent="menu_bgg_staging_rebuild_root"
               action="bgg_staging_rebuild.action_bgg_staging_rebuild_wizard"
               groups="bgg_staging_rebuild.group_bgg_staging_rebuild_user"
               sequence="10"/>
 
     <menuitem id="menu_bgg_staging_rebuild_log"
-              name="Rebuild History"
+              name="Historique"
               parent="menu_bgg_staging_rebuild_root"
               action="bgg_staging_rebuild.action_bgg_staging_rebuild_log"
               groups="bgg_staging_rebuild.group_bgg_staging_rebuild_user"

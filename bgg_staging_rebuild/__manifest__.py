@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 {
-    'name': 'BelGoGreen Staging Rebuild',
+    'name': 'BelGoGreen — Reconstruction Staging',
     'version': '19.0.1.0.0',
     'category': 'Customizations',
-    'summary': 'Trigger an Odoo.sh staging rebuild from inside Odoo via the GitHub API',
+    'summary': 'Permet aux administrateurs de reconstruire l\'environnement Staging depuis Odoo',
     'description': """
         BelGoGreen Staging Rebuild
         ==========================

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from odoo import _, api, fields, models
+from odoo import api, fields, models
 
 # Mapping from raw GitHub commit-status states to our normalized states.
 # GitHub combined status: pending | success | failure | error
@@ -24,52 +24,52 @@ GITHUB_STATE_MAP = {
 
 class StagingRebuildLog(models.Model):
     _name = 'bgg.staging.rebuild.log'
-    _description = 'Staging Rebuild Audit Log'
+    _description = 'Historique des reconstructions Staging'
     _order = 'create_date desc'
     _rec_name = 'create_date'
 
     user_id = fields.Many2one(
         'res.users',
-        string='Triggered By',
+        string='Lancée par',
         required=True,
         readonly=True,
         default=lambda self: self.env.user,
         ondelete='restrict',
     )
     strategy = fields.Selection(
-        [('refresh', 'Refresh staging from production'),
-         ('empty_commit', 'Empty commit on staging')],
-        string='Strategy',
+        [('refresh', 'Synchronisation depuis la production'),
+         ('empty_commit', 'Reconstruction simple')],
+        string='Type',
         readonly=True,
     )
-    branch = fields.Char(string='Target Branch', readonly=True)
-    source_branch = fields.Char(string='Source Branch', readonly=True)
-    commit_sha = fields.Char(string='Resulting Commit SHA', readonly=True)
+    branch = fields.Char(string='Branche cible', readonly=True)
+    source_branch = fields.Char(string='Branche source', readonly=True)
+    commit_sha = fields.Char(string='Identifiant du commit', readonly=True)
     status = fields.Selection(
-        [('success', 'Trigger Sent'),
-         ('error', 'Trigger Failed')],
-        string='Trigger Status',
+        [('success', 'Demande envoyée'),
+         ('error', 'Erreur')],
+        string='Envoi',
         readonly=True,
     )
-    http_status = fields.Integer(string='HTTP Status', readonly=True)
-    message = fields.Text(string='Message', readonly=True)
+    http_status = fields.Integer(string='Code HTTP', readonly=True)
+    message = fields.Text(string='Message technique', readonly=True)
 
     # ---- Build tracking (populated by polling GitHub commit statuses) -------
     build_state = fields.Selection(
-        [('pending', 'Pending'),
-         ('building', 'Building'),
-         ('success', 'Build Successful'),
-         ('failure', 'Build Failed'),
-         ('unknown', 'Unknown')],
-        string='Build State',
+        [('pending', 'En attente'),
+         ('building', 'Reconstruction en cours'),
+         ('success', 'Reconstruction réussie'),
+         ('failure', 'Échec'),
+         ('unknown', 'Inconnu')],
+        string='État',
         default='pending',
         readonly=True,
     )
-    build_description = fields.Char(string='Build Description', readonly=True)
-    build_url = fields.Char(string='Build URL', readonly=True)
-    build_context = fields.Char(string='Build Context', readonly=True)
+    build_description = fields.Char(string='Détail', readonly=True)
+    build_url = fields.Char(string='Lien du build', readonly=True)
+    build_context = fields.Char(string='Contexte', readonly=True)
     last_status_check = fields.Datetime(
-        string='Last Status Check', readonly=True,
+        string='Dernière vérification', readonly=True,
     )
 
     @api.model
