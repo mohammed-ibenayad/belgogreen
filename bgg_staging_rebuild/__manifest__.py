@@ -22,18 +22,15 @@
             bgg_staging_rebuild.github_owner
             bgg_staging_rebuild.github_repo
             bgg_staging_rebuild.github_token        (sensitive, fill in manually)
-            bgg_staging_rebuild.staging_branch      (default: staging)
-            bgg_staging_rebuild.production_branch   (default: production)
+            bgg_staging_rebuild.staging_branch      (default: main-staging)
+            bgg_staging_rebuild.production_branch   (default: main)
             bgg_staging_rebuild.strategy            (refresh | empty_commit)
             bgg_staging_rebuild.cooldown_minutes    (default: 5)
-            bgg_staging_rebuild.webhook_secret      (sensitive, optional)
 
-        Build progress is detected in two complementary ways:
-        - polling GitHub's commit-status / check-runs API (always on);
-        - a public webhook endpoint
-              POST /bgg_staging_rebuild/webhook/odoosh
-          that Odoo.sh can call directly (real-time; requires
-          webhook_secret to be set). Both update the same log record.
+        Build progress is read from GitHub commit statuses (Odoo.sh writes
+        them when the project's "GitHub commit statuses" token is configured
+        in Odoo.sh project settings). A 1-min cron + a manual Refresh button
+        keep the log up to date and populate the per-build URL.
 
         Every trigger is logged in bgg.staging.rebuild.log for audit.
     """,
