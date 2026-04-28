@@ -5,6 +5,13 @@
         <field name="model">bgg.staging.rebuild.log</field>
         <field name="arch" type="xml">
             <list string="Historique" create="false" edit="false" delete="false">
+                <header>
+                    <button name="action_open_rebuild_wizard"
+                            type="object"
+                            string="Reconstruire le Staging"
+                            class="btn-primary"
+                            display="always"/>
+                </header>
                 <field name="create_date" string="Date"/>
                 <field name="user_id"/>
                 <field name="build_state"
