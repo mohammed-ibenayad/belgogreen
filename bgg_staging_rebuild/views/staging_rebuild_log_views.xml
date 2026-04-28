@@ -14,7 +14,8 @@
                        decoration-muted="build_state == 'unknown'"
                        widget="badge"/>
                 <field name="build_description" optional="show"/>
-                <field name="build_url" widget="url" string="Lien" optional="show"/>
+                <field name="database_url" widget="url" string="Staging" optional="show"/>
+                <field name="build_url" widget="url" string="Build" optional="hide"/>
             </list>
         </field>
     </record>
@@ -28,6 +29,9 @@
                     <button name="action_refresh_status" type="object"
                             string="Actualiser l'état" class="btn-primary"
                             invisible="status != 'success'"/>
+                    <button name="action_open_staging" type="object"
+                            string="Ouvrir le Staging" class="btn-primary"
+                            invisible="not database_url"/>
                     <button name="action_open_build" type="object"
                             string="Ouvrir le build" class="btn-secondary"
                             invisible="not build_url"/>
@@ -54,6 +58,7 @@
                             <field name="strategy"/>
                         </group>
                         <group>
+                            <field name="database_url" widget="url"/>
                             <field name="build_url" widget="url"/>
                         </group>
                     </group>
