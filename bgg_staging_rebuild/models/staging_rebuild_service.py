@@ -338,7 +338,7 @@ class StagingRebuildService(models.AbstractModel):
             # No reporter has posted yet — still pending.
             return {
                 'state': 'pending',
-                'description': 'Awaiting Odoo.sh build status',
+                'description': _('En attente de la confirmation de Odoo.sh'),
                 'url': False,
                 'context': False,
             }
