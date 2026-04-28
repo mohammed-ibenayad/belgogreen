@@ -41,9 +41,9 @@ class StagingRebuildWizard(models.TransientModel):
         log = self.env['bgg.staging.rebuild.service'].trigger_rebuild()
         return {
             'type': 'ir.actions.act_window',
-            'name': _("Reconstruction Staging"),
+            'name': _("Historique des reconstructions"),
             'res_model': 'bgg.staging.rebuild.log',
+            'view_mode': 'list,form',
             'res_id': log.id,
-            'view_mode': 'form',
-            'target': 'current',
+            'target': 'main',
         }
