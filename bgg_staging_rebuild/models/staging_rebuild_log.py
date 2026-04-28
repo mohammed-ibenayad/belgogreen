@@ -80,10 +80,12 @@ class StagingRebuildLog(models.Model):
 
     @api.depends('build_url', 'branch')
     def _compute_database_url(self):
+        fallback = (self.env['ir.config_parameter'].sudo().get_param(
+            'bgg_staging_rebuild.staging_url') or '').strip()
         for rec in self:
             rec.database_url = self._build_database_url(
                 rec.build_url, rec.branch,
-            )
+            ) or fallback or False
 
     @staticmethod
     def _build_database_url(build_url, branch):

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen — Reconstruction Staging',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'category': 'Customizations',
     'summary': 'Permet aux administrateurs de reconstruire l\'environnement Staging depuis Odoo',
     'description': """
@@ -26,6 +26,10 @@
             bgg_staging_rebuild.production_branch   (default: main)
             bgg_staging_rebuild.strategy            (refresh | empty_commit)
             bgg_staging_rebuild.cooldown_minutes    (default: 5)
+            bgg_staging_rebuild.staging_url         (optional fallback URL used
+                                                     when the staging instance
+                                                     URL cannot be derived from
+                                                     the build URL)
 
         Build progress is read from GitHub commit statuses (Odoo.sh writes
         them when the project's "GitHub commit statuses" token is configured
