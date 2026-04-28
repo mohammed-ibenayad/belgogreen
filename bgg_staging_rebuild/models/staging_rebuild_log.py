@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import re
+
 from odoo import api, fields, models
 
 # Mapping from raw GitHub commit-status states to our normalized states.
@@ -71,6 +73,38 @@ class StagingRebuildLog(models.Model):
     last_status_check = fields.Datetime(
         string='Dernière vérification', readonly=True,
     )
+    database_url = fields.Char(
+        string='Lien du Staging',
+        compute='_compute_database_url',
+    )
+
+    @api.depends('build_url', 'branch')
+    def _compute_database_url(self):
+        for rec in self:
+            rec.database_url = self._build_database_url(
+                rec.build_url, rec.branch,
+            )
+
+    @staticmethod
+    def _build_database_url(build_url, branch):
+        """Construct the Odoo.sh staging instance URL from the build URL.
+
+        Odoo.sh build URLs include the project slug and build id, e.g.
+            https://www.odoo.sh/project/<slug>/builds/<build_id>
+            https://www.odoo.sh/project/<slug>/branches/<branch>/build/<build_id>
+        The instance follows
+            https://<slug>-<branch>-<build_id>.dev.odoo.com/odoo
+        Returns False if either piece can't be extracted.
+        """
+        if not build_url or not branch:
+            return False
+        slug = re.search(r'/project/([^/]+)/', build_url)
+        build_id = re.search(r'/builds?/(\d+)', build_url)
+        if not slug or not build_id:
+            return False
+        return 'https://%s-%s-%s.dev.odoo.com/odoo' % (
+            slug.group(1), branch, build_id.group(1),
+        )
 
     @api.model
     def log_attempt(self, strategy, branch, source_branch, status,
@@ -103,6 +137,16 @@ class StagingRebuildLog(models.Model):
         return {
             'type': 'ir.actions.act_url',
             'url': self.build_url,
+            'target': 'new',
+        }
+
+    def action_open_staging(self):
+        self.ensure_one()
+        if not self.database_url:
+            return False
+        return {
+            'type': 'ir.actions.act_url',
+            'url': self.database_url,
             'target': 'new',
         }
 
