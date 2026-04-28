@@ -152,7 +152,6 @@ class StagingRebuildLog(models.Model):
             'target': 'new',
         }
 
-    @api.model
     def action_open_rebuild_wizard(self):
         return {
             'type': 'ir.actions.act_window',
