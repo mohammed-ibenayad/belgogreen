@@ -2,7 +2,7 @@
 
 import re
 
-from odoo import api, fields, models
+from odoo import _, api, fields, models
 
 # Mapping from raw GitHub commit-status states to our normalized states.
 # GitHub combined status: pending | success | failure | error
@@ -149,6 +149,16 @@ class StagingRebuildLog(models.Model):
         return {
             'type': 'ir.actions.act_url',
             'url': self.database_url,
+            'target': 'new',
+        }
+
+    @api.model
+    def action_open_rebuild_wizard(self):
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Reconstruire le Staging'),
+            'res_model': 'bgg.staging.rebuild.wizard',
+            'view_mode': 'form',
             'target': 'new',
         }
 
