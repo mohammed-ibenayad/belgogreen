@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!--
+        Default placeholders. Sensitive values (notably github_token) MUST be
+        filled in by an administrator from
+        Settings > Technical > Parameters > System Parameters.
+        Keys are namespaced under "bgg_staging_rebuild.*".
+    -->
+    <record id="param_github_owner" model="ir.config_parameter">
+        <field name="key">bgg_staging_rebuild.github_owner</field>
+        <field name="value">bsimprovement</field>
+    </record>
+
+    <record id="param_github_repo" model="ir.config_parameter">
+        <field name="key">bgg_staging_rebuild.github_repo</field>
+        <field name="value">belgogreen</field>
+    </record>
+
+    <record id="param_github_token" model="ir.config_parameter">
+        <field name="key">bgg_staging_rebuild.github_token</field>
+        <field name="value"></field>
+    </record>
+
+    <record id="param_staging_branch" model="ir.config_parameter">
+        <field name="key">bgg_staging_rebuild.staging_branch</field>
+        <field name="value">main-staging</field>
+    </record>
+
+    <record id="param_production_branch" model="ir.config_parameter">
+        <field name="key">bgg_staging_rebuild.production_branch</field>
+        <field name="value">main</field>
+    </record>
+
+    <record id="param_strategy" model="ir.config_parameter">
+        <field name="key">bgg_staging_rebuild.strategy</field>
+        <field name="value">refresh</field>
+    </record>
+
+    <record id="param_cooldown" model="ir.config_parameter">
+        <field name="key">bgg_staging_rebuild.cooldown_minutes</field>
+        <field name="value">5</field>
+    </record>
+
+    <!-- Optional fallback URL used when the staging instance URL cannot be
+         derived from the GitHub build URL (e.g. Odoo.sh reports a generic
+         /builds page instead of a specific /builds/<id>). -->
+    <record id="param_staging_url" model="ir.config_parameter">
+        <field name="key">bgg_staging_rebuild.staging_url</field>
+        <field name="value"></field>
+    </record>
+</odoo>
