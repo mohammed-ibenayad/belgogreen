@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_bgg_staging_rebuild_wizard_form" model="ir.ui.view">
+        <field name="name">bgg.staging.rebuild.wizard.form</field>
+        <field name="model">bgg.staging.rebuild.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Reconstruire le Staging">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>Reconstruire l'environnement Staging</h1>
+                        <p class="text-muted">
+                            Cette action remplace l'environnement Staging
+                            par une copie fraîche basée sur la production.
+                            Les données de test présentes sur le Staging
+                            seront perdues. La reconstruction prend
+                            généralement 5 à 15 minutes.
+                        </p>
+                    </div>
+                    <group>
+                        <field name="last_log_id" readonly="1"/>
+                    </group>
+                    <group>
+                        <field name="confirm"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_rebuild" type="object"
+                            string="Reconstruire maintenant"
+                            class="btn-danger"
+                            confirm="Confirmez-vous la reconstruction de l'environnement Staging ?"/>
+                    <button string="Annuler" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_bgg_staging_rebuild_wizard" model="ir.actions.act_window">
+        <field name="name">Reconstruire le Staging</field>
+        <field name="res_model">bgg.staging.rebuild.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>
