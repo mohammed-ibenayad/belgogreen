@@ -48,4 +48,15 @@
         <field name="key">bgg_staging_rebuild.staging_url</field>
         <field name="value"></field>
     </record>
+
+    <!-- Optional URL template used when the staging branch is set to
+         "New build" mode on Odoo.sh. The build id changes on every
+         rebuild, so we substitute it dynamically. Supported placeholder:
+         {build_id}. Example:
+         https://belgogreen-main-staging-{build_id}.dev.odoo.com/odoo
+         When set, this takes precedence over the auto-derived URL. -->
+    <record id="param_staging_url_template" model="ir.config_parameter">
+        <field name="key">bgg_staging_rebuild.staging_url_template</field>
+        <field name="value"></field>
+    </record>
 </odoo>
