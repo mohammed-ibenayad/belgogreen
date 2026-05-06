@@ -80,12 +80,26 @@ class StagingRebuildLog(models.Model):
 
     @api.depends('build_url', 'branch')
     def _compute_database_url(self):
-        fallback = (self.env['ir.config_parameter'].sudo().get_param(
+        params = self.env['ir.config_parameter'].sudo()
+        template = (params.get_param(
+            'bgg_staging_rebuild.staging_url_template') or '').strip()
+        fallback = (params.get_param(
             'bgg_staging_rebuild.staging_url') or '').strip()
         for rec in self:
-            rec.database_url = self._build_database_url(
-                rec.build_url, rec.branch,
-            ) or fallback or False
+            url = False
+            build_id = self._extract_build_id(rec.build_url)
+            if template and build_id and '{build_id}' in template:
+                url = template.replace('{build_id}', build_id)
+            if not url:
+                url = self._build_database_url(rec.build_url, rec.branch)
+            rec.database_url = url or fallback or False
+
+    @staticmethod
+    def _extract_build_id(build_url):
+        if not build_url:
+            return False
+        match = re.search(r'/builds?/(\d+)', build_url)
+        return match.group(1) if match else False
 
     @staticmethod
     def _build_database_url(build_url, branch):
