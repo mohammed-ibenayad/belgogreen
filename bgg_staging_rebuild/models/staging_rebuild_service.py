@@ -351,6 +351,44 @@ class StagingRebuildService(models.AbstractModel):
         }
 
     @api.model
+    def _fetch_deployment_url(self, cfg, sha):
+        """Return the Odoo.sh instance URL for a commit via GitHub Deployments.
+
+        Odoo.sh creates a GitHub Deployment for each staging build and the
+        DeploymentStatus carries the freshly-allocated instance URL in its
+        ``environment_url`` field, e.g.
+        ``https://<slug>-<branch>-<build_id>.dev.odoo.com``.
+
+        This is the only authoritative source GitHub exposes for the new
+        build's URL when Odoo.sh's commit-status ``target_url`` only points
+        to the branch page (no build_id).
+        """
+        url = '%s/repos/%s/%s/deployments?sha=%s&per_page=20' % (
+            GITHUB_API, cfg['owner'], cfg['repo'], sha,
+        )
+        resp = self._request('GET', url, cfg['token'])
+        if resp.status_code != 200:
+            return None
+        deployments = resp.json() or []
+        # Newest first (GitHub default order); iterate to find the latest
+        # status with an environment_url.
+        for dep in deployments:
+            dep_id = dep.get('id')
+            if not dep_id:
+                continue
+            st_url = '%s/repos/%s/%s/deployments/%s/statuses' % (
+                GITHUB_API, cfg['owner'], cfg['repo'], dep_id,
+            )
+            st_resp = self._request('GET', st_url, cfg['token'])
+            if st_resp.status_code != 200:
+                continue
+            for status in st_resp.json() or []:
+                env_url = (status.get('environment_url') or '').strip()
+                if env_url:
+                    return env_url
+        return None
+
+    @api.model
     def refresh_log_status(self, log):
         """Refresh a single log record's build state from GitHub."""
         if not log or not log.commit_sha:
@@ -359,11 +397,24 @@ class StagingRebuildService(models.AbstractModel):
         info = self._fetch_build_state(cfg, log.commit_sha)
         if not info:
             return False
-        log.sudo().write({
+        vals = {
             'build_state': info['state'],
             'build_description': (info.get('description') or '')[:255],
             'build_url': info.get('url') or log.build_url,
             'build_context': info.get('context') or log.build_context,
             'last_status_check': fields.Datetime.now(),
-        })
+        }
+        if not log.instance_url:
+            try:
+                env_url = self._fetch_deployment_url(cfg, log.commit_sha)
+            except Exception:  # noqa: BLE001
+                _logger.exception("GitHub deployments lookup failed")
+                env_url = None
+            if env_url:
+                # Normalize to /odoo so the link opens the backend directly,
+                # matching the convention used elsewhere in the module.
+                if not env_url.rstrip('/').endswith('/odoo'):
+                    env_url = env_url.rstrip('/') + '/odoo'
+                vals['instance_url'] = env_url
+        log.sudo().write(vals)
         return True

@@ -70,6 +70,15 @@ class StagingRebuildLog(models.Model):
     build_description = fields.Char(string='Détail', readonly=True)
     build_url = fields.Char(string='Lien du build', readonly=True)
     build_context = fields.Char(string='Contexte', readonly=True)
+    instance_url = fields.Char(
+        string="URL de l'instance",
+        readonly=True,
+        help=(
+            "URL de l'instance Staging récupérée depuis l'API GitHub "
+            "Deployments. Source autoritaire quand Odoo.sh est en mode "
+            "'New build'."
+        ),
+    )
     last_status_check = fields.Datetime(
         string='Dernière vérification', readonly=True,
     )
@@ -78,7 +87,7 @@ class StagingRebuildLog(models.Model):
         compute='_compute_database_url',
     )
 
-    @api.depends('build_url', 'branch')
+    @api.depends('instance_url', 'build_url', 'branch')
     def _compute_database_url(self):
         params = self.env['ir.config_parameter'].sudo()
         template = (params.get_param(
@@ -86,10 +95,11 @@ class StagingRebuildLog(models.Model):
         fallback = (params.get_param(
             'bgg_staging_rebuild.staging_url') or '').strip()
         for rec in self:
-            url = False
-            build_id = self._extract_build_id(rec.build_url)
-            if template and build_id and '{build_id}' in template:
-                url = template.replace('{build_id}', build_id)
+            url = (rec.instance_url or '').strip() or False
+            if not url:
+                build_id = self._extract_build_id(rec.build_url)
+                if template and build_id and '{build_id}' in template:
+                    url = template.replace('{build_id}', build_id)
             if not url:
                 url = self._build_database_url(rec.build_url, rec.branch)
             rec.database_url = url or fallback or False
@@ -177,14 +187,22 @@ class StagingRebuildLog(models.Model):
 
     @api.model
     def _cron_refresh_active_builds(self):
-        """Refresh build state for recent triggers that aren't terminal yet."""
+        """Refresh build state for recent triggers that aren't terminal yet.
+
+        Also re-polls successful builds that haven't yet captured an
+        ``instance_url`` from the GitHub Deployments API — Odoo.sh
+        sometimes publishes the deployment status slightly after flipping
+        the build state to success.
+        """
         from datetime import timedelta
         threshold = fields.Datetime.now() - timedelta(hours=1)
         active = self.search([
             ('status', '=', 'success'),
             ('create_date', '>=', threshold),
-            ('build_state', 'in', ('pending', 'building', 'unknown')),
             ('commit_sha', '!=', False),
+            '|',
+            ('build_state', 'in', ('pending', 'building', 'unknown')),
+            '&', ('build_state', '=', 'success'), ('instance_url', '=', False),
         ])
         service = self.env['bgg.staging.rebuild.service']
         for rec in active:
