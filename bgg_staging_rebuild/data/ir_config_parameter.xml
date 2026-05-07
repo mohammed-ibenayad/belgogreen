@@ -41,22 +41,11 @@
         <field name="value">5</field>
     </record>
 
-    <!-- Optional fallback URL used when the staging instance URL cannot be
-         derived from the GitHub build URL (e.g. Odoo.sh reports a generic
-         /builds page instead of a specific /builds/<id>). -->
+    <!-- Link to the Odoo.sh project's builds list. Surfaced from each
+         rebuild log entry; the user opens it after a rebuild to grab the
+         latest build's URL. Adjust if the Odoo.sh project slug changes. -->
     <record id="param_staging_url" model="ir.config_parameter">
         <field name="key">bgg_staging_rebuild.staging_url</field>
-        <field name="value"></field>
-    </record>
-
-    <!-- Optional URL template used when the staging branch is set to
-         "New build" mode on Odoo.sh. The build id changes on every
-         rebuild, so we substitute it dynamically. Supported placeholder:
-         {build_id}. Example:
-         https://belgogreen-main-staging-{build_id}.dev.odoo.com/odoo
-         When set, this takes precedence over the auto-derived URL. -->
-    <record id="param_staging_url_template" model="ir.config_parameter">
-        <field name="key">bgg_staging_rebuild.staging_url_template</field>
-        <field name="value"></field>
+        <field name="value">https://www.odoo.sh/project/belgogreen/builds</field>
     </record>
 </odoo>

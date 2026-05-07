@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import re
-
 from odoo import _, api, fields, models
 
 # Mapping from raw GitHub commit-status states to our normalized states.
@@ -68,69 +66,26 @@ class StagingRebuildLog(models.Model):
         readonly=True,
     )
     build_description = fields.Char(string='Détail', readonly=True)
-    build_url = fields.Char(string='Lien du build', readonly=True)
     build_context = fields.Char(string='Contexte', readonly=True)
-    instance_url = fields.Char(
-        string="URL de l'instance",
-        readonly=True,
-        help=(
-            "URL de l'instance Staging récupérée depuis l'API GitHub "
-            "Deployments. Source autoritaire quand Odoo.sh est en mode "
-            "'New build'."
-        ),
-    )
     last_status_check = fields.Datetime(
         string='Dernière vérification', readonly=True,
     )
-    database_url = fields.Char(
-        string='Lien du Staging',
-        compute='_compute_database_url',
+    builds_url = fields.Char(
+        string='Builds Odoo.sh',
+        compute='_compute_builds_url',
+        help=(
+            "Lien vers la liste des builds du projet sur Odoo.sh. "
+            "Sélectionnez le dernier build pour obtenir l'URL de "
+            "l'instance Staging à jour."
+        ),
     )
 
-    @api.depends('instance_url', 'build_url', 'branch')
-    def _compute_database_url(self):
-        params = self.env['ir.config_parameter'].sudo()
-        template = (params.get_param(
-            'bgg_staging_rebuild.staging_url_template') or '').strip()
-        fallback = (params.get_param(
-            'bgg_staging_rebuild.staging_url') or '').strip()
+    @api.depends_context('uid')
+    def _compute_builds_url(self):
+        url = (self.env['ir.config_parameter'].sudo().get_param(
+            'bgg_staging_rebuild.staging_url') or '').strip() or False
         for rec in self:
-            url = (rec.instance_url or '').strip() or False
-            if not url:
-                build_id = self._extract_build_id(rec.build_url)
-                if template and build_id and '{build_id}' in template:
-                    url = template.replace('{build_id}', build_id)
-            if not url:
-                url = self._build_database_url(rec.build_url, rec.branch)
-            rec.database_url = url or fallback or False
-
-    @staticmethod
-    def _extract_build_id(build_url):
-        if not build_url:
-            return False
-        match = re.search(r'/builds?/(\d+)', build_url)
-        return match.group(1) if match else False
-
-    @staticmethod
-    def _build_database_url(build_url, branch):
-        """Construct the Odoo.sh staging instance URL from the build URL.
-
-        Odoo.sh build URLs include the project slug and build id, e.g.
-            https://www.odoo.sh/project/<slug>/builds/<build_id>
-            https://www.odoo.sh/project/<slug>/branches/<branch>/build/<build_id>
-        The instance follows
-            https://<slug>-<branch>-<build_id>.dev.odoo.com/odoo
-        Returns False if either piece can't be extracted.
-        """
-        if not build_url or not branch:
-            return False
-        slug = re.search(r'/project/([^/]+)/', build_url)
-        build_id = re.search(r'/builds?/(\d+)', build_url)
-        if not slug or not build_id:
-            return False
-        return 'https://%s-%s-%s.dev.odoo.com/odoo' % (
-            slug.group(1), branch, build_id.group(1),
-        )
+            rec.builds_url = url
 
     @api.model
     def log_attempt(self, strategy, branch, source_branch, status,
@@ -156,23 +111,13 @@ class StagingRebuildLog(models.Model):
             'tag': 'soft_reload',
         }
 
-    def action_open_build(self):
+    def action_open_builds(self):
         self.ensure_one()
-        if not self.build_url:
+        if not self.builds_url:
             return False
         return {
             'type': 'ir.actions.act_url',
-            'url': self.build_url,
-            'target': 'new',
-        }
-
-    def action_open_staging(self):
-        self.ensure_one()
-        if not self.database_url:
-            return False
-        return {
-            'type': 'ir.actions.act_url',
-            'url': self.database_url,
+            'url': self.builds_url,
             'target': 'new',
         }
 
@@ -187,22 +132,14 @@ class StagingRebuildLog(models.Model):
 
     @api.model
     def _cron_refresh_active_builds(self):
-        """Refresh build state for recent triggers that aren't terminal yet.
-
-        Also re-polls successful builds that haven't yet captured an
-        ``instance_url`` from the GitHub Deployments API — Odoo.sh
-        sometimes publishes the deployment status slightly after flipping
-        the build state to success.
-        """
+        """Refresh build state for recent triggers that aren't terminal yet."""
         from datetime import timedelta
         threshold = fields.Datetime.now() - timedelta(hours=1)
         active = self.search([
             ('status', '=', 'success'),
             ('create_date', '>=', threshold),
-            ('commit_sha', '!=', False),
-            '|',
             ('build_state', 'in', ('pending', 'building', 'unknown')),
-            '&', ('build_state', '=', 'success'), ('instance_url', '=', False),
+            ('commit_sha', '!=', False),
         ])
         service = self.env['bgg.staging.rebuild.service']
         for rec in active:
