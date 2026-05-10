@@ -179,6 +179,7 @@
                         <filter string="Période" name="group_period" context="{'group_by': 'period'}"/>
                         <filter string="Plan" name="group_plan" context="{'group_by': 'plan_id'}"/>
                         <filter string="Date" name="group_date" context="{'group_by': 'date:month'}"/>
+                        <filter string="Date du BC" name="group_sale_order_date" context="{'group_by': 'sale_order_date:month'}"/>
                     </group>
                 </search>
             </field>
@@ -275,7 +276,7 @@
             <field name="name">Mes commissions</field>
             <field name="res_model">sale.commission</field>
             <field name="view_mode">list,form,kanban,pivot,graph</field>
-            <field name="context">{'search_default_my_commissions': 1, 'search_default_group_period': 1}</field>
+            <field name="context">{'search_default_my_commissions': 1, 'search_default_group_sale_order_date': 1}</field>
             <field name="domain">[('user_id', '=', uid)]</field>
             <field name="help" type="html">
                 <p class="o_view_nocontent_smiling_face">
