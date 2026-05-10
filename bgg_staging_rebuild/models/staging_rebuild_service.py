@@ -321,7 +321,6 @@ class StagingRebuildService(models.AbstractModel):
                     'state': state,
                     'description': (cr.get('output') or {}).get('title')
                                    or cr.get('status') or '',
-                    'url': cr.get('details_url') or cr.get('html_url'),
                     'context': cr.get('name'),
                 }
 
@@ -339,14 +338,12 @@ class StagingRebuildService(models.AbstractModel):
             return {
                 'state': 'pending',
                 'description': _('En attente de la confirmation de Odoo.sh'),
-                'url': False,
                 'context': False,
             }
         raw = (st.get('state') or '').lower()
         return {
             'state': GITHUB_STATE_MAP.get(raw, 'unknown'),
             'description': st.get('description') or '',
-            'url': st.get('target_url'),
             'context': st.get('context'),
         }
 
@@ -362,7 +359,6 @@ class StagingRebuildService(models.AbstractModel):
         log.sudo().write({
             'build_state': info['state'],
             'build_description': (info.get('description') or '')[:255],
-            'build_url': info.get('url') or log.build_url,
             'build_context': info.get('context') or log.build_context,
             'last_status_check': fields.Datetime.now(),
         })
