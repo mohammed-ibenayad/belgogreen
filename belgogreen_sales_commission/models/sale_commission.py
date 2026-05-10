@@ -49,6 +49,13 @@ class SaleCommission(models.Model):
         help='The sale order this commission is based on'
     )
 
+    sale_order_date = fields.Datetime(
+        related='sale_order_id.date_order',
+        store=True,
+        string='Date du BC',
+        help='Sale order date — used to group commissions by the customer order date'
+    )
+
     invoice_id = fields.Many2one(
         'account.move',
         string='Invoice',
