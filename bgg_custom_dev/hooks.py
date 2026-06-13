@@ -22,7 +22,9 @@ def link_external_groups(env):
     resolved = {}
 
     for xmlid, name in EXTERNAL_GROUPS.items():
-        group = env['res.groups'].search([('name', '=', name)], limit=1)
+        # res.groups.name is translatable and may be cased differently per
+        # language; resolve it robustly (this hook runs in the system language).
+        group = env['calendar.event']._find_group_by_name(name)
         if not group:
             _logger.warning(
                 "BGG no-show workflow: group '%s' not found; menu gating and "
