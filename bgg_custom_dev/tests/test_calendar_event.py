@@ -3,7 +3,6 @@
 import datetime
 from odoo.tests.common import TransactionCase
 from odoo.tests import tagged
-from odoo.exceptions import ValidationError, UserError
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -699,10 +698,11 @@ class TestCalendarEvent(TransactionCase):
 
 @tagged('post_install', '-at_install')
 class TestCalendarEventNoShowTreatment(TransactionCase):
-    """Test suite for the no-show treatment workflow (CNT appointments).
+    """Test suite for the simplified no-show workflow (CNT appointments).
 
-    Covers the available-date computation, the state-machine guard
-    (role + timing + mutual lock) and the outcome consistency constraint.
+    Covers the no-show date stamping (window anchor), the availability
+    computation, the fact that commercial follow-ups don't reset the timer,
+    and the call-center queue domain (availability + 'pas intéressé' lock).
     """
 
     @classmethod
@@ -712,29 +712,6 @@ class TestCalendarEventNoShowTreatment(TransactionCase):
         # Fixed commercial priority window for deterministic tests.
         cls.env['ir.config_parameter'].sudo().set_param(
             'bgg.noshow_commercial_window_days', '2')
-
-        # The 'Commercial' and 'Call Center' groups are created manually in
-        # production (outside the modules); resolve-or-create them by name so the
-        # by-name lookups in the guard find them in a fresh test database.
-        Groups = cls.env['res.groups'].sudo()
-        cls.commercial_group = (Groups.search([('name', '=', 'Commercial')], limit=1)
-                                or Groups.create({'name': 'Commercial'}))
-        cls.call_center_group = (Groups.search([('name', '=', 'Call Center')], limit=1)
-                                 or Groups.create({'name': 'Call Center'}))
-        base_user_group = cls.env.ref('base.group_user')
-
-        cls.commercial_user = cls.env['res.users'].create({
-            'name': 'NoShow Commercial',
-            'login': 'noshow_commercial',
-            'email': 'noshow_commercial@example.com',
-            'group_ids': [(6, 0, [base_user_group.id, cls.commercial_group.id])],
-        })
-        cls.cc_user = cls.env['res.users'].create({
-            'name': 'NoShow Call Center',
-            'login': 'noshow_cc',
-            'email': 'noshow_cc@example.com',
-            'group_ids': [(6, 0, [base_user_group.id, cls.call_center_group.id])],
-        })
 
         cls.cnt_type = None
         cls.com_type = None
@@ -748,122 +725,96 @@ class TestCalendarEventNoShowTreatment(TransactionCase):
                 'x_appointment_ref': 'APT-ENERG-COM',
             })
 
-    def _create_noshow(self, stop_offset_days, owner=None, appointment_type=None):
-        """Create a no-show calendar event whose missed time is `stop_offset_days`
-        days in the past. Both test users are attendees so they can access it.
-        """
-        owner = owner or self.env.user
+    def _create_noshow(self, appointment_type=None):
+        """Create a CNT no-show calendar event (missed yesterday)."""
         appointment_type = appointment_type or self.cnt_type
-        stop = datetime.datetime.now() - datetime.timedelta(days=stop_offset_days)
+        now = datetime.datetime.now()
         return self.env['calendar.event'].create({
             'name': 'NoShow Event',
-            'start': stop - datetime.timedelta(hours=1),
-            'stop': stop,
-            'user_id': owner.id,
+            'start': now - datetime.timedelta(days=1, hours=1),
+            'stop': now - datetime.timedelta(days=1),
             'appointment_type_id': appointment_type.id,
             'appointment_status': 'no_show',
-            'partner_ids': [(6, 0, [
-                self.commercial_user.partner_id.id,
-                self.cc_user.partner_id.id,
-            ])],
         })
 
-    def test_available_date_computed(self):
-        """available_date = missed appointment time + configured window."""
-        if not self.cnt_type:
-            self.skipTest("appointment module not installed")
-        event = self._create_noshow(5)
-        self.assertTrue(event.x_noshow_available_date,
-                        "available_date should be set for a CNT no-show")
-        self.assertEqual(event.x_noshow_available_date,
-                         event.stop + datetime.timedelta(days=2),
-                         "available_date should be stop + window days")
+    def _backdate(self, event, days):
+        """Move the no-show flag date `days` into the past (simulates the
+        window having elapsed) and let available_date recompute."""
+        event.write({'x_noshow_date': datetime.datetime.now() - datetime.timedelta(days=days)})
 
-    def test_available_date_blank_when_not_noshow(self):
-        """available_date stays empty when the event is not a no-show."""
+    def _queue_events(self):
+        """Search using the same domain as the call-center recyclage action."""
+        return self.env['calendar.event'].search([
+            ('appointment_status', '=', 'no_show'),
+            ('x_is_call_center_appt', '=', True),
+            ('x_noshow_disposition', '!=', 'pas_interesse'),
+            ('x_noshow_available_date', '!=', False),
+            ('x_noshow_available_date', '<=', datetime.datetime.now()),
+        ])
+
+    def test_noshow_date_stamped_and_available(self):
+        """Flagging a CNT no-show stamps the date; available = date + window."""
         if not self.cnt_type:
             self.skipTest("appointment module not installed")
-        event = self._create_noshow(5)
+        event = self._create_noshow()
+        self.assertTrue(event.x_noshow_date,
+                        "x_noshow_date should be stamped on a CNT no-show")
+        self.assertEqual(event.x_noshow_available_date,
+                         event.x_noshow_date + datetime.timedelta(days=2),
+                         "available_date should be no-show date + window days")
+
+    def test_disposition_does_not_reset_timer(self):
+        """Commercial follow-ups (disposition) must not reset x_noshow_date."""
+        if not self.cnt_type:
+            self.skipTest("appointment module not installed")
+        event = self._create_noshow()
+        original = event.x_noshow_date
+        event.write({'x_noshow_disposition': 'pas_joignable'})
+        self.assertEqual(event.x_noshow_date, original,
+                         "x_noshow_date must not change on a follow-up")
+
+    def test_leaving_noshow_clears_date(self):
+        """Re-booking (e.g. replanning) clears the no-show anchor."""
+        if not self.cnt_type:
+            self.skipTest("appointment module not installed")
+        event = self._create_noshow()
         event.write({'appointment_status': 'booked'})
+        self.assertFalse(event.x_noshow_date,
+                         "x_noshow_date should be cleared when not no_show")
         self.assertFalse(event.x_noshow_available_date,
                          "available_date should be empty when not no_show")
 
-    def test_commercial_can_claim_suivi(self):
-        """A commercial can claim a no-show (suivi commercial)."""
-        if not self.cnt_type:
-            self.skipTest("appointment module not installed")
-        event = self._create_noshow(0, owner=self.commercial_user)
-        event.with_user(self.commercial_user).write(
-            {'x_noshow_traitement': 'suivi_commercial'})
-        self.assertEqual(event.x_noshow_traitement, 'suivi_commercial')
-
-    def test_call_center_cannot_claim_suivi(self):
-        """The call center cannot set 'suivi commercial'."""
-        if not self.cnt_type:
-            self.skipTest("appointment module not installed")
-        event = self._create_noshow(5)
-        with self.assertRaises(UserError):
-            event.with_user(self.cc_user).write(
-                {'x_noshow_traitement': 'suivi_commercial'})
-
-    def test_call_center_blocked_before_window(self):
-        """The call center cannot recycle before the commercial window elapses."""
-        if not self.cnt_type:
-            self.skipTest("appointment module not installed")
-        event = self._create_noshow(0)  # available_date = now + 2 days
-        with self.assertRaises(UserError):
-            event.with_user(self.cc_user).write(
-                {'x_noshow_traitement': 'recyclage'})
-
-    def test_call_center_can_recycle_after_window(self):
-        """The call center can recycle once the window has elapsed."""
-        if not self.cnt_type:
-            self.skipTest("appointment module not installed")
-        event = self._create_noshow(5, owner=self.cc_user)
-        event.with_user(self.cc_user).write(
-            {'x_noshow_traitement': 'recyclage'})
-        self.assertEqual(event.x_noshow_traitement, 'recyclage')
-
-    def test_mutual_lock(self):
-        """Once the commercial claims it, it cannot be flipped to recyclage."""
-        if not self.cnt_type:
-            self.skipTest("appointment module not installed")
-        event = self._create_noshow(5, owner=self.commercial_user)
-        event.with_user(self.commercial_user).write(
-            {'x_noshow_traitement': 'suivi_commercial'})
-        with self.assertRaises(UserError):
-            event.with_user(self.cc_user).write(
-                {'x_noshow_traitement': 'recyclage'})
-
-    def test_outcome_constraint_invalid_combo(self):
-        """A 'replanifie' outcome is invalid under a suivi commercial."""
-        if not self.cnt_type:
-            self.skipTest("appointment module not installed")
-        event = self._create_noshow(5, owner=self.commercial_user)
-        event.with_user(self.commercial_user).write(
-            {'x_noshow_traitement': 'suivi_commercial'})
-        with self.assertRaises(ValidationError):
-            event.with_user(self.commercial_user).write(
-                {'x_noshow_resultat': 'replanifie'})
-
-    def test_outcome_valid_combo(self):
-        """A 'vente' outcome is valid under a suivi commercial."""
-        if not self.cnt_type:
-            self.skipTest("appointment module not installed")
-        event = self._create_noshow(5, owner=self.commercial_user)
-        event.with_user(self.commercial_user).write({
-            'x_noshow_traitement': 'suivi_commercial',
-            'x_noshow_resultat': 'vente',
-        })
-        self.assertEqual(event.x_noshow_resultat, 'vente')
-
-    def test_non_call_center_appointment_not_guarded(self):
-        """The guard only governs CNT appointments; COM events are untouched."""
+    def test_com_appointment_not_stamped(self):
+        """COM appointments are out of scope: no no-show date is stamped."""
         if not self.com_type:
             self.skipTest("appointment module not installed")
-        event = self._create_noshow(5, owner=self.cc_user,
-                                    appointment_type=self.com_type)
-        # No role error even though a call-center user sets 'suivi_commercial'.
-        event.with_user(self.cc_user).write(
-            {'x_noshow_traitement': 'suivi_commercial'})
-        self.assertEqual(event.x_noshow_traitement, 'suivi_commercial')
+        event = self._create_noshow(appointment_type=self.com_type)
+        self.assertFalse(event.x_noshow_date,
+                         "COM appointments should not be stamped")
+
+    def test_queue_includes_available_and_non_locking(self):
+        """Empty and 'pas joignable' no-shows past the window appear in the queue."""
+        if not self.cnt_type:
+            self.skipTest("appointment module not installed")
+        empty = self._create_noshow()
+        self._backdate(empty, 5)
+        joignable = self._create_noshow()
+        self._backdate(joignable, 5)
+        joignable.write({'x_noshow_disposition': 'pas_joignable'})
+
+        queue = self._queue_events()
+        self.assertIn(empty, queue)
+        self.assertIn(joignable, queue)
+
+    def test_queue_excludes_locked_and_in_window(self):
+        """'pas intéressé' (locked) and still-in-window no-shows are excluded."""
+        if not self.cnt_type:
+            self.skipTest("appointment module not installed")
+        locked = self._create_noshow()
+        self._backdate(locked, 5)
+        locked.write({'x_noshow_disposition': 'pas_interesse'})
+        in_window = self._create_noshow()  # available_date = now + 2 days
+
+        queue = self._queue_events()
+        self.assertNotIn(locked, queue)
+        self.assertNotIn(in_window, queue)
