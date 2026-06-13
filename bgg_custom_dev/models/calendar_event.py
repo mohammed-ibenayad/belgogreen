@@ -108,9 +108,11 @@ class CalendarEvent(models.Model):
     )
 
     # View helper: True when the appointment is a call-center appointment.
+    # Stored so it is always available to the form's visibility rule.
     x_is_call_center_appt = fields.Boolean(
         string='Is Call Center Appointment',
         compute='_compute_is_call_center_appt',
+        store=True,
     )
 
     @api.model_create_multi
