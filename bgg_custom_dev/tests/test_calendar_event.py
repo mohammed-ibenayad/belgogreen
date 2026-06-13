@@ -799,6 +799,24 @@ class TestCalendarEventNoShowTreatment(TransactionCase):
         self.assertFalse(event.x_noshow_available_date,
                          "available_date should be empty when not no_show")
 
+    def test_resending_unchanged_dates_keeps_noshow(self):
+        """Saving with re-sent but unchanged start/stop (as the calendar form
+        does) must not flip the no-show back to booked."""
+        if not self.cnt_type:
+            self.skipTest("appointment module not installed")
+        event = self._create_noshow()
+        self.assertEqual(event.appointment_status, 'no_show')
+        event.write({
+            'start': event.start,
+            'stop': event.stop,
+            'x_noshow_disposition': 'autre',
+        })
+        self.assertEqual(event.appointment_status, 'no_show',
+                         "Re-sending unchanged dates must not reset the status")
+        self.assertTrue(event.x_noshow_date,
+                        "x_noshow_date must survive a non-reschedule save")
+        self.assertEqual(event.x_noshow_disposition, 'autre')
+
     def test_com_appointment_not_stamped(self):
         """COM appointments are out of scope: no no-show date is stamped."""
         if not self.com_type:

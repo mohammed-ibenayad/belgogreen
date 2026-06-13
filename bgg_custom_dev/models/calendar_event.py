@@ -149,9 +149,14 @@ class CalendarEvent(models.Model):
 
         # Hard-enforce the commercial window: a call-center user cannot reschedule
         # a no-show before it is available, nor one marked 'Client pas intéressé'.
+        # Only a *real* date change counts — the calendar form re-sends start/stop
+        # on every save even when unchanged.
+        rescheduled_ids = set()
         if any(f in vals for f in ('start', 'stop', 'start_date', 'stop_date')):
             for record in self:
-                record._check_call_center_reschedule_allowed()
+                if record._vals_change_dates(vals):
+                    rescheduled_ids.add(record.id)
+                    record._check_call_center_reschedule_allowed()
 
         result = super(CalendarEvent, self).write(vals)
 
@@ -159,9 +164,25 @@ class CalendarEvent(models.Model):
         # to prevent infinite recursion
         if not self.env.context.get('skip_calendar_automation'):
             for record in self:
-                self._process_calendar_event(record, vals)
+                self._process_calendar_event(
+                    record, vals, date_changed=record.id in rescheduled_ids)
 
         return result
+
+    def _vals_change_dates(self, vals):
+        """True when `vals` actually changes one of this event's date fields
+        (normalises the incoming values so a re-sent, unchanged value is ignored)."""
+        self.ensure_one()
+        converters = (
+            ('start', fields.Datetime.to_datetime),
+            ('stop', fields.Datetime.to_datetime),
+            ('start_date', fields.Date.to_date),
+            ('stop_date', fields.Date.to_date),
+        )
+        for field_name, convert in converters:
+            if field_name in vals and convert(vals[field_name]) != self[field_name]:
+                return True
+        return False
 
     @api.depends('attendee_ids', 'attendee_ids.partner_id', 'appointment_type_id')
     def _compute_commercial(self):
@@ -348,10 +369,10 @@ class CalendarEvent(models.Model):
             record.with_context(skip_calendar_automation=True).write(
                 {'x_noshow_date': False})
 
-    def _process_calendar_event(self, record, vals=None):
+    def _process_calendar_event(self, record, vals=None, date_changed=False):
         """Process all automation rules for calendar events"""
         # Note: Organizer update removed - organizer is set once at creation and never changes
-        self._update_calendar_status_rescheduled(record, vals)
+        self._update_calendar_status_rescheduled(record, vals, date_changed=date_changed)
         # IMPORTANT: _assign_existing_customer must run BEFORE _update_clickable_from_attendee
         # because it uses x_studio_customer_phone to find customers, and _update_clickable_from_attendee
         # will clear that field if no client attendees exist yet
@@ -403,7 +424,7 @@ class CalendarEvent(models.Model):
             _logger.error("Set Initial Organizer - Error processing event ID %s: %s",
                         record.id, str(e), exc_info=True)
 
-    def _update_calendar_status_rescheduled(self, record, vals=None):
+    def _update_calendar_status_rescheduled(self, record, vals=None, date_changed=False):
         """
         Update Calendar Status When Rescheduled - Automation Rule
         Deletes NoShow activities and posts a chatter note when an event is rescheduled
@@ -424,8 +445,11 @@ class CalendarEvent(models.Model):
             if self.env.context.get('processing_noshow_reschedule'):
                 return
 
-            # Only process if date/time fields changed (indicating reschedule)
-            if vals and not any(field in vals for field in ['start', 'stop', 'start_date', 'stop_date']):
+            # Only process on a real reschedule. The calendar form re-sends
+            # start/stop on every save even when unchanged, so we rely on the
+            # caller's value comparison (date_changed) rather than mere presence
+            # in vals. On create (vals is None) keep the prior behaviour.
+            if vals is not None and not date_changed:
                 return
 
             # Find linked no-show activities
