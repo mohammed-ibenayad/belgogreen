@@ -763,14 +763,9 @@ class TestCalendarEventNoShowTreatment(TransactionCase):
         event.write({'x_noshow_date': datetime.datetime.now() - datetime.timedelta(days=days)})
 
     def _queue_events(self):
-        """Search using the same domain as the call-center recyclage action."""
-        return self.env['calendar.event'].search([
-            ('appointment_status', '=', 'no_show'),
-            ('x_is_call_center_appt', '=', True),
-            ('x_noshow_disposition', '!=', 'pas_interesse'),
-            ('x_noshow_available_date', '!=', False),
-            ('x_noshow_available_date', '<=', datetime.datetime.now()),
-        ])
+        """Search using the call-center recyclage action's dynamic domain."""
+        domain = self.env['calendar.event']._action_noshow_recyclage_queue()['domain']
+        return self.env['calendar.event'].search(domain)
 
     def test_noshow_date_stamped_and_available(self):
         """Flagging a CNT no-show stamps the date; available = date + window."""
@@ -862,3 +857,95 @@ class TestCalendarEventNoShowTreatment(TransactionCase):
         event.with_user(self.commercial_user).write(
             {'x_noshow_disposition': 'pas_joignable'})
         self.assertEqual(event.x_noshow_disposition, 'pas_joignable')
+
+    def test_available_date_reflects_param_dynamically(self):
+        """available_date recomputes against the current window parameter."""
+        if not self.cnt_type:
+            self.skipTest("appointment module not installed")
+        event = self._create_noshow()
+        self.assertEqual(event.x_noshow_available_date,
+                         event.x_noshow_date + datetime.timedelta(days=2))
+        self.env['ir.config_parameter'].sudo().set_param(
+            'bgg.noshow_commercial_window_days', '60')
+        event.invalidate_recordset(['x_noshow_available_date'])
+        self.assertEqual(event.x_noshow_available_date,
+                         event.x_noshow_date + datetime.timedelta(days=60))
+        # restore for other tests
+        self.env['ir.config_parameter'].sudo().set_param(
+            'bgg.noshow_commercial_window_days', '2')
+
+    def _create_cc_event(self, backdate_days=None, disposition=None):
+        """A CNT no-show owned by the call-center user (so it can write it)."""
+        now = datetime.datetime.now()
+        event = self.env['calendar.event'].create({
+            'name': 'NoShow CC',
+            'start': now - datetime.timedelta(days=1, hours=1),
+            'stop': now - datetime.timedelta(days=1),
+            'appointment_type_id': self.cnt_type.id,
+            'appointment_status': 'no_show',
+            'user_id': self.cc_user.id,
+            'partner_ids': [(6, 0, [self.cc_user.partner_id.id])],
+        })
+        if disposition:
+            event.write({'x_noshow_disposition': disposition})  # admin write allowed
+        if backdate_days is not None:
+            self._backdate(event, backdate_days)
+        return event
+
+    def test_cc_cannot_reschedule_before_window(self):
+        """Call center cannot move a no-show's date before it is available."""
+        if not self.cnt_type:
+            self.skipTest("appointment module not installed")
+        event = self._create_cc_event()  # available_date = now + 2 days
+        new_start = datetime.datetime.now() + datetime.timedelta(days=3)
+        with self.assertRaises(UserError):
+            event.with_user(self.cc_user).write({
+                'start': new_start,
+                'stop': new_start + datetime.timedelta(hours=1),
+            })
+
+    def test_cc_cannot_reschedule_locked(self):
+        """Call center cannot reschedule a 'pas intéressé' no-show even past window."""
+        if not self.cnt_type:
+            self.skipTest("appointment module not installed")
+        event = self._create_cc_event(backdate_days=5, disposition='pas_interesse')
+        new_start = datetime.datetime.now() + datetime.timedelta(days=3)
+        with self.assertRaises(UserError):
+            event.with_user(self.cc_user).write({
+                'start': new_start,
+                'stop': new_start + datetime.timedelta(hours=1),
+            })
+
+    def test_cc_can_reschedule_after_window(self):
+        """Call center can reschedule once available (the normal recycle path)."""
+        if not self.cnt_type:
+            self.skipTest("appointment module not installed")
+        event = self._create_cc_event(backdate_days=5)  # available, no disposition
+        new_start = datetime.datetime.now() + datetime.timedelta(days=3)
+        event.with_user(self.cc_user).write({
+            'start': new_start,
+            'stop': new_start + datetime.timedelta(hours=1),
+        })
+        self.assertEqual(event.appointment_status, 'booked',
+                         "Rescheduling should reset the status to booked")
+
+    def test_commercial_can_reschedule_in_window(self):
+        """Commercials are not blocked by the window."""
+        if not self.cnt_type:
+            self.skipTest("appointment module not installed")
+        now = datetime.datetime.now()
+        event = self.env['calendar.event'].create({
+            'name': 'NoShow COM-resched',
+            'start': now - datetime.timedelta(days=1, hours=1),
+            'stop': now - datetime.timedelta(days=1),
+            'appointment_type_id': self.cnt_type.id,
+            'appointment_status': 'no_show',
+            'user_id': self.commercial_user.id,
+            'partner_ids': [(6, 0, [self.commercial_user.partner_id.id])],
+        })  # available_date in the future (still in window)
+        new_start = now + datetime.timedelta(days=3)
+        event.with_user(self.commercial_user).write({
+            'start': new_start,
+            'stop': new_start + datetime.timedelta(hours=1),
+        })
+        self.assertEqual(event.appointment_status, 'booked')
