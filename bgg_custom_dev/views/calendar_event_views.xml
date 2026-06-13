@@ -21,7 +21,8 @@
                  their values are always loaded for the visibility rule. -->
             <xpath expr="//notebook" position="before">
                 <field name="x_is_call_center_appt" invisible="1"/>
-                <field name="x_noshow_traitement" invisible="1"/>
+                <field name="x_noshow_disposition" invisible="1"/>
+                <field name="x_user_is_commercial" invisible="1"/>
             </xpath>
 
             <!-- Add new "Avis &amp; Recommandations" tab in the notebook -->
@@ -40,21 +41,23 @@
 
                 <!-- No-show treatment workflow (call-center appointments only) -->
                 <page string="Suivi No-show" name="page_noshow"
-                      invisible="not x_is_call_center_appt or (appointment_status != 'no_show' and not x_noshow_traitement)">
+                      invisible="not x_is_call_center_appt or (appointment_status != 'no_show' and not x_noshow_disposition)">
                     <group>
-                        <group string="Traitement">
-                            <field name="x_noshow_traitement"/>
-                            <field name="x_noshow_resultat"
-                                   readonly="not x_noshow_traitement"/>
+                        <group string="Suivi commercial">
+                            <field name="x_noshow_disposition"
+                                   readonly="not x_user_is_commercial"/>
                         </group>
                         <group string="Disponibilité call center">
+                            <field name="x_noshow_date" readonly="1"/>
                             <field name="x_noshow_available_date" readonly="1"/>
                         </group>
                     </group>
                     <div class="text-muted">
-                        Le commercial est prioritaire jusqu'à la date ci-dessus. Sans
-                        prise en charge (suivi commercial) de sa part, le no-show devient
-                        recyclable par le call center.
+                        Le commercial est prioritaire jusqu'à la date « Disponible call center ».
+                        S'il replanifie le rendez-vous ou indique « Client pas intéressé »,
+                        le call center ne le reprend pas. Sinon le no-show devient recyclable
+                        par le call center après cette date. Précisez tout détail dans la note
+                        (journal du rendez-vous).
                     </div>
                 </page>
             </xpath>
@@ -71,9 +74,9 @@
                 <field name="start" string="Date RDV"/>
                 <field name="name" string="Sujet"/>
                 <field name="x_studio_commercial" string="Commercial"/>
+                <field name="x_noshow_date" string="No-show le"/>
                 <field name="x_noshow_available_date" string="Disponible depuis"/>
-                <field name="x_noshow_traitement" string="Traitement"/>
-                <field name="x_noshow_resultat" string="Résultat"/>
+                <field name="x_noshow_disposition" string="Suivi commercial"/>
             </list>
         </field>
     </record>
@@ -82,11 +85,10 @@
         <field name="name">No-shows à recycler</field>
         <field name="res_model">calendar.event</field>
         <field name="view_mode">list,form</field>
-        <field name="domain">[('appointment_status', '=', 'no_show'), ('x_noshow_traitement', '=', False), ('x_noshow_available_date', '!=', False), ('x_noshow_available_date', '&lt;=', datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))]</field>
-        <field name="context">{'search_default_x_noshow_available_date': 1}</field>
+        <field name="domain">[('appointment_status', '=', 'no_show'), ('x_is_call_center_appt', '=', True), ('x_noshow_disposition', '!=', 'pas_interesse'), ('x_noshow_available_date', '!=', False), ('x_noshow_available_date', '&lt;=', datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))]</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiley_face">Aucun no-show à recycler pour le moment.</p>
-            <p>Les no-shows apparaissent ici une fois la fenêtre de priorité commerciale écoulée, s'ils n'ont pas été pris en charge par le commercial.</p>
+            <p>Les no-shows apparaissent ici une fois la fenêtre de priorité commerciale écoulée, sauf si le commercial les a replanifiés ou marqués « Client pas intéressé ».</p>
         </field>
     </record>
 
