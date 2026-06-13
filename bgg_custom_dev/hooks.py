@@ -47,14 +47,15 @@ def link_external_groups(env):
             })
 
     # Restrict the recyclage queue (menu + action) to the Call Center group.
+    # Odoo 19 renamed the "groups_id" field to "group_ids".
     call_center = resolved.get('group_call_center')
     if call_center:
         for ref in ('menu_bgg_noshow_recyclage_root',
                     'menu_bgg_noshow_recyclage_queue'):
             menu = env.ref('bgg_custom_dev.%s' % ref, raise_if_not_found=False)
             if menu:
-                menu.groups_id = [(6, 0, [call_center.id])]
+                menu.group_ids = [(6, 0, [call_center.id])]
         action = env.ref('bgg_custom_dev.action_noshow_recyclage_queue',
                          raise_if_not_found=False)
         if action:
-            action.groups_id = [(6, 0, [call_center.id])]
+            action.group_ids = [(6, 0, [call_center.id])]
