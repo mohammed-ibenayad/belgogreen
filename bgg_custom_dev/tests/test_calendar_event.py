@@ -3,6 +3,7 @@
 import datetime
 from odoo.tests.common import TransactionCase
 from odoo.tests import tagged
+from odoo.exceptions import UserError
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -713,6 +714,25 @@ class TestCalendarEventNoShowTreatment(TransactionCase):
         cls.env['ir.config_parameter'].sudo().set_param(
             'bgg.noshow_commercial_window_days', '2')
 
+        # 'Commercial' / 'Call Center' are created manually outside the modules;
+        # resolve-or-create by name so the by-name lookups work in a fresh test DB.
+        groups = cls.env['res.groups'].sudo()
+        cls.commercial_group = (groups.search([('name', '=ilike', 'Commercial')], limit=1)
+                                or groups.create({'name': 'Commercial'}))
+        cls.call_center_group = (groups.search([('name', '=ilike', 'Call Center')], limit=1)
+                                 or groups.create({'name': 'Call Center'}))
+        base_group = cls.env.ref('base.group_user')
+        cls.commercial_user = cls.env['res.users'].create({
+            'name': 'NoShow Commercial', 'login': 'noshow_commercial',
+            'email': 'noshow_commercial@example.com',
+            'group_ids': [(6, 0, [base_group.id, cls.commercial_group.id])],
+        })
+        cls.cc_user = cls.env['res.users'].create({
+            'name': 'NoShow Call Center', 'login': 'noshow_cc',
+            'email': 'noshow_cc@example.com',
+            'group_ids': [(6, 0, [base_group.id, cls.call_center_group.id])],
+        })
+
         cls.cnt_type = None
         cls.com_type = None
         if 'appointment.type' in cls.env:
@@ -818,3 +838,27 @@ class TestCalendarEventNoShowTreatment(TransactionCase):
         queue = self._queue_events()
         self.assertNotIn(locked, queue)
         self.assertNotIn(in_window, queue)
+
+    def test_only_commercial_can_set_disposition(self):
+        """The call center cannot modify the disposition; the commercial can."""
+        if not self.cnt_type:
+            self.skipTest("appointment module not installed")
+        now = datetime.datetime.now()
+        event = self.env['calendar.event'].create({
+            'name': 'NoShow Access',
+            'start': now - datetime.timedelta(days=1, hours=1),
+            'stop': now - datetime.timedelta(days=1),
+            'appointment_type_id': self.cnt_type.id,
+            'appointment_status': 'no_show',
+            'user_id': self.commercial_user.id,
+            'partner_ids': [(6, 0, [
+                self.commercial_user.partner_id.id,
+                self.cc_user.partner_id.id,
+            ])],
+        })
+        with self.assertRaises(UserError):
+            event.with_user(self.cc_user).write(
+                {'x_noshow_disposition': 'pas_joignable'})
+        event.with_user(self.commercial_user).write(
+            {'x_noshow_disposition': 'pas_joignable'})
+        self.assertEqual(event.x_noshow_disposition, 'pas_joignable')

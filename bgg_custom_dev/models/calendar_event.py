@@ -3,6 +3,7 @@
 import datetime
 import logging
 from odoo import api, fields, models
+from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
 
@@ -17,6 +18,9 @@ NOSHOW_WINDOW_PARAM = 'bgg.noshow_commercial_window_days'
 NOSHOW_WINDOW_DEFAULT = '2'
 # Commercial disposition that locks the call center out (no point recycling).
 NOSHOW_DISPOSITION_LOCKING = 'pas_interesse'
+# Role allowed to set the commercial disposition (resolved by name; created
+# manually outside the modules).
+COMMERCIAL_GROUP_NAME = 'Commercial'
 
 
 class CalendarEvent(models.Model):
@@ -109,6 +113,13 @@ class CalendarEvent(models.Model):
         store=True,
     )
 
+    # View helper: True when the current user is a commercial. Drives the
+    # read-only state of the disposition field (call center can't modify it).
+    x_user_is_commercial = fields.Boolean(
+        string='Current User Is Commercial',
+        compute='_compute_user_is_commercial',
+    )
+
     @api.model_create_multi
     def create(self, vals_list):
         """Override create to set organizer and trigger automation rules on new calendar events"""
@@ -125,6 +136,16 @@ class CalendarEvent(models.Model):
 
     def write(self, vals):
         """Override write to trigger automation rules on updates"""
+        # Only commercials may set/modify the no-show disposition (system/sudo
+        # writes bypass this so automations and admins are unaffected).
+        if ('x_noshow_disposition' in vals
+                and not self.env.su
+                and not self.env.user.has_group('base.group_system')
+                and not self._user_in_group_named(COMMERCIAL_GROUP_NAME)):
+            raise UserError(
+                "Seul un commercial peut renseigner le suivi commercial d'un no-show."
+            )
+
         result = super(CalendarEvent, self).write(vals)
 
         # Skip automation processing if we're already in an automated update
@@ -171,6 +192,17 @@ class CalendarEvent(models.Model):
     # ------------------------------------------------------------------
     # No-show treatment helpers
     # ------------------------------------------------------------------
+
+    def _user_in_group_named(self, group_name):
+        """Return True when the current user belongs to the named group."""
+        group = self._find_group_by_name(group_name)
+        return bool(group) and group.id in self.env.user.group_ids.ids
+
+    @api.depends_context('uid')
+    def _compute_user_is_commercial(self):
+        is_commercial = self._user_in_group_named(COMMERCIAL_GROUP_NAME)
+        for record in self:
+            record.x_user_is_commercial = is_commercial
 
     @api.model
     def _find_group_by_name(self, group_name):
