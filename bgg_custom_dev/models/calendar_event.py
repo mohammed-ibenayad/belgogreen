@@ -124,6 +124,14 @@ class CalendarEvent(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         """Override create to set organizer and trigger automation rules on new calendar events"""
+        # Stamp the no-show anchor inline (no separate write on the event).
+        for vals in vals_list:
+            if vals.get('appointment_status') == 'no_show' and not vals.get('x_noshow_date'):
+                atype_id = vals.get('appointment_type_id')
+                atype = self.env['appointment.type'].browse(atype_id) if atype_id else None
+                if atype and atype.x_appointment_ref in CALL_CENTER_APPOINTMENT_REFS:
+                    vals['x_noshow_date'] = fields.Datetime.now()
+
         records = super(CalendarEvent, self).create(vals_list)
 
         for record in records:
@@ -157,6 +165,10 @@ class CalendarEvent(models.Model):
                 if record._vals_change_dates(vals):
                     rescheduled_ids.add(record.id)
                     record._check_call_center_reschedule_allowed()
+
+        # Stamp/clear the no-show anchor inline (no separate write on the event,
+        # which can disturb the calendar's date handling).
+        self._apply_noshow_date_to_vals(vals)
 
         result = super(CalendarEvent, self).write(vals)
 
@@ -351,23 +363,20 @@ class CalendarEvent(models.Model):
             ),
         }
 
-    def _sync_noshow_date(self, record):
-        """Stamp x_noshow_date once when a call-center appointment is flagged
-        no-show; clear it when it leaves the no-show state (e.g. replanned).
+    def _apply_noshow_date_to_vals(self, vals):
+        """Add the no-show anchor to the *current* write vals (instead of a
+        separate write) when the status transitions in/out of no-show.
 
-        Commercial follow-ups only change x_noshow_disposition, never the status,
-        so the window anchor is not reset by them.
+        Commercial follow-ups don't change the status, so they never touch the
+        anchor — the window is not reset by them.
         """
-        if not record._is_call_center_appointment():
+        if 'x_noshow_date' in vals or 'appointment_status' not in vals:
             return
-
-        if record.appointment_status == 'no_show':
-            if not record.x_noshow_date:
-                record.with_context(skip_calendar_automation=True).write(
-                    {'x_noshow_date': fields.Datetime.now()})
-        elif record.x_noshow_date:
-            record.with_context(skip_calendar_automation=True).write(
-                {'x_noshow_date': False})
+        if vals['appointment_status'] == 'no_show':
+            if any(r._is_call_center_appointment() and not r.x_noshow_date for r in self):
+                vals['x_noshow_date'] = fields.Datetime.now()
+        elif any(r.x_noshow_date for r in self):
+            vals['x_noshow_date'] = False
 
     def _process_calendar_event(self, record, vals=None, date_changed=False):
         """Process all automation rules for calendar events"""
@@ -382,7 +391,6 @@ class CalendarEvent(models.Model):
         self._update_clickable_from_attendee(record)
         self._replace_call_center_emails(record)
         self._create_activity_noshow(record)
-        self._sync_noshow_date(record)
 
     def _set_initial_organizer(self, record):
         """
