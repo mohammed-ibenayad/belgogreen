@@ -52,6 +52,9 @@
         'security/groups.xml',
         'security/ir.model.access.csv',
 
+        # Configuration data
+        'data/noshow_config_params.xml',
+
         # Views
         'views/calendar_event_views.xml',
         'views/commercial_dashboard_views.xml',

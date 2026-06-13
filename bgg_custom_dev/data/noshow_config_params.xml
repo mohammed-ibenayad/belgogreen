@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- noupdate: created on install/upgrade if missing, but never overwrites a
+         value an admin has changed. -->
+    <data noupdate="1">
+        <record id="noshow_commercial_window_days" model="ir.config_parameter">
+            <field name="key">bgg.noshow_commercial_window_days</field>
+            <field name="value">2</field>
+        </record>
+    </data>
+</odoo>
