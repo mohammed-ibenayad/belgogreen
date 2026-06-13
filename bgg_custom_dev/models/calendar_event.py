@@ -334,35 +334,6 @@ class CalendarEvent(models.Model):
                 % (available and fields.Datetime.to_string(available) or '—')
             )
 
-    @api.model
-    def _action_noshow_recyclage_queue(self):
-        """Build the call-center recyclage queue action with a domain that
-        reflects the current window parameter (evaluated at click time)."""
-        cutoff = fields.Datetime.now() - datetime.timedelta(days=self._noshow_window_days())
-        list_view = self.env.ref(
-            'bgg_custom_dev.view_calendar_event_noshow_queue_list', raise_if_not_found=False)
-        return {
-            'type': 'ir.actions.act_window',
-            'name': 'No-shows à recycler',
-            'res_model': 'calendar.event',
-            'view_mode': 'list,form',
-            'views': [(list_view.id if list_view else False, 'list'), (False, 'form')],
-            'domain': [
-                ('appointment_status', '=', 'no_show'),
-                ('x_is_call_center_appt', '=', True),
-                ('x_noshow_disposition', '!=', NOSHOW_DISPOSITION_LOCKING),
-                ('x_noshow_date', '!=', False),
-                ('x_noshow_date', '<=', cutoff),
-            ],
-            'context': {'create': False},
-            'help': (
-                '<p class="o_view_nocontent_smiley_face">Aucun no-show à recycler '
-                'pour le moment.</p><p>Les no-shows apparaissent ici une fois la '
-                'fenêtre de priorité commerciale écoulée, sauf si le commercial '
-                'les a replanifiés ou marqués « Client pas intéressé ».</p>'
-            ),
-        }
-
     def _apply_noshow_date_to_vals(self, vals):
         """Add the no-show anchor to the *current* write vals (instead of a
         separate write) when the status transitions in/out of no-show.

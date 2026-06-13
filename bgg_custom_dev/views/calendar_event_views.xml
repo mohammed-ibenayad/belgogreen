@@ -65,29 +65,22 @@
         </field>
     </record>
 
-    <!-- Call center working queue: CNT no-shows available for recyclage -->
-    <record id="view_calendar_event_noshow_queue_list" model="ir.ui.view">
-        <field name="name">calendar.event.noshow.queue.list</field>
+    <!-- Add a "No-shows à recycler" filter to the calendar events search view.
+         Candidates = call-center no-shows the commercial has not closed
+         ('Client pas intéressé'). The exact availability window (parameter)
+         is enforced on reschedule and shown by "Disponible call center le". -->
+    <record id="view_calendar_event_search_inherit_bgg" model="ir.ui.view">
+        <field name="name">calendar.event.search.inherit.bgg</field>
         <field name="model">calendar.event</field>
+        <field name="inherit_id" ref="calendar.view_calendar_event_search"/>
         <field name="arch" type="xml">
-            <list string="No-shows à recycler" create="false">
-                <field name="start" string="Date RDV"/>
-                <field name="name" string="Sujet"/>
-                <field name="x_studio_commercial" string="Commercial"/>
-                <field name="x_noshow_date" string="No-show le"/>
-                <field name="x_noshow_available_date" string="Disponible depuis"/>
-                <field name="x_noshow_disposition" string="Suivi commercial"/>
-            </list>
+            <xpath expr="//search" position="inside">
+                <separator/>
+                <filter name="noshow_a_recycler"
+                        string="No-shows à recycler"
+                        domain="[('appointment_status', '=', 'no_show'), ('x_is_call_center_appt', '=', True), ('x_noshow_disposition', '!=', 'pas_interesse')]"/>
+            </xpath>
         </field>
-    </record>
-
-    <!-- Server action: builds the queue domain dynamically so the window
-         parameter is applied at click time (no stored availability date). -->
-    <record id="action_noshow_recyclage_queue" model="ir.actions.server">
-        <field name="name">No-shows à recycler</field>
-        <field name="model_id" ref="calendar.model_calendar_event"/>
-        <field name="state">code</field>
-        <field name="code">action = model._action_noshow_recyclage_queue()</field>
     </record>
 
 </odoo>
