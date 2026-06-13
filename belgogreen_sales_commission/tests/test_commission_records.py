@@ -65,7 +65,7 @@ class TestCommissionRecords(TransactionCase):
         # The manual-pay action is guarded by group_commission_manager. Tests run
         # as the superuser, which is not an explicit member of that custom group,
         # so grant it here to exercise the manager-only flows.
-        cls.env.user.groups_id = [
+        cls.env.user.group_ids = [
             (4, cls.env.ref('belgogreen_sales_commission.group_commission_manager').id)
         ]
 
