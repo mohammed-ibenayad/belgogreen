@@ -81,5 +81,5 @@ def link_external_groups(env):
                 menu.group_ids = [(6, 0, [call_center.id])]
         action = env.ref('bgg_custom_dev.action_noshow_recyclage_queue',
                          raise_if_not_found=False)
-        if action:
+        if action and 'group_ids' in action._fields:
             action.group_ids = [(6, 0, [call_center.id])]

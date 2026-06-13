@@ -18,9 +18,9 @@ NOSHOW_WINDOW_PARAM = 'bgg.noshow_commercial_window_days'
 NOSHOW_WINDOW_DEFAULT = '2'
 # Commercial disposition that locks the call center out (no point recycling).
 NOSHOW_DISPOSITION_LOCKING = 'pas_interesse'
-# Role allowed to set the commercial disposition (resolved by name; created
-# manually outside the modules).
+# Roles allowed to act, resolved by name (created manually outside the modules).
 COMMERCIAL_GROUP_NAME = 'Commercial'
+CALL_CENTER_GROUP_NAME = 'Call Center'
 
 
 class CalendarEvent(models.Model):
@@ -96,11 +96,12 @@ class CalendarEvent(models.Model):
              "de départ à la fenêtre de priorité commerciale.",
     )
 
-    # Date from which the call center may recycle the no-show (no-show date + window).
+    # Date from which the call center may recycle the no-show (no-show date +
+    # window). Not stored: computed on read so a change to the window parameter
+    # takes effect immediately (e.g. when opening the event).
     x_noshow_available_date = fields.Datetime(
         string='Disponible call center le',
         compute='_compute_noshow_available_date',
-        store=True,
         help="Date à partir de laquelle le call center peut recycler ce no-show, "
              "une fois la fenêtre de priorité commerciale écoulée.",
     )
@@ -145,6 +146,12 @@ class CalendarEvent(models.Model):
             raise UserError(
                 "Seul un commercial peut renseigner le suivi commercial d'un no-show."
             )
+
+        # Hard-enforce the commercial window: a call-center user cannot reschedule
+        # a no-show before it is available, nor one marked 'Client pas intéressé'.
+        if any(f in vals for f in ('start', 'stop', 'start_date', 'stop_date')):
+            for record in self:
+                record._check_call_center_reschedule_allowed()
 
         result = super(CalendarEvent, self).write(vals)
 
@@ -241,21 +248,87 @@ class CalendarEvent(models.Model):
         for record in self:
             record.x_is_call_center_appt = record._is_call_center_appointment()
 
-    @api.depends('x_noshow_date')
-    def _compute_noshow_available_date(self):
-        """Call center availability = no-show flag date + configurable window."""
+    @api.model
+    def _noshow_window_days(self):
+        """Current commercial priority window, in days (system parameter)."""
         try:
-            window_days = int(self.env['ir.config_parameter'].sudo().get_param(
+            return int(self.env['ir.config_parameter'].sudo().get_param(
                 NOSHOW_WINDOW_PARAM, NOSHOW_WINDOW_DEFAULT))
         except (TypeError, ValueError):
-            window_days = int(NOSHOW_WINDOW_DEFAULT)
+            return int(NOSHOW_WINDOW_DEFAULT)
 
+    @api.depends('x_noshow_date')
+    def _compute_noshow_available_date(self):
+        """Call center availability = no-show flag date + configurable window.
+
+        Not stored: reads the parameter on each compute so a change to the
+        window takes effect immediately when the event is read.
+        """
+        window_days = self._noshow_window_days()
         for record in self:
             if record.x_noshow_date:
                 record.x_noshow_available_date = (
                     record.x_noshow_date + datetime.timedelta(days=window_days))
             else:
                 record.x_noshow_available_date = False
+
+    def _check_call_center_reschedule_allowed(self):
+        """Hard-enforce the commercial window on reschedules.
+
+        A call-center user may not move a no-show's date before it is available,
+        nor one the commercial marked 'Client pas intéressé'. Commercials and
+        system/sudo writes are unaffected.
+        """
+        self.ensure_one()
+        if self.env.su or self.env.user.has_group('base.group_system'):
+            return
+        if self.appointment_status != 'no_show' or not self._is_call_center_appointment():
+            return
+        if not self._user_in_group_named(CALL_CENTER_GROUP_NAME):
+            return
+
+        if self.x_noshow_disposition == NOSHOW_DISPOSITION_LOCKING:
+            raise UserError(
+                "Ce no-show est marqué « Client pas intéressé » : le call center "
+                "ne peut pas le replanifier."
+            )
+
+        available = self.x_noshow_available_date
+        if not available or available > fields.Datetime.now():
+            raise UserError(
+                "Ce no-show n'est pas encore disponible pour le call center "
+                "(fenêtre de priorité commerciale en cours jusqu'au %s)."
+                % (available and fields.Datetime.to_string(available) or '—')
+            )
+
+    @api.model
+    def _action_noshow_recyclage_queue(self):
+        """Build the call-center recyclage queue action with a domain that
+        reflects the current window parameter (evaluated at click time)."""
+        cutoff = fields.Datetime.now() - datetime.timedelta(days=self._noshow_window_days())
+        list_view = self.env.ref(
+            'bgg_custom_dev.view_calendar_event_noshow_queue_list', raise_if_not_found=False)
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'No-shows à recycler',
+            'res_model': 'calendar.event',
+            'view_mode': 'list,form',
+            'views': [(list_view.id if list_view else False, 'list'), (False, 'form')],
+            'domain': [
+                ('appointment_status', '=', 'no_show'),
+                ('x_is_call_center_appt', '=', True),
+                ('x_noshow_disposition', '!=', NOSHOW_DISPOSITION_LOCKING),
+                ('x_noshow_date', '!=', False),
+                ('x_noshow_date', '<=', cutoff),
+            ],
+            'context': {'create': False},
+            'help': (
+                '<p class="o_view_nocontent_smiley_face">Aucun no-show à recycler '
+                'pour le moment.</p><p>Les no-shows apparaissent ici une fois la '
+                'fenêtre de priorité commerciale écoulée, sauf si le commercial '
+                'les a replanifiés ou marqués « Client pas intéressé ».</p>'
+            ),
+        }
 
     def _sync_noshow_date(self, record):
         """Stamp x_noshow_date once when a call-center appointment is flagged
