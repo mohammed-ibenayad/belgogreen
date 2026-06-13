@@ -3,12 +3,27 @@
 import datetime
 import logging
 from odoo import api, fields, models
+from odoo.exceptions import ValidationError, UserError
 
 _logger = logging.getLogger(__name__)
 
 # Appointment reference constants for automation rules
 ALL_APPOINTMENT_REFS = ['APT-ENERG-CNT', 'APT-ENERG-COM', 'APT-NISOL-CNT', 'APT-NISOL-COM']
 CALL_CENTER_APPOINTMENT_REFS = ['APT-ENERG-CNT', 'APT-NISOL-CNT']
+
+# No-show treatment workflow
+# System parameter holding the commercial's priority window (in days) after the
+# missed appointment, before a no-show becomes available to the call center.
+NOSHOW_WINDOW_PARAM = 'bgg.noshow_commercial_window_days'
+NOSHOW_WINDOW_DEFAULT = '2'
+# The "Commercial" and "Call Center" roles were created manually outside the
+# custom modules; they are resolved by name (same pattern as sale_order.py and
+# avis_count_report.py).
+COMMERCIAL_GROUP_NAME = 'Commercial'
+CALL_CENTER_GROUP_NAME = 'Call Center'
+# Outcomes allowed for each branch of the no-show decision tree.
+NOSHOW_RESULTS_SUIVI = ('vente', 'annule')
+NOSHOW_RESULTS_RECYCLAGE = ('pas_de_rdv', 'replanifie')
 
 
 class CalendarEvent(models.Model):
@@ -53,6 +68,51 @@ class CalendarEvent(models.Model):
         help='Partner who made the appointment on behalf of the customer (e.g., Call Center agent)'
     )
 
+    # ------------------------------------------------------------------
+    # No-show treatment workflow (call-center appointments only)
+    # ------------------------------------------------------------------
+    # Axis 1 - ownership decision taken after the no-show.
+    x_noshow_traitement = fields.Selection(
+        selection=[
+            ('suivi_commercial', 'Suivi commercial'),
+            ('recyclage', 'Pas de suivi commercial (recyclage call center)'),
+        ],
+        string='Traitement No-show',
+        tracking=True,
+        help="Comment le no-show est traité. 'Suivi commercial' verrouille le "
+             "dossier côté commercial ; 'Recyclage' indique que le call center "
+             "le reprend.",
+    )
+
+    # Axis 2 - outcome, constrained by the chosen treatment (see _check_noshow_consistency).
+    x_noshow_resultat = fields.Selection(
+        selection=[
+            ('vente', 'Vente'),
+            ('annule', 'Annulé'),
+            ('pas_de_rdv', 'Pas de rendez-vous'),
+            ('replanifie', 'Replanification du même rendez-vous'),
+        ],
+        string='Résultat No-show',
+        tracking=True,
+        help="Résultat final du no-show. Vente/Annulé pour un suivi commercial ; "
+             "Replanification/Pas de rendez-vous pour un recyclage.",
+    )
+
+    # Date from which the call center may recycle the no-show (missed RDV + window).
+    x_noshow_available_date = fields.Datetime(
+        string='Disponible call center le',
+        compute='_compute_noshow_available_date',
+        store=True,
+        help="Date à partir de laquelle le call center peut recycler ce no-show, "
+             "une fois la fenêtre de priorité commerciale écoulée.",
+    )
+
+    # View helper: True when the appointment is a call-center appointment.
+    x_is_call_center_appt = fields.Boolean(
+        string='Is Call Center Appointment',
+        compute='_compute_is_call_center_appt',
+    )
+
     @api.model_create_multi
     def create(self, vals_list):
         """Override create to set organizer and trigger automation rules on new calendar events"""
@@ -69,6 +129,11 @@ class CalendarEvent(models.Model):
 
     def write(self, vals):
         """Override write to trigger automation rules on updates"""
+        # Enforce the no-show treatment state machine (role + timing) before writing.
+        if 'x_noshow_traitement' in vals or 'x_noshow_resultat' in vals:
+            for record in self:
+                record._check_noshow_transition(vals)
+
         result = super(CalendarEvent, self).write(vals)
 
         # Skip automation processing if we're already in an automated update
@@ -111,6 +176,144 @@ class CalendarEvent(models.Model):
                         break
 
             record.x_studio_commercial = commercial_attendee.name if commercial_attendee else False
+
+    # ------------------------------------------------------------------
+    # No-show treatment helpers
+    # ------------------------------------------------------------------
+
+    def _user_in_group_named(self, group_name):
+        """Return True when the current user belongs to the named group.
+
+        The 'Commercial' and 'Call Center' groups were created manually outside
+        the custom modules, so they are resolved by name rather than by xmlid.
+        """
+        group = self.env['res.groups'].sudo().search([('name', '=', group_name)], limit=1)
+        return bool(group) and group.id in self.env.user.group_ids.ids
+
+    def _is_call_center_appointment(self):
+        """Return True when this event is a call-center appointment (CNT)."""
+        self.ensure_one()
+        appt_type = self.appointment_type_id
+        return bool(
+            appt_type
+            and appt_type.x_appointment_ref
+            and appt_type.x_appointment_ref in CALL_CENTER_APPOINTMENT_REFS
+        )
+
+    @api.depends('appointment_type_id', 'appointment_type_id.x_appointment_ref')
+    def _compute_is_call_center_appt(self):
+        for record in self:
+            record.x_is_call_center_appt = record._is_call_center_appointment()
+
+    @api.depends('appointment_status', 'start', 'stop',
+                 'appointment_type_id', 'appointment_type_id.x_appointment_ref')
+    def _compute_noshow_available_date(self):
+        """Compute when the call center may recycle a no-show.
+
+        Anchored on the missed appointment time (stop, falling back to start)
+        plus the configurable commercial priority window.
+        """
+        try:
+            window_days = int(self.env['ir.config_parameter'].sudo().get_param(
+                NOSHOW_WINDOW_PARAM, NOSHOW_WINDOW_DEFAULT))
+        except (TypeError, ValueError):
+            window_days = int(NOSHOW_WINDOW_DEFAULT)
+
+        for record in self:
+            anchor = record.stop or record.start
+            if (record.appointment_status == 'no_show'
+                    and anchor
+                    and record._is_call_center_appointment()):
+                record.x_noshow_available_date = anchor + datetime.timedelta(days=window_days)
+            else:
+                record.x_noshow_available_date = False
+
+    @api.constrains('x_noshow_traitement', 'x_noshow_resultat')
+    def _check_noshow_consistency(self):
+        """Keep the outcome consistent with the chosen treatment (the four valid leaves)."""
+        for record in self:
+            if not record.x_noshow_resultat:
+                continue
+            if not record.x_noshow_traitement:
+                raise ValidationError(
+                    "Un résultat de no-show ne peut pas être renseigné sans traitement."
+                )
+            if (record.x_noshow_traitement == 'suivi_commercial'
+                    and record.x_noshow_resultat not in NOSHOW_RESULTS_SUIVI):
+                raise ValidationError(
+                    "Pour un suivi commercial, le résultat doit être 'Vente' ou 'Annulé'."
+                )
+            if (record.x_noshow_traitement == 'recyclage'
+                    and record.x_noshow_resultat not in NOSHOW_RESULTS_RECYCLAGE):
+                raise ValidationError(
+                    "Pour un recyclage, le résultat doit être 'Replanification du même "
+                    "rendez-vous' ou 'Pas de rendez-vous'."
+                )
+
+    def _check_noshow_transition(self, vals):
+        """Guard the no-show state machine by role and timing.
+
+        - 'suivi commercial' may only be set by a commercial, while no treatment
+          has been chosen yet (the commercial keeps first-claim priority).
+        - 'recyclage' may only be set by a call-center agent, once the commercial
+          window has elapsed and the commercial has not claimed it.
+        - Once a treatment is chosen it cannot be flipped to the other (mutual lock).
+        - Outcomes can only be set by the role that owns the treatment.
+
+        System/sudo writes bypass the guard so existing automations are unaffected.
+        """
+        self.ensure_one()
+
+        # Only governs call-center appointments; ignore privileged/automated writes.
+        if self.env.su or self.env.user.has_group('base.group_system'):
+            return
+        if not self._is_call_center_appointment():
+            return
+
+        is_commercial = self._user_in_group_named(COMMERCIAL_GROUP_NAME)
+        is_call_center = self._user_in_group_named(CALL_CENTER_GROUP_NAME)
+
+        old_traitement = self.x_noshow_traitement
+
+        # --- Treatment transitions ---
+        if 'x_noshow_traitement' in vals and vals['x_noshow_traitement'] != old_traitement:
+            target = vals['x_noshow_traitement']
+
+            # Mutual lock: a chosen treatment cannot be switched to the other.
+            if old_traitement and target and old_traitement != target:
+                raise UserError(
+                    "Ce no-show est déjà verrouillé (%s) et ne peut plus être modifié."
+                    % dict(self._fields['x_noshow_traitement'].selection).get(old_traitement)
+                )
+
+            if target == 'suivi_commercial':
+                if not is_commercial:
+                    raise UserError(
+                        "Seul un commercial peut prendre en charge ce no-show (suivi commercial)."
+                    )
+            elif target == 'recyclage':
+                if not is_call_center:
+                    raise UserError(
+                        "Seul le call center peut recycler ce no-show."
+                    )
+                if (not self.x_noshow_available_date
+                        or self.x_noshow_available_date > fields.Datetime.now()):
+                    raise UserError(
+                        "Ce no-show n'est pas encore disponible pour le call center "
+                        "(fenêtre de priorité commerciale en cours)."
+                    )
+
+        # --- Outcome transitions ---
+        if vals.get('x_noshow_resultat'):
+            effective_traitement = vals.get('x_noshow_traitement', old_traitement)
+            if effective_traitement == 'suivi_commercial' and not is_commercial:
+                raise UserError(
+                    "Seul un commercial peut renseigner le résultat d'un suivi commercial."
+                )
+            if effective_traitement == 'recyclage' and not is_call_center:
+                raise UserError(
+                    "Seul le call center peut renseigner le résultat d'un recyclage."
+                )
 
     def _process_calendar_event(self, record, vals=None):
         """Process all automation rules for calendar events"""
