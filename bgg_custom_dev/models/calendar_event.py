@@ -189,8 +189,30 @@ class CalendarEvent(models.Model):
         The 'Commercial' and 'Call Center' groups were created manually outside
         the custom modules, so they are resolved by name rather than by xmlid.
         """
-        group = self.env['res.groups'].sudo().search([('name', '=', group_name)], limit=1)
+        group = self._find_group_by_name(group_name)
         return bool(group) and group.id in self.env.user.group_ids.ids
+
+    @api.model
+    def _find_group_by_name(self, group_name):
+        """Find a res.groups by name, robust to its translatable ``name`` field.
+
+        A plain search only matches the value in the current language, which can
+        miss a group whose name is stored under another language (e.g. during a
+        migration that runs in the system language). Fall back to scanning each
+        installed language.
+        """
+        groups = self.env['res.groups'].sudo()
+        # Case-insensitive match: the same group may be stored with different
+        # casing per language (e.g. en_US 'commercial' vs fr_BE 'Commercial').
+        group = groups.search([('name', '=ilike', group_name)], limit=1)
+        if group:
+            return group
+        for lang_code, _label in self.env['res.lang'].get_installed():
+            group = groups.with_context(lang=lang_code).search(
+                [('name', '=ilike', group_name)], limit=1)
+            if group:
+                return group
+        return groups.browse()
 
     def _is_call_center_appointment(self):
         """Return True when this event is a call-center appointment (CNT)."""
