@@ -3,6 +3,7 @@
 import datetime
 from odoo.tests.common import TransactionCase
 from odoo.tests import tagged
+from odoo.exceptions import ValidationError, UserError
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -694,3 +695,169 @@ class TestCalendarEvent(TransactionCase):
                         "x_avis_count should be 7 after update")
         self.assertEqual(event.x_recommandation_count, 2,
                         "x_recommandation_count should be 2 after update")
+
+
+@tagged('post_install', '-at_install')
+class TestCalendarEventNoShowTreatment(TransactionCase):
+    """Test suite for the no-show treatment workflow (CNT appointments).
+
+    Covers the available-date computation, the state-machine guard
+    (role + timing + mutual lock) and the outcome consistency constraint.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
+        # Fixed commercial priority window for deterministic tests.
+        cls.env['ir.config_parameter'].sudo().set_param(
+            'bgg.noshow_commercial_window_days', '2')
+
+        cls.commercial_group = cls.env.ref('bgg_custom_dev.group_bgg_commercial')
+        cls.call_center_group = cls.env.ref('bgg_custom_dev.group_bgg_call_center')
+        base_user_group = cls.env.ref('base.group_user')
+
+        cls.commercial_user = cls.env['res.users'].create({
+            'name': 'NoShow Commercial',
+            'login': 'noshow_commercial',
+            'email': 'noshow_commercial@example.com',
+            'group_ids': [(6, 0, [base_user_group.id, cls.commercial_group.id])],
+        })
+        cls.cc_user = cls.env['res.users'].create({
+            'name': 'NoShow Call Center',
+            'login': 'noshow_cc',
+            'email': 'noshow_cc@example.com',
+            'group_ids': [(6, 0, [base_user_group.id, cls.call_center_group.id])],
+        })
+
+        cls.cnt_type = None
+        cls.com_type = None
+        if 'appointment.type' in cls.env:
+            cls.cnt_type = cls.env['appointment.type'].sudo().create({
+                'name': 'NoShow CNT Type',
+                'x_appointment_ref': 'APT-ENERG-CNT',
+            })
+            cls.com_type = cls.env['appointment.type'].sudo().create({
+                'name': 'NoShow COM Type',
+                'x_appointment_ref': 'APT-ENERG-COM',
+            })
+
+    def _create_noshow(self, stop_offset_days, owner=None, appointment_type=None):
+        """Create a no-show calendar event whose missed time is `stop_offset_days`
+        days in the past. Both test users are attendees so they can access it.
+        """
+        owner = owner or self.env.user
+        appointment_type = appointment_type or self.cnt_type
+        stop = datetime.datetime.now() - datetime.timedelta(days=stop_offset_days)
+        return self.env['calendar.event'].create({
+            'name': 'NoShow Event',
+            'start': stop - datetime.timedelta(hours=1),
+            'stop': stop,
+            'user_id': owner.id,
+            'appointment_type_id': appointment_type.id,
+            'appointment_status': 'no_show',
+            'partner_ids': [(6, 0, [
+                self.commercial_user.partner_id.id,
+                self.cc_user.partner_id.id,
+            ])],
+        })
+
+    def test_available_date_computed(self):
+        """available_date = missed appointment time + configured window."""
+        if not self.cnt_type:
+            self.skipTest("appointment module not installed")
+        event = self._create_noshow(5)
+        self.assertTrue(event.x_noshow_available_date,
+                        "available_date should be set for a CNT no-show")
+        self.assertEqual(event.x_noshow_available_date,
+                         event.stop + datetime.timedelta(days=2),
+                         "available_date should be stop + window days")
+
+    def test_available_date_blank_when_not_noshow(self):
+        """available_date stays empty when the event is not a no-show."""
+        if not self.cnt_type:
+            self.skipTest("appointment module not installed")
+        event = self._create_noshow(5)
+        event.write({'appointment_status': 'booked'})
+        self.assertFalse(event.x_noshow_available_date,
+                         "available_date should be empty when not no_show")
+
+    def test_commercial_can_claim_suivi(self):
+        """A commercial can claim a no-show (suivi commercial)."""
+        if not self.cnt_type:
+            self.skipTest("appointment module not installed")
+        event = self._create_noshow(0, owner=self.commercial_user)
+        event.with_user(self.commercial_user).write(
+            {'x_noshow_traitement': 'suivi_commercial'})
+        self.assertEqual(event.x_noshow_traitement, 'suivi_commercial')
+
+    def test_call_center_cannot_claim_suivi(self):
+        """The call center cannot set 'suivi commercial'."""
+        if not self.cnt_type:
+            self.skipTest("appointment module not installed")
+        event = self._create_noshow(5)
+        with self.assertRaises(UserError):
+            event.with_user(self.cc_user).write(
+                {'x_noshow_traitement': 'suivi_commercial'})
+
+    def test_call_center_blocked_before_window(self):
+        """The call center cannot recycle before the commercial window elapses."""
+        if not self.cnt_type:
+            self.skipTest("appointment module not installed")
+        event = self._create_noshow(0)  # available_date = now + 2 days
+        with self.assertRaises(UserError):
+            event.with_user(self.cc_user).write(
+                {'x_noshow_traitement': 'recyclage'})
+
+    def test_call_center_can_recycle_after_window(self):
+        """The call center can recycle once the window has elapsed."""
+        if not self.cnt_type:
+            self.skipTest("appointment module not installed")
+        event = self._create_noshow(5, owner=self.cc_user)
+        event.with_user(self.cc_user).write(
+            {'x_noshow_traitement': 'recyclage'})
+        self.assertEqual(event.x_noshow_traitement, 'recyclage')
+
+    def test_mutual_lock(self):
+        """Once the commercial claims it, it cannot be flipped to recyclage."""
+        if not self.cnt_type:
+            self.skipTest("appointment module not installed")
+        event = self._create_noshow(5, owner=self.commercial_user)
+        event.with_user(self.commercial_user).write(
+            {'x_noshow_traitement': 'suivi_commercial'})
+        with self.assertRaises(UserError):
+            event.with_user(self.cc_user).write(
+                {'x_noshow_traitement': 'recyclage'})
+
+    def test_outcome_constraint_invalid_combo(self):
+        """A 'replanifie' outcome is invalid under a suivi commercial."""
+        if not self.cnt_type:
+            self.skipTest("appointment module not installed")
+        event = self._create_noshow(5, owner=self.commercial_user)
+        event.with_user(self.commercial_user).write(
+            {'x_noshow_traitement': 'suivi_commercial'})
+        with self.assertRaises(ValidationError):
+            event.with_user(self.commercial_user).write(
+                {'x_noshow_resultat': 'replanifie'})
+
+    def test_outcome_valid_combo(self):
+        """A 'vente' outcome is valid under a suivi commercial."""
+        if not self.cnt_type:
+            self.skipTest("appointment module not installed")
+        event = self._create_noshow(5, owner=self.commercial_user)
+        event.with_user(self.commercial_user).write({
+            'x_noshow_traitement': 'suivi_commercial',
+            'x_noshow_resultat': 'vente',
+        })
+        self.assertEqual(event.x_noshow_resultat, 'vente')
+
+    def test_non_call_center_appointment_not_guarded(self):
+        """The guard only governs CNT appointments; COM events are untouched."""
+        if not self.com_type:
+            self.skipTest("appointment module not installed")
+        event = self._create_noshow(5, owner=self.cc_user,
+                                    appointment_type=self.com_type)
+        # No role error even though a call-center user sets 'suivi_commercial'.
+        event.with_user(self.cc_user).write(
+            {'x_noshow_traitement': 'suivi_commercial'})
+        self.assertEqual(event.x_noshow_traitement, 'suivi_commercial')

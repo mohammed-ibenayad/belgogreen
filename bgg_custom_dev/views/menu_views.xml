@@ -35,4 +35,18 @@
               groups="bgg_custom_dev.group_bgg_dashboard"
               sequence="30"/>
 
+    <!-- Call center working queue (top-level, visible to call-center agents) -->
+    <menuitem id="menu_bgg_noshow_recyclage_root"
+              name="No-shows à recycler"
+              groups="bgg_custom_dev.group_bgg_call_center"
+              web_icon="fa-recycle,#017e84,#ffffff"
+              sequence="101"/>
+
+    <menuitem id="menu_bgg_noshow_recyclage_queue"
+              name="No-shows à recycler"
+              parent="menu_bgg_noshow_recyclage_root"
+              action="bgg_custom_dev.action_noshow_recyclage_queue"
+              groups="bgg_custom_dev.group_bgg_call_center"
+              sequence="10"/>
+
 </odoo>

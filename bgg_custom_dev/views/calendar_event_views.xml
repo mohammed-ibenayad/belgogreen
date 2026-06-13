@@ -30,8 +30,57 @@
                         </group>
                     </group>
                 </page>
+
+                <!-- No-show treatment workflow (call-center appointments only) -->
+                <page string="Suivi No-show" name="page_noshow"
+                      invisible="not x_is_call_center_appt or (appointment_status != 'no_show' and not x_noshow_traitement)">
+                    <field name="x_is_call_center_appt" invisible="1"/>
+                    <group>
+                        <group string="Traitement">
+                            <field name="x_noshow_traitement"/>
+                            <field name="x_noshow_resultat"
+                                   readonly="not x_noshow_traitement"/>
+                        </group>
+                        <group string="Disponibilité call center">
+                            <field name="x_noshow_available_date" readonly="1"/>
+                        </group>
+                    </group>
+                    <div class="text-muted">
+                        Le commercial est prioritaire jusqu'à la date ci-dessus. Sans
+                        prise en charge (suivi commercial) de sa part, le no-show devient
+                        recyclable par le call center.
+                    </div>
+                </page>
             </xpath>
 
+        </field>
+    </record>
+
+    <!-- Call center working queue: CNT no-shows available for recyclage -->
+    <record id="view_calendar_event_noshow_queue_list" model="ir.ui.view">
+        <field name="name">calendar.event.noshow.queue.list</field>
+        <field name="model">calendar.event</field>
+        <field name="arch" type="xml">
+            <list string="No-shows à recycler" create="false">
+                <field name="start" string="Date RDV"/>
+                <field name="name" string="Sujet"/>
+                <field name="x_studio_commercial" string="Commercial"/>
+                <field name="x_noshow_available_date" string="Disponible depuis"/>
+                <field name="x_noshow_traitement" string="Traitement"/>
+                <field name="x_noshow_resultat" string="Résultat"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_noshow_recyclage_queue" model="ir.actions.act_window">
+        <field name="name">No-shows à recycler</field>
+        <field name="res_model">calendar.event</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('appointment_status', '=', 'no_show'), ('x_noshow_traitement', '=', False), ('x_noshow_available_date', '!=', False), ('x_noshow_available_date', '&lt;=', datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))]</field>
+        <field name="context">{'search_default_x_noshow_available_date': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiley_face">Aucun no-show à recycler pour le moment.</p>
+            <p>Les no-shows apparaissent ici une fois la fenêtre de priorité commerciale écoulée, s'ils n'ont pas été pris en charge par le commercial.</p>
         </field>
     </record>
 

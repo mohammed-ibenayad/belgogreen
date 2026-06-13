@@ -4,4 +4,15 @@
         <field name="name">BGG Dashboard</field>
         <field name="comment">Grants access to BGG Dashboards (Suivi Commercial, Avis &amp; Recommandations)</field>
     </record>
+
+    <!-- Roles used by the No-show treatment workflow -->
+    <record id="group_bgg_commercial" model="res.groups">
+        <field name="name">BGG Commercial</field>
+        <field name="comment">Commerciaux BelGoGreen. Peuvent prendre en charge (suivi commercial) un no-show pendant la fenêtre de priorité commerciale.</field>
+    </record>
+
+    <record id="group_bgg_call_center" model="res.groups">
+        <field name="name">BGG Call Center</field>
+        <field name="comment">Agents du call center BelGoGreen. Peuvent recycler un no-show une fois la fenêtre commerciale écoulée et s'il n'a pas été pris en charge par le commercial.</field>
+    </record>
 </odoo>
