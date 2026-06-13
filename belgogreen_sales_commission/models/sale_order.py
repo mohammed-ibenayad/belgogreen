@@ -164,12 +164,18 @@ class SaleOrder(models.Model):
             _logger.info("=== COMMISSION V2 === BLOCKED: invoice total less than SO total")
             return result
 
-        # All checks passed
+        # All checks passed. The eligibility gate above compares TTC totals (the
+        # client must have paid at least the SO total), but the commission itself
+        # is calculated on the untaxed (HTVA) amount, never on the VAT.
+        base_amount = sum(eligible_invoices.mapped('amount_untaxed'))
         result['eligible'] = True
         result['eligible_invoices'] = eligible_invoices
-        result['base_amount'] = eligible_total
+        result['base_amount'] = base_amount
 
-        _logger.info("=== COMMISSION V2 === ELIGIBLE: all checks passed, base_amount=%.2f", eligible_total)
+        _logger.info(
+            "=== COMMISSION V2 === ELIGIBLE: all checks passed, base_amount (HTVA)=%.2f",
+            base_amount
+        )
         return result
 
     def _generate_commissions(self):

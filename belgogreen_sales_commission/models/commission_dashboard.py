@@ -443,7 +443,8 @@ class CommissionDashboard(models.TransientModel):
                 invoice_date = max(dates)
 
         period = invoice_date.strftime('%Y-%m')
-        base_amount = order.amount_total  # = sum of eligible invoices (validated upstream)
+        # Commission is calculated on the untaxed (HTVA) amount, never on the VAT.
+        base_amount = order.amount_untaxed
 
         # Create commission record — one per SO, not per invoice
         try:
