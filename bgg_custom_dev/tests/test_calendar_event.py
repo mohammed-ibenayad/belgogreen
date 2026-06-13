@@ -713,8 +713,14 @@ class TestCalendarEventNoShowTreatment(TransactionCase):
         cls.env['ir.config_parameter'].sudo().set_param(
             'bgg.noshow_commercial_window_days', '2')
 
-        cls.commercial_group = cls.env.ref('bgg_custom_dev.group_bgg_commercial')
-        cls.call_center_group = cls.env.ref('bgg_custom_dev.group_bgg_call_center')
+        # The 'Commercial' and 'Call Center' groups are created manually in
+        # production (outside the modules); resolve-or-create them by name so the
+        # by-name lookups in the guard find them in a fresh test database.
+        Groups = cls.env['res.groups'].sudo()
+        cls.commercial_group = (Groups.search([('name', '=', 'Commercial')], limit=1)
+                                or Groups.create({'name': 'Commercial'}))
+        cls.call_center_group = (Groups.search([('name', '=', 'Call Center')], limit=1)
+                                 or Groups.create({'name': 'Call Center'}))
         base_user_group = cls.env.ref('base.group_user')
 
         cls.commercial_user = cls.env['res.users'].create({

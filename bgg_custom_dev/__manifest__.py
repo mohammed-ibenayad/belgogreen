@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen Custom Development',
-    'version': '19.0.1.1.0',
+    'version': '19.0.1.2.0',
     'category': 'Customizations',
     'summary': 'Custom business logic and automation for BelGoGreen',
     'description': """
@@ -78,6 +78,7 @@
             'bgg_custom_dev/static/src/scss/call_center_dashboard.scss',
         ],
     },
+    'post_init_hook': 'link_external_groups',
     'installable': True,
     'application': False,
     'auto_install': False,

@@ -16,6 +16,11 @@ CALL_CENTER_APPOINTMENT_REFS = ['APT-ENERG-CNT', 'APT-NISOL-CNT']
 # missed appointment, before a no-show becomes available to the call center.
 NOSHOW_WINDOW_PARAM = 'bgg.noshow_commercial_window_days'
 NOSHOW_WINDOW_DEFAULT = '2'
+# The "Commercial" and "Call Center" roles were created manually outside the
+# custom modules; they are resolved by name (same pattern as sale_order.py and
+# avis_count_report.py).
+COMMERCIAL_GROUP_NAME = 'Commercial'
+CALL_CENTER_GROUP_NAME = 'Call Center'
 # Outcomes allowed for each branch of the no-show decision tree.
 NOSHOW_RESULTS_SUIVI = ('vente', 'annule')
 NOSHOW_RESULTS_RECYCLAGE = ('pas_de_rdv', 'replanifie')
@@ -176,6 +181,15 @@ class CalendarEvent(models.Model):
     # No-show treatment helpers
     # ------------------------------------------------------------------
 
+    def _user_in_group_named(self, group_name):
+        """Return True when the current user belongs to the named group.
+
+        The 'Commercial' and 'Call Center' groups were created manually outside
+        the custom modules, so they are resolved by name rather than by xmlid.
+        """
+        group = self.env['res.groups'].sudo().search([('name', '=', group_name)], limit=1)
+        return bool(group) and group.id in self.env.user.group_ids.ids
+
     def _is_call_center_appointment(self):
         """Return True when this event is a call-center appointment (CNT)."""
         self.ensure_one()
@@ -256,8 +270,8 @@ class CalendarEvent(models.Model):
         if not self._is_call_center_appointment():
             return
 
-        is_commercial = self.env.user.has_group('bgg_custom_dev.group_bgg_commercial')
-        is_call_center = self.env.user.has_group('bgg_custom_dev.group_bgg_call_center')
+        is_commercial = self._user_in_group_named(COMMERCIAL_GROUP_NAME)
+        is_call_center = self._user_in_group_named(CALL_CENTER_GROUP_NAME)
 
         old_traitement = self.x_noshow_traitement
 
