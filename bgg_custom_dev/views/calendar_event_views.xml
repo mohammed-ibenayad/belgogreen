@@ -17,6 +17,13 @@
                 </div>
             </xpath>
 
+            <!-- Control fields hoisted out of the (potentially hidden) page so
+                 their values are always loaded for the visibility rule. -->
+            <xpath expr="//notebook" position="before">
+                <field name="x_is_call_center_appt" invisible="1"/>
+                <field name="x_noshow_traitement" invisible="1"/>
+            </xpath>
+
             <!-- Add new "Avis &amp; Recommandations" tab in the notebook -->
             <xpath expr="//notebook" position="inside">
                 <page string="Avis &amp; Recommandations" name="page_avis_recommandations"
@@ -34,7 +41,6 @@
                 <!-- No-show treatment workflow (call-center appointments only) -->
                 <page string="Suivi No-show" name="page_noshow"
                       invisible="not x_is_call_center_appt or (appointment_status != 'no_show' and not x_noshow_traitement)">
-                    <field name="x_is_call_center_appt" invisible="1"/>
                     <group>
                         <group string="Traitement">
                             <field name="x_noshow_traitement"/>
