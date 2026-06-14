@@ -102,6 +102,7 @@ class CalendarEvent(models.Model):
     x_noshow_available_date = fields.Datetime(
         string='Disponible call center le',
         compute='_compute_noshow_available_date',
+        search='_search_noshow_available_date',
         help="Date à partir de laquelle le call center peut recycler ce no-show, "
              "une fois la fenêtre de priorité commerciale écoulée.",
     )
@@ -307,6 +308,19 @@ class CalendarEvent(models.Model):
                     record.x_noshow_date + datetime.timedelta(days=window_days))
             else:
                 record.x_noshow_available_date = False
+
+    def _search_noshow_available_date(self, operator, value):
+        """Make the (non-stored) availability date searchable.
+
+        available = x_noshow_date + window, a constant shift, so
+        ``available <op> value`` is equivalent to
+        ``x_noshow_date <op> (value - window)`` on the stored anchor. Events
+        with no anchor (NULL) are naturally excluded by the comparison, which is
+        correct: without a no-show date they are not available.
+        """
+        window = datetime.timedelta(days=self._noshow_window_days())
+        value = fields.Datetime.to_datetime(value)
+        return [('x_noshow_date', operator, value - window)]
 
     def _check_call_center_reschedule_allowed(self):
         """Hard-enforce the commercial window on reschedules.

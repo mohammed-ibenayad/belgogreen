@@ -67,8 +67,10 @@
 
     <!-- Add a "No-shows à recycler" filter to the calendar events search view.
          Candidates = call-center no-shows the commercial has not closed
-         ('Client pas intéressé'). The exact availability window (parameter)
-         is enforced on reschedule and shown by "Disponible call center le". -->
+         ('Client pas intéressé') AND whose priority window has elapsed, so the
+         list shows only no-shows actually available for the call center to take.
+         The window length comes from the system parameter (see the field's
+         search method); the reschedule guard enforces it again on write. -->
     <record id="view_calendar_event_search_inherit_bgg" model="ir.ui.view">
         <field name="name">calendar.event.search.inherit.bgg</field>
         <field name="model">calendar.event</field>
@@ -78,7 +80,7 @@
                 <separator/>
                 <filter name="noshow_a_recycler"
                         string="No-shows à recycler"
-                        domain="[('appointment_status', '=', 'no_show'), ('appointment_type_id.x_appointment_ref', 'in', ['APT-ENERG-CNT', 'APT-NISOL-CNT']), ('x_noshow_disposition', '!=', 'pas_interesse')]"/>
+                        domain="[('appointment_status', '=', 'no_show'), ('appointment_type_id.x_appointment_ref', 'in', ['APT-ENERG-CNT', 'APT-NISOL-CNT']), ('x_noshow_disposition', '!=', 'pas_interesse'), ('x_noshow_available_date', '&lt;=', datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))]"/>
             </xpath>
         </field>
     </record>
