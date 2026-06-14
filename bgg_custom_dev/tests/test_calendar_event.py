@@ -801,9 +801,12 @@ class TestCalendarEventNoShowTreatment(TransactionCase):
         event.write({'x_noshow_date': datetime.datetime.now() - datetime.timedelta(days=days)})
 
     def _queue_events(self):
-        """Search using the call-center recyclage action's dynamic domain."""
-        domain = self.env['calendar.event']._action_noshow_recyclage_queue()['domain']
-        return self.env['calendar.event'].search(domain)
+        """Search using the same domain as the 'No-shows à recycler' filter."""
+        return self.env['calendar.event'].search([
+            ('appointment_status', '=', 'no_show'),
+            ('x_is_call_center_appt', '=', True),
+            ('x_noshow_disposition', '!=', 'pas_interesse'),
+        ])
 
     def test_noshow_date_stamped_and_available(self):
         """Flagging a CNT no-show stamps the date; available = date + window."""
@@ -837,6 +840,24 @@ class TestCalendarEventNoShowTreatment(TransactionCase):
         self.assertFalse(event.x_noshow_available_date,
                          "available_date should be empty when not no_show")
 
+    def test_resending_unchanged_dates_keeps_noshow(self):
+        """Saving with re-sent but unchanged start/stop (as the calendar form
+        does) must not flip the no-show back to booked."""
+        if not self.cnt_type:
+            self.skipTest("appointment module not installed")
+        event = self._create_noshow()
+        self.assertEqual(event.appointment_status, 'no_show')
+        event.write({
+            'start': event.start,
+            'stop': event.stop,
+            'x_noshow_disposition': 'autre',
+        })
+        self.assertEqual(event.appointment_status, 'no_show',
+                         "Re-sending unchanged dates must not reset the status")
+        self.assertTrue(event.x_noshow_date,
+                        "x_noshow_date must survive a non-reschedule save")
+        self.assertEqual(event.x_noshow_disposition, 'autre')
+
     def test_com_appointment_not_stamped(self):
         """COM appointments are out of scope: no no-show date is stamped."""
         if not self.com_type:
@@ -859,18 +880,18 @@ class TestCalendarEventNoShowTreatment(TransactionCase):
         self.assertIn(empty, queue)
         self.assertIn(joignable, queue)
 
-    def test_queue_excludes_locked_and_in_window(self):
-        """'pas intéressé' (locked) and still-in-window no-shows are excluded."""
+    def test_filter_excludes_locked_only(self):
+        """The recyclage filter excludes 'pas intéressé'; timing is enforced by
+        the reschedule guard, not by the filter, so in-window ones still list."""
         if not self.cnt_type:
             self.skipTest("appointment module not installed")
         locked = self._create_noshow()
-        self._backdate(locked, 5)
         locked.write({'x_noshow_disposition': 'pas_interesse'})
-        in_window = self._create_noshow()  # available_date = now + 2 days
+        in_window = self._create_noshow()  # not yet available, but still a candidate
 
         queue = self._queue_events()
         self.assertNotIn(locked, queue)
-        self.assertNotIn(in_window, queue)
+        self.assertIn(in_window, queue)
 
     def test_only_commercial_can_set_disposition(self):
         """The call center cannot modify the disposition; the commercial can."""

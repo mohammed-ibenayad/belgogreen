@@ -35,11 +35,11 @@ def backfill_noshow_dates(env):
 
 
 def link_external_groups(env):
-    """Link the manually-created groups to module xmlids and gate the
-    call-center recyclage menu/action by the 'Call Center' group.
+    """Link the manually-created 'Commercial'/'Call Center' groups to module
+    xmlids (resolved by name) and backfill the no-show anchor on existing
+    call-center no-shows.
     """
     imd = env['ir.model.data']
-    resolved = {}
 
     for xmlid, name in EXTERNAL_GROUPS.items():
         # res.groups.name is translatable and may be cased differently per
@@ -47,11 +47,9 @@ def link_external_groups(env):
         group = env['calendar.event']._find_group_by_name(name)
         if not group:
             _logger.warning(
-                "BGG no-show workflow: group '%s' not found; menu gating and "
-                "xmlid link skipped. Create the group or assign it manually.",
-                name)
+                "BGG no-show workflow: group '%s' not found; xmlid link skipped. "
+                "Create the group or assign it manually.", name)
             continue
-        resolved[xmlid] = group
 
         record = imd.search([
             ('module', '=', 'bgg_custom_dev'),
@@ -69,17 +67,3 @@ def link_external_groups(env):
             })
 
     backfill_noshow_dates(env)
-
-    # Restrict the recyclage queue (menu + action) to the Call Center group.
-    # Odoo 19 renamed the "groups_id" field to "group_ids".
-    call_center = resolved.get('group_call_center')
-    if call_center:
-        for ref in ('menu_bgg_noshow_recyclage_root',
-                    'menu_bgg_noshow_recyclage_queue'):
-            menu = env.ref('bgg_custom_dev.%s' % ref, raise_if_not_found=False)
-            if menu:
-                menu.group_ids = [(6, 0, [call_center.id])]
-        action = env.ref('bgg_custom_dev.action_noshow_recyclage_queue',
-                         raise_if_not_found=False)
-        if action and 'group_ids' in action._fields:
-            action.group_ids = [(6, 0, [call_center.id])]
