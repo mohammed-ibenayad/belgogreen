@@ -116,11 +116,12 @@ class CalendarEvent(models.Model):
         related='appointment_type_id.x_appointment_ref',
     )
 
-    # View helper: True when the current user is a commercial. Drives the
-    # read-only state of the disposition field (call center can't modify it).
-    x_user_is_commercial = fields.Boolean(
-        string='Current User Is Commercial',
-        compute='_compute_user_is_commercial',
+    # View helper: True when the current user may edit the no-show disposition,
+    # i.e. a commercial or an Odoo administrator. Mirrors the write guard so the
+    # form's read-only state matches who can actually save the field.
+    x_user_can_edit_noshow_disposition = fields.Boolean(
+        string='Current User Can Edit No-show Disposition',
+        compute='_compute_user_can_edit_noshow_disposition',
     )
 
     @api.model_create_multi
@@ -241,10 +242,13 @@ class CalendarEvent(models.Model):
         return bool(group) and group.id in self.env.user.group_ids.ids
 
     @api.depends_context('uid')
-    def _compute_user_is_commercial(self):
-        is_commercial = self._user_in_group_named(COMMERCIAL_GROUP_NAME)
+    def _compute_user_can_edit_noshow_disposition(self):
+        # Same set as the write guard (minus sudo, irrelevant in the form):
+        # a commercial or an Odoo administrator.
+        can_edit = (self._user_in_group_named(COMMERCIAL_GROUP_NAME)
+                    or self.env.user.has_group('base.group_system'))
         for record in self:
-            record.x_user_is_commercial = is_commercial
+            record.x_user_can_edit_noshow_disposition = can_edit
 
     @api.model
     def _find_group_by_name(self, group_name):
