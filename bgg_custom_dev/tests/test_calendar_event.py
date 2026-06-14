@@ -562,6 +562,44 @@ class TestCalendarEvent(TransactionCase):
         self.assertEqual(len(activities), 0,
                         "NoShow activity should not be created for non-no_show status")
 
+    def test_noshow_save_does_not_shift_dates(self):
+        """Regression: saving a no-show event must NOT move start/stop.
+
+        The NoShow activity must not carry calendar_event_id (which made core
+        sync its deadline onto the meeting date, rescheduling the event to
+        "today"), and it must not be re-created on subsequent saves.
+        """
+        if not self.appointment_type_call_center:
+            self.skipTest("Appointment module not installed")
+
+        start = datetime.datetime(2026, 1, 8, 14, 0, 0)
+        stop = datetime.datetime(2026, 1, 8, 15, 0, 0)
+        event = self.env['calendar.event'].create({
+            'name': 'Old NoShow',
+            'start': start,
+            'stop': stop,
+            'appointment_type_id': self.appointment_type_call_center.id,
+            'appointment_status': 'no_show',
+        })
+
+        # Two unrelated edits/saves (the second is where the date used to jump).
+        event.write({'x_avis_count': 1})
+        event.write({'x_recommandation_count': 2})
+
+        self.assertEqual(event.start, start, "start must not shift on save")
+        self.assertEqual(event.stop, stop, "stop must not shift on save")
+
+        activities = self.env['mail.activity'].search([
+            ('res_model', '=', 'calendar.event'),
+            ('res_id', '=', event.id),
+            ('activity_type_id', '=', self.noshow_activity_type.id),
+        ])
+        self.assertEqual(len(activities), 1,
+                         "exactly one NoShow activity, not re-created on each save")
+        self.assertFalse(
+            activities.calendar_event_id,
+            "NoShow activity must not be linked as the meeting's scheduling activity")
+
     # ========================
     # Test 7: Computed Field - x_studio_commercial
     # ========================
