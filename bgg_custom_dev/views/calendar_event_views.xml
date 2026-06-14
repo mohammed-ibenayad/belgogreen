@@ -20,7 +20,7 @@
             <!-- Control fields hoisted out of the (potentially hidden) page so
                  their values are always loaded for the visibility rule. -->
             <xpath expr="//notebook" position="before">
-                <field name="x_is_call_center_appt" invisible="1"/>
+                <field name="x_appointment_ref" invisible="1"/>
                 <field name="x_noshow_disposition" invisible="1"/>
                 <field name="x_user_is_commercial" invisible="1"/>
             </xpath>
@@ -41,7 +41,7 @@
 
                 <!-- No-show treatment workflow (call-center appointments only) -->
                 <page string="Suivi No-show" name="page_noshow"
-                      invisible="not x_is_call_center_appt or (appointment_status != 'no_show' and not x_noshow_disposition)">
+                      invisible="x_appointment_ref not in ['APT-ENERG-CNT', 'APT-NISOL-CNT'] or (appointment_status != 'no_show' and not x_noshow_disposition)">
                     <group>
                         <group string="Suivi commercial">
                             <field name="x_noshow_disposition"
@@ -78,7 +78,7 @@
                 <separator/>
                 <filter name="noshow_a_recycler"
                         string="No-shows à recycler"
-                        domain="[('appointment_status', '=', 'no_show'), ('x_is_call_center_appt', '=', True), ('x_noshow_disposition', '!=', 'pas_interesse')]"/>
+                        domain="[('appointment_status', '=', 'no_show'), ('appointment_type_id.x_appointment_ref', 'in', ['APT-ENERG-CNT', 'APT-NISOL-CNT']), ('x_noshow_disposition', '!=', 'pas_interesse')]"/>
             </xpath>
         </field>
     </record>

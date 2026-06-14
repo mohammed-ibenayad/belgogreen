@@ -804,7 +804,8 @@ class TestCalendarEventNoShowTreatment(TransactionCase):
         """Search using the same domain as the 'No-shows à recycler' filter."""
         return self.env['calendar.event'].search([
             ('appointment_status', '=', 'no_show'),
-            ('x_is_call_center_appt', '=', True),
+            ('appointment_type_id.x_appointment_ref', 'in',
+             ['APT-ENERG-CNT', 'APT-NISOL-CNT']),
             ('x_noshow_disposition', '!=', 'pas_interesse'),
         ])
 
