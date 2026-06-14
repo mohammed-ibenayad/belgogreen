@@ -197,6 +197,38 @@ class TestCalendarEvent(TransactionCase):
         self.assertEqual(event.appointment_status, 'booked',
                         "Appointment status should be reset to 'booked'")
 
+    def test_reschedule_resets_status_without_active_activity(self):
+        """A real reschedule resets no_show -> booked even when the NoShow
+        activity was already closed (the reset must not depend on an open one)."""
+        if not self.appointment_type_call_center:
+            self.skipTest("Appointment module not installed")
+
+        event = self.env['calendar.event'].create({
+            'name': 'Reschedule no activity',
+            'start': datetime.datetime(2026, 1, 8, 16, 0, 0),
+            'stop': datetime.datetime(2026, 1, 8, 17, 30, 0),
+            'appointment_type_id': self.appointment_type_call_center.id,
+            'appointment_status': 'no_show',
+        })
+
+        # Simulate the NoShow activity having been closed earlier: remove it so
+        # the reschedule rule finds no active activity.
+        self.env['mail.activity'].search([
+            ('res_model', '=', 'calendar.event'),
+            ('res_id', '=', event.id),
+            ('activity_type_id', '=', self.noshow_activity_type.id),
+        ]).unlink()
+
+        # Real reschedule (Jan 8 -> Jan 15).
+        event.write({
+            'start': datetime.datetime(2026, 1, 15, 16, 0, 0),
+            'stop': datetime.datetime(2026, 1, 15, 17, 30, 0),
+        })
+
+        self.assertEqual(
+            event.appointment_status, 'booked',
+            "rescheduling must reset the status even with no open NoShow activity")
+
     def test_reschedule_not_triggered_on_other_updates(self):
         """Test that reschedule logic only triggers on date/time changes"""
         # Skip if appointment module not installed
