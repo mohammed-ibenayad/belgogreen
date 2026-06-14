@@ -465,13 +465,18 @@ class CalendarEvent(models.Model):
 
                 _logger.info("Marked %s NoShow activities as done for event ID %s",
                            len(noshow_activities), record.id)
+            else:
+                ctx = dict(self.env.context, processing_noshow_reschedule=True, skip_calendar_automation=True)
 
-                # Reset appointment status to 'booked' since the no_show is no longer relevant
-                if record.appointment_status == 'no_show':
-                    record.sudo().with_context(ctx).write({
-                        'appointment_status': 'booked'
-                    })
-                    _logger.info("Reset appointment status to 'booked' for event ID %s", record.id)
+            # Reset the status on every real reschedule of a no-show, regardless
+            # of whether an active NoShow activity remained: it may have been
+            # closed by an earlier follow-up (so the search above finds nothing),
+            # yet replanning the RDV still means the no-show is no longer relevant.
+            if record.appointment_status == 'no_show':
+                record.sudo().with_context(ctx).write({
+                    'appointment_status': 'booked'
+                })
+                _logger.info("Reset appointment status to 'booked' for event ID %s", record.id)
 
         except Exception as e:
             _logger.error("Update Calendar Status when Rescheduled - Error processing event ID %s: %s",
