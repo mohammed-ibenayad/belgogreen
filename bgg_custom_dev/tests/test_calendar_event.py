@@ -807,6 +807,7 @@ class TestCalendarEventNoShowTreatment(TransactionCase):
             ('appointment_type_id.x_appointment_ref', 'in',
              ['APT-ENERG-CNT', 'APT-NISOL-CNT']),
             ('x_noshow_disposition', '!=', 'pas_interesse'),
+            ('x_noshow_available_date', '<=', datetime.datetime.now()),
         ])
 
     def test_noshow_date_stamped_and_available(self):
@@ -881,18 +882,23 @@ class TestCalendarEventNoShowTreatment(TransactionCase):
         self.assertIn(empty, queue)
         self.assertIn(joignable, queue)
 
-    def test_filter_excludes_locked_only(self):
-        """The recyclage filter excludes 'pas intéressé'; timing is enforced by
-        the reschedule guard, not by the filter, so in-window ones still list."""
+    def test_filter_excludes_locked_and_in_window(self):
+        """The recyclage filter shows only no-shows available to the call center:
+        'pas intéressé' (locked) and still-in-window ones are excluded; only the
+        non-locking no-show whose window has elapsed lists."""
         if not self.cnt_type:
             self.skipTest("appointment module not installed")
         locked = self._create_noshow()
+        self._backdate(locked, 5)  # window elapsed but locked
         locked.write({'x_noshow_disposition': 'pas_interesse'})
-        in_window = self._create_noshow()  # not yet available, but still a candidate
+        in_window = self._create_noshow()  # not yet available
+        available = self._create_noshow()
+        self._backdate(available, 5)  # window elapsed, non-locking
 
         queue = self._queue_events()
         self.assertNotIn(locked, queue)
-        self.assertIn(in_window, queue)
+        self.assertNotIn(in_window, queue)
+        self.assertIn(available, queue)
 
     def test_only_commercial_can_set_disposition(self):
         """The call center cannot modify the disposition; the commercial can."""
