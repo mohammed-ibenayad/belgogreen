@@ -80,7 +80,7 @@
                 <separator/>
                 <filter name="noshow_a_recycler"
                         string="No-shows à recycler"
-                        domain="[('appointment_status', '=', 'no_show'), ('appointment_type_id.x_appointment_ref', 'in', ['APT-ENERG-CNT', 'APT-NISOL-CNT']), ('x_noshow_disposition', '!=', 'pas_interesse'), ('x_noshow_available_date', '&lt;=', datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))]"/>
+                        domain="[('appointment_status', '=', 'no_show'), ('appointment_type_id.x_appointment_ref', 'in', ['APT-ENERG-CNT', 'APT-NISOL-CNT']), ('x_noshow_disposition', '!=', 'pas_interesse'), ('x_noshow_available_date', '&lt;=', datetime.datetime.combine(context_today(), datetime.time.max))]"/>
             </xpath>
         </field>
     </record>
