@@ -129,7 +129,7 @@ class CalendarEvent(models.Model):
         for vals in vals_list:
             if vals.get('appointment_status') == 'no_show' and not vals.get('x_noshow_date'):
                 atype_id = vals.get('appointment_type_id')
-                atype = self.env['appointment.type'].browse(atype_id) if atype_id else None
+                atype = self.env['appointment.type'].browse(atype_id).sudo() if atype_id else None
                 if atype and atype.x_appointment_ref in CALL_CENTER_APPOINTMENT_REFS:
                     vals['x_noshow_date'] = fields.Datetime.now()
 
@@ -267,15 +267,22 @@ class CalendarEvent(models.Model):
                 return group
         return groups.browse()
 
+    @api.model
+    def _appointment_ref_of(self, record):
+        """Return the appointment ref code, read with sudo.
+
+        Server-side automations must not depend on the saving user's access to
+        appointment.type (e.g. a commercial without read access on it raised an
+        AccessError on every save), so the ref code is always read in sudo.
+        Returns False when there is no type or no ref.
+        """
+        atype = record.appointment_type_id
+        return atype.sudo().x_appointment_ref if atype else False
+
     def _is_call_center_appointment(self):
         """Return True when this event is a call-center appointment (CNT)."""
         self.ensure_one()
-        appt_type = self.appointment_type_id
-        return bool(
-            appt_type
-            and appt_type.x_appointment_ref
-            and appt_type.x_appointment_ref in CALL_CENTER_APPOINTMENT_REFS
-        )
+        return self._appointment_ref_of(self) in CALL_CENTER_APPOINTMENT_REFS
 
     @api.model
     def _noshow_window_days(self):
@@ -368,14 +375,8 @@ class CalendarEvent(models.Model):
         Only applies to appointment types: APT-ENERG-CNT, APT-NISOL-CNT
         """
         try:
-            # Check appointment type restriction
-            if not record.appointment_type_id:
-                return
-
-            if not record.appointment_type_id.x_appointment_ref:
-                return
-
-            if record.appointment_type_id.x_appointment_ref not in CALL_CENTER_APPOINTMENT_REFS:
+            # Only applies to call-center appointment types (ref read via sudo).
+            if self._appointment_ref_of(record) not in CALL_CENTER_APPOINTMENT_REFS:
                 return
 
             # Use the user who created the record as organizer
@@ -406,14 +407,8 @@ class CalendarEvent(models.Model):
         Only applies to appointment types: APT-ENERG-CNT, APT-NISOL-CNT
         """
         try:
-            # Check appointment type restriction
-            if not record.appointment_type_id:
-                return
-
-            if not record.appointment_type_id.x_appointment_ref:
-                return
-
-            if record.appointment_type_id.x_appointment_ref not in CALL_CENTER_APPOINTMENT_REFS:
+            # Only applies to call-center appointment types (ref read via sudo).
+            if self._appointment_ref_of(record) not in CALL_CENTER_APPOINTMENT_REFS:
                 return
 
             # Prevent infinite recursion when processing NoShow activities
@@ -549,14 +544,8 @@ class CalendarEvent(models.Model):
         Only applies to appointment types: APT-ENERG-CNT, APT-ENERG-COM, APT-NISOL-CNT, APT-NISOL-COM
         """
         try:
-            # Check appointment type restriction
-            if not record.appointment_type_id:
-                return
-
-            if not record.appointment_type_id.x_appointment_ref:
-                return
-
-            if record.appointment_type_id.x_appointment_ref not in ALL_APPOINTMENT_REFS:
+            # Only applies to BGG appointment types (ref read via sudo).
+            if self._appointment_ref_of(record) not in ALL_APPOINTMENT_REFS:
                 return
 
             if not record.attendee_ids:
@@ -630,14 +619,8 @@ class CalendarEvent(models.Model):
         Only applies to appointment types: APT-ENERG-CNT, APT-ENERG-COM, APT-NISOL-CNT, APT-NISOL-COM
         """
         try:
-            # Check appointment type restriction
-            if not record.appointment_type_id:
-                return
-
-            if not record.appointment_type_id.x_appointment_ref:
-                return
-
-            if record.appointment_type_id.x_appointment_ref not in ALL_APPOINTMENT_REFS:
+            # Only applies to BGG appointment types (ref read via sudo).
+            if self._appointment_ref_of(record) not in ALL_APPOINTMENT_REFS:
                 return
 
             phone = None
@@ -796,14 +779,8 @@ class CalendarEvent(models.Model):
         Only applies to appointment types: APT-ENERG-CNT, APT-NISOL-CNT
         """
         try:
-            # Check appointment type restriction
-            if not record.appointment_type_id:
-                return
-
-            if not record.appointment_type_id.x_appointment_ref:
-                return
-
-            if record.appointment_type_id.x_appointment_ref not in CALL_CENTER_APPOINTMENT_REFS:
+            # Only applies to call-center appointment types (ref read via sudo).
+            if self._appointment_ref_of(record) not in CALL_CENTER_APPOINTMENT_REFS:
                 return
 
             if record.appointment_status != 'no_show':
