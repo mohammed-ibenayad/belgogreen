@@ -106,12 +106,13 @@ class CalendarEvent(models.Model):
              "une fois la fenêtre de priorité commerciale écoulée.",
     )
 
-    # View helper: True when the appointment is a call-center appointment.
-    # Stored so it is always available to the form's visibility rule.
-    x_is_call_center_appt = fields.Boolean(
-        string='Is Call Center Appointment',
-        compute='_compute_is_call_center_appt',
-        store=True,
+    # Appointment reference code, surfaced from the type so the form's
+    # visibility rule can test it client-side (a view modifier needs a field on
+    # the record). Not stored: the type rarely changes and the value is only
+    # needed while the form is open.
+    x_appointment_ref = fields.Char(
+        string='Appointment Reference',
+        related='appointment_type_id.x_appointment_ref',
     )
 
     # View helper: True when the current user is a commercial. Drives the
@@ -275,11 +276,6 @@ class CalendarEvent(models.Model):
             and appt_type.x_appointment_ref
             and appt_type.x_appointment_ref in CALL_CENTER_APPOINTMENT_REFS
         )
-
-    @api.depends('appointment_type_id', 'appointment_type_id.x_appointment_ref')
-    def _compute_is_call_center_appt(self):
-        for record in self:
-            record.x_is_call_center_appt = record._is_call_center_appointment()
 
     @api.model
     def _noshow_window_days(self):
