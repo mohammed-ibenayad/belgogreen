@@ -827,6 +827,14 @@ class CalendarEvent(models.Model):
                 ('activity_type_id', '=', noshow_activity_type.id)
             ], limit=1)
 
+            # Only create the follow-up on the transition into no-show. If one
+            # already exists, leave it untouched: re-writing it on every save
+            # needlessly re-stamped the deadline to "today" each time.
+            if existing_activity:
+                _logger.info("NoShow activity (ID %s) already exists for event ID %s - leaving as-is",
+                           existing_activity.id, record.id)
+                return
+
             # Get the event organizer, ensuring we don't assign to public user
             user = self.env.user
             assigned_user = False
@@ -837,24 +845,21 @@ class CalendarEvent(models.Model):
                 assigned_user = user
 
             if assigned_user:
-                activity_values = {
+                # NOTE: do NOT set `calendar_event_id` here. That field marks the
+                # activity as the meeting's *scheduling* activity, which makes core
+                # sync the activity deadline onto the event's start/stop and
+                # silently rescheduled no-show events to "today" on every save.
+                # The activity is already attached to the event via res_model/res_id.
+                new_activity = self.env['mail.activity'].create({
                     'activity_type_id': noshow_activity_type.id,
                     'user_id': assigned_user.id,
                     'res_model_id': self.env['ir.model']._get('calendar.event').id,
                     'res_id': record.id,
-                    'calendar_event_id': record.id,
                     'date_deadline': datetime.datetime.now().date(),
                     'summary': f'NoShow: {record.name or "Rendez-vous (Etude)"}',
-                }
-
-                if existing_activity:
-                    existing_activity.write(activity_values)
-                    _logger.info("Updated existing NoShow activity (ID %s) for event ID %s",
-                               existing_activity.id, record.id)
-                else:
-                    new_activity = self.env['mail.activity'].create(activity_values)
-                    _logger.info("Created new NoShow activity (ID %s) for event ID %s, assigned to user %s",
-                               new_activity.id, record.id, assigned_user.name)
+                })
+                _logger.info("Created new NoShow activity (ID %s) for event ID %s, assigned to user %s",
+                           new_activity.id, record.id, assigned_user.name)
             else:
                 _logger.warning("No valid user to assign NoShow activity for event ID %s", record.id)
 
