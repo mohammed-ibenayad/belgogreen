@@ -16,7 +16,7 @@
                     <strong>Avis &amp; Recommandations</strong>.
                 </div>
                 <div class="alert alert-warning text-center" role="alert"
-                     invisible="appointment_status != 'no_show' or x_appointment_ref not in ['APT-ENERG-CNT', 'APT-NISOL-CNT']">
+                     invisible="appointment_status != 'no_show' or x_appointment_ref not in ['APT-ENERG-CNT', 'APT-NISOL-CNT'] or x_noshow_disposition">
                     Veuillez compléter l'état du
                     <strong>Suivi No-show par commercial</strong>.
                 </div>
@@ -50,6 +50,7 @@
                     <group>
                         <group string="Suivi commercial">
                             <field name="x_noshow_disposition"
+                                   placeholder="Veuillez compléter"
                                    readonly="not x_user_can_edit_noshow_disposition"/>
                         </group>
                         <group string="Disponibilité call center">
