@@ -72,19 +72,21 @@ class CalendarEvent(models.Model):
     # ------------------------------------------------------------------
     # Commercial disposition after the no-show. Not required: an *empty* value is
     # the default and means the no-show is available to the call center (once the
-    # priority window has elapsed). Setting 'Suivi en cours' flags that the
-    # commercial is actively following it up, keeping it out of the call center
-    # queue. Extra detail goes in the standard Odoo chatter note.
+    # priority window has elapsed). Any non-empty value ('Suivi en cours' while
+    # the commercial is still working it, or 'Client pas intéressé' once closed)
+    # keeps it out of the call center queue. Extra detail goes in the standard
+    # Odoo chatter note.
     x_noshow_disposition = fields.Selection(
         selection=[
             ('suivi_en_cours', 'Suivi en cours'),
+            ('pas_interesse', 'Client pas intéressé'),
         ],
-        string='Suivi commercial No-show',
+        string='Suivi commercial',
         tracking=True,
-        help="Suivi commercial du no-show. 'Suivi en cours' indique que le "
-             "commercial traite encore le rendez-vous et le retire de la file du "
-             "call center ; une valeur vide le laisse disponible après la fenêtre "
-             "commerciale. Détails dans la note.",
+        help="Suivi commercial du no-show. Une valeur renseignée ('Suivi en "
+             "cours' ou 'Client pas intéressé') retire le rendez-vous de la file "
+             "du call center ; une valeur vide le laisse disponible après la "
+             "fenêtre commerciale. Détails dans la note.",
     )
 
     # Moment the appointment was flagged no-show (window anchor; set once, not

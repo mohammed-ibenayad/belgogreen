@@ -15,6 +15,11 @@
                     Pensez à renseigner les informations dans l'onglet
                     <strong>Avis &amp; Recommandations</strong>.
                 </div>
+                <div class="alert alert-warning text-center" role="alert"
+                     invisible="appointment_status != 'no_show' or x_appointment_ref not in ['APT-ENERG-CNT', 'APT-NISOL-CNT']">
+                    Veuillez compléter l'état du
+                    <strong>Suivi No-show par commercial</strong>.
+                </div>
             </xpath>
 
             <!-- Control fields hoisted out of the (potentially hidden) page so
@@ -40,7 +45,7 @@
                 </page>
 
                 <!-- No-show treatment workflow (call-center appointments only) -->
-                <page string="Suivi No-show" name="page_noshow"
+                <page string="Suivi No-show par commercial" name="page_noshow"
                       invisible="x_appointment_ref not in ['APT-ENERG-CNT', 'APT-NISOL-CNT'] or (appointment_status != 'no_show' and not x_noshow_disposition)">
                     <group>
                         <group string="Suivi commercial">
