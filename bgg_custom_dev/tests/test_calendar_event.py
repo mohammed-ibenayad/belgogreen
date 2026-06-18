@@ -773,7 +773,7 @@ class TestCalendarEventNoShowTreatment(TransactionCase):
 
     Covers the no-show date stamping (window anchor), the availability
     computation, the fact that commercial follow-ups don't reset the timer,
-    and the call-center queue domain (availability + 'pas intéressé' lock).
+    and the call-center queue domain (availability + 'Suivi en cours' lock).
     """
 
     @classmethod
@@ -838,7 +838,7 @@ class TestCalendarEventNoShowTreatment(TransactionCase):
             ('appointment_status', '=', 'no_show'),
             ('appointment_type_id.x_appointment_ref', 'in',
              ['APT-ENERG-CNT', 'APT-NISOL-CNT']),
-            ('x_noshow_disposition', '!=', 'pas_interesse'),
+            ('x_noshow_disposition', '=', False),
             ('x_noshow_available_date', '<=', datetime.datetime.now()),
         ])
 
@@ -859,7 +859,7 @@ class TestCalendarEventNoShowTreatment(TransactionCase):
             self.skipTest("appointment module not installed")
         event = self._create_noshow()
         original = event.x_noshow_date
-        event.write({'x_noshow_disposition': 'pas_joignable'})
+        event.write({'x_noshow_disposition': 'suivi_en_cours'})
         self.assertEqual(event.x_noshow_date, original,
                          "x_noshow_date must not change on a follow-up")
 
@@ -884,13 +884,13 @@ class TestCalendarEventNoShowTreatment(TransactionCase):
         event.write({
             'start': event.start,
             'stop': event.stop,
-            'x_noshow_disposition': 'autre',
+            'x_noshow_disposition': 'suivi_en_cours',
         })
         self.assertEqual(event.appointment_status, 'no_show',
                          "Re-sending unchanged dates must not reset the status")
         self.assertTrue(event.x_noshow_date,
                         "x_noshow_date must survive a non-reschedule save")
-        self.assertEqual(event.x_noshow_disposition, 'autre')
+        self.assertEqual(event.x_noshow_disposition, 'suivi_en_cours')
 
     def test_com_appointment_not_stamped(self):
         """COM appointments are out of scope: no no-show date is stamped."""
@@ -900,32 +900,33 @@ class TestCalendarEventNoShowTreatment(TransactionCase):
         self.assertFalse(event.x_noshow_date,
                          "COM appointments should not be stamped")
 
-    def test_queue_includes_available_and_non_locking(self):
-        """Empty and 'pas joignable' no-shows past the window appear in the queue."""
+    def test_queue_includes_only_empty_disposition(self):
+        """Only no-shows with an empty disposition past the window appear in the
+        queue; one flagged 'Suivi en cours' is excluded."""
         if not self.cnt_type:
             self.skipTest("appointment module not installed")
         empty = self._create_noshow()
         self._backdate(empty, 5)
-        joignable = self._create_noshow()
-        self._backdate(joignable, 5)
-        joignable.write({'x_noshow_disposition': 'pas_joignable'})
+        followed = self._create_noshow()
+        self._backdate(followed, 5)
+        followed.write({'x_noshow_disposition': 'suivi_en_cours'})
 
         queue = self._queue_events()
         self.assertIn(empty, queue)
-        self.assertIn(joignable, queue)
+        self.assertNotIn(followed, queue)
 
     def test_filter_excludes_locked_and_in_window(self):
         """The recyclage filter shows only no-shows available to the call center:
-        'pas intéressé' (locked) and still-in-window ones are excluded; only the
-        non-locking no-show whose window has elapsed lists."""
+        'Suivi en cours' (locked) and still-in-window ones are excluded; only the
+        empty-disposition no-show whose window has elapsed lists."""
         if not self.cnt_type:
             self.skipTest("appointment module not installed")
         locked = self._create_noshow()
-        self._backdate(locked, 5)  # window elapsed but locked
-        locked.write({'x_noshow_disposition': 'pas_interesse'})
+        self._backdate(locked, 5)  # window elapsed but still followed up
+        locked.write({'x_noshow_disposition': 'suivi_en_cours'})
         in_window = self._create_noshow()  # not yet available
         available = self._create_noshow()
-        self._backdate(available, 5)  # window elapsed, non-locking
+        self._backdate(available, 5)  # window elapsed, empty disposition
 
         queue = self._queue_events()
         self.assertNotIn(locked, queue)
@@ -951,10 +952,10 @@ class TestCalendarEventNoShowTreatment(TransactionCase):
         })
         with self.assertRaises(UserError):
             event.with_user(self.cc_user).write(
-                {'x_noshow_disposition': 'pas_joignable'})
+                {'x_noshow_disposition': 'suivi_en_cours'})
         event.with_user(self.commercial_user).write(
-            {'x_noshow_disposition': 'pas_joignable'})
-        self.assertEqual(event.x_noshow_disposition, 'pas_joignable')
+            {'x_noshow_disposition': 'suivi_en_cours'})
+        self.assertEqual(event.x_noshow_disposition, 'suivi_en_cours')
 
     def test_available_date_reflects_param_dynamically(self):
         """available_date recomputes against the current window parameter."""
@@ -1003,10 +1004,10 @@ class TestCalendarEventNoShowTreatment(TransactionCase):
             })
 
     def test_cc_cannot_reschedule_locked(self):
-        """Call center cannot reschedule a 'pas intéressé' no-show even past window."""
+        """Call center cannot reschedule a 'Suivi en cours' no-show even past window."""
         if not self.cnt_type:
             self.skipTest("appointment module not installed")
-        event = self._create_cc_event(backdate_days=5, disposition='pas_interesse')
+        event = self._create_cc_event(backdate_days=5, disposition='suivi_en_cours')
         new_start = datetime.datetime.now() + datetime.timedelta(days=3)
         with self.assertRaises(UserError):
             event.with_user(self.cc_user).write({

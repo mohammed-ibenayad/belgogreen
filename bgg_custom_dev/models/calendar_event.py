@@ -16,8 +16,10 @@ CALL_CENTER_APPOINTMENT_REFS = ['APT-ENERG-CNT', 'APT-NISOL-CNT']
 # appointment is flagged no-show, before it becomes available to the call center.
 NOSHOW_WINDOW_PARAM = 'bgg.noshow_commercial_window_days'
 NOSHOW_WINDOW_DEFAULT = '2'
-# Commercial disposition that locks the call center out (no point recycling).
-NOSHOW_DISPOSITION_LOCKING = 'pas_interesse'
+# Commercial disposition value meaning the commercial is actively following the
+# no-show up. Any non-empty disposition keeps the no-show out of the call center
+# queue; only an *empty* disposition lets the call center recycle it.
+NOSHOW_DISPOSITION_FOLLOWUP = 'suivi_en_cours'
 # Roles allowed to act, resolved by name (created manually outside the modules).
 COMMERCIAL_GROUP_NAME = 'Commercial'
 CALL_CENTER_GROUP_NAME = 'Call Center'
@@ -68,22 +70,21 @@ class CalendarEvent(models.Model):
     # ------------------------------------------------------------------
     # No-show treatment workflow (call-center appointments only)
     # ------------------------------------------------------------------
-    # Commercial disposition after the no-show. Replanning the RDV (changing the
-    # date) is the "interested" path and is handled by the reschedule automation,
-    # so it is not a value here. Only 'pas_interesse' locks the call center out;
-    # 'pas_joignable'/'autre'/empty leave it available after the window. Extra
-    # detail goes in the standard Odoo chatter note.
+    # Commercial disposition after the no-show. Not required: an *empty* value is
+    # the default and means the no-show is available to the call center (once the
+    # priority window has elapsed). Setting 'Suivi en cours' flags that the
+    # commercial is actively following it up, keeping it out of the call center
+    # queue. Extra detail goes in the standard Odoo chatter note.
     x_noshow_disposition = fields.Selection(
         selection=[
-            ('pas_interesse', 'Client pas intéressé'),
-            ('pas_joignable', 'Client pas joignable'),
-            ('autre', 'Autre (préciser en note)'),
+            ('suivi_en_cours', 'Suivi en cours'),
         ],
         string='Suivi commercial No-show',
         tracking=True,
-        help="Suivi commercial du no-show. 'Client pas intéressé' retire le "
-             "rendez-vous de la file du call center ; les autres cas le laissent "
-             "disponible après la fenêtre commerciale. Détails dans la note.",
+        help="Suivi commercial du no-show. 'Suivi en cours' indique que le "
+             "commercial traite encore le rendez-vous et le retire de la file du "
+             "call center ; une valeur vide le laisse disponible après la fenêtre "
+             "commerciale. Détails dans la note.",
     )
 
     # Moment the appointment was flagged no-show (window anchor; set once, not
@@ -159,7 +160,7 @@ class CalendarEvent(models.Model):
             )
 
         # Hard-enforce the commercial window: a call-center user cannot reschedule
-        # a no-show before it is available, nor one marked 'Client pas intéressé'.
+        # a no-show before it is available, nor one marked 'Suivi en cours'.
         # Only a *real* date change counts — the calendar form re-sends start/stop
         # on every save even when unchanged.
         rescheduled_ids = set()
@@ -330,8 +331,8 @@ class CalendarEvent(models.Model):
         """Hard-enforce the commercial window on reschedules.
 
         A call-center user may not move a no-show's date before it is available,
-        nor one the commercial marked 'Client pas intéressé'. Commercials and
-        system/sudo writes are unaffected.
+        nor one the commercial is still following up ('Suivi en cours').
+        Commercials and system/sudo writes are unaffected.
         """
         self.ensure_one()
         if self.env.su or self.env.user.has_group('base.group_system'):
@@ -341,9 +342,9 @@ class CalendarEvent(models.Model):
         if not self._user_in_group_named(CALL_CENTER_GROUP_NAME):
             return
 
-        if self.x_noshow_disposition == NOSHOW_DISPOSITION_LOCKING:
+        if self.x_noshow_disposition:
             raise UserError(
-                "Ce no-show est marqué « Client pas intéressé » : le call center "
+                "Ce no-show est marqué « Suivi en cours » : le call center "
                 "ne peut pas le replanifier."
             )
 
