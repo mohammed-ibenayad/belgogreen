@@ -50,6 +50,7 @@
                     <group>
                         <group string="Suivi commercial">
                             <field name="x_noshow_disposition"
+                                   placeholder="Sélectionner le suivi commercial…"
                                    readonly="not x_user_can_edit_noshow_disposition"/>
                         </group>
                         <group string="Disponibilité call center">
