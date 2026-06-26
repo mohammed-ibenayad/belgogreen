@@ -69,12 +69,15 @@ class SaleOrder(models.Model):
         Check if the sale order is eligible for commission calculation.
 
         Rules (from spec):
-        1. All eligible invoices linked to the SO must be fully paid.
-        2. The sum of eligible invoices must exactly match the SO total (to the cent).
-        3. No active credit notes (avoirs) may exist for this SO.
+        1. All eligible invoices AND active credit notes must be fully paid.
+        2. The sum of eligible invoices must be at least the SO total (to the cent).
+        3. Active credit notes (avoirs) do not block: their untaxed amount is
+           deducted from the commission base. The order is ineligible only if the
+           credit notes cancel out the invoiced amount (net base <= 0).
 
         Eligible invoices: all invoices (out_invoice) linked to the SO,
-        excluding cancelled invoices and credit notes (out_refund).
+        excluding cancelled invoices. Credit notes (out_refund, not cancelled)
+        are handled separately: they must be paid and reduce the base.
 
         Returns: dict with 'eligible', 'message', 'eligible_invoices', 'base_amount'
         """
@@ -111,33 +114,27 @@ class SaleOrder(models.Model):
             _logger.info("=== COMMISSION V2 === BLOCKED: no eligible invoices")
             return result
 
-        # Block if any non-cancelled credit notes exist
-        active_credit_notes = all_invoices.filtered(
+        # Active credit notes (avoirs) for this SO = out_refund, not cancelled.
+        # These are no longer a hard block: instead they must be fully paid (just
+        # like invoices) and their untaxed amount is deducted from the commission
+        # base further down.
+        credit_notes = all_invoices.filtered(
             lambda inv: inv.move_type == 'out_refund' and inv.state != 'cancel'
         )
 
-        if active_credit_notes:
-            result['message'] = _(
-                "La commande %s possède des notes de crédit actives - la commission ne peut pas être calculée"
-            ) % self.name
-            _logger.info(
-                "=== COMMISSION V2 === BLOCKED: active credit notes found: %s",
-                active_credit_notes.mapped('name')
-            )
-            return result
-
-        # ALL eligible invoices must be fully paid
-        unpaid_invoices = eligible_invoices.filtered(
+        # ALL eligible invoices AND credit notes must be fully paid.
+        # An unpaid invoice OR an unpaid credit note blocks generation.
+        unpaid_documents = (eligible_invoices | credit_notes).filtered(
             lambda inv: inv.payment_state != 'paid'
         )
 
-        if unpaid_invoices:
+        if unpaid_documents:
             result['message'] = _(
-                "La commande %s a des factures éligibles non payées : %s"
-            ) % (self.name, ', '.join(unpaid_invoices.mapped('name')))
+                "La commande %s a des factures ou notes de crédit non payées : %s"
+            ) % (self.name, ', '.join(unpaid_documents.mapped('name')))
             _logger.info(
-                "=== COMMISSION V2 === BLOCKED: unpaid invoices: %s",
-                [(inv.name, inv.payment_state) for inv in unpaid_invoices]
+                "=== COMMISSION V2 === BLOCKED: unpaid invoices/credit notes: %s",
+                [(inv.name, inv.move_type, inv.payment_state) for inv in unpaid_documents]
             )
             return result
 
@@ -167,14 +164,39 @@ class SaleOrder(models.Model):
         # All checks passed. The eligibility gate above compares TTC totals (the
         # client must have paid at least the SO total), but the commission itself
         # is calculated on the untaxed (HTVA) amount, never on the VAT.
-        base_amount = sum(eligible_invoices.mapped('amount_untaxed'))
+        #
+        # Paid credit notes (avoirs) reduce the commission base: their untaxed
+        # amount is deducted from the invoices' untaxed amount.
+        invoice_untaxed = sum(eligible_invoices.mapped('amount_untaxed'))
+        credit_note_untaxed = sum(credit_notes.mapped('amount_untaxed'))
+        base_amount = invoice_untaxed - credit_note_untaxed
+
+        # If credit notes cancel out (or exceed) the invoiced amount, there is no
+        # positive base left, so no commission is generated.
+        if float_compare(base_amount, 0.0, precision_digits=precision) <= 0:
+            result['message'] = _(
+                "Commande %(order)s : les notes de crédit (%(cn).2f HTVA) annulent la base "
+                "de commission (factures %(inv).2f HTVA)"
+            ) % {
+                'order': self.name,
+                'cn': credit_note_untaxed,
+                'inv': invoice_untaxed,
+            }
+            _logger.info(
+                "=== COMMISSION V2 === BLOCKED: credit notes cancel commission base "
+                "(invoice_untaxed=%.2f, credit_note_untaxed=%.2f)",
+                invoice_untaxed, credit_note_untaxed
+            )
+            return result
+
         result['eligible'] = True
         result['eligible_invoices'] = eligible_invoices
         result['base_amount'] = base_amount
 
         _logger.info(
-            "=== COMMISSION V2 === ELIGIBLE: all checks passed, base_amount (HTVA)=%.2f",
-            base_amount
+            "=== COMMISSION V2 === ELIGIBLE: base_amount (HTVA, net of credit notes)=%.2f "
+            "(invoices=%.2f, credit notes=%.2f)",
+            base_amount, invoice_untaxed, credit_note_untaxed
         )
         return result
 
@@ -184,8 +206,8 @@ class SaleOrder(models.Model):
 
         Commission is only created when:
         - The SO is fully invoiced (sum of eligible invoices = SO total)
-        - All eligible invoices are fully paid
-        - No active credit notes exist
+        - All eligible invoices AND active credit notes are fully paid
+        - Active credit notes are deducted from the base (net base > 0)
 
         Returns: dict with result information
         """

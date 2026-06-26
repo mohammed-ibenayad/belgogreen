@@ -359,9 +359,9 @@ class CommissionDashboard(models.TransientModel):
         """Get sale orders eligible for commission for a specific user.
 
         An order is eligible only if it passes _check_commission_eligibility():
-        - All eligible invoices (out_invoice, not cancelled) are fully paid
-        - Sum of eligible invoices exactly matches SO total
-        - No active credit notes exist
+        - All eligible invoices (out_invoice) AND active credit notes are fully paid
+        - Sum of eligible invoices is at least the SO total
+        - Active credit notes are deducted from the base (net base > 0)
         """
         import logging
         _logger = logging.getLogger(__name__)
@@ -443,8 +443,14 @@ class CommissionDashboard(models.TransientModel):
                 invoice_date = max(dates)
 
         period = invoice_date.strftime('%Y-%m')
-        # Commission is calculated on the untaxed (HTVA) amount, never on the VAT.
-        base_amount = order.amount_untaxed
+        # Commission is calculated on the untaxed (HTVA) amount, never on the VAT,
+        # net of any active credit notes (avoirs) linked to this order. Eligibility
+        # (_check_commission_eligibility) already guarantees those credit notes are
+        # paid and do not exceed the invoiced amount.
+        credit_notes = order.invoice_ids.filtered(
+            lambda inv: inv.move_type == 'out_refund' and inv.state != 'cancel'
+        )
+        base_amount = order.amount_untaxed - sum(credit_notes.mapped('amount_untaxed'))
 
         # Create commission record — one per SO, not per invoice
         try:
