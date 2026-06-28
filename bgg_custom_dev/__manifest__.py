@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen Custom Development',
-    'version': '19.0.1.1.0',
+    'version': '19.0.1.5.9',
     'category': 'Customizations',
     'summary': 'Custom business logic and automation for BelGoGreen',
     'description': """
@@ -52,6 +52,9 @@
         'security/groups.xml',
         'security/ir.model.access.csv',
 
+        # Configuration data
+        'data/noshow_config_params.xml',
+
         # Views
         'views/calendar_event_views.xml',
         'views/commercial_dashboard_views.xml',
@@ -78,6 +81,7 @@
             'bgg_custom_dev/static/src/scss/call_center_dashboard.scss',
         ],
     },
+    'post_init_hook': 'link_external_groups',
     'installable': True,
     'application': False,
     'auto_install': False,

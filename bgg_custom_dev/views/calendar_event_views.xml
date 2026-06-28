@@ -15,6 +15,19 @@
                     Pensez à renseigner les informations dans l'onglet
                     <strong>Avis &amp; Recommandations</strong>.
                 </div>
+                <div class="alert alert-warning text-center" role="alert"
+                     invisible="appointment_status != 'no_show' or x_appointment_ref not in ['APT-ENERG-CNT', 'APT-NISOL-CNT'] or x_noshow_disposition">
+                    Veuillez compléter l'état du
+                    <strong>Suivi No-show par commercial</strong>.
+                </div>
+            </xpath>
+
+            <!-- Control fields hoisted out of the (potentially hidden) page so
+                 their values are always loaded for the visibility rule. -->
+            <xpath expr="//notebook" position="before">
+                <field name="x_appointment_ref" invisible="1"/>
+                <field name="x_noshow_disposition" invisible="1"/>
+                <field name="x_user_can_edit_noshow_disposition" invisible="1"/>
             </xpath>
 
             <!-- Add new "Avis &amp; Recommandations" tab in the notebook -->
@@ -30,8 +43,57 @@
                         </group>
                     </group>
                 </page>
+
+                <!-- No-show treatment workflow (call-center appointments only) -->
+                <page string="Suivi No-show par commercial" name="page_noshow"
+                      invisible="x_appointment_ref not in ['APT-ENERG-CNT', 'APT-NISOL-CNT'] or (appointment_status != 'no_show' and not x_noshow_disposition)">
+                    <group>
+                        <group string="Suivi commercial">
+                            <field name="x_noshow_disposition"
+                                   placeholder="Veuillez compléter"
+                                   readonly="not x_user_can_edit_noshow_disposition"/>
+                        </group>
+                        <group string="Disponibilité call center">
+                            <field name="x_noshow_date" readonly="1"/>
+                            <!-- Hide the call-center availability date once a suivi
+                                 commercial is set: a no-show with a disposition is
+                                 never recycled (see the "No-shows à recycler" filter,
+                                 which requires x_noshow_disposition = False), so the
+                                 "Disponible call center le" date would be misleading. -->
+                            <field name="x_noshow_available_date" readonly="1"
+                                   invisible="x_noshow_disposition"/>
+                        </group>
+                    </group>
+                    <div class="text-muted">
+                        Le commercial est prioritaire jusqu'à la date « Disponible call center ».
+                        S'il replanifie le rendez-vous ou indique « Suivi en cours »,
+                        le call center ne le reprend pas. Sinon (suivi commercial vide) le no-show
+                        devient recyclable par le call center après cette date. Précisez tout
+                        détail dans la note (journal du rendez-vous).
+                    </div>
+                </page>
             </xpath>
 
+        </field>
+    </record>
+
+    <!-- Add a "No-shows à recycler" filter to the calendar events search view.
+         Candidates = call-center no-shows the commercial is no longer following
+         up (empty 'Suivi commercial') AND whose priority window has elapsed, so
+         the list shows only no-shows actually available for the call center to
+         take. The window length comes from the system parameter (see the field's
+         search method); the reschedule guard enforces it again on write. -->
+    <record id="view_calendar_event_search_inherit_bgg" model="ir.ui.view">
+        <field name="name">calendar.event.search.inherit.bgg</field>
+        <field name="model">calendar.event</field>
+        <field name="inherit_id" ref="calendar.view_calendar_event_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <separator/>
+                <filter name="noshow_a_recycler"
+                        string="No-shows à recycler"
+                        domain="[('appointment_status', '=', 'no_show'), ('appointment_type_id.x_appointment_ref', 'in', ['APT-ENERG-CNT', 'APT-NISOL-CNT']), ('x_noshow_disposition', '=', False), ('x_noshow_available_date', '&lt;=', datetime.datetime.now())]"/>
+            </xpath>
         </field>
     </record>
 
