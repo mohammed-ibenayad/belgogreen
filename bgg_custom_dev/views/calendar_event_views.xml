@@ -55,7 +55,13 @@
                         </group>
                         <group string="Disponibilité call center">
                             <field name="x_noshow_date" readonly="1"/>
-                            <field name="x_noshow_available_date" readonly="1"/>
+                            <!-- Hide the call-center availability date once a suivi
+                                 commercial is set: a no-show with a disposition is
+                                 never recycled (see the "No-shows à recycler" filter,
+                                 which requires x_noshow_disposition = False), so the
+                                 "Disponible call center le" date would be misleading. -->
+                            <field name="x_noshow_available_date" readonly="1"
+                                   invisible="x_noshow_disposition"/>
                         </group>
                     </group>
                     <div class="text-muted">
