@@ -3,12 +3,26 @@
 import datetime
 import logging
 from odoo import api, fields, models
+from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
 
 # Appointment reference constants for automation rules
 ALL_APPOINTMENT_REFS = ['APT-ENERG-CNT', 'APT-ENERG-COM', 'APT-NISOL-CNT', 'APT-NISOL-COM']
 CALL_CENTER_APPOINTMENT_REFS = ['APT-ENERG-CNT', 'APT-NISOL-CNT']
+
+# No-show treatment workflow
+# System parameter holding the commercial's priority window (in days) after the
+# appointment is flagged no-show, before it becomes available to the call center.
+NOSHOW_WINDOW_PARAM = 'bgg.noshow_commercial_window_days'
+NOSHOW_WINDOW_DEFAULT = '2'
+# Commercial disposition value meaning the commercial is actively following the
+# no-show up. Any non-empty disposition keeps the no-show out of the call center
+# queue; only an *empty* disposition lets the call center recycle it.
+NOSHOW_DISPOSITION_FOLLOWUP = 'suivi_en_cours'
+# Roles allowed to act, resolved by name (created manually outside the modules).
+COMMERCIAL_GROUP_NAME = 'Commercial'
+CALL_CENTER_GROUP_NAME = 'Call Center'
 
 
 class CalendarEvent(models.Model):
@@ -53,9 +67,77 @@ class CalendarEvent(models.Model):
         help='Partner who made the appointment on behalf of the customer (e.g., Call Center agent)'
     )
 
+    # ------------------------------------------------------------------
+    # No-show treatment workflow (call-center appointments only)
+    # ------------------------------------------------------------------
+    # Commercial disposition after the no-show. Not required: an *empty* value is
+    # the default and means the no-show is available to the call center (once the
+    # priority window has elapsed). Any non-empty value ('Suivi en cours' while
+    # the commercial is still working it, or 'Client pas intéressé' once closed)
+    # keeps it out of the call center queue. Extra detail goes in the standard
+    # Odoo chatter note.
+    x_noshow_disposition = fields.Selection(
+        selection=[
+            ('suivi_en_cours', 'Suivi en cours'),
+            ('pas_interesse', 'Client pas intéressé'),
+        ],
+        string='Suivi commercial',
+        tracking=True,
+        help="Suivi commercial du no-show. Une valeur renseignée ('Suivi en "
+             "cours' ou 'Client pas intéressé') retire le rendez-vous de la file "
+             "du call center ; une valeur vide le laisse disponible après la "
+             "fenêtre commerciale. Détails dans la note.",
+    )
+
+    # Moment the appointment was flagged no-show (window anchor; set once, not
+    # reset by commercial follow-ups).
+    x_noshow_date = fields.Datetime(
+        string='No-show constaté le',
+        readonly=True,
+        copy=False,
+        help="Date à laquelle le rendez-vous a été marqué no-show. Sert de point "
+             "de départ à la fenêtre de priorité commerciale.",
+    )
+
+    # Date from which the call center may recycle the no-show (no-show date +
+    # window). Not stored: computed on read so a change to the window parameter
+    # takes effect immediately (e.g. when opening the event).
+    x_noshow_available_date = fields.Datetime(
+        string='Disponible call center le',
+        compute='_compute_noshow_available_date',
+        search='_search_noshow_available_date',
+        help="Date à partir de laquelle le call center peut recycler ce no-show, "
+             "une fois la fenêtre de priorité commerciale écoulée.",
+    )
+
+    # Appointment reference code, surfaced from the type so the form's
+    # visibility rule can test it client-side (a view modifier needs a field on
+    # the record). Not stored: the type rarely changes and the value is only
+    # needed while the form is open.
+    x_appointment_ref = fields.Char(
+        string='Appointment Reference',
+        related='appointment_type_id.x_appointment_ref',
+    )
+
+    # View helper: True when the current user may edit the no-show disposition,
+    # i.e. a commercial or an Odoo administrator. Mirrors the write guard so the
+    # form's read-only state matches who can actually save the field.
+    x_user_can_edit_noshow_disposition = fields.Boolean(
+        string='Current User Can Edit No-show Disposition',
+        compute='_compute_user_can_edit_noshow_disposition',
+    )
+
     @api.model_create_multi
     def create(self, vals_list):
         """Override create to set organizer and trigger automation rules on new calendar events"""
+        # Stamp the no-show anchor inline (no separate write on the event).
+        for vals in vals_list:
+            if vals.get('appointment_status') == 'no_show' and not vals.get('x_noshow_date'):
+                atype_id = vals.get('appointment_type_id')
+                atype = self.env['appointment.type'].browse(atype_id).sudo() if atype_id else None
+                if atype and atype.x_appointment_ref in CALL_CENTER_APPOINTMENT_REFS:
+                    vals['x_noshow_date'] = fields.Datetime.now()
+
         records = super(CalendarEvent, self).create(vals_list)
 
         for record in records:
@@ -69,15 +151,56 @@ class CalendarEvent(models.Model):
 
     def write(self, vals):
         """Override write to trigger automation rules on updates"""
+        # Only commercials may set/modify the no-show disposition (system/sudo
+        # writes bypass this so automations and admins are unaffected).
+        if ('x_noshow_disposition' in vals
+                and not self.env.su
+                and not self.env.user.has_group('base.group_system')
+                and not self._user_in_group_named(COMMERCIAL_GROUP_NAME)):
+            raise UserError(
+                "Seul un commercial peut renseigner le suivi commercial d'un no-show."
+            )
+
+        # Hard-enforce the commercial window: a call-center user cannot reschedule
+        # a no-show before it is available, nor one marked 'Suivi en cours'.
+        # Only a *real* date change counts — the calendar form re-sends start/stop
+        # on every save even when unchanged.
+        rescheduled_ids = set()
+        if any(f in vals for f in ('start', 'stop', 'start_date', 'stop_date')):
+            for record in self:
+                if record._vals_change_dates(vals):
+                    rescheduled_ids.add(record.id)
+                    record._check_call_center_reschedule_allowed()
+
+        # Stamp/clear the no-show anchor inline (no separate write on the event,
+        # which can disturb the calendar's date handling).
+        self._apply_noshow_date_to_vals(vals)
+
         result = super(CalendarEvent, self).write(vals)
 
         # Skip automation processing if we're already in an automated update
         # to prevent infinite recursion
         if not self.env.context.get('skip_calendar_automation'):
             for record in self:
-                self._process_calendar_event(record, vals)
+                self._process_calendar_event(
+                    record, vals, date_changed=record.id in rescheduled_ids)
 
         return result
+
+    def _vals_change_dates(self, vals):
+        """True when `vals` actually changes one of this event's date fields
+        (normalises the incoming values so a re-sent, unchanged value is ignored)."""
+        self.ensure_one()
+        converters = (
+            ('start', fields.Datetime.to_datetime),
+            ('stop', fields.Datetime.to_datetime),
+            ('start_date', fields.Date.to_date),
+            ('stop_date', fields.Date.to_date),
+        )
+        for field_name, convert in converters:
+            if field_name in vals and convert(vals[field_name]) != self[field_name]:
+                return True
+        return False
 
     @api.depends('attendee_ids', 'attendee_ids.partner_id', 'appointment_type_id')
     def _compute_commercial(self):
@@ -112,10 +235,148 @@ class CalendarEvent(models.Model):
 
             record.x_studio_commercial = commercial_attendee.name if commercial_attendee else False
 
-    def _process_calendar_event(self, record, vals=None):
+    # ------------------------------------------------------------------
+    # No-show treatment helpers
+    # ------------------------------------------------------------------
+
+    def _user_in_group_named(self, group_name):
+        """Return True when the current user belongs to the named group."""
+        group = self._find_group_by_name(group_name)
+        return bool(group) and group.id in self.env.user.group_ids.ids
+
+    @api.depends_context('uid')
+    def _compute_user_can_edit_noshow_disposition(self):
+        # Same set as the write guard (minus sudo, irrelevant in the form):
+        # a commercial or an Odoo administrator.
+        can_edit = (self._user_in_group_named(COMMERCIAL_GROUP_NAME)
+                    or self.env.user.has_group('base.group_system'))
+        for record in self:
+            record.x_user_can_edit_noshow_disposition = can_edit
+
+    @api.model
+    def _find_group_by_name(self, group_name):
+        """Find a res.groups by name, robust to its translatable ``name`` field.
+
+        A plain search only matches the value in the current language, which can
+        miss a group whose name is stored under another language (e.g. during a
+        migration that runs in the system language). Fall back to scanning each
+        installed language.
+        """
+        groups = self.env['res.groups'].sudo()
+        # Case-insensitive match: the same group may be stored with different
+        # casing per language (e.g. en_US 'commercial' vs fr_BE 'Commercial').
+        group = groups.search([('name', '=ilike', group_name)], limit=1)
+        if group:
+            return group
+        for lang_code, _label in self.env['res.lang'].get_installed():
+            group = groups.with_context(lang=lang_code).search(
+                [('name', '=ilike', group_name)], limit=1)
+            if group:
+                return group
+        return groups.browse()
+
+    @api.model
+    def _appointment_ref_of(self, record):
+        """Return the appointment ref code, read with sudo.
+
+        Server-side automations must not depend on the saving user's access to
+        appointment.type (e.g. a commercial without read access on it raised an
+        AccessError on every save), so the ref code is always read in sudo.
+        Returns False when there is no type or no ref.
+        """
+        atype = record.appointment_type_id
+        return atype.sudo().x_appointment_ref if atype else False
+
+    def _is_call_center_appointment(self):
+        """Return True when this event is a call-center appointment (CNT)."""
+        self.ensure_one()
+        return self._appointment_ref_of(self) in CALL_CENTER_APPOINTMENT_REFS
+
+    @api.model
+    def _noshow_window_days(self):
+        """Current commercial priority window, in days (system parameter)."""
+        try:
+            return int(self.env['ir.config_parameter'].sudo().get_param(
+                NOSHOW_WINDOW_PARAM, NOSHOW_WINDOW_DEFAULT))
+        except (TypeError, ValueError):
+            return int(NOSHOW_WINDOW_DEFAULT)
+
+    @api.depends('x_noshow_date')
+    def _compute_noshow_available_date(self):
+        """Call center availability = no-show flag date + configurable window.
+
+        Not stored: reads the parameter on each compute so a change to the
+        window takes effect immediately when the event is read.
+        """
+        window_days = self._noshow_window_days()
+        for record in self:
+            if record.x_noshow_date:
+                record.x_noshow_available_date = (
+                    record.x_noshow_date + datetime.timedelta(days=window_days))
+            else:
+                record.x_noshow_available_date = False
+
+    def _search_noshow_available_date(self, operator, value):
+        """Make the (non-stored) availability date searchable.
+
+        available = x_noshow_date + window, a constant shift, so
+        ``available <op> value`` is equivalent to
+        ``x_noshow_date <op> (value - window)`` on the stored anchor. Events
+        with no anchor (NULL) are naturally excluded by the comparison, which is
+        correct: without a no-show date they are not available.
+        """
+        window = datetime.timedelta(days=self._noshow_window_days())
+        value = fields.Datetime.to_datetime(value)
+        return [('x_noshow_date', operator, value - window)]
+
+    def _check_call_center_reschedule_allowed(self):
+        """Hard-enforce the commercial window on reschedules.
+
+        A call-center user may not move a no-show's date before it is available,
+        nor one the commercial is still following up ('Suivi en cours').
+        Commercials and system/sudo writes are unaffected.
+        """
+        self.ensure_one()
+        if self.env.su or self.env.user.has_group('base.group_system'):
+            return
+        if self.appointment_status != 'no_show' or not self._is_call_center_appointment():
+            return
+        if not self._user_in_group_named(CALL_CENTER_GROUP_NAME):
+            return
+
+        if self.x_noshow_disposition:
+            raise UserError(
+                "Ce no-show est marqué « Suivi en cours » : le call center "
+                "ne peut pas le replanifier."
+            )
+
+        available = self.x_noshow_available_date
+        if not available or available > fields.Datetime.now():
+            raise UserError(
+                "Ce no-show n'est pas encore disponible pour le call center "
+                "(fenêtre de priorité commerciale en cours jusqu'au %s)."
+                % (available and fields.Datetime.to_string(available) or '—')
+            )
+
+    def _apply_noshow_date_to_vals(self, vals):
+        """Add the no-show anchor to the *current* write vals (instead of a
+        separate write) when the status transitions in/out of no-show.
+
+        Commercial follow-ups don't change the status, so they never touch the
+        anchor — the window is not reset by them.
+        """
+        if 'x_noshow_date' in vals or 'appointment_status' not in vals:
+            return
+        if vals['appointment_status'] == 'no_show':
+            if any(r._is_call_center_appointment() and not r.x_noshow_date for r in self):
+                vals['x_noshow_date'] = fields.Datetime.now()
+        elif any(r.x_noshow_date for r in self):
+            vals['x_noshow_date'] = False
+
+    def _process_calendar_event(self, record, vals=None, date_changed=False):
         """Process all automation rules for calendar events"""
         # Note: Organizer update removed - organizer is set once at creation and never changes
-        self._update_calendar_status_rescheduled(record, vals)
+        self._update_calendar_status_rescheduled(record, vals, date_changed=date_changed)
         # IMPORTANT: _assign_existing_customer must run BEFORE _update_clickable_from_attendee
         # because it uses x_studio_customer_phone to find customers, and _update_clickable_from_attendee
         # will clear that field if no client attendees exist yet
@@ -135,14 +396,8 @@ class CalendarEvent(models.Model):
         Only applies to appointment types: APT-ENERG-CNT, APT-NISOL-CNT
         """
         try:
-            # Check appointment type restriction
-            if not record.appointment_type_id:
-                return
-
-            if not record.appointment_type_id.x_appointment_ref:
-                return
-
-            if record.appointment_type_id.x_appointment_ref not in CALL_CENTER_APPOINTMENT_REFS:
+            # Only applies to call-center appointment types (ref read via sudo).
+            if self._appointment_ref_of(record) not in CALL_CENTER_APPOINTMENT_REFS:
                 return
 
             # Use the user who created the record as organizer
@@ -166,29 +421,26 @@ class CalendarEvent(models.Model):
             _logger.error("Set Initial Organizer - Error processing event ID %s: %s",
                         record.id, str(e), exc_info=True)
 
-    def _update_calendar_status_rescheduled(self, record, vals=None):
+    def _update_calendar_status_rescheduled(self, record, vals=None, date_changed=False):
         """
         Update Calendar Status When Rescheduled - Automation Rule
         Deletes NoShow activities and posts a chatter note when an event is rescheduled
         Only applies to appointment types: APT-ENERG-CNT, APT-NISOL-CNT
         """
         try:
-            # Check appointment type restriction
-            if not record.appointment_type_id:
-                return
-
-            if not record.appointment_type_id.x_appointment_ref:
-                return
-
-            if record.appointment_type_id.x_appointment_ref not in CALL_CENTER_APPOINTMENT_REFS:
+            # Only applies to call-center appointment types (ref read via sudo).
+            if self._appointment_ref_of(record) not in CALL_CENTER_APPOINTMENT_REFS:
                 return
 
             # Prevent infinite recursion when processing NoShow activities
             if self.env.context.get('processing_noshow_reschedule'):
                 return
 
-            # Only process if date/time fields changed (indicating reschedule)
-            if vals and not any(field in vals for field in ['start', 'stop', 'start_date', 'stop_date']):
+            # Only process on a real reschedule. The calendar form re-sends
+            # start/stop on every save even when unchanged, so we rely on the
+            # caller's value comparison (date_changed) rather than mere presence
+            # in vals. On create (vals is None) keep the prior behaviour.
+            if vals is not None and not date_changed:
                 return
 
             # Find linked no-show activities
@@ -216,13 +468,18 @@ class CalendarEvent(models.Model):
 
                 _logger.info("Marked %s NoShow activities as done for event ID %s",
                            len(noshow_activities), record.id)
+            else:
+                ctx = dict(self.env.context, processing_noshow_reschedule=True, skip_calendar_automation=True)
 
-                # Reset appointment status to 'booked' since the no_show is no longer relevant
-                if record.appointment_status == 'no_show':
-                    record.sudo().with_context(ctx).write({
-                        'appointment_status': 'booked'
-                    })
-                    _logger.info("Reset appointment status to 'booked' for event ID %s", record.id)
+            # Reset the status on every real reschedule of a no-show, regardless
+            # of whether an active NoShow activity remained: it may have been
+            # closed by an earlier follow-up (so the search above finds nothing),
+            # yet replanning the RDV still means the no-show is no longer relevant.
+            if record.appointment_status == 'no_show':
+                record.sudo().with_context(ctx).write({
+                    'appointment_status': 'booked'
+                })
+                _logger.info("Reset appointment status to 'booked' for event ID %s", record.id)
 
         except Exception as e:
             _logger.error("Update Calendar Status when Rescheduled - Error processing event ID %s: %s",
@@ -313,14 +570,8 @@ class CalendarEvent(models.Model):
         Only applies to appointment types: APT-ENERG-CNT, APT-ENERG-COM, APT-NISOL-CNT, APT-NISOL-COM
         """
         try:
-            # Check appointment type restriction
-            if not record.appointment_type_id:
-                return
-
-            if not record.appointment_type_id.x_appointment_ref:
-                return
-
-            if record.appointment_type_id.x_appointment_ref not in ALL_APPOINTMENT_REFS:
+            # Only applies to BGG appointment types (ref read via sudo).
+            if self._appointment_ref_of(record) not in ALL_APPOINTMENT_REFS:
                 return
 
             if not record.attendee_ids:
@@ -394,14 +645,8 @@ class CalendarEvent(models.Model):
         Only applies to appointment types: APT-ENERG-CNT, APT-ENERG-COM, APT-NISOL-CNT, APT-NISOL-COM
         """
         try:
-            # Check appointment type restriction
-            if not record.appointment_type_id:
-                return
-
-            if not record.appointment_type_id.x_appointment_ref:
-                return
-
-            if record.appointment_type_id.x_appointment_ref not in ALL_APPOINTMENT_REFS:
+            # Only applies to BGG appointment types (ref read via sudo).
+            if self._appointment_ref_of(record) not in ALL_APPOINTMENT_REFS:
                 return
 
             phone = None
@@ -560,14 +805,8 @@ class CalendarEvent(models.Model):
         Only applies to appointment types: APT-ENERG-CNT, APT-NISOL-CNT
         """
         try:
-            # Check appointment type restriction
-            if not record.appointment_type_id:
-                return
-
-            if not record.appointment_type_id.x_appointment_ref:
-                return
-
-            if record.appointment_type_id.x_appointment_ref not in CALL_CENTER_APPOINTMENT_REFS:
+            # Only applies to call-center appointment types (ref read via sudo).
+            if self._appointment_ref_of(record) not in CALL_CENTER_APPOINTMENT_REFS:
                 return
 
             if record.appointment_status != 'no_show':
@@ -587,6 +826,14 @@ class CalendarEvent(models.Model):
                 ('activity_type_id', '=', noshow_activity_type.id)
             ], limit=1)
 
+            # Only create the follow-up on the transition into no-show. If one
+            # already exists, leave it untouched: re-writing it on every save
+            # needlessly re-stamped the deadline to "today" each time.
+            if existing_activity:
+                _logger.info("NoShow activity (ID %s) already exists for event ID %s - leaving as-is",
+                           existing_activity.id, record.id)
+                return
+
             # Get the event organizer, ensuring we don't assign to public user
             user = self.env.user
             assigned_user = False
@@ -597,24 +844,21 @@ class CalendarEvent(models.Model):
                 assigned_user = user
 
             if assigned_user:
-                activity_values = {
+                # NOTE: do NOT set `calendar_event_id` here. That field marks the
+                # activity as the meeting's *scheduling* activity, which makes core
+                # sync the activity deadline onto the event's start/stop and
+                # silently rescheduled no-show events to "today" on every save.
+                # The activity is already attached to the event via res_model/res_id.
+                new_activity = self.env['mail.activity'].create({
                     'activity_type_id': noshow_activity_type.id,
                     'user_id': assigned_user.id,
                     'res_model_id': self.env['ir.model']._get('calendar.event').id,
                     'res_id': record.id,
-                    'calendar_event_id': record.id,
                     'date_deadline': datetime.datetime.now().date(),
                     'summary': f'NoShow: {record.name or "Rendez-vous (Etude)"}',
-                }
-
-                if existing_activity:
-                    existing_activity.write(activity_values)
-                    _logger.info("Updated existing NoShow activity (ID %s) for event ID %s",
-                               existing_activity.id, record.id)
-                else:
-                    new_activity = self.env['mail.activity'].create(activity_values)
-                    _logger.info("Created new NoShow activity (ID %s) for event ID %s, assigned to user %s",
-                               new_activity.id, record.id, assigned_user.name)
+                })
+                _logger.info("Created new NoShow activity (ID %s) for event ID %s, assigned to user %s",
+                           new_activity.id, record.id, assigned_user.name)
             else:
                 _logger.warning("No valid user to assign NoShow activity for event ID %s", record.id)
 

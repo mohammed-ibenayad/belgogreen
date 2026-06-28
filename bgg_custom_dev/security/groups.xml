@@ -4,4 +4,11 @@
         <field name="name">BGG Dashboard</field>
         <field name="comment">Grants access to BGG Dashboards (Suivi Commercial, Avis &amp; Recommandations)</field>
     </record>
+
+    <!--
+        The "Commercial" and "Call Center" roles used by the no-show workflow are
+        NOT defined here: they were created manually outside the custom modules.
+        They are resolved by name at runtime (see calendar_event.py) and linked
+        to module xmlids by the post-init hook (see __init__.py).
+    -->
 </odoo>
