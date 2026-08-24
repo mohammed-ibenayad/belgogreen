@@ -16,6 +16,10 @@ L'intégration utilise la **WhatsApp Business Platform (API Cloud)** de Meta. El
 différente de l'application mobile *WhatsApp Business* : les comptes WhatsApp personnels
 ou l'app mobile Business ne sont **pas** compatibles.
 
+> 📚 **Références générales** :
+> [Documentation Odoo — WhatsApp](https://www.odoo.com/documentation/19.0/fr/applications/productivity/whatsapp.html) ·
+> [Meta — Différences entre WhatsApp Business Platform et WhatsApp Business App](https://www.facebook.com/business/help/338665938087159)
+
 ---
 
 ## Avant de commencer — ce qu'il faut préparer
@@ -43,6 +47,10 @@ ou l'app mobile Business ne sont **pas** compatibles.
 > [developers.facebook.com](https://developers.facebook.com), cliquez sur votre nom en
 > haut à droite puis, sous **Business Accounts**, sélectionnez `BelGoGreen`.
 
+> 📚 **Références** :
+> [Doc Odoo — Créer un compte business Meta](https://www.odoo.com/documentation/19.0/fr/applications/productivity/whatsapp.html#productivity-whatsapp-meta-business-account) ·
+> [Meta — Créer un compte Meta Business](https://www.facebook.com/business/help/1710077379203657?id=180505742745347)
+
 ## Étape 2 — Créer l'application dans la console développeur
 
 1. Ouvrez [developers.facebook.com](https://developers.facebook.com) et connectez-vous
@@ -57,6 +65,10 @@ ou l'app mobile Business ne sont **pas** compatibles.
    l'étape 1, acceptez les conditions, cliquez sur **Create app** et confirmez avec
    votre mot de passe Facebook.
 
+> 📚 **Références** :
+> [Doc Odoo — Créer une app développeur Meta pour Odoo](https://www.odoo.com/documentation/19.0/fr/applications/productivity/whatsapp.html#productivity-whatsapp-meta-developer-app) ·
+> [Meta — Formation « Set up the WhatsApp Business Platform »](https://www.facebookblueprint.com/student/collection/409587/path/360218)
+
 ## Étape 3 — Activer le produit WhatsApp et tester
 
 1. Depuis le tableau de bord de l'application `Odoo`
@@ -69,11 +81,16 @@ ou l'app mobile Business ne sont **pas** compatibles.
 4. Cliquez sur **Send Message** : chaque numéro doit recevoir le message de test
    *Hello World* sur WhatsApp. ✅ Si c'est le cas, l'API fonctionne.
 
+> 📚 **Références** :
+> [Doc Odoo — Ajouter le produit WhatsApp à l'app](https://www.odoo.com/documentation/19.0/fr/applications/productivity/whatsapp.html#productivity-whatsapp-add-product) ·
+> [Doc Odoo — Configuration de l'API (quickstart)](https://www.odoo.com/documentation/19.0/fr/applications/productivity/whatsapp.html#productivity-whatsapp-api-setup) ·
+> [Meta — WhatsApp Cloud API : premiers pas](https://developers.facebook.com/docs/whatsapp/cloud-api/get-started#add-recipient-number)
+
 ## Étape 4 — Ajouter le numéro de téléphone réel
 
 1. Toujours dans **WhatsApp → API Setup**, descendez à **Step 5 : Add a phone number**
    et cliquez sur **Add phone number**.
-2. Renseignez : nom de l'entreprise, site web (`https://www.belgogreen.com`), pays
+2. Renseignez : nom de l'entreprise, site web (`https://belgogreen.be/`), pays
    (`Belgique`).
 3. Complétez le **profil WhatsApp Business** : nom affiché (`BelGoGreen`), fuseau
    horaire, catégorie, description (optionnelle).
@@ -86,6 +103,12 @@ ou l'app mobile Business ne sont **pas** compatibles.
 > **Generate access token** → **Edit previous settings** → cochez *Opt in to all
 > current and future WhatsApp accounts* → **Continue** → **Save**. Le statut passe
 > alors à *Connected*.
+
+> 📚 **Références** :
+> [Doc Odoo — Ajouter un numéro de téléphone](https://www.odoo.com/documentation/19.0/fr/applications/productivity/whatsapp.html#productivity-whatsapp-add-phone-number) ·
+> [Meta — Connecter votre numéro à WhatsApp Business](https://www.facebook.com/business/help/456220311516626?id=2129163877102343) ·
+> [Meta — Ajouter un moyen de paiement](https://www.facebook.com/business/help/915454841921082?id=180505742745347) ·
+> [Meta — Migrer un numéro WhatsApp existant](https://developers.facebook.com/docs/whatsapp/cloud-api/get-started/migrate-existing-whatsapp-number-to-a-business-account)
 
 ## Étape 5 — Créer le jeton d'accès permanent
 
@@ -111,6 +134,10 @@ Le jeton temporaire expire après 24 h ; sans jeton permanent, l'intégration s'
 > droits : utilisez un compte avec le rôle *Product Manager* ou supérieur dans le
 > compte business, ou recréez l'application en type **Business**.
 
+> 📚 **Références** :
+> [Doc Odoo — Créer un jeton permanent](https://www.odoo.com/documentation/19.0/fr/applications/productivity/whatsapp.html#productivity-whatsapp-token) ·
+> [Meta — Jetons d'accès des utilisateurs système](https://developers.facebook.com/docs/whatsapp/business-management-api/get-started#system-user-access-tokens)
+
 ## Étape 6 — Nous transmettre les valeurs (passage de relais)
 
 Récupérez ces **5 valeurs** et transmettez-les-nous :
@@ -131,6 +158,9 @@ Gardez aussi sous la main un accès à la console Meta : deux allers-retours rap
 resteront nécessaires avec nous (validation du webhook, passage de l'app en mode
 **Live**).
 
+> 📚 **Référence** :
+> [Doc Odoo — Configuration WhatsApp dans Odoo (où vont ces 5 valeurs)](https://www.odoo.com/documentation/19.0/fr/applications/productivity/whatsapp.html#productivity-whatsapp-odoo-configuration)
+
 ---
 
 ## Ce que nous faisons ensuite dans Odoo
@@ -145,13 +175,20 @@ resteront nécessaires avec nous (validation du webhook, passage de l'app en mod
    « Welcom call » déclenche le message WhatsApp de bienvenue au client.
 5. Tests de bout en bout avec les numéros de test, puis passage de l'app en mode
    **Live** avec vous (une URL de politique de confidentialité — page du site
-   BelGoGreen — est requise à ce moment-là).
+   [belgogreen.be](https://belgogreen.be/) — est requise à ce moment-là).
+
+> 📚 **Références** (notre partie, pour information) :
+> [Doc Odoo — Configurer les webhooks](https://www.odoo.com/documentation/19.0/fr/applications/productivity/whatsapp.html#productivity-whatsapp-webhooks) ·
+> [Doc Odoo — Modèles WhatsApp](https://www.odoo.com/documentation/19.0/fr/applications/productivity/whatsapp.html#productivity-whatsapp-templates) ·
+> [Meta — Configurer les webhooks](https://developers.facebook.com/docs/whatsapp/cloud-api/guides/set-up-webhooks) ·
+> [Meta — Modèles de message](https://developers.facebook.com/docs/whatsapp/business-management-api/message-templates/)
 
 ## Questions fréquentes
 
 **Combien coûte l'envoi des messages ?** Meta facture par conversation de 24 h,
 selon la catégorie du message (le message de bienvenue est un message « utilitaire »).
-Les messages vers les numéros de test sont gratuits.
+Les messages vers les numéros de test sont gratuits. Détail des tarifs :
+[Meta — Pricing WhatsApp Business Platform](https://developers.facebook.com/docs/whatsapp/pricing).
 
 **Peut-on répondre aux clients ?** Oui : si un client répond dans les 15 jours, une
 fenêtre de discussion s'ouvre dans Odoo (application Discuss) pour vos opérateurs.
@@ -159,7 +196,8 @@ fenêtre de discussion s'ouvre dans Odoo (application Discuss) pour vos opérate
 **Meta demande une « vérification de l'entreprise » ?** C'est normal pour obtenir un
 accès complet : préparez les documents officiels (BCE/TVA, adresse, site web) et suivez
 l'assistant dans Business Suite → Security Center. Prévenez-nous, nous suivons le
-dossier avec vous.
+dossier avec vous. Référence :
+[Meta — Business verification](https://developers.facebook.com/docs/development/release/business-verification).
 
 **Le message de test ne part pas ?** Vérifiez que le numéro destinataire figure bien
 dans la liste des 5 numéros de test validés (étape 3) et que l'app est encore en mode

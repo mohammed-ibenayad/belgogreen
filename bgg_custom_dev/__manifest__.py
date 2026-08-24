@@ -34,7 +34,7 @@
         All business logic includes comprehensive logging for debugging and monitoring.
     """,
     'author': 'BelGoGreen',
-    'website': 'https://www.belgogreen.com',
+    'website': 'https://belgogreen.be',
     'license': 'LGPL-3',
     'depends': [
         'base',

@@ -45,4 +45,4 @@ odoo --test-enable -i bgg_whatsapp_welcome --test-tags=bgg_whatsapp_welcome
 
 - **Odoo version:** 19.0
 - **License:** LGPL-3
-- **Author:** BelGoGreen — <https://www.belgogreen.com>
+- **Author:** BelGoGreen — <https://belgogreen.be>

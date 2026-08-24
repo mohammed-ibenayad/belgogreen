@@ -14,7 +14,7 @@
         * Intégration avec les devis (sale.order)
     """,
     'author': 'BelGoGreen',
-    'website': 'https://www.belgogreen.com',
+    'website': 'https://belgogreen.be',
     'license': 'LGPL-3',
     'depends': ['base', 'sale_management'],
     'external_dependencies': {

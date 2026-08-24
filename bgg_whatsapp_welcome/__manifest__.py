@@ -34,7 +34,7 @@
         setup path.
     """,
     'author': 'BelGoGreen',
-    'website': 'https://www.belgogreen.com',
+    'website': 'https://belgogreen.be',
     'license': 'LGPL-3',
     'depends': [
         'project',

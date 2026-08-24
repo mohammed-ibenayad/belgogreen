@@ -30,7 +30,7 @@ Main Features:
     """,
 
     'author': "Belgogreen",
-    'website': "https://www.belgogreen.com",
+    'website': "https://belgogreen.be",
 
     'category': 'Sales/Sales',
     'version': '19.0.0.0',

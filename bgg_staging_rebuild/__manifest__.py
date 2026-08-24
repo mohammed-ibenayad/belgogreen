@@ -39,7 +39,7 @@
         Every trigger is logged in bgg.staging.rebuild.log for audit.
     """,
     'author': 'BelGoGreen',
-    'website': 'https://www.belgogreen.com',
+    'website': 'https://belgogreen.be',
     'license': 'LGPL-3',
     'depends': [
         'base',
