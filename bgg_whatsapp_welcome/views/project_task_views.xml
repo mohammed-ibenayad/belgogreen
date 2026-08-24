@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_task_form_welcome_whatsapp" model="ir.ui.view">
+        <field name="name">project.task.form.welcome.whatsapp</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <field name="is_welcome_call_task" invisible="1"/>
+                <button name="action_send_welcome_whatsapp"
+                        type="object"
+                        string="Send WhatsApp Welcome"
+                        icon="fa-whatsapp"
+                        class="btn-secondary"
+                        invisible="not is_welcome_call_task or welcome_whatsapp_sent"
+                        groups="project.group_project_user"/>
+                <button name="action_send_welcome_whatsapp"
+                        type="object"
+                        string="Resend WhatsApp Welcome"
+                        icon="fa-whatsapp"
+                        class="btn-secondary"
+                        invisible="not is_welcome_call_task or not welcome_whatsapp_sent"
+                        groups="project.group_project_manager"
+                        confirm="A WhatsApp welcome message has already been sent for this task. Send it again?"/>
+            </xpath>
+            <xpath expr="//sheet" position="inside">
+                <group name="welcome_whatsapp" invisible="not is_welcome_call_task">
+                    <field name="welcome_whatsapp_sent"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
