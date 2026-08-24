@@ -63,6 +63,10 @@ managers get a **Resend** button (with confirmation) once a message was already 
       on the WhatsApp business account.
    5. Install this module and confirm a test sale order to a number in the allowed
       test list (before the Meta app is Live) or to a real number (after go-live).
+   6. Go-live: switch the Meta app from *Development* to *Live*. Meta requires a public
+      **privacy-policy URL** first (client deliverable — a page on
+      <https://belgogreen.be/> covering the WhatsApp messaging, see step 7 of the client
+      guide), registered under *App settings → Basic → Privacy Policy URL*.
 
 ## Tests
 

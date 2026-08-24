@@ -2,7 +2,8 @@
 
 > **À qui s'adresse ce guide ?** À l'administrateur BelGoGreen chargé de créer les comptes
 > Meta / WhatsApp. Aucune compétence technique n'est requise : suivez les étapes dans
-> l'ordre, cochez au fur et à mesure, puis transmettez-nous les 5 valeurs de l'étape 6.
+> l'ordre, cochez au fur et à mesure, puis transmettez-nous les 5 valeurs de l'étape 6
+> et publiez la politique de confidentialité de l'étape 7.
 > **Nous prenons ensuite le relais dans Odoo** (connexion, webhooks, modèle de message,
 > tests et mise en production).
 
@@ -31,6 +32,7 @@ ou l'app mobile Business ne sont **pas** compatibles.
 | ☐ | Un **numéro de téléphone dédié** | Il recevra les messages WhatsApp des clients. ⚠️ Ce numéro ne doit **pas** être déjà enregistré sur WhatsApp (app personnelle ou Business App). S'il l'est, il faudra d'abord supprimer le compte WhatsApp existant ou migrer le numéro |
 | ☐ | Une **carte de crédit d'entreprise** | Meta exige un moyen de paiement pour activer un numéro réel (anti-fraude) — les messages « utilitaires » vers vos clients sont ensuite facturés par Meta à la conversation |
 | ☐ | Les **documents officiels de l'entreprise** | Numéro BCE/TVA, adresse, site web — nécessaires si Meta demande la vérification de l'entreprise |
+| ☐ | Une **page « Politique de confidentialité »** sur [belgogreen.be](https://belgogreen.be/) | Meta l'exige pour la mise en production (voir étape 7). Si elle n'existe pas encore, prévoyez de la publier — nous pouvons fournir un modèle de texte |
 
 ---
 
@@ -161,6 +163,41 @@ resteront nécessaires avec nous (validation du webhook, passage de l'app en mod
 > 📚 **Référence** :
 > [Doc Odoo — Configuration WhatsApp dans Odoo (où vont ces 5 valeurs)](https://www.odoo.com/documentation/19.0/fr/applications/productivity/whatsapp.html#productivity-whatsapp-odoo-configuration)
 
+## Étape 7 — Publier la politique de confidentialité
+
+> ⚠️ **À votre charge, indispensable avant la mise en production.** Meta refuse de passer
+> l'application en mode **Live** tant qu'aucune URL publique de politique de
+> confidentialité n'est renseignée. Sans mode Live, seuls les 5 numéros de test peuvent
+> recevoir des messages — vos vrais clients, non.
+
+Cette étape peut être menée **en parallèle** des étapes 1 à 6.
+
+1. Publiez (ou vérifiez) une page « Politique de confidentialité » sur votre site,
+   par exemple `https://belgogreen.be/politique-de-confidentialite`.
+2. La page doit être **accessible publiquement** (sans connexion) et couvrir, dans
+   l'esprit du RGPD :
+   - **qui traite les données** : BelGoGreen (responsable du traitement) et ses
+     coordonnées de contact ;
+   - **quelles données clients** sont traitées : nom, numéro de téléphone, e-mail,
+     adresse, informations liées à la commande et à l'installation ;
+   - **pourquoi** : suivi du dossier client et envoi de messages de service, dont les
+     **messages WhatsApp** (message de bienvenue, suivi d'installation), avec la base
+     légale (exécution du contrat / intérêt légitime) ;
+   - le fait que **WhatsApp / Meta** intervient comme sous-traitant technique pour
+     l'acheminement des messages ;
+   - la **durée de conservation** des données ;
+   - les **droits des clients** (accès, rectification, effacement, opposition) et
+     comment les exercer, y compris comment ne plus recevoir de messages WhatsApp.
+3. Faites valider le texte par votre conseil habituel si nécessaire — **nous pouvons
+   vous fournir un modèle de texte** à adapter.
+4. Envoyez-nous l'**URL de la page** en même temps que les 5 valeurs de l'étape 6 :
+   nous l'enregistrerons dans Meta (**App settings → Basic → Privacy Policy URL**) au
+   moment du passage en mode Live.
+
+> 📚 **Références** :
+> [Meta — Exigences de lancement d'une app (dont Privacy Policy URL)](https://developers.facebook.com/docs/development/release) ·
+> [Autorité de protection des données (Belgique)](https://www.autoriteprotectiondonnees.be/)
+
 ---
 
 ## Ce que nous faisons ensuite dans Odoo
@@ -174,8 +211,8 @@ resteront nécessaires avec nous (validation du webhook, passage de l'app en mod
 4. Activation de l'envoi automatique : à chaque commande confirmée, la tâche
    « Welcom call » déclenche le message WhatsApp de bienvenue au client.
 5. Tests de bout en bout avec les numéros de test, puis passage de l'app en mode
-   **Live** avec vous (une URL de politique de confidentialité — page du site
-   [belgogreen.be](https://belgogreen.be/) — est requise à ce moment-là).
+   **Live** avec vous, en enregistrant dans Meta l'URL de la politique de
+   confidentialité préparée à l'étape 7.
 
 > 📚 **Références** (notre partie, pour information) :
 > [Doc Odoo — Configurer les webhooks](https://www.odoo.com/documentation/19.0/fr/applications/productivity/whatsapp.html#productivity-whatsapp-webhooks) ·
