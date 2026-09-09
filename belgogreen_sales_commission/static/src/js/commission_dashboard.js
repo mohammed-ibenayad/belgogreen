@@ -433,7 +433,7 @@ export class CommissionDashboard extends Component {
     }
 
     async onRefreshClick() {
-        // Call refresh endpoint which also generates commissions
+        // Call refresh endpoint (data refresh only - never generates commissions)
         const refreshBtn = this.root.el?.querySelector('.dashboard_refresh');
 
         // Add loading state to button with Odoo-style spinner
