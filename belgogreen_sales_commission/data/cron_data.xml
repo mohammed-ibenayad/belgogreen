@@ -1,13 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!--
-        The nightly commission generation cron has been removed: commissions
-        are generated exclusively from sale orders (button / bulk action),
-        under the control of a commission manager.
+    <data noupdate="1">
 
-        The <delete> below removes the old scheduled action from existing
-        databases on module upgrade. It searches by name (not by xml id) so it
-        is idempotent and safe on fresh installs where the record never existed.
-    -->
-    <delete model="ir.cron" search="[('cron_name', '=', 'Generate Sales Commissions')]"/>
+        <!-- Scheduled Action: Generate Commissions Nightly (DISABLED - Use manual generation from sale orders instead) -->
+        <record id="ir_cron_generate_commissions" model="ir.cron">
+            <field name="name">Generate Sales Commissions</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="state">code</field>
+            <field name="code">model.cron_generate_commissions()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active" eval="False"/>
+            <field name="nextcall" eval="(DateTime.now() + timedelta(days=1)).replace(hour=2, minute=0, second=0)"/>
+        </record>
+
+    </data>
 </odoo>
