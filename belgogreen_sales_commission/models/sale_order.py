@@ -296,30 +296,25 @@ class SaleOrder(models.Model):
         return result
 
     def _get_active_plan_assignment(self, commission_plan, user, check_date):
-        """Return the user's assignment in this plan if it is active on check_date.
+        """Return the user's assignment in this plan if the plan covers check_date.
 
-        The assignment line's own date_from/date_to take precedence. When a
-        line date is not set, the plan's effective period (date_from/date_to)
-        applies as fallback, so a plan bounded to one year can never generate
-        outside that year just because a line date was left empty.
+        Validity is driven by the PLAN's effective period (date_from/date_to)
+        only. The assignment lines' own dates are intentionally ignored to
+        keep the configuration simple: bounding the plan bounds everyone in
+        it, and per-line dates cannot silently widen or shrink that period.
 
         Returns an empty recordset when the user has no assignment or the
-        assignment is not valid on check_date.
+        plan is not effective on check_date.
         """
         PlanUser = self.env['sale.commission.plan.user']
-        plan_user = PlanUser.search([
+        if commission_plan.date_from and check_date < commission_plan.date_from:
+            return PlanUser
+        if commission_plan.date_to and check_date > commission_plan.date_to:
+            return PlanUser
+        return PlanUser.search([
             ('plan_id', '=', commission_plan.id),
             ('user_id', '=', user.id),
         ], limit=1)
-        if not plan_user:
-            return PlanUser
-        date_from = plan_user.date_from or commission_plan.date_from
-        date_to = plan_user.date_to or commission_plan.date_to
-        if date_from and check_date < date_from:
-            return PlanUser
-        if date_to and check_date > date_to:
-            return PlanUser
-        return plan_user
 
     def _get_commission_hierarchy(self, base_user, commission_plan):
         """
