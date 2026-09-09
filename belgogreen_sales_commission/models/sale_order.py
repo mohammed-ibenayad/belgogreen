@@ -262,14 +262,10 @@ class SaleOrder(models.Model):
         plans_processed = []
 
         for commission_plan in commission_plans:
-            # Check if salesperson has assignment in this plan (with date validation)
-            user_assignment = self.env['sale.commission.plan.user'].search([
-                ('plan_id', '=', commission_plan.id),
-                ('user_id', '=', self.user_id.id),
-                # Date validation: assignment must be active
-                '|', ('date_from', '=', False), ('date_from', '<=', invoice_date),
-                '|', ('date_to', '=', False), ('date_to', '>=', invoice_date)
-            ], limit=1)
+            # Check if salesperson has an assignment active on the invoice date
+            # (line dates first, plan effective period as fallback)
+            user_assignment = self._get_active_plan_assignment(
+                commission_plan, self.user_id, invoice_date)
 
             if not user_assignment:
                 _logger.info("Salesperson %s is not assigned to commission plan %s, skipping",
@@ -298,6 +294,32 @@ class SaleOrder(models.Model):
             result['message'] = _("Aucune nouvelle commission à générer - vos données sont à jour")
 
         return result
+
+    def _get_active_plan_assignment(self, commission_plan, user, check_date):
+        """Return the user's assignment in this plan if it is active on check_date.
+
+        The assignment line's own date_from/date_to take precedence. When a
+        line date is not set, the plan's effective period (date_from/date_to)
+        applies as fallback, so a plan bounded to one year can never generate
+        outside that year just because a line date was left empty.
+
+        Returns an empty recordset when the user has no assignment or the
+        assignment is not valid on check_date.
+        """
+        PlanUser = self.env['sale.commission.plan.user']
+        plan_user = PlanUser.search([
+            ('plan_id', '=', commission_plan.id),
+            ('user_id', '=', user.id),
+        ], limit=1)
+        if not plan_user:
+            return PlanUser
+        date_from = plan_user.date_from or commission_plan.date_from
+        date_to = plan_user.date_to or commission_plan.date_to
+        if date_from and check_date < date_from:
+            return PlanUser
+        if date_to and check_date > date_to:
+            return PlanUser
+        return plan_user
 
     def _get_commission_hierarchy(self, base_user, commission_plan):
         """
@@ -331,14 +353,10 @@ class SaleOrder(models.Model):
                 invoice_date = paid_invoice.invoice_date
 
         while current_user and current_user.id not in seen_ids:
-            # Find user's assignment in THIS PLAN (with date validation)
-            plan_user = self.env['sale.commission.plan.user'].search([
-                ('plan_id', '=', commission_plan.id),
-                ('user_id', '=', current_user.id),
-                # Date validation: assignment must be active on invoice date
-                '|', ('date_from', '=', False), ('date_from', '<=', invoice_date),
-                '|', ('date_to', '=', False), ('date_to', '>=', invoice_date)
-            ], limit=1)
+            # Find user's assignment in THIS PLAN, active on the invoice date
+            # (line dates first, plan effective period as fallback)
+            plan_user = self._get_active_plan_assignment(
+                commission_plan, current_user, invoice_date)
 
             if plan_user and plan_user.role_id:
                 # Determine commission type
@@ -404,18 +422,22 @@ class SaleOrder(models.Model):
         # Create commission records
         commissions_created = 0
         for user, role, commission_type in users_to_commission:
-            # Check if commission already exists for this SO + plan + user + role
+            # Anti-duplicate guard: one commission per beneficiary + order +
+            # type, whatever the plan or role it came from (manual commissions
+            # included). Cancelled records do not block regeneration.
             existing_commission = self.env['sale.commission'].sudo().search([
                 ('sale_order_id', '=', self.id),
-                ('plan_id', '=', commission_plan.id),
                 ('user_id', '=', user.id),
-                ('role_id', '=', role.id),
-                ('commission_type', '=', commission_type)
+                ('commission_type', '=', commission_type),
+                ('status', '!=', 'cancelled'),
             ], limit=1)
 
             if existing_commission:
-                _logger.info("Commission already exists for %s (%s, %s) on order %s",
-                           user.name, role.name, commission_type, self.name)
+                _logger.info(
+                    "Commission %s already exists for %s (%s) on order %s - "
+                    "skipping duplicate from plan %s",
+                    existing_commission.name, user.name, commission_type,
+                    self.name, commission_plan.name)
                 continue
 
             # Get role configuration

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from odoo import models, fields, api
+from odoo import models, fields, api, _
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 
@@ -248,7 +248,24 @@ class CommissionDashboard(models.TransientModel):
 
         Only generates commissions for orders with paid invoices
         Returns count and total amount of generated commissions
+
+        DISABLED: dashboard-driven generation bypassed the plan date, company
+        and duplicate checks of the sale order engine (see sale_order.py) and
+        produced duplicate/out-of-period commissions. Generation now happens
+        exclusively through the sale order engine (button/bulk/cron). This
+        method is kept as a callable stub because it is an @api.model method
+        reachable over RPC by any authenticated user.
         """
+        return {
+            'count': 0,
+            'total_amount': 0,
+            'claimable_amount': 0,
+            'success': False,
+            'message': _('La génération de commissions via le tableau de bord est '
+                         'désactivée. Les commissions sont générées depuis les bons '
+                         'de commande.'),
+        }
+
         user = self.env.user
 
         # Check if user has commission plan assignments (removed limit=1)
