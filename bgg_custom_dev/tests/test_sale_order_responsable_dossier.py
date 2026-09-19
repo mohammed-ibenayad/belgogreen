@@ -77,12 +77,19 @@ class TestSaleOrderResponsableDossier(TransactionCase):
         self.order.x_responsable_dossier_id = False
         self.assertFalse(self.order.x_responsable_dossier_id)
 
-    def test_assignment_is_tracked_in_chatter(self):
-        self.order.x_responsable_dossier_id = self.responsable
-        # mail tracking values are written by the precommit hook
+    def _flush_tracking(self):
+        """Run the precommit hooks that write mail tracking values."""
         self.env.flush_all()
         self.env.cr.precommit.run()
-        tracking =self.env['mail.tracking.value'].search([
+
+    def test_assignment_is_tracked_in_chatter(self):
+        # mail.thread disables tracking on a record for the rest of the
+        # transaction that created it, until precommit runs. The order was
+        # created in setUpClass, so flush once before the tracked write.
+        self._flush_tracking()
+        self.order.x_responsable_dossier_id = self.responsable
+        self._flush_tracking()
+        tracking = self.env['mail.tracking.value'].search([
             ('mail_message_id.model', '=', 'sale.order'),
             ('mail_message_id.res_id', '=', self.order.id),
             ('field_id.name', '=', 'x_responsable_dossier_id'),
