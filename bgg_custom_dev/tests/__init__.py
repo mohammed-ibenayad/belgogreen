@@ -5,3 +5,4 @@ from . import test_calendar_event
 from . import test_project_project
 from . import test_project_task
 from . import test_res_partner
+from . import test_sale_order_responsable_dossier

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen Custom Development',
-    'version': '19.0.1.5.9',
+    'version': '19.0.1.6.0',
     'category': 'Customizations',
     'summary': 'Custom business logic and automation for BelGoGreen',
     'description': """
@@ -30,6 +30,11 @@
         **Project Management (project.project, project.task)**:
         - Document folder naming from sales orders
         - Welcome call deadline calculation (order date + 2 days)
+
+        **Sales Orders (sale.order)**:
+        - Call Center (Sale Owner) attribution and RDV smart button
+        - "Dossier" tab with the "Responsable" of the order (project manager
+          of the sale), restricted to the "Responsable Dossier" group
 
         All business logic includes comprehensive logging for debugging and monitoring.
     """,

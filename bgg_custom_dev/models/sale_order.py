@@ -3,16 +3,72 @@
 import logging
 
 from odoo import _, api, fields, models
+from odoo.exceptions import ValidationError
 
 from .calendar_event import CALL_CENTER_APPOINTMENT_REFS
 
 _logger = logging.getLogger(__name__)
 
 DASHBOARD_GROUP = 'bgg_custom_dev.group_bgg_dashboard'
+RESPONSABLE_DOSSIER_GROUP = 'bgg_custom_dev.group_responsable_dossier'
 
 
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
+
+    # ------------------------------------------------------------------
+    # Dossier tab: Responsable (project manager of the sale order)
+    # ------------------------------------------------------------------
+    # Business wording is French on purpose ("Dossier", "Responsable",
+    # "Responsable Dossier") and must not be translated. The Responsable is
+    # the internal user who follows up the admins' activities and the field
+    # service until the order is delivered to the client.
+
+    x_responsable_dossier_id = fields.Many2one(
+        'res.users',
+        string='Responsable',
+        tracking=True,
+        index='btree_not_null',
+        domain=lambda self: self._responsable_dossier_domain(),
+        help=(
+            "Responsable du dossier : personne chargée du suivi des "
+            "activités des admins et du service sur site jusqu'à la "
+            "livraison de la commande au client. "
+            "Seuls les utilisateurs internes du groupe « Responsable "
+            "Dossier » peuvent être sélectionnés."
+        ),
+    )
+
+    @api.model
+    def _responsable_dossier_domain(self):
+        """Domain restricting the Responsable to internal users that belong
+        (directly or through implied groups) to the Responsable Dossier group.
+        """
+        group = self.env.ref(RESPONSABLE_DOSSIER_GROUP, raise_if_not_found=False)
+        domain = [('share', '=', False)]
+        if group:
+            domain.append(('all_group_ids', 'in', group.id))
+        return domain
+
+    @api.constrains('x_responsable_dossier_id')
+    def _check_responsable_dossier(self):
+        """Server-side counterpart of the client-side domain: the Responsable
+        must be an internal user of the Responsable Dossier group (imports,
+        RPC and server actions bypass the view domain).
+        """
+        orders = self.filtered('x_responsable_dossier_id')
+        if not orders:
+            return
+        group = self.env.ref(RESPONSABLE_DOSSIER_GROUP, raise_if_not_found=False)
+        for order in orders:
+            user = order.x_responsable_dossier_id
+            if user.share or (group and not user.has_group(RESPONSABLE_DOSSIER_GROUP)):
+                raise ValidationError(_(
+                    "%(user)s ne peut pas être Responsable du dossier %(order)s : "
+                    "seuls les utilisateurs internes du groupe « Responsable "
+                    "Dossier » peuvent être sélectionnés.",
+                    user=user.name, order=order.name,
+                ))
 
     x_call_center_sale_owner_id = fields.Many2one(
         'res.partner',
