@@ -35,6 +35,8 @@
         - Call Center (Sale Owner) attribution and RDV smart button
         - "Dossier" tab with the "Responsable" of the order (project manager
           of the sale), restricted to the "Responsable Dossier" group
+        - The Responsable is propagated to the projects of the order as
+          project manager and as assignee of their open tasks
 
         All business logic includes comprehensive logging for debugging and monitoring.
     """,

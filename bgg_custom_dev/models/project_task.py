@@ -18,7 +18,41 @@ class ProjectTask(models.Model):
         for record in records:
             self._set_welcome_call_deadline(record)
 
+        records._assign_responsable_dossier_on_create()
+
         return records
+
+    # ------------------------------------------------------------------
+    # Dossier: Responsable of the linked sale order
+    # ------------------------------------------------------------------
+
+    def _assign_responsable_dossier_on_create(self):
+        """A task created in a project linked to a sale order with a
+        Responsable gets the Responsable as assignee. This also covers the
+        template tasks copied when the project is created on order
+        confirmation, which happens after project.project.create."""
+        for project, tasks in self.grouped('project_id').items():
+            if not project:
+                continue
+            responsable = project._get_responsable_dossier()
+            if responsable:
+                tasks._apply_responsable_dossier(responsable)
+
+    def _apply_responsable_dossier(self, responsable, previous_user=None):
+        """Add `responsable` to the assignees of these tasks and remove
+        `previous_user` (the former Responsable) from them. Existing
+        assignees (the admins doing the work) are kept."""
+        for task in self.sudo():
+            commands = []
+            if previous_user and previous_user != responsable and previous_user in task.user_ids:
+                commands.append((3, previous_user.id))
+            if responsable and responsable not in task.user_ids:
+                commands.append((4, responsable.id))
+            if commands:
+                task.write({'user_ids': commands})
+        if responsable:
+            _logger.info("Dossier: Responsable %s assigned on tasks %s",
+                         responsable.name, self.ids)
 
     def _set_welcome_call_deadline(self, record):
         """

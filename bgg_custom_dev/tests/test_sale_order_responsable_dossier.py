@@ -77,6 +77,158 @@ class TestSaleOrderResponsableDossier(TransactionCase):
         self.order.x_responsable_dossier_id = False
         self.assertFalse(self.order.x_responsable_dossier_id)
 
+    # ------------------------------------------------------------------
+    # Propagation to the projects / tasks of the order
+    # ------------------------------------------------------------------
+
+    @classmethod
+    def _make_template_and_product(cls):
+        """A project template with two tasks, and a 'project only' service
+        creating a project from it on order confirmation."""
+        template = cls.env['project.project'].create({
+            'name': 'AMSS - Tâches Avant - Installation (test)',
+            'is_template': True,
+            'user_id': cls.internal_user.id,
+        })
+        cls.env['project.task'].create([
+            {'name': 'Welcom call', 'project_id': template.id},
+            {'name': 'Dossier Fluvius', 'project_id': template.id},
+        ])
+        product = cls.env['product.product'].create({
+            'name': 'INSTALLATION BELGIQUE (test)',
+            'type': 'service',
+            'service_tracking': 'project_only',
+            'project_template_id': template.id,
+            'list_price': 100.0,
+        })
+        return template, product
+
+    def _make_order(self, product, responsable=None):
+        vals = {
+            'partner_id': self.customer.id,
+            'order_line': [(0, 0, {
+                'product_id': product.id,
+                'product_uom_qty': 1,
+                'price_unit': 100.0,
+            })],
+        }
+        if responsable:
+            vals['x_responsable_dossier_id'] = responsable.id
+        return self.env['sale.order'].create(vals)
+
+    def _open_tasks(self, project):
+        return self.env['project.task'].search([
+            ('project_id', '=', project.id),
+            ('state', 'not in', ['1_done', '1_canceled']),
+        ])
+
+    def test_responsable_set_before_confirmation(self):
+        """Project created on confirmation gets the Responsable as manager and
+        the template tasks get them as assignee."""
+        _template, product = self._make_template_and_product()
+        order = self._make_order(product, responsable=self.responsable)
+        order.action_confirm()
+
+        project = order._get_dossier_projects()
+        self.assertEqual(len(project), 1)
+        self.assertEqual(project.user_id, self.responsable,
+                         "template manager must be replaced by the Responsable")
+        tasks = self._open_tasks(project)
+        self.assertEqual(len(tasks), 2, "template tasks must be copied")
+        for task in tasks:
+            self.assertIn(self.responsable, task.user_ids)
+
+    def test_responsable_set_after_confirmation(self):
+        """Setting the Responsable on a confirmed order updates the existing
+        project and its open tasks; existing assignees are kept."""
+        _template, product = self._make_template_and_product()
+        order = self._make_order(product)
+        order.action_confirm()
+        project = order._get_dossier_projects()
+        self.assertEqual(project.user_id, self.internal_user,
+                         "without Responsable the template manager is kept")
+        task = self._open_tasks(project)[0]
+        task.user_ids = [(6, 0, [self.internal_user.id])]
+
+        order.x_responsable_dossier_id = self.responsable
+
+        self.assertEqual(project.user_id, self.responsable)
+        for t in self._open_tasks(project):
+            self.assertIn(self.responsable, t.user_ids)
+        self.assertIn(self.internal_user, task.user_ids,
+                      "existing assignees must be kept")
+
+    def test_responsable_change_and_clear(self):
+        """Changing the Responsable swaps them on the tasks and the project;
+        clearing it unassigns them from the tasks."""
+        _template, product = self._make_template_and_product()
+        order = self._make_order(product, responsable=self.responsable)
+        order.action_confirm()
+        project = order._get_dossier_projects()
+
+        other = self.env['res.users'].create({
+            'name': 'Other Responsable',
+            'login': 'other.responsable@test.bgg',
+            'group_ids': [(6, 0, [
+                self.env.ref('base.group_user').id, self.group.id,
+            ])],
+        })
+        order.x_responsable_dossier_id = other
+        self.assertEqual(project.user_id, other)
+        for t in self._open_tasks(project):
+            self.assertIn(other, t.user_ids)
+            self.assertNotIn(self.responsable, t.user_ids,
+                             "the former Responsable must be unassigned")
+
+        order.x_responsable_dossier_id = False
+        for t in self._open_tasks(project):
+            self.assertNotIn(other, t.user_ids)
+        self.assertEqual(project.user_id, other,
+                         "clearing keeps the current project manager")
+
+    def test_new_task_in_project_gets_responsable(self):
+        """A task created later in the project is assigned to the Responsable;
+        a closed task is left alone when the Responsable changes."""
+        _template, product = self._make_template_and_product()
+        order = self._make_order(product, responsable=self.responsable)
+        order.action_confirm()
+        project = order._get_dossier_projects()
+
+        new_task = self.env['project.task'].create({
+            'name': 'Visite technique', 'project_id': project.id,
+        })
+        self.assertIn(self.responsable, new_task.user_ids)
+
+        done_task = self.env['project.task'].create({
+            'name': 'Déjà fait', 'project_id': project.id,
+            'user_ids': [(6, 0, [self.internal_user.id])],
+        })
+        done_task.user_ids = [(6, 0, [self.internal_user.id])]
+        done_task.state = '1_done'
+        other = self.env['res.users'].create({
+            'name': 'Other Responsable 2',
+            'login': 'other.responsable2@test.bgg',
+            'group_ids': [(6, 0, [
+                self.env.ref('base.group_user').id, self.group.id,
+            ])],
+        })
+        order.x_responsable_dossier_id = other
+        self.assertNotIn(other, done_task.user_ids,
+                         "closed tasks are not reassigned")
+        self.assertIn(other, new_task.user_ids)
+
+    def test_project_without_order_untouched(self):
+        """Projects not linked to a sale order are never affected."""
+        project = self.env['project.project'].create({
+            'name': 'Interne', 'user_id': self.internal_user.id,
+        })
+        task = self.env['project.task'].create({
+            'name': 'Tâche interne', 'project_id': project.id,
+        })
+        self.order.x_responsable_dossier_id = self.responsable
+        self.assertEqual(project.user_id, self.internal_user)
+        self.assertNotIn(self.responsable, task.user_ids)
+
     def _flush_tracking(self):
         """Run the precommit hooks that write mail tracking values."""
         self.env.flush_all()

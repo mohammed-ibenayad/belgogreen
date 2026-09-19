@@ -16,8 +16,50 @@ class ProjectProject(models.Model):
 
         for record in records:
             self._update_project_folder_name(record)
+            # Dossier: a project created for an order that already has a
+            # Responsable gets them as project manager. Its tasks do not exist
+            # yet at this point (template tasks are copied after the project
+            # is created): they are handled in project.task.create.
+            responsable = record._get_responsable_dossier()
+            if responsable:
+                record._apply_responsable_dossier(responsable)
 
         return records
+
+    # ------------------------------------------------------------------
+    # Dossier: Responsable of the linked sale order
+    # ------------------------------------------------------------------
+
+    def _get_dossier_order(self):
+        """Sale order this project belongs to (sale_project links), if any."""
+        self.ensure_one()
+        project = self.sudo()
+        return project.reinvoiced_sale_order_id or project.sale_line_id.order_id
+
+    def _get_responsable_dossier(self):
+        """Responsable of the linked sale order (empty recordset if none)."""
+        self.ensure_one()
+        order = self._get_dossier_order()
+        return order.x_responsable_dossier_id if order else self.env['res.users']
+
+    def _apply_responsable_dossier(self, responsable, previous_user=None):
+        """Make `responsable` the project manager of these projects and an
+        assignee of their open tasks. `previous_user` (the former Responsable)
+        is unassigned from those tasks. Runs in sudo: this is a side effect of
+        editing the sale order, whose author may not manage projects.
+        """
+        projects = self.sudo()
+        if responsable:
+            to_update = projects.filtered(lambda p: p.user_id != responsable)
+            if to_update:
+                to_update.write({'user_id': responsable.id})
+                _logger.info("Dossier: Responsable %s set as project manager on projects %s",
+                             responsable.name, to_update.ids)
+        open_tasks = self.env['project.task'].sudo().search([
+            ('project_id', 'in', projects.ids),
+            ('state', 'not in', ['1_done', '1_canceled']),
+        ])
+        open_tasks._apply_responsable_dossier(responsable, previous_user)
 
     def write(self, vals):
         """Override write to handle folder creation after project creation"""

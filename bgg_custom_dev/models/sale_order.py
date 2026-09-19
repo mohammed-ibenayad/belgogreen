@@ -35,9 +35,43 @@ class SaleOrder(models.Model):
             "activités des admins et du service sur site jusqu'à la "
             "livraison de la commande au client. "
             "Seuls les utilisateurs internes du groupe « Responsable "
-            "Dossier » peuvent être sélectionnés."
+            "Dossier » peuvent être sélectionnés. "
+            "Le Responsable devient chef de projet des projets liés à la "
+            "commande et est assigné à toutes leurs tâches ouvertes."
         ),
     )
+
+    def write(self, vals):
+        """Propagate a Responsable change to the projects of the order."""
+        if 'x_responsable_dossier_id' not in vals:
+            return super().write(vals)
+        previous = {order.id: order.x_responsable_dossier_id for order in self}
+        result = super().write(vals)
+        for order in self:
+            if order.x_responsable_dossier_id != previous[order.id]:
+                order._sync_responsable_dossier(previous_user=previous[order.id])
+        return result
+
+    def _get_dossier_projects(self):
+        """Projects created for / linked to this order (same links as the
+        standard sale.order.project_ids compute), templates excluded."""
+        self.ensure_one()
+        return self.env['project.project'].sudo().search([
+            '|',
+            ('sale_line_id.order_id', '=', self.id),
+            ('reinvoiced_sale_order_id', '=', self.id),
+            ('is_template', '=', False),
+        ])
+
+    def _sync_responsable_dossier(self, previous_user=None):
+        """Apply the order's Responsable to its projects: project manager on
+        the projects, assignee on their open tasks (the previous Responsable
+        is unassigned from those tasks)."""
+        for order in self:
+            projects = order._get_dossier_projects()
+            if projects:
+                projects._apply_responsable_dossier(
+                    order.x_responsable_dossier_id, previous_user)
 
     @api.model
     def _responsable_dossier_domain(self):
