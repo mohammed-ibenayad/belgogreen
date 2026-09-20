@@ -42,6 +42,8 @@
           of the sale), restricted to the "Responsable Dossier" group
         - The Responsable is propagated to the projects of the order as
           project manager and as assignee of their open tasks
+        - Form warnings: Responsable not assigned on a confirmed order,
+          installation product (project-creating service) missing
 
         All business logic includes comprehensive logging for debugging and monitoring.
     """,

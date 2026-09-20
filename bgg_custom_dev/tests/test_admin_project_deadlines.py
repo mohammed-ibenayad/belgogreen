@@ -187,6 +187,36 @@ class TestAdminProjectDeadlines(TransactionCase):
         self.assertEqual(project.date, end)
 
     # ------------------------------------------------------------------
+    # form warning: installation product missing
+    # ------------------------------------------------------------------
+
+    def _order_without_service(self, *product_names):
+        return self.env['sale.order'].create({
+            'partner_id': self.customer.id,
+            'payment_term_id': self.terms['Paiement immédiat'].id,
+            'order_line': [(0, 0, {'product_id': self.products[n].id,
+                                   'product_uom_qty': 1, 'price_unit': 10.0})
+                           for n in product_names],
+        })
+
+    def test_installation_product_missing_flag(self):
+        # hardware without the installation service: missing
+        order = self._order_without_service('Panneaux', 'Onduleurs')
+        self.assertTrue(order.x_installation_product_missing)
+        # still missing once confirmed without a project
+        order.action_confirm()
+        self.assertFalse(order._get_dossier_projects())
+        self.assertTrue(order.x_installation_product_missing)
+        # hardware with the installation service: not missing
+        order = self._order('Paiement immédiat', 'Panneaux', confirm=False)
+        self.assertFalse(order.x_installation_product_missing)
+        order.action_confirm()
+        self.assertFalse(order.x_installation_product_missing)
+        # no hardware at all: nothing to warn about
+        order = self._order_without_service('Accessoires')
+        self.assertFalse(order.x_installation_product_missing)
+
+    # ------------------------------------------------------------------
     # locked fields on admin projects
     # ------------------------------------------------------------------
 

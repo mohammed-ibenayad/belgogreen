@@ -141,6 +141,20 @@ class SaleOrder(models.Model):
                 return rule
         return None
 
+    @api.model
+    def _line_category_match(self, line, names):
+        """Lowercased category name of `names` matched by the line's product
+        category or one of its parents (case-insensitive), or None."""
+        if line.display_type or not line.product_id:
+            return None
+        categ = line.product_id.categ_id
+        while categ:
+            name = (categ.name or '').strip().lower()
+            if name in names:
+                return name
+            categ = categ.parent_id
+        return None
+
     def _admin_deadline_delays(self, rule):
         """Delays (days) of `rule` that apply to this order: one per order
         line whose product category (or a parent category) is a key of the
@@ -156,16 +170,48 @@ class SaleOrder(models.Model):
                 continue
         delays = []
         for line in self.order_line:
-            if line.display_type or not line.product_id:
-                continue
-            categ = line.product_id.categ_id
-            while categ:
-                delay = delay_by_category.get((categ.name or '').strip().lower())
-                if delay is not None:
-                    delays.append(delay)
-                    break
-                categ = categ.parent_id
+            name = self._line_category_match(line, delay_by_category)
+            if name is not None:
+                delays.append(delay_by_category[name])
         return delays
+
+    @api.model
+    def _admin_deadline_all_category_names(self):
+        """Lowercased product category names listed in any deadline rule:
+        the categories that require an admin project (installation)."""
+        names = set()
+        for rule in self._admin_deadline_rules().values():
+            if isinstance(rule, dict):
+                names.update(str(k).strip().lower() for k in rule if k != 'day_type')
+        return names
+
+    # ------------------------------------------------------------------
+    # Form warnings (Dossier)
+    # ------------------------------------------------------------------
+
+    x_installation_product_missing = fields.Boolean(
+        string='Produit installation manquant',
+        compute='_compute_installation_product_missing',
+        help="Vrai quand la commande contient des produits à installer "
+             "(catégories des règles de délais) mais aucun service créant le "
+             "projet admin (produit d'installation, suivi « Projet »), et "
+             "qu'aucun projet admin n'existe pour la commande.",
+    )
+
+    @api.depends('order_line.product_id', 'order_line.product_id.service_tracking', 'state')
+    def _compute_installation_product_missing(self):
+        names = self._admin_deadline_all_category_names()
+        for order in self:
+            has_hardware = any(
+                order._line_category_match(line, names) is not None
+                for line in order.order_line)
+            has_installation = any(
+                line.product_id.service_tracking == 'project_only'
+                for line in order.order_line if line.product_id)
+            missing = has_hardware and not has_installation
+            if missing and order.id and order.state == 'sale':
+                missing = not order._get_dossier_projects()
+            order.x_installation_product_missing = missing
 
     @api.model
     def _add_business_days(self, date, days):

@@ -26,6 +26,22 @@
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_order_form"/>
         <field name="arch" type="xml">
+            <xpath expr="//sheet" position="before">
+                <div class="alert alert-warning" role="alert"
+                     invisible="state != 'sale' or x_responsable_dossier_id">
+                    <strong>Responsable non assigné :</strong>
+                    aucun Responsable n'a encore été désigné pour ce dossier.
+                    Sélectionnez-le dans l'onglet <em>Dossier</em>.
+                </div>
+                <div class="alert alert-warning" role="alert"
+                     invisible="not x_installation_product_missing">
+                    <field name="x_installation_product_missing" invisible="1"/>
+                    <strong>Produit d'installation manquant :</strong>
+                    la commande contient des produits à installer mais aucun
+                    service d'installation (suivi « Projet ») : le projet admin
+                    et ses tâches ne sont pas créés automatiquement.
+                </div>
+            </xpath>
             <xpath expr="//notebook/page[@name='other_information']" position="after">
                 <page string="Dossier" name="dossier">
                     <group>
