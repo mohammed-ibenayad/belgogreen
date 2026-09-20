@@ -33,6 +33,8 @@
           project end = start + delay from the payment term x product
           category rules (bgg.admin_project_deadline_rules system
           parameter), task deadlines = project end date
+        - Admin projects: project manager and planned dates are computed
+          from the order and locked against manual edits
 
         **Sales Orders (sale.order)**:
         - Call Center (Sale Owner) attribution and RDV smart button
@@ -71,6 +73,7 @@
         'views/commercial_dashboard_views.xml',
         'views/call_center_dashboard_views.xml',
         'views/sale_order_views.xml',
+        'views/project_project_views.xml',
 
         # Reports (action must be loaded before menu that references it)
         'report/avis_count_report_views.xml',

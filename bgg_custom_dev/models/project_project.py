@@ -1,13 +1,32 @@
 # -*- coding: utf-8 -*-
 
 import logging
-from odoo import api, models
+from odoo import api, fields, models
+from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
+
+# Fields of an admin project (project linked to a sale order) that are computed
+# from the order (Responsable du dossier, payment term x product categories)
+# and therefore locked against manual edits.
+ADMIN_PROJECT_LOCKED_FIELDS = ('user_id', 'date_start', 'date')
 
 
 class ProjectProject(models.Model):
     _inherit = 'project.project'
+
+    # View helper: True for admin projects (linked to a sale order), on which
+    # the project manager and the planned dates are read-only in the form.
+    x_is_admin_dossier_project = fields.Boolean(
+        string='Admin Project (Dossier)',
+        compute='_compute_is_admin_dossier_project',
+        compute_sudo=True,
+    )
+
+    @api.depends('sale_line_id', 'reinvoiced_sale_order_id')
+    def _compute_is_admin_dossier_project(self):
+        for project in self:
+            project.x_is_admin_dossier_project = bool(project._get_dossier_order())
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -31,6 +50,43 @@ class ProjectProject(models.Model):
                 record._apply_admin_project_dates(*dates)
 
         return records
+
+    def _check_admin_project_locked_fields(self, vals):
+        """Block manual edits of the project manager and the planned dates on
+        admin projects: they are computed from the sale order (Responsable du
+        dossier, payment term x product categories). The automations write
+        them in sudo and are not affected; a re-sent unchanged value is not a
+        change."""
+        if self.env.su:
+            return
+        touched = [f for f in ADMIN_PROJECT_LOCKED_FIELDS if f in vals]
+        if not touched:
+            return
+        for project in self:
+            order = project._get_dossier_order()
+            if not order:
+                continue
+            changed = []
+            for fname in touched:
+                new = vals[fname]
+                if fname == 'user_id':
+                    current = project.user_id.id
+                    new = new or False
+                else:
+                    current = project[fname]
+                    new = fields.Date.to_date(new) if new else False
+                if new != current:
+                    changed.append(fname)
+            if changed:
+                labels = ', '.join(
+                    '« %s »' % project._fields[f]._description_string(self.env)
+                    for f in changed)
+                raise UserError(
+                    "Le projet « %s » est lié à la commande %s : le chef de projet "
+                    "et les dates planifiées sont calculés automatiquement "
+                    "(Responsable du dossier, conditions de paiement) et ne peuvent "
+                    "pas être modifiés manuellement (%s)."
+                    % (project.display_name, order.name, labels))
 
     def _apply_admin_project_dates(self, date_start, date_end):
         """Set the project start/end dates and align the deadline of the open
@@ -82,6 +138,7 @@ class ProjectProject(models.Model):
 
     def write(self, vals):
         """Override write to handle folder creation after project creation"""
+        self._check_admin_project_locked_fields(vals)
         result = super(ProjectProject, self).write(vals)
 
         # If a documents folder is being added to the project, try to rename it

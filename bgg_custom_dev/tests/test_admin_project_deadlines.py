@@ -3,6 +3,7 @@
 import datetime
 
 from odoo import fields
+from odoo.exceptions import UserError
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
@@ -179,13 +180,50 @@ class TestAdminProjectDeadlines(TransactionCase):
         order.payment_term_id = self.terms['Financement RW']
         self.assertEqual(project.date, end, "no rule: dates are left as they are")
 
-    def test_manual_project_dates_kept_on_unrelated_order_write(self):
+    def test_unrelated_order_write_keeps_dates(self):
         order = self._order('Paiement immédiat', 'Panneaux')
-        project = self._project(order)
-        manual = datetime.date(2030, 1, 31)
-        project.write({'date': manual})
+        project, _start, end = self._assert_dates(order, 10)
         order.write({'note': 'unrelated change'})
-        self.assertEqual(project.date, manual)
+        self.assertEqual(project.date, end)
+
+    # ------------------------------------------------------------------
+    # locked fields on admin projects
+    # ------------------------------------------------------------------
+
+    def test_admin_project_locked_fields(self):
+        order = self._order('Paiement immédiat', 'Panneaux')
+        project, start, end = self._assert_dates(order, 10)
+        # Non-sudo project recordset, as a user editing the form would have.
+        project = self.env['project.project'].browse(project.id)
+        self.assertTrue(project.x_is_admin_dossier_project)
+        other_user = self.env['res.users'].create({
+            'name': 'Autre chef', 'login': 'autre.chef@test.bgg',
+            'group_ids': [(6, 0, [self.env.ref('base.group_user').id])],
+        })
+        with self.assertRaises(UserError):
+            project.write({'user_id': other_user.id})
+        with self.assertRaises(UserError):
+            project.write({'date_start': start + datetime.timedelta(days=1)})
+        with self.assertRaises(UserError):
+            project.write({'date': datetime.date(2030, 1, 31)})
+        # Re-sending the current values (as the form does) is not a change.
+        project.write({'user_id': project.user_id.id, 'date_start': start, 'date': end})
+        # Other fields stay editable.
+        project.write({'name': 'Renommé'})
+        self.assertEqual(project.name, 'Renommé')
+
+    def test_automation_still_writes_locked_fields(self):
+        """The order-driven recomputation (sudo) is not blocked."""
+        order = self._order('Paiement immédiat', 'Panneaux')
+        order.payment_term_id = self.terms['Financement']
+        self._assert_dates(order, 15, calendar=True)
+
+    def test_project_without_order_not_locked(self):
+        project = self.env['project.project'].create({'name': 'Interne'})
+        self.assertFalse(project.x_is_admin_dossier_project)
+        project.write({'date_start': datetime.date(2030, 1, 1),
+                       'date': datetime.date(2030, 1, 31)})
+        self.assertEqual(project.date, datetime.date(2030, 1, 31))
 
     def test_new_task_gets_project_end_deadline(self):
         order = self._order('Paiement immédiat', 'Panneaux')
