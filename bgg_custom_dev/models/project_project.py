@@ -23,8 +23,27 @@ class ProjectProject(models.Model):
             responsable = record._get_responsable_dossier()
             if responsable:
                 record._apply_responsable_dossier(responsable)
+            # Dossier: admin project deadlines from the order's payment term and
+            # product categories (tasks get their deadline in project.task.create).
+            order = record._get_dossier_order()
+            dates = order._compute_admin_project_dates() if order else None
+            if dates:
+                record._apply_admin_project_dates(*dates)
 
         return records
+
+    def _apply_admin_project_dates(self, date_start, date_end):
+        """Set the project start/end dates and align the deadline of the open
+        tasks on the end date. Runs in sudo (side effect of the sale order)."""
+        projects = self.sudo()
+        projects.write({'date_start': date_start, 'date': date_end})
+        _logger.info("Dossier: admin project dates %s -> %s set on projects %s",
+                     date_start, date_end, projects.ids)
+        open_tasks = self.env['project.task'].sudo().search([
+            ('project_id', 'in', projects.ids),
+            ('state', 'not in', ['1_done', '1_canceled']),
+        ])
+        open_tasks._apply_admin_deadline(date_end)
 
     # ------------------------------------------------------------------
     # Dossier: Responsable of the linked sale order

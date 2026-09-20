@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import datetime
+import json
 import logging
 
 from odoo import _, api, fields, models
@@ -11,6 +13,25 @@ _logger = logging.getLogger(__name__)
 
 DASHBOARD_GROUP = 'bgg_custom_dev.group_bgg_dashboard'
 RESPONSABLE_DOSSIER_GROUP = 'bgg_custom_dev.group_responsable_dossier'
+
+# Admin project deadlines (Dossier). Business timezone used to turn the
+# confirmation timestamp into a calendar date (Belgian company).
+BGG_TZ = 'Europe/Brussels'
+# JSON system parameters (see data/admin_project_deadline_params.xml). The
+# defaults below are used when a parameter is missing or not valid JSON.
+ADMIN_DEADLINE_RULES_PARAM = 'bgg.admin_project_deadline_rules'
+ADMIN_DEADLINE_CATEGORIES_PARAM = 'bgg.admin_project_deadline_categories'
+ADMIN_DEADLINE_RULES_DEFAULT = {
+    'Paiement immédiat': {'day_type': 'business', 'panneaux': 10, 'pac': 15, 'isolation': 20},
+    "50% maintenant, le solde à l'installation": {'day_type': 'business', 'panneaux': 10, 'pac': 15, 'isolation': 20},
+    'Financement': {'day_type': 'calendar', 'panneaux': 15, 'pac': 20, 'isolation': 25},
+    'Financement (Banque/Courtier client)': {'day_type': 'calendar', 'panneaux': 15, 'pac': 20, 'isolation': 25},
+}
+ADMIN_DEADLINE_CATEGORIES_DEFAULT = {
+    'panneaux': ['Panneaux', 'Onduleurs', 'Batteries'],
+    'pac': ['PAC'],
+    'isolation': ['Isolation'],
+}
 
 
 class SaleOrder(models.Model):
@@ -42,15 +63,156 @@ class SaleOrder(models.Model):
     )
 
     def write(self, vals):
-        """Propagate a Responsable change to the projects of the order."""
-        if 'x_responsable_dossier_id' not in vals:
-            return super().write(vals)
-        previous = {order.id: order.x_responsable_dossier_id for order in self}
+        """Propagate to the order's projects: a Responsable change (manager /
+        assignees) and a payment term change (admin project deadlines)."""
+        watched = ('x_responsable_dossier_id', 'payment_term_id')
+        previous = {
+            fname: {order.id: order[fname] for order in self}
+            for fname in watched if fname in vals
+        }
         result = super().write(vals)
-        for order in self:
-            if order.x_responsable_dossier_id != previous[order.id]:
-                order._sync_responsable_dossier(previous_user=previous[order.id])
+        if 'x_responsable_dossier_id' in previous:
+            for order in self:
+                old = previous['x_responsable_dossier_id'][order.id]
+                if order.x_responsable_dossier_id != old:
+                    order._sync_responsable_dossier(previous_user=old)
+        if 'payment_term_id' in previous:
+            changed = self.filtered(
+                lambda o: o.payment_term_id != previous['payment_term_id'][o.id])
+            changed._sync_admin_project_dates()
         return result
+
+    # ------------------------------------------------------------------
+    # Admin project deadlines: payment term x product category rules
+    # ------------------------------------------------------------------
+
+    @api.model
+    def _admin_deadline_json_param(self, key, default):
+        """Read a JSON object from a system parameter; fall back to `default`
+        (and log) when it is missing or not a JSON object."""
+        raw = self.env['ir.config_parameter'].sudo().get_param(key)
+        if not raw:
+            return default
+        try:
+            value = json.loads(raw)
+        except ValueError:
+            _logger.warning("Admin project deadlines: parameter %s is not valid JSON; "
+                            "using built-in defaults.", key)
+            return default
+        if not isinstance(value, dict):
+            _logger.warning("Admin project deadlines: parameter %s must be a JSON object; "
+                            "using built-in defaults.", key)
+            return default
+        return value
+
+    @api.model
+    def _admin_deadline_rules(self):
+        return self._admin_deadline_json_param(
+            ADMIN_DEADLINE_RULES_PARAM, ADMIN_DEADLINE_RULES_DEFAULT)
+
+    @api.model
+    def _admin_deadline_categories(self):
+        return self._admin_deadline_json_param(
+            ADMIN_DEADLINE_CATEGORIES_PARAM, ADMIN_DEADLINE_CATEGORIES_DEFAULT)
+
+    def _admin_deadline_rule(self):
+        """Rule (dict) matching this order's payment term, or None.
+
+        Payment term names are translatable: the term is matched by name,
+        case-insensitively, in any installed language.
+        """
+        self.ensure_one()
+        term = self.payment_term_id
+        if not term:
+            return None
+        rules = {str(name).strip().lower(): rule
+                 for name, rule in self._admin_deadline_rules().items()
+                 if isinstance(rule, dict)}
+        names = {term.name}
+        for lang_code, _label in self.env['res.lang'].get_installed():
+            names.add(term.with_context(lang=lang_code).name)
+        for name in names:
+            rule = rules.get((name or '').strip().lower())
+            if rule is not None:
+                return rule
+        return None
+
+    def _admin_deadline_category_groups(self):
+        """Category groups ('panneaux', 'pac', 'isolation', ...) present on the
+        order lines. A product matches a group through its category or any
+        parent category."""
+        self.ensure_one()
+        mapping = {}
+        for group, names in self._admin_deadline_categories().items():
+            for name in (names if isinstance(names, list) else [names]):
+                mapping[str(name).strip().lower()] = group
+        groups = set()
+        for line in self.order_line:
+            if line.display_type or not line.product_id:
+                continue
+            categ = line.product_id.categ_id
+            while categ:
+                group = mapping.get((categ.name or '').strip().lower())
+                if group:
+                    groups.add(group)
+                    break
+                categ = categ.parent_id
+        return groups
+
+    @api.model
+    def _add_business_days(self, date, days):
+        """`date` + `days` business days (Monday to Friday, no holidays)."""
+        result = date
+        while days > 0:
+            result += datetime.timedelta(days=1)
+            if result.weekday() < 5:
+                days -= 1
+        return result
+
+    def _admin_deadline_start_date(self):
+        """Signature du BC: the confirmation date (date_order, which sale sets
+        to now on confirmation) as a Belgian calendar date."""
+        self.ensure_one()
+        if not self.date_order:
+            return None
+        return fields.Datetime.context_timestamp(
+            self.with_context(tz=BGG_TZ), self.date_order).date()
+
+    def _compute_admin_project_dates(self):
+        """(date_start, date_end) for the admin project of this order, or None
+        when no rule applies: no payment term rule, or no product of a mapped
+        category. With several groups on the order the longest delay wins."""
+        self.ensure_one()
+        start = self._admin_deadline_start_date()
+        rule = self._admin_deadline_rule()
+        if not start or not rule:
+            return None
+        delays = []
+        for group in self._admin_deadline_category_groups():
+            try:
+                delays.append(int(rule.get(group)))
+            except (TypeError, ValueError):
+                continue
+        if not delays:
+            return None
+        days = max(delays)
+        if rule.get('day_type') == 'calendar':
+            end = start + datetime.timedelta(days=days)
+        else:
+            end = self._add_business_days(start, days)
+        return start, end
+
+    def _sync_admin_project_dates(self):
+        """Apply the computed dates to the order's projects and the deadlines
+        of their open tasks. Orders without an applicable rule are left as
+        they are (no dates written, nothing cleared)."""
+        for order in self:
+            dates = order._compute_admin_project_dates()
+            if not dates:
+                continue
+            projects = order._get_dossier_projects()
+            if projects:
+                projects._apply_admin_project_dates(*dates)
 
     def _get_dossier_projects(self):
         """Projects created for / linked to this order (same links as the

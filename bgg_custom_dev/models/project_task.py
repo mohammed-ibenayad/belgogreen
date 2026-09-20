@@ -2,9 +2,18 @@
 
 import datetime
 import logging
+
+import pytz
+
 from odoo import api, models
 
+from .sale_order import BGG_TZ
+
 _logger = logging.getLogger(__name__)
+
+# Local time of day at which an admin project task deadline is set
+# (deadlines are datetimes; the project end date is a date).
+ADMIN_DEADLINE_HOUR = 17
 
 
 class ProjectTask(models.Model):
@@ -15,10 +24,8 @@ class ProjectTask(models.Model):
         """Override create to trigger automation rules on new tasks"""
         records = super(ProjectTask, self).create(vals_list)
 
-        for record in records:
-            self._set_welcome_call_deadline(record)
-
         records._assign_responsable_dossier_on_create()
+        records._apply_admin_deadline_on_create()
 
         return records
 
@@ -54,58 +61,31 @@ class ProjectTask(models.Model):
             _logger.info("Dossier: Responsable %s assigned on tasks %s",
                          responsable.name, self.ids)
 
-    def _set_welcome_call_deadline(self, record):
-        """
-        Set Welcome Call Deadline - Automation Rule
-        Sets the deadline for "Welcom call" tasks to 2 days after the sales order date
-        """
-        try:
-            # Only process if this is a new record (newly created task from template)
-            if not (record.create_date == record.write_date):
-                return
+    # ------------------------------------------------------------------
+    # Dossier: task deadline = end date of the admin project
+    # ------------------------------------------------------------------
 
-            # Check if task name is "Welcom call" (using the exact spelling from the requirement)
-            if record.name == "Welcom call":
-                _logger.info("Processing Welcome call task (ID %s) for project %s",
-                           record.id, record.project_id.name if record.project_id else 'N/A')
+    @api.model
+    def _admin_deadline_datetime(self, date_end):
+        """Deadline datetime (UTC, naive) for a project end date: that day at
+        ADMIN_DEADLINE_HOUR in the business timezone."""
+        local = pytz.timezone(BGG_TZ).localize(
+            datetime.datetime.combine(date_end, datetime.time(ADMIN_DEADLINE_HOUR, 0)))
+        return local.astimezone(pytz.utc).replace(tzinfo=None)
 
-                # Try to get the sales order from multiple sources
-                sale_order = None
+    def _apply_admin_deadline(self, date_end):
+        """Set the deadline of these tasks to the project end date."""
+        deadline = self._admin_deadline_datetime(date_end)
+        to_update = self.sudo().filtered(lambda t: t.date_deadline != deadline)
+        if to_update:
+            to_update.write({'date_deadline': deadline})
+            _logger.info("Dossier: deadline %s set on tasks %s", deadline, to_update.ids)
 
-                # First try: direct field project_sale_order_id
-                if hasattr(record, 'project_sale_order_id') and record.project_sale_order_id:
-                    sale_order = record.project_sale_order_id
-                # Second try: through sale_line_id (standard Odoo sale_project field)
-                elif hasattr(record, 'sale_line_id') and record.sale_line_id:
-                    sale_order = record.sale_line_id.order_id
-                # Third try: through project's sale_order_id or sale_line_id
-                elif record.project_id:
-                    if hasattr(record.project_id, 'sale_order_id') and record.project_id.sale_order_id:
-                        sale_order = record.project_id.sale_order_id
-                    elif hasattr(record.project_id, 'sale_line_id') and record.project_id.sale_line_id:
-                        sale_order = record.project_id.sale_line_id.order_id
-
-                if sale_order and hasattr(sale_order, 'date_order'):
-                    order_date = sale_order.date_order
-
-                    if order_date:
-                        # Calculate deadline date (2 days after order date)
-                        deadline_date = order_date + datetime.timedelta(days=2)
-
-                        # Set the deadline to two days after the sales order date
-                        record.write({
-                            'date_deadline': deadline_date
-                        })
-
-                        # Log the action for tracking
-                        project_name = record.project_id.name if record.project_id else 'N/A'
-                        _logger.info("Welcome call deadline set to %s (2 days after order date %s) for task ID %s in project %s",
-                                   deadline_date, order_date, record.id, project_name)
-                    else:
-                        _logger.warning("Sales order has no date_order for Welcome call task ID %s", record.id)
-                else:
-                    _logger.warning("No sales order linked to Welcome call task ID %s", record.id)
-
-        except Exception as e:
-            _logger.error("Set Welcome Call Deadline - Error processing task ID %s: %s",
-                        record.id, str(e), exc_info=True)
+    def _apply_admin_deadline_on_create(self):
+        """A task created in a project linked to a sale order takes the
+        project's end date as deadline (template tasks copied on order
+        confirmation, and tasks added to the project later)."""
+        for project, tasks in self.grouped('project_id').items():
+            if not project or not project.date or not project._get_dossier_order():
+                continue
+            tasks._apply_admin_deadline(project.date)

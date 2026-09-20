@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen Custom Development',
-    'version': '19.0.1.6.0',
+    'version': '19.0.1.7.0',
     'category': 'Customizations',
     'summary': 'Custom business logic and automation for BelGoGreen',
     'description': """
@@ -29,7 +29,10 @@
 
         **Project Management (project.project, project.task)**:
         - Document folder naming from sales orders
-        - Welcome call deadline calculation (order date + 2 days)
+        - Admin project deadlines: project start = order confirmation date,
+          project end = start + delay from the payment term x product
+          category rules (JSON system parameters), task deadlines = project
+          end date
 
         **Sales Orders (sale.order)**:
         - Call Center (Sale Owner) attribution and RDV smart button
@@ -61,6 +64,7 @@
 
         # Configuration data
         'data/noshow_config_params.xml',
+        'data/admin_project_deadline_params.xml',
 
         # Views
         'views/calendar_event_views.xml',
