@@ -38,8 +38,7 @@
                     <field name="x_installation_product_missing" invisible="1"/>
                     <strong>Produit d'installation manquant :</strong>
                     la commande contient des produits à installer mais aucun
-                    service d'installation (suivi « Projet ») : le projet admin
-                    et ses tâches ne sont pas créés automatiquement.
+                    service d'installation.
                 </div>
             </xpath>
             <xpath expr="//notebook/page[@name='other_information']" position="after">
