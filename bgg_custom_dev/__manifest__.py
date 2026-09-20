@@ -31,8 +31,8 @@
         - Document folder naming from sales orders
         - Admin project deadlines: project start = order confirmation date,
           project end = start + delay from the payment term x product
-          category rules (JSON system parameters), task deadlines = project
-          end date
+          category rules (bgg.admin_project_deadline_rules system
+          parameter), task deadlines = project end date
 
         **Sales Orders (sale.order)**:
         - Call Center (Sale Owner) attribution and RDV smart button

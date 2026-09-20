@@ -4,40 +4,33 @@
         Admin project deadlines (Dossier): delays applied to the project created
         for a sale order, from its confirmation date ("Signature du BC").
 
-        Both parameters hold JSON. Edit them in Settings > Technical > System
-        Parameters. noupdate: created on install/upgrade if missing, never
-        overwrites a value an admin has changed.
+        bgg.admin_project_deadline_rules holds JSON. Edit it in Settings >
+        Technical > System Parameters. noupdate: created on install/upgrade if
+        missing, never overwrites a value an admin has changed.
 
-        bgg.admin_project_deadline_rules
             { "<payment term name>": { "day_type": "business" | "calendar",
-                                       "<category group>": <days>, ... }, ... }
-            - the key is the payment term name as shown in Odoo (case-insensitive,
-              any installed language);
-            - "business" counts Monday to Friday only (no holidays);
-            - a payment term absent from this map gets no dates (e.g. Financement RW);
-            - when the order holds products from several groups, the longest
-              delay wins.
+                                       "<product category name>": <days>, ... },
+              ... }
 
-        bgg.admin_project_deadline_categories
-            { "<category group>": ["<product category name>", ...], ... }
-            - product category names (the category or one of its parents).
+        - the first-level key is the payment term name as shown in Odoo
+          (case-insensitive, any installed language); a payment term absent
+          from this map gets no dates (e.g. Financement RW);
+        - "business" (jours ouvrables) counts Monday to Friday only, no
+          holidays; "calendar" (jours calendrier) counts every day;
+        - the other keys are product category names (the product's category
+          or one of its parents, case-insensitive), e.g. "Panneaux" for
+          "All / Saleable / Panneaux";
+        - when the order holds products from several listed categories, the
+          longest delay wins.
     -->
     <data noupdate="1">
         <record id="admin_project_deadline_rules" model="ir.config_parameter">
             <field name="key">bgg.admin_project_deadline_rules</field>
             <field name="value">{
-  "Paiement immédiat": {"day_type": "business", "panneaux": 10, "pac": 15, "isolation": 20},
-  "50% maintenant, le solde à l'installation": {"day_type": "business", "panneaux": 10, "pac": 15, "isolation": 20},
-  "Financement": {"day_type": "calendar", "panneaux": 15, "pac": 20, "isolation": 25},
-  "Financement (Banque/Courtier client)": {"day_type": "calendar", "panneaux": 15, "pac": 20, "isolation": 25}
-}</field>
-        </record>
-        <record id="admin_project_deadline_categories" model="ir.config_parameter">
-            <field name="key">bgg.admin_project_deadline_categories</field>
-            <field name="value">{
-  "panneaux": ["Panneaux", "Onduleurs", "Batteries"],
-  "pac": ["PAC"],
-  "isolation": ["Isolation"]
+  "Paiement immédiat": {"day_type": "business", "Panneaux": 10, "Onduleurs": 10, "Batteries": 10, "PAC": 15, "Isolation": 20},
+  "50% maintenant, le solde à l'installation": {"day_type": "business", "Panneaux": 10, "Onduleurs": 10, "Batteries": 10, "PAC": 15, "Isolation": 20},
+  "Financement": {"day_type": "calendar", "Panneaux": 15, "Onduleurs": 15, "Batteries": 15, "PAC": 20, "Isolation": 25},
+  "Financement (Banque/Courtier client)": {"day_type": "calendar", "Panneaux": 15, "Onduleurs": 15, "Batteries": 15, "PAC": 20, "Isolation": 25}
 }</field>
         </record>
     </data>

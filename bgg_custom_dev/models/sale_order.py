@@ -17,20 +17,29 @@ RESPONSABLE_DOSSIER_GROUP = 'bgg_custom_dev.group_responsable_dossier'
 # Admin project deadlines (Dossier). Business timezone used to turn the
 # confirmation timestamp into a calendar date (Belgian company).
 BGG_TZ = 'Europe/Brussels'
-# JSON system parameters (see data/admin_project_deadline_params.xml). The
-# defaults below are used when a parameter is missing or not valid JSON.
+# JSON system parameter (see data/admin_project_deadline_params.xml):
+# payment term name -> day_type ('business' = Monday to Friday, 'calendar' =
+# every day) and the delay in days per product category name (the product's
+# category or one of its parents). The defaults below are used when the
+# parameter is missing or not valid JSON.
 ADMIN_DEADLINE_RULES_PARAM = 'bgg.admin_project_deadline_rules'
-ADMIN_DEADLINE_CATEGORIES_PARAM = 'bgg.admin_project_deadline_categories'
 ADMIN_DEADLINE_RULES_DEFAULT = {
-    'Paiement immédiat': {'day_type': 'business', 'panneaux': 10, 'pac': 15, 'isolation': 20},
-    "50% maintenant, le solde à l'installation": {'day_type': 'business', 'panneaux': 10, 'pac': 15, 'isolation': 20},
-    'Financement': {'day_type': 'calendar', 'panneaux': 15, 'pac': 20, 'isolation': 25},
-    'Financement (Banque/Courtier client)': {'day_type': 'calendar', 'panneaux': 15, 'pac': 20, 'isolation': 25},
-}
-ADMIN_DEADLINE_CATEGORIES_DEFAULT = {
-    'panneaux': ['Panneaux', 'Onduleurs', 'Batteries'],
-    'pac': ['PAC'],
-    'isolation': ['Isolation'],
+    'Paiement immédiat': {
+        'day_type': 'business',
+        'Panneaux': 10, 'Onduleurs': 10, 'Batteries': 10, 'PAC': 15, 'Isolation': 20,
+    },
+    "50% maintenant, le solde à l'installation": {
+        'day_type': 'business',
+        'Panneaux': 10, 'Onduleurs': 10, 'Batteries': 10, 'PAC': 15, 'Isolation': 20,
+    },
+    'Financement': {
+        'day_type': 'calendar',
+        'Panneaux': 15, 'Onduleurs': 15, 'Batteries': 15, 'PAC': 20, 'Isolation': 25,
+    },
+    'Financement (Banque/Courtier client)': {
+        'day_type': 'calendar',
+        'Panneaux': 15, 'Onduleurs': 15, 'Batteries': 15, 'PAC': 20, 'Isolation': 25,
+    },
 }
 
 
@@ -110,11 +119,6 @@ class SaleOrder(models.Model):
         return self._admin_deadline_json_param(
             ADMIN_DEADLINE_RULES_PARAM, ADMIN_DEADLINE_RULES_DEFAULT)
 
-    @api.model
-    def _admin_deadline_categories(self):
-        return self._admin_deadline_json_param(
-            ADMIN_DEADLINE_CATEGORIES_PARAM, ADMIN_DEADLINE_CATEGORIES_DEFAULT)
-
     def _admin_deadline_rule(self):
         """Rule (dict) matching this order's payment term, or None.
 
@@ -137,27 +141,31 @@ class SaleOrder(models.Model):
                 return rule
         return None
 
-    def _admin_deadline_category_groups(self):
-        """Category groups ('panneaux', 'pac', 'isolation', ...) present on the
-        order lines. A product matches a group through its category or any
-        parent category."""
+    def _admin_deadline_delays(self, rule):
+        """Delays (days) of `rule` that apply to this order: one per order
+        line whose product category (or a parent category) is a key of the
+        rule. Category names are matched case-insensitively."""
         self.ensure_one()
-        mapping = {}
-        for group, names in self._admin_deadline_categories().items():
-            for name in (names if isinstance(names, list) else [names]):
-                mapping[str(name).strip().lower()] = group
-        groups = set()
+        delay_by_category = {}
+        for key, value in rule.items():
+            if key == 'day_type':
+                continue
+            try:
+                delay_by_category[str(key).strip().lower()] = int(value)
+            except (TypeError, ValueError):
+                continue
+        delays = []
         for line in self.order_line:
             if line.display_type or not line.product_id:
                 continue
             categ = line.product_id.categ_id
             while categ:
-                group = mapping.get((categ.name or '').strip().lower())
-                if group:
-                    groups.add(group)
+                delay = delay_by_category.get((categ.name or '').strip().lower())
+                if delay is not None:
+                    delays.append(delay)
                     break
                 categ = categ.parent_id
-        return groups
+        return delays
 
     @api.model
     def _add_business_days(self, date, days):
@@ -180,19 +188,15 @@ class SaleOrder(models.Model):
 
     def _compute_admin_project_dates(self):
         """(date_start, date_end) for the admin project of this order, or None
-        when no rule applies: no payment term rule, or no product of a mapped
-        category. With several groups on the order the longest delay wins."""
+        when no rule applies: no rule for the payment term, or no product of a
+        category listed in the rule. With several categories on the order the
+        longest delay wins."""
         self.ensure_one()
         start = self._admin_deadline_start_date()
         rule = self._admin_deadline_rule()
         if not start or not rule:
             return None
-        delays = []
-        for group in self._admin_deadline_category_groups():
-            try:
-                delays.append(int(rule.get(group)))
-            except (TypeError, ValueError):
-                continue
+        delays = self._admin_deadline_delays(rule)
         if not delays:
             return None
         days = max(delays)

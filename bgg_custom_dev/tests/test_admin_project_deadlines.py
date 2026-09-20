@@ -7,7 +7,6 @@ from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
 RULES_PARAM = 'bgg.admin_project_deadline_rules'
-CATEGORIES_PARAM = 'bgg.admin_project_deadline_categories'
 BGG_TZ = 'Europe/Brussels'
 
 
@@ -217,23 +216,38 @@ class TestAdminProjectDeadlines(TransactionCase):
 
     def test_rules_param_overrides_defaults(self):
         self.env['ir.config_parameter'].sudo().set_param(RULES_PARAM, (
-            '{"Paiement immédiat": {"day_type": "calendar", "panneaux": 3}}'))
+            '{"Paiement immédiat": {"day_type": "calendar", "Panneaux": 3}}'))
         order = self._order('Paiement immédiat', 'Panneaux')
         self._assert_dates(order, 3, calendar=True)
 
-    def test_categories_param_overrides_defaults(self):
-        self.env['ir.config_parameter'].sudo().set_param(CATEGORIES_PARAM, (
-            '{"panneaux": ["Accessoires"]}'))
+    def test_new_category_added_by_param(self):
+        self.env['ir.config_parameter'].sudo().set_param(RULES_PARAM, (
+            '{"Paiement immédiat": {"day_type": "business", "Accessoires": 7}}'))
         order = self._order('Paiement immédiat', 'Accessoires')
-        self._assert_dates(order, 10)
+        self._assert_dates(order, 7)
 
     def test_invalid_param_falls_back_to_defaults(self):
         self.env['ir.config_parameter'].sudo().set_param(RULES_PARAM, 'not json')
         order = self._order('Paiement immédiat', 'Panneaux')
         self._assert_dates(order, 10)
 
-    def test_payment_term_matched_case_insensitively(self):
+    def test_names_matched_case_insensitively(self):
         self.env['ir.config_parameter'].sudo().set_param(RULES_PARAM, (
             '{"PAIEMENT IMMÉDIAT": {"day_type": "business", "panneaux": 4}}'))
         order = self._order('Paiement immédiat', 'Panneaux')
         self._assert_dates(order, 4)
+
+    def test_category_matched_through_parent(self):
+        child = self.env['product.category'].create({
+            'name': 'Panneaux bifaciaux', 'parent_id': self.categs['Panneaux'].id,
+        })
+        product = self.env['product.product'].create({
+            'name': 'Panneau bifacial (test)', 'type': 'consu',
+            'categ_id': child.id, 'list_price': 10.0,
+        })
+        order = self._order('Paiement immédiat', confirm=False)
+        order.write({'order_line': [(0, 0, {
+            'product_id': product.id, 'product_uom_qty': 1, 'price_unit': 10.0,
+        })]})
+        order.action_confirm()
+        self._assert_dates(order, 10)
