@@ -223,24 +223,37 @@ class TestAdminProjectDeadlines(TransactionCase):
     def test_admin_project_locked_fields(self):
         order = self._order('Paiement immédiat', 'Panneaux')
         project, start, end = self._assert_dates(order, 10)
-        # Non-sudo project recordset, as a user editing the form would have.
-        project = self.env['project.project'].browse(project.id)
         self.assertTrue(project.x_is_admin_dossier_project)
+        # The test environment runs as the superuser, which counts as sudo
+        # (the automations' path). Write as a regular project manager, the
+        # way a user editing the form does.
+        manager = self.env['res.users'].create({
+            'name': 'Chef de projet test', 'login': 'chef.projet@test.bgg',
+            'group_ids': [(6, 0, [
+                self.env.ref('base.group_user').id,
+                self.env.ref('project.group_project_manager').id,
+            ])],
+        })
         other_user = self.env['res.users'].create({
             'name': 'Autre chef', 'login': 'autre.chef@test.bgg',
             'group_ids': [(6, 0, [self.env.ref('base.group_user').id])],
         })
-        with self.assertRaises(UserError):
-            project.write({'user_id': other_user.id})
-        with self.assertRaises(UserError):
-            project.write({'date_start': start + datetime.timedelta(days=1)})
-        with self.assertRaises(UserError):
-            project.write({'date': datetime.date(2030, 1, 31)})
-        # Re-sending the current values (as the form does) is not a change.
-        project.write({'user_id': project.user_id.id, 'date_start': start, 'date': end})
-        # Other fields stay editable.
-        project.write({'name': 'Renommé'})
+        as_manager = project.with_user(manager)
+        # Other fields stay editable (also proves the user has write access,
+        # so the errors below are the lock, not an access error).
+        as_manager.write({'name': 'Renommé'})
         self.assertEqual(project.name, 'Renommé')
+        # Re-sending the current values (as the form does) is not a change.
+        as_manager.write({'user_id': project.user_id.id, 'date_start': start, 'date': end})
+        with self.assertRaises(UserError):
+            as_manager.write({'user_id': other_user.id})
+        with self.assertRaises(UserError):
+            as_manager.write({'date_start': start + datetime.timedelta(days=1)})
+        with self.assertRaises(UserError):
+            as_manager.write({'date': datetime.date(2030, 1, 31)})
+        self.assertNotEqual(project.user_id, other_user)
+        self.assertEqual(project.date_start, start)
+        self.assertEqual(project.date, end)
 
     def test_automation_still_writes_locked_fields(self):
         """The order-driven recomputation (sudo) is not blocked."""
