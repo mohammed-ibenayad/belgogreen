@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen Custom Development',
-    'version': '19.0.1.7.0',
+    'version': '19.0.1.8.0',
     'category': 'Customizations',
     'summary': 'Custom business logic and automation for BelGoGreen',
     'description': """
@@ -33,6 +33,10 @@
           project end = start + delay from the payment term x product
           category rules (bgg.admin_project_deadline_rules system
           parameter), task deadlines = project end date
+        - Admin template tasks listed in bgg.admin_task_deadline_rules
+          (Réclamation du solde, Création des commissions, Chargement
+          schéma unifilaire, Envoi Belgotest) take their dates from the
+          field service (SSS) reference dates computed from the same rules
         - Admin projects: project manager and planned dates are computed
           from the order and locked against manual edits
 

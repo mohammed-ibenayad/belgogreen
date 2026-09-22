@@ -139,9 +139,9 @@ class TestAdminProjectDeadlines(TransactionCase):
         order = self._order('Paiement immédiat', 'Batteries', 'Isolation', 'PAC')
         self._assert_dates(order, 20)
 
-    def test_financement_isolation_25_calendar_days(self):
+    def test_financement_isolation_25_business_days(self):
         order = self._order('Financement', 'Isolation')
-        self._assert_dates(order, 25, calendar=True)
+        self._assert_dates(order, 25)
 
     def test_financement_rw_has_no_rule(self):
         order = self._order('Financement RW', 'Panneaux')
@@ -172,7 +172,7 @@ class TestAdminProjectDeadlines(TransactionCase):
         order = self._order('Paiement immédiat', 'Panneaux')
         self._assert_dates(order, 10)
         order.payment_term_id = self.terms['Financement']
-        self._assert_dates(order, 15, calendar=True)
+        self._assert_dates(order, 15)
 
     def test_payment_term_change_to_no_rule_keeps_dates(self):
         order = self._order('Paiement immédiat', 'Panneaux')
@@ -259,7 +259,7 @@ class TestAdminProjectDeadlines(TransactionCase):
         """The order-driven recomputation (sudo) is not blocked."""
         order = self._order('Paiement immédiat', 'Panneaux')
         order.payment_term_id = self.terms['Financement']
-        self._assert_dates(order, 15, calendar=True)
+        self._assert_dates(order, 15)
 
     def test_project_without_order_not_locked(self):
         project = self.env['project.project'].create({'name': 'Interne'})
@@ -332,3 +332,140 @@ class TestAdminProjectDeadlines(TransactionCase):
         })]})
         order.action_confirm()
         self._assert_dates(order, 10)
+
+    # ------------------------------------------------------------------
+    # admin tasks following the SSS reference dates
+    # ------------------------------------------------------------------
+
+    SSS_TASKS = {
+        'Réclamation du solde': 0,
+        'Création des commissions': 0,
+        'Chargement schéma unifilaire': 5,
+        'Envoi Belgotest + coordonnées RESA / ORES': 10,
+    }
+
+    def _make_sss_template_product(self, task_names=None):
+        """A second template holding the SSS-driven admin tasks plus a plain
+        task, and its 'project only' service."""
+        template = self.env['project.project'].create({
+            'name': 'Gestion Dossier Admin (test SSS)', 'is_template': True,
+        })
+        names = list(task_names or self.SSS_TASKS) + ['Welcom call']
+        self.env['project.task'].create([
+            {'name': n, 'project_id': template.id} for n in names])
+        return self.env['product.product'].create({
+            'name': 'INSTALLATION (test SSS)', 'type': 'service',
+            'service_tracking': 'project_only',
+            'project_template_id': template.id, 'list_price': 100.0,
+        })
+
+    def _order_sss(self, term_name, *product_names, service=None):
+        service = service or self._make_sss_template_product()
+        lines = [(0, 0, {'product_id': service.id, 'product_uom_qty': 1, 'price_unit': 100.0})]
+        lines += [(0, 0, {'product_id': self.products[n].id, 'product_uom_qty': 1, 'price_unit': 10.0})
+                  for n in product_names]
+        order = self.env['sale.order'].create({
+            'partner_id': self.customer.id,
+            'payment_term_id': self.terms[term_name].id,
+            'order_line': lines,
+        })
+        order.action_confirm()
+        return order
+
+    def _task(self, project, name):
+        task = self.env['project.task'].search([
+            ('project_id', '=', project.id), ('name', '=', name)], limit=1)
+        self.assertTrue(task, "task %r must exist in the project" % name)
+        return task
+
+    def _planned_start_date(self, task):
+        if 'planned_date_begin' not in task._fields:
+            return None
+        self.assertTrue(task.planned_date_begin)
+        return fields.Datetime.context_timestamp(
+            task.with_context(tz=BGG_TZ), task.planned_date_begin).date()
+
+    def _assert_sss_tasks(self, order, sss_start_offset, sss_days, admin_days):
+        project = self._project(order)
+        bc = order._admin_deadline_start_date()
+        add = order._add_business_days
+        sss_start = add(bc, sss_start_offset)
+        sss_end = add(sss_start, sss_days)
+        self.assertEqual(order._compute_sss_reference_dates(), (sss_start, sss_end))
+        for name, offset in self.SSS_TASKS.items():
+            task = self._task(project, name)
+            self.assertEqual(self._deadline_date(task), add(sss_end, offset),
+                             "deadline of %r" % name)
+            start = self._planned_start_date(task)
+            if start is not None:
+                self.assertEqual(start, sss_end, "planned start of %r" % name)
+        # a task outside the rules keeps the admin project end date
+        other = self._task(project, 'Welcom call')
+        self.assertEqual(self._deadline_date(other), add(bc, admin_days))
+        self.assertEqual(project.date, add(bc, admin_days))
+        return project, sss_end
+
+    def test_sss_tasks_immediate_panels(self):
+        order = self._order_sss('Paiement immédiat', 'Panneaux', 'Onduleurs')
+        self._assert_sss_tasks(order, sss_start_offset=5, sss_days=5, admin_days=10)
+
+    def test_sss_tasks_financing_pac_longest_wins(self):
+        order = self._order_sss('Financement', 'Panneaux', 'PAC')
+        self._assert_sss_tasks(order, sss_start_offset=10, sss_days=30, admin_days=20)
+
+    def test_sss_tasks_recomputed_on_term_change(self):
+        order = self._order_sss('Paiement immédiat', 'Isolation')
+        self._assert_sss_tasks(order, sss_start_offset=5, sss_days=15, admin_days=20)
+        order.payment_term_id = self.terms['Financement']
+        self._assert_sss_tasks(order, sss_start_offset=10, sss_days=35, admin_days=25)
+
+    def test_sss_task_names_matched_loosely(self):
+        service = self._make_sss_template_product(task_names=[
+            'reclamation du solde', '  CRÉATION  DES COMMISSIONS ',
+            'Chargement schema unifilaire', 'envoi belgotest + coordonnees resa / ores',
+        ])
+        order = self._order_sss('Paiement immédiat', 'Panneaux', service=service)
+        project = self._project(order)
+        bc = order._admin_deadline_start_date()
+        sss_end = order._add_business_days(order._add_business_days(bc, 5), 5)
+        self.assertEqual(self._deadline_date(self._task(project, 'reclamation du solde')), sss_end)
+        self.assertEqual(self._deadline_date(self._task(project, 'Chargement schema unifilaire')),
+                         order._add_business_days(sss_end, 5))
+        self.assertEqual(
+            self._deadline_date(self._task(project, 'envoi belgotest + coordonnees resa / ores')),
+            order._add_business_days(sss_end, 10))
+
+    def test_sss_task_created_later_gets_its_dates(self):
+        order = self._order_sss('Paiement immédiat', 'Panneaux')
+        project, sss_end = self._assert_sss_tasks(order, sss_start_offset=5, sss_days=5, admin_days=10)
+        task = self.env['project.task'].create({
+            'name': 'Chargement schéma unifilaire (bis)', 'project_id': project.id,
+        })
+        self.assertEqual(self._deadline_date(task), project.date,
+                         "a name outside the rules gets the project end date")
+        task = self.env['project.task'].create({
+            'name': 'Chargement schéma unifilaire', 'project_id': project.id,
+        })
+        self.assertEqual(self._deadline_date(task), order._add_business_days(sss_end, 5))
+
+    def test_sss_no_rule_no_task_dates(self):
+        order = self._order_sss('Financement RW', 'Panneaux')
+        self.assertIsNone(order._compute_sss_reference_dates())
+        self.assertEqual(order._compute_admin_task_dates(), {})
+        project = self._project(order)
+        for name in self.SSS_TASKS:
+            self.assertFalse(self._task(project, name).date_deadline)
+
+    def test_task_rules_param_overrides_defaults(self):
+        self.env['ir.config_parameter'].sudo().set_param(
+            'bgg.admin_task_deadline_rules',
+            '{"day_type": "business", "tasks": {"Réclamation du solde": 3}}')
+        order = self._order_sss('Paiement immédiat', 'Panneaux')
+        project = self._project(order)
+        bc = order._admin_deadline_start_date()
+        sss_end = order._add_business_days(order._add_business_days(bc, 5), 5)
+        self.assertEqual(self._deadline_date(self._task(project, 'Réclamation du solde')),
+                         order._add_business_days(sss_end, 3))
+        # no longer listed: back to the project end date
+        self.assertEqual(self._deadline_date(self._task(project, 'Création des commissions')),
+                         project.date)

@@ -47,7 +47,8 @@ class ProjectProject(models.Model):
             order = record._get_dossier_order()
             dates = order._compute_admin_project_dates() if order else None
             if dates:
-                record._apply_admin_project_dates(*dates)
+                record._apply_admin_project_dates(
+                    *dates, task_dates=order._compute_admin_task_dates())
 
         return records
 
@@ -88,9 +89,12 @@ class ProjectProject(models.Model):
                     "pas être modifiés manuellement (%s)."
                     % (project.display_name, order.name, labels))
 
-    def _apply_admin_project_dates(self, date_start, date_end):
-        """Set the project start/end dates and align the deadline of the open
-        tasks on the end date. Runs in sudo (side effect of the sale order)."""
+    def _apply_admin_project_dates(self, date_start, date_end, task_dates=None):
+        """Set the project start/end dates and the dates of the open tasks:
+        tasks listed in `task_dates` ({normalized name: (start, deadline)},
+        the ones following the SSS reference dates) get those dates, every
+        other open task gets the project end date as deadline. Runs in sudo
+        (side effect of the sale order)."""
         projects = self.sudo()
         projects.write({'date_start': date_start, 'date': date_end})
         _logger.info("Dossier: admin project dates %s -> %s set on projects %s",
@@ -99,7 +103,7 @@ class ProjectProject(models.Model):
             ('project_id', 'in', projects.ids),
             ('state', 'not in', ['1_done', '1_canceled']),
         ])
-        open_tasks._apply_admin_deadline(date_end)
+        open_tasks._apply_admin_dates(date_end, task_dates or {})
 
     # ------------------------------------------------------------------
     # Dossier: Responsable of the linked sale order

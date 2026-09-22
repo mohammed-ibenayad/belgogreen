@@ -3,6 +3,7 @@
 import datetime
 import json
 import logging
+import unicodedata
 
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
@@ -17,30 +18,63 @@ RESPONSABLE_DOSSIER_GROUP = 'bgg_custom_dev.group_responsable_dossier'
 # Admin project deadlines (Dossier). Business timezone used to turn the
 # confirmation timestamp into a calendar date (Belgian company).
 BGG_TZ = 'Europe/Brussels'
-# JSON system parameter (see data/admin_project_deadline_params.xml):
-# payment term name -> day_type ('business' = Monday to Friday, 'calendar' =
-# every day) and the delay in days per product category name (the product's
-# category or one of its parents). The defaults below are used when the
-# parameter is missing or not valid JSON.
+# JSON system parameters (see data/admin_project_deadline_params.xml). The
+# defaults below are used when a parameter is missing or not valid JSON.
+#
+# bgg.admin_project_deadline_rules: payment term name -> rule
+#   - 'day_type': 'business' (Monday to Friday) or 'calendar' (every day),
+#   - '<product category name>': delay in days for the admin project end date
+#     (the product's category or one of its parents; longest delay wins),
+#   - 'sss': reference dates of the field service (SSS) project, computed in
+#     memory only, never written: 'start_offset' (+ 'start_day_type') from the
+#     confirmation date, then 'day_type' and '<category>': duration.
+# bgg.admin_task_deadline_rules: admin template tasks whose dates follow the
+#   SSS reference end date: 'day_type' and 'tasks': {task name: offset days}.
+#   Task names are matched ignoring case, accents and extra spaces. Start of
+#   the task = SSS end, deadline = SSS end + offset.
 ADMIN_DEADLINE_RULES_PARAM = 'bgg.admin_project_deadline_rules'
-ADMIN_DEADLINE_RULES_DEFAULT = {
-    'Paiement immédiat': {
-        'day_type': 'business',
-        'Panneaux': 10, 'Onduleurs': 10, 'Batteries': 10, 'PAC': 15, 'Isolation': 20,
-    },
-    "50% maintenant, le solde à l'installation": {
-        'day_type': 'business',
-        'Panneaux': 10, 'Onduleurs': 10, 'Batteries': 10, 'PAC': 15, 'Isolation': 20,
-    },
-    'Financement': {
-        'day_type': 'calendar',
-        'Panneaux': 15, 'Onduleurs': 15, 'Batteries': 15, 'PAC': 20, 'Isolation': 25,
-    },
-    'Financement (Banque/Courtier client)': {
-        'day_type': 'calendar',
-        'Panneaux': 15, 'Onduleurs': 15, 'Batteries': 15, 'PAC': 20, 'Isolation': 25,
+ADMIN_TASK_RULES_PARAM = 'bgg.admin_task_deadline_rules'
+# Keys of a rule that are not product category names.
+RULE_RESERVED_KEYS = {'day_type', 'sss', 'start_offset', 'start_day_type'}
+
+_IMMEDIATE_RULE = {
+    'day_type': 'business',
+    'Panneaux': 10, 'Onduleurs': 10, 'Batteries': 10, 'PAC': 15, 'Isolation': 20,
+    'sss': {
+        'start_offset': 5, 'start_day_type': 'business', 'day_type': 'business',
+        'Panneaux': 5, 'Onduleurs': 5, 'Batteries': 5, 'PAC': 10, 'Isolation': 15,
     },
 }
+_FINANCING_RULE = {
+    'day_type': 'business',
+    'Panneaux': 15, 'Onduleurs': 15, 'Batteries': 15, 'PAC': 20, 'Isolation': 25,
+    'sss': {
+        'start_offset': 10, 'start_day_type': 'business', 'day_type': 'business',
+        'Panneaux': 25, 'Onduleurs': 25, 'Batteries': 25, 'PAC': 30, 'Isolation': 35,
+    },
+}
+ADMIN_DEADLINE_RULES_DEFAULT = {
+    'Paiement immédiat': _IMMEDIATE_RULE,
+    "50% maintenant, le solde à l'installation": _IMMEDIATE_RULE,
+    'Financement': _FINANCING_RULE,
+    'Financement (Banque/Courtier client)': _FINANCING_RULE,
+}
+ADMIN_TASK_RULES_DEFAULT = {
+    'day_type': 'business',
+    'tasks': {
+        'Réclamation du solde': 0,
+        'Création des commissions': 0,
+        'Chargement schéma unifilaire': 5,
+        'Envoi Belgotest + coordonnées RESA / ORES': 10,
+    },
+}
+
+
+def normalize_task_name(name):
+    """Task name comparison key: no accents, case-folded, single spaces."""
+    text = unicodedata.normalize('NFKD', name or '')
+    text = ''.join(ch for ch in text if not unicodedata.combining(ch))
+    return ' '.join(text.casefold().split())
 
 
 class SaleOrder(models.Model):
@@ -162,7 +196,7 @@ class SaleOrder(models.Model):
         self.ensure_one()
         delay_by_category = {}
         for key, value in rule.items():
-            if key == 'day_type':
+            if key in RULE_RESERVED_KEYS:
                 continue
             try:
                 delay_by_category[str(key).strip().lower()] = int(value)
@@ -182,7 +216,8 @@ class SaleOrder(models.Model):
         names = set()
         for rule in self._admin_deadline_rules().values():
             if isinstance(rule, dict):
-                names.update(str(k).strip().lower() for k in rule if k != 'day_type')
+                names.update(str(k).strip().lower() for k in rule
+                             if k not in RULE_RESERVED_KEYS)
         return names
 
     # ------------------------------------------------------------------
@@ -223,6 +258,67 @@ class SaleOrder(models.Model):
                 days -= 1
         return result
 
+    @api.model
+    def _add_days(self, date, days, day_type):
+        """`date` + `days`, counted as calendar days when `day_type` is
+        'calendar', as business days otherwise."""
+        if day_type == 'calendar':
+            return date + datetime.timedelta(days=days)
+        return self._add_business_days(date, days)
+
+    @api.model
+    def _admin_task_rules(self):
+        return self._admin_deadline_json_param(
+            ADMIN_TASK_RULES_PARAM, ADMIN_TASK_RULES_DEFAULT)
+
+    def _compute_sss_reference_dates(self):
+        """Reference (start, end) dates of the field service (SSS) project
+        for this order, from the 'sss' block of the payment term rule:
+        start = confirmation date + start_offset, end = start + the longest
+        category duration on the order. Computed in memory only. None when
+        no rule applies."""
+        self.ensure_one()
+        bc_date = self._admin_deadline_start_date()
+        rule = self._admin_deadline_rule()
+        sss = rule.get('sss') if rule else None
+        if not bc_date or not isinstance(sss, dict):
+            return None
+        delays = self._admin_deadline_delays(sss)
+        if not delays:
+            return None
+        try:
+            start_offset = int(sss.get('start_offset', 0))
+        except (TypeError, ValueError):
+            start_offset = 0
+        start = self._add_days(
+            bc_date, start_offset, sss.get('start_day_type', sss.get('day_type')))
+        end = self._add_days(start, max(delays), sss.get('day_type'))
+        return start, end
+
+    def _compute_admin_task_dates(self):
+        """{normalized task name: (start, deadline)} for the admin template
+        tasks that follow the SSS reference end date: start = SSS end,
+        deadline = SSS end + the task's offset. Empty when no rule applies."""
+        self.ensure_one()
+        sss_dates = self._compute_sss_reference_dates()
+        if not sss_dates:
+            return {}
+        _sss_start, sss_end = sss_dates
+        rules = self._admin_task_rules()
+        tasks = rules.get('tasks') if isinstance(rules, dict) else None
+        if not isinstance(tasks, dict):
+            return {}
+        result = {}
+        for name, offset in tasks.items():
+            try:
+                offset = int(offset)
+            except (TypeError, ValueError):
+                continue
+            key = normalize_task_name(str(name))
+            if key:
+                result[key] = (sss_end, self._add_days(sss_end, offset, rules.get('day_type')))
+        return result
+
     def _admin_deadline_start_date(self):
         """Signature du BC: the confirmation date (date_order, which sale sets
         to now on confirmation) as a Belgian calendar date."""
@@ -245,11 +341,7 @@ class SaleOrder(models.Model):
         delays = self._admin_deadline_delays(rule)
         if not delays:
             return None
-        days = max(delays)
-        if rule.get('day_type') == 'calendar':
-            end = start + datetime.timedelta(days=days)
-        else:
-            end = self._add_business_days(start, days)
+        end = self._add_days(start, max(delays), rule.get('day_type'))
         return start, end
 
     def _sync_admin_project_dates(self):
@@ -262,7 +354,8 @@ class SaleOrder(models.Model):
                 continue
             projects = order._get_dossier_projects()
             if projects:
-                projects._apply_admin_project_dates(*dates)
+                projects._apply_admin_project_dates(
+                    *dates, task_dates=order._compute_admin_task_dates())
 
     def _get_dossier_projects(self):
         """Projects created for / linked to this order (same links as the

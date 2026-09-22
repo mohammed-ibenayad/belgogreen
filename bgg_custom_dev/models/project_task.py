@@ -7,13 +7,14 @@ import pytz
 
 from odoo import api, models
 
-from .sale_order import BGG_TZ
+from .sale_order import BGG_TZ, normalize_task_name
 
 _logger = logging.getLogger(__name__)
 
-# Local time of day at which an admin project task deadline is set
-# (deadlines are datetimes; the project end date is a date).
+# Local times of day used for the admin project task dates (deadlines and
+# planned starts are datetimes; the computed dates are calendar dates).
 ADMIN_DEADLINE_HOUR = 17
+ADMIN_START_HOUR = 8
 
 
 class ProjectTask(models.Model):
@@ -25,7 +26,7 @@ class ProjectTask(models.Model):
         records = super(ProjectTask, self).create(vals_list)
 
         records._assign_responsable_dossier_on_create()
-        records._apply_admin_deadline_on_create()
+        records._apply_admin_dates_on_create()
 
         return records
 
@@ -62,30 +63,56 @@ class ProjectTask(models.Model):
                          responsable.name, self.ids)
 
     # ------------------------------------------------------------------
-    # Dossier: task deadline = end date of the admin project
+    # Dossier: task dates of the admin project
     # ------------------------------------------------------------------
 
     @api.model
-    def _admin_deadline_datetime(self, date_end):
-        """Deadline datetime (UTC, naive) for a project end date: that day at
-        ADMIN_DEADLINE_HOUR in the business timezone."""
+    def _admin_local_datetime(self, date, hour):
+        """`date` at `hour` o'clock in the business timezone, as the naive
+        UTC datetime Odoo stores."""
         local = pytz.timezone(BGG_TZ).localize(
-            datetime.datetime.combine(date_end, datetime.time(ADMIN_DEADLINE_HOUR, 0)))
+            datetime.datetime.combine(date, datetime.time(hour, 0)))
         return local.astimezone(pytz.utc).replace(tzinfo=None)
 
-    def _apply_admin_deadline(self, date_end):
-        """Set the deadline of these tasks to the project end date."""
-        deadline = self._admin_deadline_datetime(date_end)
-        to_update = self.sudo().filtered(lambda t: t.date_deadline != deadline)
-        if to_update:
-            to_update.write({'date_deadline': deadline})
-            _logger.info("Dossier: deadline %s set on tasks %s", deadline, to_update.ids)
+    @api.model
+    def _admin_deadline_datetime(self, date_end):
+        """Deadline datetime for a computed end date (ADMIN_DEADLINE_HOUR)."""
+        return self._admin_local_datetime(date_end, ADMIN_DEADLINE_HOUR)
 
-    def _apply_admin_deadline_on_create(self):
-        """A task created in a project linked to a sale order takes the
-        project's end date as deadline (template tasks copied on order
-        confirmation, and tasks added to the project later)."""
+    def _apply_admin_dates(self, project_end, task_dates):
+        """Set the dates of these tasks. A task whose name matches an entry of
+        `task_dates` ({normalized name: (start, deadline)}, the admin tasks
+        following the SSS reference dates) gets that deadline and, when the
+        planning feature is installed, that planned start. Every other task
+        gets the project end date as deadline."""
+        has_planned_start = 'planned_date_begin' in self._fields
+        for task in self.sudo():
+            rule = task_dates.get(normalize_task_name(task.name))
+            vals = {}
+            if rule:
+                start, end = rule
+                deadline = self._admin_deadline_datetime(end)
+                if has_planned_start:
+                    begin = self._admin_local_datetime(start, ADMIN_START_HOUR)
+                    if task.planned_date_begin != begin:
+                        vals['planned_date_begin'] = begin
+            else:
+                deadline = self._admin_deadline_datetime(project_end)
+            if task.date_deadline != deadline:
+                vals['date_deadline'] = deadline
+            if vals:
+                task.write(vals)
+                _logger.info("Dossier: dates %s set on task %s (%s)", vals, task.id, task.name)
+
+    def _apply_admin_dates_on_create(self):
+        """A task created in a dated project linked to a sale order takes its
+        dates from the order's rules: the SSS-based dates when its name is
+        listed there, the project end date otherwise. Covers the template
+        tasks copied on order confirmation and tasks added later."""
         for project, tasks in self.grouped('project_id').items():
-            if not project or not project.date or not project._get_dossier_order():
+            if not project or not project.date:
                 continue
-            tasks._apply_admin_deadline(project.date)
+            order = project._get_dossier_order()
+            if not order:
+                continue
+            tasks._apply_admin_dates(project.date, order._compute_admin_task_dates())

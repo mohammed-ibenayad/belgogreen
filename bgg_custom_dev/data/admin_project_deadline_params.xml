@@ -4,33 +4,77 @@
         Admin project deadlines (Dossier): delays applied to the project created
         for a sale order, from its confirmation date ("Signature du BC").
 
-        bgg.admin_project_deadline_rules holds JSON. Edit it in Settings >
-        Technical > System Parameters. noupdate: created on install/upgrade if
-        missing, never overwrites a value an admin has changed.
+        Both parameters hold JSON. Edit them in Settings > Technical > System
+        Parameters. noupdate: created on install/upgrade if missing, never
+        overwrites a value an admin has changed.
 
-            { "<payment term name>": { "day_type": "business" | "calendar",
-                                       "<product category name>": <days>, ... },
-              ... }
+        Day types: "business" (jours ouvrables) counts Monday to Friday only,
+        no holidays; "calendar" (jours calendrier) counts every day. The
+        delivered rules use business days everywhere.
 
-        - the first-level key is the payment term name as shown in Odoo
-          (case-insensitive, any installed language); a payment term absent
-          from this map gets no dates (e.g. Financement RW);
-        - "business" (jours ouvrables) counts Monday to Friday only, no
-          holidays; "calendar" (jours calendrier) counts every day;
-        - the other keys are product category names (the product's category
-          or one of its parents, case-insensitive), e.g. "Panneaux" for
-          "All / Saleable / Panneaux";
-        - when the order holds products from several listed categories, the
-          longest delay wins.
+        bgg.admin_project_deadline_rules
+            { "<payment term name>": {
+                  "day_type": "business" | "calendar",
+                  "<product category name>": <days>, ...,
+                  "sss": { "start_offset": <days>, "start_day_type": "...",
+                           "day_type": "...", "<product category name>": <days>, ... }
+              }, ... }
+            - the first-level key is the payment term name as shown in Odoo
+              (case-insensitive, any installed language); a payment term absent
+              from this map gets no dates (e.g. Financement RW);
+            - category keys are product category names (the product's category
+              or one of its parents, case-insensitive), e.g. "Panneaux";
+            - admin project: start = confirmation date, end = start + <days>;
+              with several listed categories on the order the longest wins;
+            - "sss": reference dates of the field service project, computed in
+              memory only (never written): start = confirmation date +
+              start_offset, end = start + <days> of the category (longest wins).
+
+        bgg.admin_task_deadline_rules
+            { "day_type": "business" | "calendar",
+              "tasks": { "<task name>": <offset days>, ... } }
+            - admin template tasks whose dates follow the SSS reference end
+              date: planned start = SSS end, deadline = SSS end + offset;
+            - task names are matched ignoring case, accents and extra spaces;
+            - every other task of the admin project gets the project end date
+              as deadline.
     -->
     <data noupdate="1">
         <record id="admin_project_deadline_rules" model="ir.config_parameter">
             <field name="key">bgg.admin_project_deadline_rules</field>
             <field name="value">{
-  "Paiement immédiat": {"day_type": "business", "Panneaux": 10, "Onduleurs": 10, "Batteries": 10, "PAC": 15, "Isolation": 20},
-  "50% maintenant, le solde à l'installation": {"day_type": "business", "Panneaux": 10, "Onduleurs": 10, "Batteries": 10, "PAC": 15, "Isolation": 20},
-  "Financement": {"day_type": "calendar", "Panneaux": 15, "Onduleurs": 15, "Batteries": 15, "PAC": 20, "Isolation": 25},
-  "Financement (Banque/Courtier client)": {"day_type": "calendar", "Panneaux": 15, "Onduleurs": 15, "Batteries": 15, "PAC": 20, "Isolation": 25}
+  "Paiement immédiat": {
+    "day_type": "business", "Panneaux": 10, "Onduleurs": 10, "Batteries": 10, "PAC": 15, "Isolation": 20,
+    "sss": {"start_offset": 5, "start_day_type": "business", "day_type": "business",
+            "Panneaux": 5, "Onduleurs": 5, "Batteries": 5, "PAC": 10, "Isolation": 15}
+  },
+  "50% maintenant, le solde à l'installation": {
+    "day_type": "business", "Panneaux": 10, "Onduleurs": 10, "Batteries": 10, "PAC": 15, "Isolation": 20,
+    "sss": {"start_offset": 5, "start_day_type": "business", "day_type": "business",
+            "Panneaux": 5, "Onduleurs": 5, "Batteries": 5, "PAC": 10, "Isolation": 15}
+  },
+  "Financement": {
+    "day_type": "business", "Panneaux": 15, "Onduleurs": 15, "Batteries": 15, "PAC": 20, "Isolation": 25,
+    "sss": {"start_offset": 10, "start_day_type": "business", "day_type": "business",
+            "Panneaux": 25, "Onduleurs": 25, "Batteries": 25, "PAC": 30, "Isolation": 35}
+  },
+  "Financement (Banque/Courtier client)": {
+    "day_type": "business", "Panneaux": 15, "Onduleurs": 15, "Batteries": 15, "PAC": 20, "Isolation": 25,
+    "sss": {"start_offset": 10, "start_day_type": "business", "day_type": "business",
+            "Panneaux": 25, "Onduleurs": 25, "Batteries": 25, "PAC": 30, "Isolation": 35}
+  }
+}</field>
+        </record>
+        <record id="admin_task_deadline_rules" model="ir.config_parameter">
+            <field name="key">bgg.admin_task_deadline_rules</field>
+            <field name="value">{
+  "day_type": "business",
+  "tasks": {
+    "Réclamation du solde": 0,
+    "Création des commissions": 0,
+    "Chargement schéma unifilaire": 5,
+    "Envoi Belgotest + coordonnées RESA / ORES": 10
+  }
 }</field>
         </record>
     </data>
