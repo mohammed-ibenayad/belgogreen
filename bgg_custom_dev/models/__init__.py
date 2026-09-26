@@ -10,4 +10,3 @@ from . import commercial_dashboard
 from . import call_center_dashboard
 from . import res_partner
 from . import sale_order
-from . import sale_order_sss

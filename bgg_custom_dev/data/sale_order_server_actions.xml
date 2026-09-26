@@ -33,19 +33,9 @@ action = {
     </record>
 
     <!--
-        "Créer tâches SSS": field service project + tasks for the selected
-        confirmed and paid orders. Ported from the server action that lived in
-        the database (see models/sale_order_sss.py); the database copy must be
-        removed once this one is deployed, or both show in the Actions menu.
+        "Créer tâches SSS" (field service project + tasks for paid orders) is
+        deliberately NOT in this module: it is a server action maintained in
+        Odoo Studio. It reads the bgg.sss_project_manager_login system
+        parameter (email of the SSS project manager).
     -->
-    <record id="action_create_sss_tasks" model="ir.actions.server">
-        <field name="name">Créer tâches SSS</field>
-        <field name="model_id" ref="sale.model_sale_order"/>
-        <field name="binding_model_id" ref="sale.model_sale_order"/>
-        <field name="binding_view_types">list,form</field>
-        <field name="state">code</field>
-        <field name="code">
-env['sale.order'].browse(env.context.get('active_ids', [])).action_create_sss_tasks()
-        </field>
-    </record>
 </odoo>

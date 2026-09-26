@@ -50,10 +50,8 @@
           installation product (project-creating service) missing
         - Only the "Responsable Dossier Admin" group (and administrators)
           may set or change the Responsable of an order
-        - "Créer tâches SSS" action (Actions menu on sale orders): field
-          service project, stages and one task per consumable line for the
-          selected confirmed and paid orders; the project manager is the
-          user whose email (or login) is in bgg.sss_project_manager_login
+        - The "Créer tâches SSS" server action stays in Odoo Studio; it reads
+          the bgg.sss_project_manager_login parameter (SSS manager email)
 
         All business logic includes comprehensive logging for debugging and monitoring.
     """,
@@ -70,10 +68,6 @@
         'documents',
         'sale_project',
         'sale',
-        # Field service: the "Créer tâches SSS" action creates FSM projects
-        # and tasks (is_fsm, worksheets, materials, quotations on tasks).
-        'industry_fsm_sale',
-        'industry_fsm_report',
     ],
     'data': [
         # Security

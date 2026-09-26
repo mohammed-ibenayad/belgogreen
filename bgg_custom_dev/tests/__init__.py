@@ -6,4 +6,3 @@ from . import test_project_project
 from . import test_res_partner
 from . import test_sale_order_responsable_dossier
 from . import test_admin_project_deadlines
-from . import test_sss_action
