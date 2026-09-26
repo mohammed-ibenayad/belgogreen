@@ -10,8 +10,8 @@ _logger = logging.getLogger(__name__)
 # from the order (Responsable du dossier, payment term x product categories)
 # and therefore locked against manual edits.
 ADMIN_PROJECT_LOCKED_FIELDS = ('user_id', 'date_start', 'date')
-# Login of the user set as project manager of every SSS (field service)
-# project created for a sale order. Empty: projects keep their manager.
+# Email (or login) of the user set as project manager of every SSS (field
+# service) project created for a sale order. Empty: projects keep their manager.
 SSS_PROJECT_MANAGER_PARAM = 'bgg.sss_project_manager_login'
 
 
@@ -61,19 +61,22 @@ class ProjectProject(models.Model):
 
     @api.model
     def _sss_project_manager(self):
-        """The user (by login) configured as manager of every SSS project, or
-        an empty recordset when the parameter is empty or names no active
-        internal user (logged)."""
-        login = (self.env['ir.config_parameter'].sudo()
+        """The user configured as manager of every SSS project, found by
+        email (or login), case-insensitively, among active internal users.
+        Empty recordset when the parameter is empty or matches nobody
+        (logged)."""
+        value = (self.env['ir.config_parameter'].sudo()
                  .get_param(SSS_PROJECT_MANAGER_PARAM) or '').strip()
-        if not login:
+        if not value:
             return self.env['res.users']
         user = self.env['res.users'].sudo().search([
-            ('login', '=ilike', login), ('share', '=', False)], limit=1)
+            '|', ('email', '=ilike', value), ('login', '=ilike', value),
+            ('share', '=', False),
+        ], limit=1)
         if not user:
-            _logger.warning("SSS project manager: no internal user with login %r "
-                            "(parameter %s); projects keep their manager.",
-                            login, SSS_PROJECT_MANAGER_PARAM)
+            _logger.warning("SSS project manager: no active internal user with email "
+                            "or login %r (parameter %s); projects keep their manager.",
+                            value, SSS_PROJECT_MANAGER_PARAM)
         return user
 
     def _check_admin_project_locked_fields(self, vals):

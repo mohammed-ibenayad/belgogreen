@@ -28,10 +28,11 @@ class TestCreateSssTasks(TransactionCase):
             'phone': '+32 2 000 00 00',
         })
         cls.manager = cls.env['res.users'].create({
-            'name': 'Chef SSS', 'login': 'chef.sss@test.bgg',
+            'name': 'Chef SSS', 'login': 'chef.sss', 'email': 'sav.test@belgogreen.be',
             'group_ids': [(6, 0, [cls.env.ref('base.group_user').id])],
         })
-        cls.env['ir.config_parameter'].sudo().set_param(MANAGER_PARAM, cls.manager.login)
+        # The parameter holds the user's email (login also accepted), any case.
+        cls.env['ir.config_parameter'].sudo().set_param(MANAGER_PARAM, 'SAV.Test@belgogreen.be')
 
         Categ = cls.env['product.category']
         # "All / Saleable" is legacy data on the production database (Odoo 19

@@ -53,7 +53,7 @@
         - "Créer tâches SSS" action (Actions menu on sale orders): field
           service project, stages and one task per consumable line for the
           selected confirmed and paid orders; the project manager is the
-          user configured in bgg.sss_project_manager_login
+          user whose email (or login) is in bgg.sss_project_manager_login
 
         All business logic includes comprehensive logging for debugging and monitoring.
     """,
