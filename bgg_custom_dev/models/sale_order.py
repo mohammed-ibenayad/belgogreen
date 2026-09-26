@@ -6,7 +6,7 @@ import logging
 import unicodedata
 
 from odoo import _, api, fields, models
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
 
 from .calendar_event import CALL_CENTER_APPOINTMENT_REFS
 
@@ -14,6 +14,9 @@ _logger = logging.getLogger(__name__)
 
 DASHBOARD_GROUP = 'bgg_custom_dev.group_bgg_dashboard'
 RESPONSABLE_DOSSIER_GROUP = 'bgg_custom_dev.group_responsable_dossier'
+# Only members of this group (or Odoo administrators) may set or change the
+# Responsable of an order. Automations (sudo) are not restricted.
+RESPONSABLE_DOSSIER_ADMIN_GROUP = 'bgg_custom_dev.group_responsable_dossier_admin'
 
 # Admin project deadlines (Dossier). Business timezone used to turn the
 # confirmation timestamp into a calendar date (Belgian company).
@@ -113,6 +116,10 @@ class SaleOrder(models.Model):
             fname: {order.id: order[fname] for order in self}
             for fname in watched if fname in vals
         }
+        if 'x_responsable_dossier_id' in previous:
+            new_id = vals['x_responsable_dossier_id'] or False
+            if any(previous['x_responsable_dossier_id'][o.id].id != new_id for o in self):
+                self._check_responsable_dossier_edit_allowed()
         result = super().write(vals)
         if 'x_responsable_dossier_id' in previous:
             for order in self:
@@ -388,6 +395,39 @@ class SaleOrder(models.Model):
         if group:
             domain.append(('all_group_ids', 'in', group.id))
         return domain
+
+    # View helper: True when the current user may set or change the
+    # Responsable (member of Responsable Dossier Admin, or Odoo administrator).
+    x_user_can_edit_responsable_dossier = fields.Boolean(
+        string='Current User Can Edit Responsable',
+        compute='_compute_user_can_edit_responsable_dossier',
+    )
+
+    @api.depends_context('uid')
+    def _compute_user_can_edit_responsable_dossier(self):
+        can_edit = self._user_can_edit_responsable_dossier()
+        for order in self:
+            order.x_user_can_edit_responsable_dossier = can_edit
+
+    @api.model
+    def _user_can_edit_responsable_dossier(self):
+        return (self.env.su
+                or self.env.user.has_group('base.group_system')
+                or self.env.user.has_group(RESPONSABLE_DOSSIER_ADMIN_GROUP))
+
+    def _check_responsable_dossier_edit_allowed(self):
+        """Raise unless the current user may set or change the Responsable."""
+        if not self._user_can_edit_responsable_dossier():
+            raise UserError(
+                "Seuls les membres du groupe « Responsable Dossier Admin » peuvent "
+                "désigner ou modifier le Responsable du dossier."
+            )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        if any(vals.get('x_responsable_dossier_id') for vals in vals_list):
+            self._check_responsable_dossier_edit_allowed()
+        return super().create(vals_list)
 
     @api.constrains('x_responsable_dossier_id')
     def _check_responsable_dossier(self):

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen Custom Development',
-    'version': '19.0.1.8.0',
+    'version': '19.0.1.9.0',
     'category': 'Customizations',
     'summary': 'Custom business logic and automation for BelGoGreen',
     'description': """
@@ -48,6 +48,10 @@
           project manager and as assignee of their open tasks
         - Form warnings: Responsable not assigned on a confirmed order,
           installation product (project-creating service) missing
+        - Only the "Responsable Dossier Admin" group (and administrators)
+          may set or change the Responsable of an order
+        - SSS (field service) projects created for a sale order get the
+          project manager configured in bgg.sss_project_manager_login
 
         All business logic includes comprehensive logging for debugging and monitoring.
     """,

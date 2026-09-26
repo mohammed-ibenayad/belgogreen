@@ -19,6 +19,16 @@
     </record>
 
     <!--
+        "Responsable Dossier Admin": the only users allowed to set or change
+        the Responsable of a sale order (Dossier tab). Being a Responsable
+        (group above) does not grant this right.
+    -->
+    <record id="group_responsable_dossier_admin" model="res.groups">
+        <field name="name">Responsable Dossier Admin</field>
+        <field name="comment">Utilisateurs autorisés à désigner ou modifier le Responsable d'un bon de commande (onglet Dossier).</field>
+    </record>
+
+    <!--
         The "Commercial" and "Call Center" roles used by the no-show workflow are
         NOT defined here: they were created manually outside the custom modules.
         They are resolved by name at runtime (see calendar_event.py) and linked

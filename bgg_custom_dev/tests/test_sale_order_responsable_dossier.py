@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
@@ -228,6 +228,84 @@ class TestSaleOrderResponsableDossier(TransactionCase):
         self.order.x_responsable_dossier_id = self.responsable
         self.assertEqual(project.user_id, self.internal_user)
         self.assertNotIn(self.responsable, task.user_ids)
+
+    # ------------------------------------------------------------------
+    # Only the Responsable Dossier Admin group may set the Responsable
+    # ------------------------------------------------------------------
+
+    def _make_editor(self, admin=False):
+        groups = [self.env.ref('base.group_user').id,
+                  self.env.ref('sales_team.group_sale_salesman_all_leads').id]
+        if admin:
+            groups.append(self.env.ref('bgg_custom_dev.group_responsable_dossier_admin').id)
+        return self.env['res.users'].create({
+            'name': 'Editor %s' % ('admin' if admin else 'plain'),
+            'login': 'editor.%s@test.bgg' % ('admin' if admin else 'plain'),
+            'group_ids': [(6, 0, groups)],
+        })
+
+    def test_responsable_change_requires_admin_group(self):
+        plain = self._make_editor(admin=False)
+        order_as_plain = self.order.with_user(plain)
+        self.assertFalse(order_as_plain.x_user_can_edit_responsable_dossier)
+        with self.assertRaises(UserError):
+            order_as_plain.write({'x_responsable_dossier_id': self.responsable.id})
+        self.assertFalse(self.order.x_responsable_dossier_id)
+        # other fields stay editable, and re-sending the current value is fine
+        order_as_plain.write({'note': 'ok', 'x_responsable_dossier_id': False})
+
+        admin = self._make_editor(admin=True)
+        order_as_admin = self.order.with_user(admin)
+        self.assertTrue(order_as_admin.x_user_can_edit_responsable_dossier)
+        order_as_admin.write({'x_responsable_dossier_id': self.responsable.id})
+        self.assertEqual(self.order.x_responsable_dossier_id, self.responsable)
+        # and clearing it is also reserved to the group
+        with self.assertRaises(UserError):
+            order_as_plain.write({'x_responsable_dossier_id': False})
+        order_as_admin.write({'x_responsable_dossier_id': False})
+        self.assertFalse(self.order.x_responsable_dossier_id)
+
+    def test_create_with_responsable_requires_admin_group(self):
+        plain = self._make_editor(admin=False)
+        SaleOrder = self.env['sale.order'].with_user(plain)
+        with self.assertRaises(UserError):
+            SaleOrder.create({'partner_id': self.customer.id,
+                              'x_responsable_dossier_id': self.responsable.id})
+        order = SaleOrder.create({'partner_id': self.customer.id})
+        self.assertFalse(order.x_responsable_dossier_id)
+        admin = self._make_editor(admin=True)
+        order = self.env['sale.order'].with_user(admin).create({
+            'partner_id': self.customer.id,
+            'x_responsable_dossier_id': self.responsable.id})
+        self.assertEqual(order.x_responsable_dossier_id, self.responsable)
+
+    # ------------------------------------------------------------------
+    # SSS projects: fixed project manager from the system parameter
+    # ------------------------------------------------------------------
+
+    def _create_sss_project(self, name='S00001 - SSS - Client Dossier'):
+        vals = {'name': name}
+        if 'is_fsm' in self.env['project.project']._fields:
+            vals['is_fsm'] = True
+        return self.env['project.project'].create(vals)
+
+    def test_sss_project_manager_from_param(self):
+        Param = self.env['ir.config_parameter'].sudo()
+        Param.set_param('bgg.sss_project_manager_login', self.responsable.login)
+        project = self._create_sss_project()
+        self.assertEqual(project.user_id, self.responsable)
+        # not an SSS project: untouched
+        other = self.env['project.project'].create({'name': 'Projet interne'})
+        self.assertNotEqual(other.user_id, self.responsable)
+
+    def test_sss_project_manager_param_missing_or_unknown(self):
+        Param = self.env['ir.config_parameter'].sudo()
+        Param.set_param('bgg.sss_project_manager_login', False)
+        project = self._create_sss_project()
+        self.assertNotEqual(project.user_id, self.responsable)
+        Param.set_param('bgg.sss_project_manager_login', 'nobody@test.bgg')
+        project = self._create_sss_project(name='S00002 - SSS - Client Dossier')
+        self.assertNotEqual(project.user_id, self.responsable)
 
     def _flush_tracking(self):
         """Run the precommit hooks that write mail tracking values."""

@@ -45,9 +45,11 @@
                 <page string="Dossier" name="dossier">
                     <group>
                         <group name="dossier_responsable">
+                            <field name="x_user_can_edit_responsable_dossier" invisible="1"/>
                             <field name="x_responsable_dossier_id"
                                    widget="many2one_avatar_user"
                                    options="{'no_create': True, 'no_open': True}"
+                                   readonly="not x_user_can_edit_responsable_dossier"
                                    placeholder="Sélectionner un Responsable Dossier…"/>
                         </group>
                     </group>
