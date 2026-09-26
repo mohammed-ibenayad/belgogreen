@@ -34,14 +34,6 @@ class ProjectProject(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         """Override create to trigger automation rules on new projects"""
-        # SSS projects created for a sale order get the fixed project manager
-        # configured in the system parameter (before create: no extra write).
-        sss_manager = self._sss_project_manager()
-        if sss_manager:
-            for vals in vals_list:
-                if self._is_sss_project_vals(vals):
-                    vals['user_id'] = sss_manager.id
-
         records = super(ProjectProject, self).create(vals_list)
 
         for record in records:
@@ -83,20 +75,6 @@ class ProjectProject(models.Model):
                             "(parameter %s); projects keep their manager.",
                             login, SSS_PROJECT_MANAGER_PARAM)
         return user
-
-    @api.model
-    def _is_sss_project_vals(self, vals):
-        """True for a field service project created for a sale order, as the
-        'Créer tâches SSS' action does: name '<order> - SSS - <customer>'
-        (or a sale order passed in the values), and is_fsm when the field
-        service app is installed."""
-        name = (vals.get('name') or '').lower()
-        linked = ' - sss - ' in name or bool(vals.get('sale_order_id'))
-        if not linked:
-            return False
-        if 'is_fsm' in self._fields:
-            return bool(vals.get('is_fsm'))
-        return True
 
     def _check_admin_project_locked_fields(self, vals):
         """Block manual edits of the project manager and the planned dates on

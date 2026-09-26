@@ -279,34 +279,6 @@ class TestSaleOrderResponsableDossier(TransactionCase):
             'x_responsable_dossier_id': self.responsable.id})
         self.assertEqual(order.x_responsable_dossier_id, self.responsable)
 
-    # ------------------------------------------------------------------
-    # SSS projects: fixed project manager from the system parameter
-    # ------------------------------------------------------------------
-
-    def _create_sss_project(self, name='S00001 - SSS - Client Dossier'):
-        vals = {'name': name}
-        if 'is_fsm' in self.env['project.project']._fields:
-            vals['is_fsm'] = True
-        return self.env['project.project'].create(vals)
-
-    def test_sss_project_manager_from_param(self):
-        Param = self.env['ir.config_parameter'].sudo()
-        Param.set_param('bgg.sss_project_manager_login', self.responsable.login)
-        project = self._create_sss_project()
-        self.assertEqual(project.user_id, self.responsable)
-        # not an SSS project: untouched
-        other = self.env['project.project'].create({'name': 'Projet interne'})
-        self.assertNotEqual(other.user_id, self.responsable)
-
-    def test_sss_project_manager_param_missing_or_unknown(self):
-        Param = self.env['ir.config_parameter'].sudo()
-        Param.set_param('bgg.sss_project_manager_login', False)
-        project = self._create_sss_project()
-        self.assertNotEqual(project.user_id, self.responsable)
-        Param.set_param('bgg.sss_project_manager_login', 'nobody@test.bgg')
-        project = self._create_sss_project(name='S00002 - SSS - Client Dossier')
-        self.assertNotEqual(project.user_id, self.responsable)
-
     def _flush_tracking(self):
         """Run the precommit hooks that write mail tracking values."""
         self.env.flush_all()

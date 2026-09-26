@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen Custom Development',
-    'version': '19.0.1.9.0',
+    'version': '19.0.1.10.0',
     'category': 'Customizations',
     'summary': 'Custom business logic and automation for BelGoGreen',
     'description': """
@@ -50,8 +50,10 @@
           installation product (project-creating service) missing
         - Only the "Responsable Dossier Admin" group (and administrators)
           may set or change the Responsable of an order
-        - SSS (field service) projects created for a sale order get the
-          project manager configured in bgg.sss_project_manager_login
+        - "Créer tâches SSS" action (Actions menu on sale orders): field
+          service project, stages and one task per consumable line for the
+          selected confirmed and paid orders; the project manager is the
+          user configured in bgg.sss_project_manager_login
 
         All business logic includes comprehensive logging for debugging and monitoring.
     """,
@@ -68,6 +70,10 @@
         'documents',
         'sale_project',
         'sale',
+        # Field service: the "Créer tâches SSS" action creates FSM projects
+        # and tasks (is_fsm, worksheets, materials, quotations on tasks).
+        'industry_fsm_sale',
+        'industry_fsm_report',
     ],
     'data': [
         # Security
