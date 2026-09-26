@@ -265,6 +265,22 @@ class TestSaleOrderResponsableDossier(TransactionCase):
         order_as_admin.write({'x_responsable_dossier_id': False})
         self.assertFalse(self.order.x_responsable_dossier_id)
 
+    def test_odoo_administrator_without_group_is_refused(self):
+        """No administrator exception: the Settings right alone is not enough."""
+        admin_user = self.env['res.users'].create({
+            'name': 'Odoo Admin', 'login': 'odoo.admin@test.bgg',
+            'group_ids': [(6, 0, [
+                self.env.ref('base.group_user').id,
+                self.env.ref('base.group_system').id,
+                self.env.ref('sales_team.group_sale_salesman_all_leads').id,
+            ])],
+        })
+        order_as_admin = self.order.with_user(admin_user)
+        self.assertFalse(order_as_admin.x_user_can_edit_responsable_dossier)
+        with self.assertRaises(UserError):
+            order_as_admin.write({'x_responsable_dossier_id': self.responsable.id})
+        self.assertFalse(self.order.x_responsable_dossier_id)
+
     def test_create_with_responsable_requires_admin_group(self):
         plain = self._make_editor(admin=False)
         SaleOrder = self.env['sale.order'].with_user(plain)

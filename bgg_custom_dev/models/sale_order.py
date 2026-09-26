@@ -14,8 +14,8 @@ _logger = logging.getLogger(__name__)
 
 DASHBOARD_GROUP = 'bgg_custom_dev.group_bgg_dashboard'
 RESPONSABLE_DOSSIER_GROUP = 'bgg_custom_dev.group_responsable_dossier'
-# Only members of this group (or Odoo administrators) may set or change the
-# Responsable of an order. Automations (sudo) are not restricted.
+# Only members of this group may set or change the Responsable of an order
+# (no administrator exception). Automations (sudo) are not restricted.
 RESPONSABLE_DOSSIER_ADMIN_GROUP = 'bgg_custom_dev.group_responsable_dossier_admin'
 
 # Admin project deadlines (Dossier). Business timezone used to turn the
@@ -397,7 +397,7 @@ class SaleOrder(models.Model):
         return domain
 
     # View helper: True when the current user may set or change the
-    # Responsable (member of Responsable Dossier Admin, or Odoo administrator).
+    # Responsable (member of Responsable Dossier Admin).
     x_user_can_edit_responsable_dossier = fields.Boolean(
         string='Current User Can Edit Responsable',
         compute='_compute_user_can_edit_responsable_dossier',
@@ -411,9 +411,9 @@ class SaleOrder(models.Model):
 
     @api.model
     def _user_can_edit_responsable_dossier(self):
-        return (self.env.su
-                or self.env.user.has_group('base.group_system')
-                or self.env.user.has_group(RESPONSABLE_DOSSIER_ADMIN_GROUP))
+        # Group members only (no administrator exception); automations run in
+        # sudo and are not restricted.
+        return self.env.su or self.env.user.has_group(RESPONSABLE_DOSSIER_ADMIN_GROUP)
 
     def _check_responsable_dossier_edit_allowed(self):
         """Raise unless the current user may set or change the Responsable."""
