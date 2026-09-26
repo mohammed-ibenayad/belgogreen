@@ -127,8 +127,11 @@ class TestCreateSssTasks(TransactionCase):
             self.assertTrue(project.is_fsm)
         self.assertEqual(project.label_tasks, 'Tâches - Service sur Site')
 
+        # The field service app adds its own default stages to a new FSM
+        # project; the action adds these two on top of them.
         stages = self.env['project.task.type'].search([('project_ids', 'in', project.id)])
-        self.assertEqual(sorted(stages.mapped('name')), ['FSM: In progress/Done', 'FSM: ToDo'])
+        self.assertTrue({'FSM: ToDo', 'FSM: In progress/Done'} <= set(stages.mapped('name')),
+                        "action stages missing among %s" % stages.mapped('name'))
 
         tasks = self._tasks(project)
         self.assertEqual(sorted(tasks.mapped('name')), sorted([self.panel.name, self.inverter.name]),
