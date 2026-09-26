@@ -69,7 +69,7 @@ class ProjectProject(models.Model):
         if not login:
             return self.env['res.users']
         user = self.env['res.users'].sudo().search([
-            ('login', '=', login), ('share', '=', False)], limit=1)
+            ('login', '=ilike', login), ('share', '=', False)], limit=1)
         if not user:
             _logger.warning("SSS project manager: no internal user with login %r "
                             "(parameter %s); projects keep their manager.",
