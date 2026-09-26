@@ -34,10 +34,13 @@ class TestCreateSssTasks(TransactionCase):
         cls.env['ir.config_parameter'].sudo().set_param(MANAGER_PARAM, cls.manager.login)
 
         Categ = cls.env['product.category']
+        # "All / Saleable" is legacy data on the production database (Odoo 19
+        # ships "Goods" and "Services" as root categories): build it by name.
         saleable = Categ.search([('complete_name', '=', 'All / Saleable')], limit=1)
         if not saleable:
-            saleable = Categ.create({'name': 'Saleable',
-                                     'parent_id': cls.env.ref('product.product_category_all').id})
+            root = (Categ.search([('name', '=', 'All'), ('parent_id', '=', False)], limit=1)
+                    or Categ.create({'name': 'All'}))
+            saleable = Categ.create({'name': 'Saleable', 'parent_id': root.id})
         panneaux = Categ.create({'name': 'Panneaux (SSS test)', 'parent_id': saleable.id})
         cls.panel = cls.env['product.product'].create({
             'name': 'Panneau 400W (SSS test)', 'type': 'consu', 'invoice_policy': 'order',
