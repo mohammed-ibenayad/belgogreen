@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Admin projects (Dossier): on a project linked to a sale order, the
+        project manager and the planned dates are computed from the order
+        (Responsable du dossier, payment term x product categories) and are
+        read-only here. The server-side guard lives in project_project.py.
+    -->
+    <record id="edit_project_inherit_admin_dossier_lock" model="ir.ui.view">
+        <field name="name">project.project.form.inherit.admin.dossier.lock</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.edit_project"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='active']" position="after">
+                <field name="x_is_admin_dossier_project" invisible="1"/>
+            </xpath>
+            <xpath expr="//field[@name='user_id']" position="attributes">
+                <attribute name="readonly">not active or x_is_admin_dossier_project</attribute>
+            </xpath>
+            <xpath expr="//field[@name='date_start']" position="attributes">
+                <attribute name="readonly">x_is_admin_dossier_project</attribute>
+            </xpath>
+            <xpath expr="//field[@name='date']" position="attributes">
+                <attribute name="readonly">x_is_admin_dossier_project</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>

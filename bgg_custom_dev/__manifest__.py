@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen Custom Development',
-    'version': '19.0.1.5.9',
+    'version': '19.0.1.10.0',
     'category': 'Customizations',
     'summary': 'Custom business logic and automation for BelGoGreen',
     'description': """
@@ -29,7 +29,29 @@
 
         **Project Management (project.project, project.task)**:
         - Document folder naming from sales orders
-        - Welcome call deadline calculation (order date + 2 days)
+        - Admin project deadlines: project start = order confirmation date,
+          project end = start + delay from the payment term x product
+          category rules (bgg.admin_project_deadline_rules system
+          parameter), task deadlines = project end date
+        - Admin template tasks listed in bgg.admin_task_deadline_rules
+          (Réclamation du solde, Création des commissions, Chargement
+          schéma unifilaire, Envoi Belgotest) take their dates from the
+          field service (SSS) reference dates computed from the same rules
+        - Admin projects: project manager and planned dates are computed
+          from the order and locked against manual edits
+
+        **Sales Orders (sale.order)**:
+        - Call Center (Sale Owner) attribution and RDV smart button
+        - "Dossier" tab with the "Responsable" of the order (project manager
+          of the sale), restricted to the "Responsable Dossier" group
+        - The Responsable is propagated to the projects of the order as
+          project manager and as assignee of their open tasks
+        - Form warnings: Responsable not assigned on a confirmed order,
+          installation product (project-creating service) missing
+        - Only the "Responsable Dossier Admin" group (and administrators)
+          may set or change the Responsable of an order
+        - The "Créer tâches SSS" server action stays in Odoo Studio; it reads
+          the bgg.sss_project_manager_login parameter (SSS manager email)
 
         All business logic includes comprehensive logging for debugging and monitoring.
     """,
@@ -54,12 +76,14 @@
 
         # Configuration data
         'data/noshow_config_params.xml',
+        'data/admin_project_deadline_params.xml',
 
         # Views
         'views/calendar_event_views.xml',
         'views/commercial_dashboard_views.xml',
         'views/call_center_dashboard_views.xml',
         'views/sale_order_views.xml',
+        'views/project_project_views.xml',
 
         # Reports (action must be loaded before menu that references it)
         'report/avis_count_report_views.xml',

@@ -6,6 +6,29 @@
     </record>
 
     <!--
+        "Responsable Dossier": internal users who can be picked as the
+        Responsable of a sale order (Dossier tab). The Responsable acts as the
+        project manager of the order: follows up the admins' activities and
+        field service until the order is delivered to the client.
+        Group and field labels are intentionally kept in French (business
+        wording); they are not meant to be translated.
+    -->
+    <record id="group_responsable_dossier" model="res.groups">
+        <field name="name">Responsable Dossier</field>
+        <field name="comment">Utilisateurs internes pouvant être désignés Responsable d'un bon de commande (onglet Dossier) : suivi des activités des admins et du service sur site jusqu'à la livraison au client.</field>
+    </record>
+
+    <!--
+        "Responsable Dossier Admin": the only users allowed to set or change
+        the Responsable of a sale order (Dossier tab). Being a Responsable
+        (group above) does not grant this right.
+    -->
+    <record id="group_responsable_dossier_admin" model="res.groups">
+        <field name="name">Responsable Dossier Admin</field>
+        <field name="comment">Utilisateurs autorisés à désigner ou modifier le Responsable d'un bon de commande (onglet Dossier).</field>
+    </record>
+
+    <!--
         The "Commercial" and "Call Center" roles used by the no-show workflow are
         NOT defined here: they were created manually outside the custom modules.
         They are resolved by name at runtime (see calendar_event.py) and linked

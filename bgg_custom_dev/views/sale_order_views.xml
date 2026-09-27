@@ -15,6 +15,49 @@
         </field>
     </record>
 
+    <!--
+        Form: "Dossier" tab with the Responsable of the order (project manager
+        of the sale: follows up admins' activities and field service until
+        delivery to the client). Labels are French business wording on purpose
+        and are not meant to be translated.
+    -->
+    <record id="view_order_form_inherit_dossier" model="ir.ui.view">
+        <field name="name">sale.order.form.inherit.dossier</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="before">
+                <div class="alert alert-warning" role="alert"
+                     invisible="state != 'sale' or x_responsable_dossier_id">
+                    <strong>Responsable non assigné :</strong>
+                    aucun Responsable n'a encore été désigné pour ce dossier.
+                    Sélectionnez-le dans l'onglet <em>Dossier</em>.
+                </div>
+                <div class="alert alert-warning" role="alert"
+                     invisible="not x_installation_product_missing">
+                    <field name="x_installation_product_missing" invisible="1"/>
+                    <strong>Produit d'installation manquant :</strong>
+                    la commande contient des produits à installer mais aucun
+                    service d'installation.
+                </div>
+            </xpath>
+            <xpath expr="//notebook/page[@name='other_information']" position="after">
+                <page string="Dossier" name="dossier">
+                    <group>
+                        <group name="dossier_responsable">
+                            <field name="x_user_can_edit_responsable_dossier" invisible="1"/>
+                            <field name="x_responsable_dossier_id"
+                                   widget="many2one_avatar_user"
+                                   options="{'no_create': True, 'no_open': True}"
+                                   readonly="not x_user_can_edit_responsable_dossier"
+                                   placeholder="Sélectionner un Responsable Dossier…"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
     <!-- Form: smart button linking to the candidate call-center appointments -->
     <record id="view_order_form_inherit_call_center_button" model="ir.ui.view">
         <field name="name">sale.order.form.inherit.call.center.button</field>

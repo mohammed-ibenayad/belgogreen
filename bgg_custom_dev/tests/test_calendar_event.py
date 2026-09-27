@@ -138,14 +138,15 @@ class TestCalendarEvent(TransactionCase):
         if not self.appointment_type_call_center:
             self.skipTest("Appointment module not installed")
 
-        # Create event with call center appointment type
+        # Create event with call center appointment type, then flag it no_show
+        # (creating it already flagged would be reset to booked on create).
         event = self.env['calendar.event'].create({
             'name': 'Test Event',
             'start': datetime.datetime.now(),
             'stop': datetime.datetime.now() + datetime.timedelta(hours=1),
             'appointment_type_id': self.appointment_type_call_center.id,
-            'appointment_status': 'no_show',
         })
+        event.write({'appointment_status': 'no_show'})
 
         # Create NoShow activity
         activity = self.env['mail.activity'].create({
@@ -178,14 +179,15 @@ class TestCalendarEvent(TransactionCase):
         if not self.appointment_type_call_center:
             self.skipTest("Appointment module not installed")
 
-        # Create event with call center appointment type and no_show status
+        # Create event with call center appointment type, then flag it no_show
         event = self.env['calendar.event'].create({
             'name': 'Test Event',
             'start': datetime.datetime.now(),
             'stop': datetime.datetime.now() + datetime.timedelta(hours=1),
             'appointment_type_id': self.appointment_type_call_center.id,
-            'appointment_status': 'no_show',
         })
+        event.write({'appointment_status': 'no_show'})
+        self.assertEqual(event.appointment_status, 'no_show')
 
         # Reschedule event
         event.write({
@@ -208,8 +210,9 @@ class TestCalendarEvent(TransactionCase):
             'start': datetime.datetime(2026, 1, 8, 16, 0, 0),
             'stop': datetime.datetime(2026, 1, 8, 17, 30, 0),
             'appointment_type_id': self.appointment_type_call_center.id,
-            'appointment_status': 'no_show',
         })
+        event.write({'appointment_status': 'no_show'})
+        self.assertEqual(event.appointment_status, 'no_show')
 
         # Simulate the NoShow activity having been closed earlier: remove it so
         # the reschedule rule finds no active activity.
@@ -611,8 +614,11 @@ class TestCalendarEvent(TransactionCase):
             'start': start,
             'stop': stop,
             'appointment_type_id': self.appointment_type_call_center.id,
-            'appointment_status': 'no_show',
         })
+        # Flag the no-show on the existing event (the workflow path). Creating
+        # the event already flagged no_show is not covered: the create path
+        # runs the reschedule rule, which resets the status to booked.
+        event.write({'appointment_status': 'no_show'})
 
         # Two unrelated edits/saves (the second is where the date used to jump).
         event.write({'x_avis_count': 1})
@@ -815,16 +821,27 @@ class TestCalendarEventNoShowTreatment(TransactionCase):
                 'x_appointment_ref': 'APT-ENERG-COM',
             })
 
+    def _create_flagged_noshow(self, vals):
+        """Create the event from `vals`, then flag it no_show in a second write.
+
+        This is the workflow path (the RDV exists, then is marked no-show after
+        the meeting). Creating an event already flagged no_show is deliberately
+        not used: the create path runs the reschedule rule, which resets the
+        status to booked and clears the anchor.
+        """
+        event = self.env['calendar.event'].create(vals)
+        event.write({'appointment_status': 'no_show'})
+        return event
+
     def _create_noshow(self, appointment_type=None):
-        """Create a CNT no-show calendar event (missed yesterday)."""
+        """Create a CNT calendar event missed yesterday and flag it no_show."""
         appointment_type = appointment_type or self.cnt_type
         now = datetime.datetime.now()
-        return self.env['calendar.event'].create({
+        return self._create_flagged_noshow({
             'name': 'NoShow Event',
             'start': now - datetime.timedelta(days=1, hours=1),
             'stop': now - datetime.timedelta(days=1),
             'appointment_type_id': appointment_type.id,
-            'appointment_status': 'no_show',
         })
 
     def _backdate(self, event, days):
@@ -938,12 +955,11 @@ class TestCalendarEventNoShowTreatment(TransactionCase):
         if not self.cnt_type:
             self.skipTest("appointment module not installed")
         now = datetime.datetime.now()
-        event = self.env['calendar.event'].create({
+        event = self._create_flagged_noshow({
             'name': 'NoShow Access',
             'start': now - datetime.timedelta(days=1, hours=1),
             'stop': now - datetime.timedelta(days=1),
             'appointment_type_id': self.cnt_type.id,
-            'appointment_status': 'no_show',
             'user_id': self.commercial_user.id,
             'partner_ids': [(6, 0, [
                 self.commercial_user.partner_id.id,
@@ -976,12 +992,11 @@ class TestCalendarEventNoShowTreatment(TransactionCase):
     def _create_cc_event(self, backdate_days=None, disposition=None):
         """A CNT no-show owned by the call-center user (so it can write it)."""
         now = datetime.datetime.now()
-        event = self.env['calendar.event'].create({
+        event = self._create_flagged_noshow({
             'name': 'NoShow CC',
             'start': now - datetime.timedelta(days=1, hours=1),
             'stop': now - datetime.timedelta(days=1),
             'appointment_type_id': self.cnt_type.id,
-            'appointment_status': 'no_show',
             'user_id': self.cc_user.id,
             'partner_ids': [(6, 0, [self.cc_user.partner_id.id])],
         })
@@ -1033,12 +1048,11 @@ class TestCalendarEventNoShowTreatment(TransactionCase):
         if not self.cnt_type:
             self.skipTest("appointment module not installed")
         now = datetime.datetime.now()
-        event = self.env['calendar.event'].create({
+        event = self._create_flagged_noshow({
             'name': 'NoShow COM-resched',
             'start': now - datetime.timedelta(days=1, hours=1),
             'stop': now - datetime.timedelta(days=1),
             'appointment_type_id': self.cnt_type.id,
-            'appointment_status': 'no_show',
             'user_id': self.commercial_user.id,
             'partner_ids': [(6, 0, [self.commercial_user.partner_id.id])],
         })  # available_date in the future (still in window)

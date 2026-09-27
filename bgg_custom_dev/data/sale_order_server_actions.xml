@@ -31,4 +31,11 @@ action = {
 }
         </field>
     </record>
+
+    <!--
+        "Créer tâches SSS" (field service project + tasks for paid orders) is
+        deliberately NOT in this module: it is a server action maintained in
+        Odoo Studio. It reads the bgg.sss_project_manager_login system
+        parameter (email of the SSS project manager).
+    -->
 </odoo>
