@@ -24,6 +24,15 @@ class AmssDashboardController(http.Controller):
             payment_term_id=payment_term_id,
         )
 
+    @http.route('/amss/dashboard/open', type='jsonrpc', auth='user')
+    def open_card(self, card, month=None, year=None, period_type='month', quarter=None,
+                  company_id=None, date_from=None, date_to=None, payment_term_id=None):
+        return request.env['amss.management.dashboard'].open_card(
+            card, month=month, year=year, period_type=period_type, quarter=quarter,
+            company_id=company_id, date_from=date_from, date_to=date_to,
+            payment_term_id=payment_term_id,
+        )
+
     @http.route('/amss/dashboard/export', type='http', auth='user')
     def export_excel(self, month=None, year=None, period_type='month',
                      quarter=None, company_id=None, date_from=None, date_to=None,

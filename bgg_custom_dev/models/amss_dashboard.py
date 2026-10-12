@@ -155,16 +155,22 @@ class AmssManagementDashboard(models.TransientModel):
     @api.model
     def _admin_projects(self, company_ids, payment_term_id=None):
         """Admin projects (linked to a sale order, templates excluded) of
-        confirmed orders, optionally of orders with the given payment term."""
+        confirmed orders of `company_ids`, optionally of orders with the given
+        payment term. The company is the order's: a project created from a
+        template may have no company of its own."""
         projects = self.env['project.project'].sudo().search([
             '|',
             ('sale_line_id', '!=', False),
             ('reinvoiced_sale_order_id', '!=', False),
             ('is_template', '=', False),
-            ('company_id', 'in', company_ids),
         ])
-        return projects.filtered(lambda p: p._get_dossier_order().state == 'sale' and (
-            not payment_term_id or p._get_dossier_order().payment_term_id.id == payment_term_id))
+
+        def keep(project):
+            order = project._get_dossier_order()
+            return (order.state == 'sale'
+                    and order.company_id.id in company_ids
+                    and (not payment_term_id or order.payment_term_id.id == payment_term_id))
+        return projects.filtered(keep)
 
     @api.model
     def _late_projects(self, projects, today):
@@ -186,11 +192,11 @@ class AmssManagementDashboard(models.TransientModel):
         return late
 
     @api.model
-    def _blocked_count(self, projects, cutoff=None):
-        """Number of projects whose status is Bloqué: current status, or the
-        status of the last update dated before `cutoff` (exclusive)."""
+    def _blocked_projects(self, projects, cutoff=None):
+        """Projects whose status is Bloqué: current status, or the status of
+        the last update dated before `cutoff` (exclusive)."""
         if cutoff is None:
-            return len(projects.filtered(lambda p: p.last_update_status == BLOCKED_STATUS))
+            return projects.filtered(lambda p: p.last_update_status == BLOCKED_STATUS)
         updates = self.env['project.update'].sudo().search([
             ('project_id', 'in', projects.ids),
             ('date', '<', cutoff),
@@ -198,7 +204,11 @@ class AmssManagementDashboard(models.TransientModel):
         last_status = {}
         for update in updates:
             last_status.setdefault(update.project_id.id, update.status)
-        return sum(1 for status in last_status.values() if status == BLOCKED_STATUS)
+        return projects.browse([pid for pid, status in last_status.items() if status == BLOCKED_STATUS])
+
+    @api.model
+    def _blocked_count(self, projects, cutoff=None):
+        return len(self._blocked_projects(projects, cutoff))
 
     @api.model
     def _cash_flow(self, date_start, date_end, company_ids, payment_term_id=None):
@@ -209,8 +219,7 @@ class AmssManagementDashboard(models.TransientModel):
         cash."""
         orders = self._period_orders(date_start, date_end, company_ids, ['sale', 'done'],
                                      payment_term_id)
-        moves = orders.invoice_ids.filtered(
-            lambda m: m.state == 'posted' and m.move_type in ('out_invoice', 'out_refund'))
+        moves = self._invoiced_moves(orders)
         facture = sum(moves.mapped('amount_untaxed_signed'))
         encaisse = sum(
             move.amount_untaxed_signed * (move.amount_total - move.amount_residual) / move.amount_total
@@ -220,6 +229,50 @@ class AmssManagementDashboard(models.TransientModel):
             'facture': round(facture, 2),
             'encaisse': round(encaisse, 2),
         }
+
+    @api.model
+    def _invoiced_moves(self, orders):
+        """Posted customer invoices and credit notes of `orders` (Facturé)."""
+        return orders.invoice_ids.filtered(
+            lambda m: m.state == 'posted' and m.move_type in ('out_invoice', 'out_refund'))
+
+    @api.model
+    def _resolve_filters(self, month=None, year=None, period_type='month', quarter=None,
+                         company_id=None, date_from=None, date_to=None, payment_term_id=None):
+        date_start, date_end, period_label, month, year, quarter = \
+            self.env['call.center.dashboard']._resolve_period(
+                month, year, period_type, quarter, date_from, date_to)
+        prev_start, prev_end = self._previous_range(date_start, date_end, period_type)
+        today = fields.Date.context_today(self.with_context(tz=BGG_TZ))
+        return {
+            'date_start': date_start, 'date_end': date_end, 'period_label': period_label,
+            'month': month, 'year': year, 'quarter': quarter, 'period_type': period_type,
+            'prev_start': prev_start, 'prev_end': prev_end, 'today': today,
+            # Dossiers bloqués: today for a running period, else its last day
+            'blocked_cutoff': None if date_end > today else date_end,
+            'company_ids': self._allowed_company_ids(company_id),
+            'payment_term_id': payment_term_id,
+        }
+
+    @api.model
+    def _card_records(self, card, f):
+        """Records behind a card or a bar (the ones its figure is computed
+        from), for the resolved filters `f`."""
+        if card in ('ca_net', 'ventes_confirmees', 'signe', 'facture', 'encaisse'):
+            orders = self._period_orders(f['date_start'], f['date_end'], f['company_ids'],
+                                         ['sale', 'done'], f['payment_term_id'])
+            if card == 'facture':
+                return self._invoiced_moves(orders)
+            if card == 'encaisse':
+                return self._invoiced_moves(orders).filtered(
+                    lambda m: m.amount_total and m.amount_residual < m.amount_total)
+            return orders
+        projects = self._admin_projects(f['company_ids'], f['payment_term_id'])
+        if card == 'chantiers_retard':
+            return self._late_projects(projects, f['today'])
+        if card == 'dossiers_bloques':
+            return self._blocked_projects(projects, f['blocked_cutoff'])
+        raise ValueError("Unknown card %r" % card)
 
     # ------------------------------------------------------------------
     # Public API
@@ -242,18 +295,18 @@ class AmssManagementDashboard(models.TransientModel):
                            quarter=None, company_id=None, date_from=None, date_to=None,
                            payment_term_id=None):
         self._check_dashboard_access()
-        date_start, date_end, period_label, month, year, quarter = \
-            self.env['call.center.dashboard']._resolve_period(
-                month, year, period_type, quarter, date_from, date_to)
-        prev_start, prev_end = self._previous_range(date_start, date_end, period_type)
-        company_ids = self._allowed_company_ids(company_id)
-        today = fields.Date.context_today(self.with_context(tz=BGG_TZ))
+        f = self._resolve_filters(month, year, period_type, quarter, company_id,
+                                  date_from, date_to, payment_term_id)
+        date_start, date_end, prev_start, prev_end = (
+            f['date_start'], f['date_end'], f['prev_start'], f['prev_end'])
+        company_ids, today = f['company_ids'], f['today']
+        month, year, quarter, period_label = f['month'], f['year'], f['quarter'], f['period_label']
 
         current = self._sales_figures(date_start, date_end, company_ids, payment_term_id)
         previous = self._sales_figures(prev_start, prev_end, company_ids, payment_term_id)
 
         projects = self._admin_projects(company_ids, payment_term_id)
-        blocked_now = self._blocked_count(projects, None if date_end > today else date_end)
+        blocked_now = self._blocked_count(projects, f['blocked_cutoff'])
         blocked_prev = self._blocked_count(projects, date_start)
 
         def delta(key, kind):
@@ -276,6 +329,8 @@ class AmssManagementDashboard(models.TransientModel):
             },
             'tooltips': TOOLTIPS,
             'payment_term_filtered': bool(payment_term_id),
+            'blocked_as_of': (False if f['blocked_cutoff'] is None else
+                              (date_end - relativedelta(days=1)).strftime('%d/%m/%Y')),
             'cards': {
                 'ca_net': {'value': current['ca_net'], 'previous': previous['ca_net'],
                            'delta': delta('ca_net', 'pct')},
@@ -290,6 +345,33 @@ class AmssManagementDashboard(models.TransientModel):
                                      'delta': blocked_now - blocked_prev},
             },
             'cash_flow': self._cash_flow(date_start, date_end, company_ids, payment_term_id),
+        }
+
+    @api.model
+    def open_card(self, card, month=None, year=None, period_type='month', quarter=None,
+                  company_id=None, date_from=None, date_to=None, payment_term_id=None):
+        """Window action listing the records behind a card, with the same
+        filters. The list opens with the user's own access rights."""
+        self._check_dashboard_access()
+        f = self._resolve_filters(month, year, period_type, quarter, company_id,
+                                  date_from, date_to, payment_term_id)
+        records = self._card_records(card, f)
+        titles = {
+            'ca_net': 'CA NET', 'ventes_confirmees': 'Ventes confirmées', 'signe': 'Signé',
+            'facture': 'Facturé', 'encaisse': 'Encaissé',
+            'chantiers_retard': 'Chantiers en retard', 'dossiers_bloques': 'Dossiers bloqués',
+        }
+        suffix = ('à ce jour' if card == 'chantiers_retard'
+                  or (card == 'dossiers_bloques' and f['blocked_cutoff'] is None)
+                  else f['period_label'])
+        return {
+            'type': 'ir.actions.act_window',
+            'name': '%s – %s' % (titles[card], suffix),
+            'res_model': records._name,
+            'views': [(False, 'list'), (False, 'form')],
+            'domain': [('id', 'in', records.ids)],
+            'context': {'create': False},
+            'target': 'current',
         }
 
     @api.model
