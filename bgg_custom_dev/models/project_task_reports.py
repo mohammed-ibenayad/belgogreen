@@ -12,7 +12,7 @@ class ReportProjectTaskUser(models.Model):
     state = fields.Selection(selection_add=[('05_blocked', 'Bloqué')])
 
 
-class ProjectTaskBurndownChartReport(models.Model):
+class ProjectTaskBurndownChartReport(models.AbstractModel):
     _inherit = 'project.task.burndown.chart.report'
 
     state = fields.Selection(selection_add=[('05_blocked', 'Bloqué')])
