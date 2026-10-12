@@ -44,8 +44,10 @@ $amss-accent: #e8a500;
         align-items: center;
         gap: 10px;
 
+        margin-left: 6px;
+
         .amss_period_label {
-            min-width: 170px;
+            min-width: 150px;
             text-align: center;
             font-size: 15px;
             font-weight: 700;
@@ -159,6 +161,27 @@ $amss-accent: #e8a500;
             font-weight: 700;
             font-variant-numeric: tabular-nums;
             line-height: 1.1;
+        }
+    }
+
+    .amss_clickable {
+        cursor: pointer;
+        transition: box-shadow 0.15s, border-color 0.15s;
+
+        &:hover {
+            border-color: $amss-teal;
+            box-shadow: 0 2px 6px rgba(1, 126, 132, 0.15);
+        }
+    }
+
+    .amss_bar_row.amss_clickable {
+        border-radius: 4px;
+        padding-left: 4px;
+        padding-right: 4px;
+
+        &:hover {
+            background: #eef6f6;
+            box-shadow: none;
         }
     }
 

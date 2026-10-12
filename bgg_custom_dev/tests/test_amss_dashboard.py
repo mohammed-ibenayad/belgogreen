@@ -210,6 +210,32 @@ class TestAmssDashboard(TransactionCase):
         self.assertEqual(self.Dashboard._blocked_count(project, last_month), 0,
                          "no status before its first update")
 
+    def test_blocked_as_of(self):
+        today = fields.Date.today()
+        data = self.Dashboard.get_dashboard_data()
+        self.assertFalse(data['blocked_as_of'], "running period: à ce jour")
+        data = self.Dashboard.get_dashboard_data(month=1, year=today.year - 1)
+        self.assertEqual(data['blocked_as_of'], '31/01/%s' % (today.year - 1))
+
+    # ------------------------------------------------------------------
+    # Drill-down: clicking a card lists the records behind its figure
+    # ------------------------------------------------------------------
+
+    def test_open_card(self):
+        order = self._order()
+        project = order._get_dossier_projects()
+        self._status_update(project, 'blocked')
+        action = self.Dashboard.open_card('ventes_confirmees')
+        self.assertEqual(action['res_model'], 'sale.order')
+        self.assertIn(order.id, action['domain'][0][2])
+        action = self.Dashboard.open_card('dossiers_bloques')
+        self.assertEqual(action['res_model'], 'project.project')
+        self.assertIn(project.id, action['domain'][0][2])
+        self.assertTrue(action['name'].endswith('à ce jour'))
+        self.assertEqual(self.Dashboard.open_card('facture')['res_model'], 'account.move')
+        with self.assertRaises(AccessError):
+            self.Dashboard.with_user(self.plain_user).open_card('ca_net')
+
     # ------------------------------------------------------------------
     # CA signé / facturé / encaissé
     # ------------------------------------------------------------------

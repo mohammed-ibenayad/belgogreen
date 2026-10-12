@@ -2,6 +2,7 @@
 
 import { registry } from "@web/core/registry";
 import { rpc } from "@web/core/network/rpc";
+import { useService } from "@web/core/utils/hooks";
 import { Component, onWillStart, useState } from "@odoo/owl";
 
 // For each card: does an increase mean good news?
@@ -17,6 +18,7 @@ export class AmssManagementDashboard extends Component {
     static props = ["*"];
 
     setup() {
+        this.action = useService("action");
         this.state = useState({
             data: null,
             loading: true,
@@ -45,7 +47,11 @@ export class AmssManagementDashboard extends Component {
         });
     }
 
-    async loadData(month = null, year = null) {
+    /**
+     * Filter parameters sent to the server, or null while a custom range is
+     * incomplete.
+     */
+    filterParams(month = null, year = null) {
         const params = { period_type: this.state.periodType };
         if (month) params.month = month;
         if (year) params.year = year;
@@ -54,15 +60,22 @@ export class AmssManagementDashboard extends Component {
         }
         if (this.state.periodType === "custom") {
             if (!this.state.dateFrom || !this.state.dateTo) {
-                this.state.loading = false;
-                return;
+                return null;
             }
             params.date_from = this.state.dateFrom;
             params.date_to = this.state.dateTo;
         }
         if (this.state.filterCompanyId) params.company_id = this.state.filterCompanyId;
         if (this.state.filterPaymentTermId) params.payment_term_id = this.state.filterPaymentTermId;
+        return params;
+    }
 
+    async loadData(month = null, year = null) {
+        const params = this.filterParams(month, year);
+        if (!params) {
+            this.state.loading = false;
+            return;
+        }
         this.state.loading = true;
         this.state.error = null;
         try {
@@ -145,6 +158,18 @@ export class AmssManagementDashboard extends Component {
     async onCompanyFilterChange(ev) {
         this.state.filterCompanyId = ev.target.value ? parseInt(ev.target.value) : null;
         await this.loadData(this.state.currentMonth, this.state.currentYear);
+    }
+
+    /** Open the records behind a card or a bar, with the same filters. */
+    async openCard(card) {
+        const params = this.filterParams(this.state.currentMonth, this.state.currentYear);
+        if (!params) return;
+        try {
+            const action = await rpc("/amss/dashboard/open", { ...params, card });
+            await this.action.doAction(action);
+        } catch (error) {
+            this.state.error = error.data?.message || error.message;
+        }
     }
 
     async onPaymentTermFilterChange(ev) {

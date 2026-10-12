@@ -5,17 +5,6 @@
             <!-- Header -->
             <div class="amss_header">
                 <h1>AMSS Management</h1>
-                <div class="amss_period_nav" t-if="state.data">
-                    <button class="btn btn-sm btn-outline-secondary" t-on-click="onPrevPeriod"
-                            t-att-disabled="state.periodType === 'custom'" title="Période précédente">
-                        <i class="fa fa-chevron-left"/>
-                    </button>
-                    <span class="amss_period_label" t-esc="state.data.period_label"/>
-                    <button class="btn btn-sm btn-outline-secondary" t-on-click="onNextPeriod"
-                            t-att-disabled="state.periodType === 'custom'" title="Période suivante">
-                        <i class="fa fa-chevron-right"/>
-                    </button>
-                </div>
                 <div class="amss_header_actions">
                     <button class="btn btn-sm amss_btn" t-on-click="onExportExcel">
                         <i class="fa fa-file-excel-o"/> Excel
@@ -36,6 +25,15 @@
                         <option value="year" t-att-selected="state.periodType === 'year' ? 'selected' : undefined">Année</option>
                         <option value="custom" t-att-selected="state.periodType === 'custom' ? 'selected' : undefined">Personnalisé</option>
                     </select>
+                    <div class="amss_period_nav" t-if="state.data and state.periodType !== 'custom'">
+                        <button class="btn btn-sm btn-outline-secondary" t-on-click="onPrevPeriod" title="Période précédente">
+                            <i class="fa fa-chevron-left"/>
+                        </button>
+                        <span class="amss_period_label" t-esc="state.data.period_label"/>
+                        <button class="btn btn-sm btn-outline-secondary" t-on-click="onNextPeriod" title="Période suivante">
+                            <i class="fa fa-chevron-right"/>
+                        </button>
+                    </div>
                 </div>
                 <t t-if="state.periodType === 'custom'">
                     <div class="amss_filter">
@@ -90,7 +88,8 @@
 
                 <!-- KPI cards -->
                 <div class="amss_cards">
-                    <div class="amss_card">
+                    <div class="amss_card amss_clickable" t-on-click="() => this.openCard('ca_net')"
+                         title="Cliquer pour voir le détail">
                         <div class="amss_card_title">
                             CA NET <i class="fa fa-info-circle amss_info" t-att-title="tips.ca_net"/>
                         </div>
@@ -99,7 +98,8 @@
                              t-att-title="'Période précédente : ' + formatAmount(cards.ca_net.previous)"
                              t-esc="formatDelta('ca_net')"/>
                     </div>
-                    <div class="amss_card">
+                    <div class="amss_card amss_clickable" t-on-click="() => this.openCard('ventes_confirmees')"
+                         title="Cliquer pour voir le détail">
                         <div class="amss_card_title">
                             VENTES CONFIRMÉES <i class="fa fa-info-circle amss_info" t-att-title="tips.ventes_confirmees"/>
                         </div>
@@ -121,14 +121,16 @@
                             Toutes conditions de paiement
                         </div>
                     </div>
-                    <div class="amss_card">
+                    <div class="amss_card amss_clickable" t-on-click="() => this.openCard('chantiers_retard')"
+                         title="Cliquer pour voir le détail">
                         <div class="amss_card_title">
                             Chantiers en retard <i class="fa fa-info-circle amss_info" t-att-title="tips.chantiers_retard"/>
                         </div>
                         <div class="amss_card_value" t-esc="cards.chantiers_retard.value"/>
                         <div class="amss_card_delta amss_delta_neutral">à ce jour</div>
                     </div>
-                    <div class="amss_card">
+                    <div class="amss_card amss_clickable" t-on-click="() => this.openCard('dossiers_bloques')"
+                         title="Cliquer pour voir le détail">
                         <div class="amss_card_title">
                             Dossiers bloqués <i class="fa fa-info-circle amss_info" t-att-title="tips.dossiers_bloques"/>
                         </div>
@@ -136,6 +138,10 @@
                         <div t-att-class="'amss_card_delta ' + deltaClass('dossiers_bloques')"
                              t-att-title="'Fin de la période précédente : ' + cards.dossiers_bloques.previous"
                              t-esc="formatDelta('dossiers_bloques')"/>
+                        <div class="amss_card_note">
+                            <t t-if="state.data.blocked_as_of">au <t t-esc="state.data.blocked_as_of"/></t>
+                            <t t-else="">à ce jour</t>
+                        </div>
                     </div>
                 </div>
 
@@ -144,7 +150,8 @@
                     <div class="amss_panel">
                         <h2>CA signé / facturé / encaissé (k<t t-esc="currencySymbol"/>)</h2>
                         <t t-foreach="[['signe', 'Signé'], ['facture', 'Facturé'], ['encaisse', 'Encaissé']]" t-as="bar" t-key="bar[0]">
-                            <div class="amss_bar_row">
+                            <div class="amss_bar_row amss_clickable" t-on-click="() => this.openCard(bar[0])"
+                                 title="Cliquer pour voir le détail">
                                 <span class="amss_bar_label">
                                     <t t-esc="bar[1]"/> <i class="fa fa-info-circle amss_info" t-att-title="tips[bar[0]]"/>
                                 </span>
