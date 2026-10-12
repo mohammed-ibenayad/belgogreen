@@ -155,16 +155,22 @@ class AmssManagementDashboard(models.TransientModel):
     @api.model
     def _admin_projects(self, company_ids, payment_term_id=None):
         """Admin projects (linked to a sale order, templates excluded) of
-        confirmed orders, optionally of orders with the given payment term."""
+        confirmed orders of `company_ids`, optionally of orders with the given
+        payment term. The company is the order's: a project created from a
+        template may have no company of its own."""
         projects = self.env['project.project'].sudo().search([
             '|',
             ('sale_line_id', '!=', False),
             ('reinvoiced_sale_order_id', '!=', False),
             ('is_template', '=', False),
-            ('company_id', 'in', company_ids),
         ])
-        return projects.filtered(lambda p: p._get_dossier_order().state == 'sale' and (
-            not payment_term_id or p._get_dossier_order().payment_term_id.id == payment_term_id))
+
+        def keep(project):
+            order = project._get_dossier_order()
+            return (order.state == 'sale'
+                    and order.company_id.id in company_ids
+                    and (not payment_term_id or order.payment_term_id.id == payment_term_id))
+        return projects.filtered(keep)
 
     @api.model
     def _late_projects(self, projects, today):

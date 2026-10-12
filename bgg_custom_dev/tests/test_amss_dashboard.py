@@ -232,6 +232,9 @@ class TestAmssDashboard(TransactionCase):
         self.assertEqual(action['res_model'], 'project.project')
         self.assertIn(project.id, action['domain'][0][2])
         self.assertTrue(action['name'].endswith('à ce jour'))
+        # a project without a company of its own is matched through its order
+        project.sudo().company_id = False
+        self.assertIn(project, self.Dashboard._admin_projects([order.company_id.id]))
         self.assertEqual(self.Dashboard.open_card('facture')['res_model'], 'account.move')
         with self.assertRaises(AccessError):
             self.Dashboard.with_user(self.plain_user).open_card('ca_net')
