@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen Custom Development',
-    'version': '19.0.1.12.0',
+    'version': '19.0.1.13.0',
     'category': 'Customizations',
     'summary': 'Custom business logic and automation for BelGoGreen',
     'description': """
@@ -43,6 +43,9 @@
           from the order and locked against manual edits
         - "Bloqué" project status (status updates), admin projects only, set
           or removed by the Responsable Dossier group
+        - "Bloqué" tasks (admin projects, Responsable Dossier group): an open
+          blocked task sets its project to Bloqué; once no task is blocked
+          the project gets its previous status back
 
         **Sales Orders (sale.order)**:
         - Call Center (Sale Owner) attribution and RDV smart button
@@ -94,6 +97,7 @@
         'views/call_center_dashboard_views.xml',
         'views/sale_order_views.xml',
         'views/project_project_views.xml',
+        'views/project_task_views.xml',
         'views/amss_dashboard_views.xml',
 
         # Reports (action must be loaded before menu that references it)

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        "Bloqué" tasks of the admin projects (see project_task.py): an open
+        blocked task sets its project to Bloqué. Only shown on tasks of admin
+        projects; editable by the Responsable Dossier groups only (also
+        checked server side). The reason is written in the chatter.
+    -->
+    <record id="view_task_form2_inherit_blocked" model="ir.ui.view">
+        <field name="name">project.task.form.inherit.blocked</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group/field[@name='tag_ids']" position="before">
+                <field name="x_is_admin_dossier_project" invisible="1"/>
+                <field name="x_user_can_manage_blocked" invisible="1"/>
+                <field name="x_blocked" widget="boolean_toggle"
+                       invisible="not x_is_admin_dossier_project"
+                       readonly="not x_user_can_manage_blocked"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="project_task_view_tree_base_inherit_blocked" model="ir.ui.view">
+        <field name="name">project.task.list.inherit.blocked</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.project_task_view_tree_base"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='tag_ids']" position="after">
+                <field name="x_blocked" optional="show" readonly="1"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_task_search_form_project_base_inherit_blocked" model="ir.ui.view">
+        <field name="name">project.task.search.inherit.blocked</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_search_form_project_base"/>
+        <field name="arch" type="xml">
+            <filter name="open_tasks" position="after">
+                <filter string="Bloquées" name="bgg_blocked_tasks" domain="[('x_blocked', '=', True)]"/>
+            </filter>
+        </field>
+    </record>
+</odoo>

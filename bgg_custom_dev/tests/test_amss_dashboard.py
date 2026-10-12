@@ -3,7 +3,7 @@
 import datetime
 
 from odoo import fields
-from odoo.exceptions import AccessError, ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
@@ -216,6 +216,52 @@ class TestAmssDashboard(TransactionCase):
         self.assertFalse(data['blocked_as_of'], "running period: à ce jour")
         data = self.Dashboard.get_dashboard_data(month=1, year=today.year - 1)
         self.assertEqual(data['blocked_as_of'], '31/01/%s' % (today.year - 1))
+
+    # ------------------------------------------------------------------
+    # Blocked tasks block their project
+    # ------------------------------------------------------------------
+
+    def _admin_project_and_task(self):
+        project = self._order()._get_dossier_projects()
+        task = self.env['project.task'].search([('project_id', '=', project.id)], limit=1)
+        self.assertTrue(task)
+        return project, task
+
+    def test_blocked_task_blocks_and_unblocks_project(self):
+        project, task = self._admin_project_and_task()
+        self._status_update(project, 'at_risk')
+        task.with_user(self.responsable).x_blocked = True
+        self.assertEqual(project.last_update_status, 'blocked')
+        self.assertTrue(project.x_blocked_by_task)
+        # the project cannot leave Bloqué while the task is blocked
+        with self.assertRaises(UserError):
+            self._status_update(project, 'on_track', user=self.responsable)
+        task.with_user(self.responsable).x_blocked = False
+        self.assertEqual(project.last_update_status, 'at_risk', "previous status restored")
+        self.assertFalse(project.x_blocked_by_task)
+
+    def test_closing_blocked_task_unblocks_project(self):
+        project, task = self._admin_project_and_task()
+        task.x_blocked = True
+        self.assertEqual(project.last_update_status, 'blocked')
+        task.state = '1_done'
+        self.assertEqual(project.last_update_status, 'on_track', "no previous status: En bonne voie")
+
+    def test_project_blocked_by_hand_stays_blocked(self):
+        project, task = self._admin_project_and_task()
+        self._status_update(project, 'blocked', user=self.responsable)
+        task.x_blocked = True
+        task.x_blocked = False
+        self.assertEqual(project.last_update_status, 'blocked')
+
+    def test_blocked_task_rights_and_scope(self):
+        project, task = self._admin_project_and_task()
+        with self.assertRaises(AccessError):
+            task.with_user(self.project_user).x_blocked = True
+        internal = self.env['project.project'].create({'name': 'Projet interne AMSS'})
+        other = self.env['project.task'].create({'name': 'T', 'project_id': internal.id})
+        with self.assertRaises(ValidationError):
+            other.x_blocked = True
 
     # ------------------------------------------------------------------
     # Drill-down: clicking a card lists the records behind its figure
