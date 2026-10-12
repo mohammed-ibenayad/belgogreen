@@ -245,7 +245,15 @@ class TestAmssDashboard(TransactionCase):
         task.state = '05_blocked'
         self.assertEqual(project.last_update_status, 'blocked')
         task.state = '1_done'
-        self.assertEqual(project.last_update_status, 'on_track', "no previous status: En bonne voie")
+        self.assertEqual(project.last_update_status, 'to_define', "no previous status: back to no status")
+        self.assertFalse(project.x_blocked_by_task)
+        block = self.env['project.update'].search(
+            [('project_id', '=', project.id), ('status', '=', 'blocked')], limit=1)
+        self.assertEqual(block.x_unblocked_on, fields.Date.today())
+        tomorrow = fields.Date.today() + datetime.timedelta(days=1)
+        self.assertEqual(self.Dashboard._blocked_count(project, tomorrow), 0,
+                         "the block ended today")
+        self.assertEqual(self.Dashboard._blocked_count(project), 0)
 
     def test_project_blocked_by_hand_stays_blocked(self):
         project, task = self._admin_project_and_task()
