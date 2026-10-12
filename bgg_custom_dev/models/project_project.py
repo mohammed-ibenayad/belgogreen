@@ -4,6 +4,8 @@ import logging
 from odoo import api, fields, models
 from odoo.exceptions import UserError
 
+from .project_update import BLOCKED_STATUS, BLOCKED_STATUS_COLOR
+
 _logger = logging.getLogger(__name__)
 
 # Fields of an admin project (project linked to a sale order) that are computed
@@ -27,6 +29,20 @@ class ProjectProject(models.Model):
     def _compute_is_admin_dossier_project(self):
         for project in self:
             project.x_is_admin_dossier_project = bool(project._get_dossier_order())
+
+    # "Bloqué" status (admin projects only, see project_update.py). Setting
+    # the status from the project creates a status update, where the checks
+    # are made.
+    last_update_status = fields.Selection(
+        selection_add=[('on_hold',), (BLOCKED_STATUS, 'Bloqué')],
+        ondelete={BLOCKED_STATUS: 'set default'},
+    )
+
+    @api.depends('last_update_status')
+    def _compute_last_update_color(self):
+        blocked = self.filtered(lambda p: p.last_update_status == BLOCKED_STATUS)
+        blocked.last_update_color = BLOCKED_STATUS_COLOR
+        super(ProjectProject, self - blocked)._compute_last_update_color()
 
     @api.model_create_multi
     def create(self, vals_list):

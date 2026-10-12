@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen Custom Development',
-    'version': '19.0.1.11.0',
+    'version': '19.0.1.12.0',
     'category': 'Customizations',
     'summary': 'Custom business logic and automation for BelGoGreen',
     'description': """
@@ -41,6 +41,8 @@
           SSS reference dates computed from the same rules
         - Admin projects: project manager and planned dates are computed
           from the order and locked against manual edits
+        - "Bloqué" project status (status updates), admin projects only, set
+          or removed by the Responsable Dossier group
 
         **Sales Orders (sale.order)**:
         - Call Center (Sale Owner) attribution and RDV smart button
@@ -54,6 +56,12 @@
           Responsable of an order
         - The "Créer tâches SSS" server action stays in Odoo Studio; it reads
           the bgg.sss_project_manager_login parameter (SSS manager email)
+
+        **AMSS Management dashboard (Direction group)**:
+        - Direction tab: CA NET, Ventes Confirmées, TX Conversion (same
+          formulas as Suivi Commercial, all orders and appointments),
+          Chantiers en retard, Dossiers bloqués, CA signé / facturé /
+          encaissé; comparison with the previous period; Excel export
 
         All business logic includes comprehensive logging for debugging and monitoring.
     """,
@@ -86,6 +94,7 @@
         'views/call_center_dashboard_views.xml',
         'views/sale_order_views.xml',
         'views/project_project_views.xml',
+        'views/amss_dashboard_views.xml',
 
         # Reports (action must be loaded before menu that references it)
         'report/avis_count_report_views.xml',
@@ -105,6 +114,10 @@
             'bgg_custom_dev/static/src/js/call_center_dashboard.js',
             'bgg_custom_dev/static/src/xml/call_center_dashboard.xml',
             'bgg_custom_dev/static/src/scss/call_center_dashboard.scss',
+            'bgg_custom_dev/static/src/js/amss_dashboard.js',
+            'bgg_custom_dev/static/src/xml/amss_dashboard.xml',
+            'bgg_custom_dev/static/src/scss/amss_dashboard.scss',
+            'bgg_custom_dev/static/src/js/project_status_blocked.js',
         ],
     },
     'post_init_hook': 'link_external_groups',

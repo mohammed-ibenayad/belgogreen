@@ -29,6 +29,15 @@
     </record>
 
     <!--
+        "Direction": access to the AMSS Management dashboard (company-wide
+        sales, projects and invoicing figures).
+    -->
+    <record id="group_direction" model="res.groups">
+        <field name="name">Direction</field>
+        <field name="comment">Accès au tableau de bord AMSS Management (onglet Direction) : chiffres de toute la société (ventes, projets admin, facturation, encaissements).</field>
+    </record>
+
+    <!--
         The "Commercial" and "Call Center" roles used by the no-show workflow are
         NOT defined here: they were created manually outside the custom modules.
         They are resolved by name at runtime (see calendar_event.py) and linked
