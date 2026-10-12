@@ -41,6 +41,7 @@ TOOLTIPS = {
         "projet, ou encore ouverte après cette date. Situation à ce jour."),
     'dossiers_bloques': (
         "Dossiers bloqués = projets admin dont le dernier statut est « Bloqué » "
+        "(bloqués à la main ou par une tâche bloquée) "
         "(à ce jour, ou à la fin de la période si elle est terminée). "
         "Comparaison : nombre à la fin de la période précédente."),
     'signe': (

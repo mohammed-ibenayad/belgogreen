@@ -44,6 +44,55 @@ class ProjectProject(models.Model):
         blocked.last_update_color = BLOCKED_STATUS_COLOR
         super(ProjectProject, self - blocked)._compute_last_update_color()
 
+    # Technical: the project was set to Bloqué automatically because one of
+    # its tasks is blocked (see project.task.x_blocked). Only such a project
+    # gets its previous status back once no task is blocked any more; a
+    # project blocked by hand stays blocked.
+    x_blocked_by_task = fields.Boolean(string='Bloqué par une tâche', copy=False, readonly=True)
+
+    def _blocked_open_tasks(self):
+        return self.env['project.task'].sudo().search([
+            ('project_id', 'in', self.ids),
+            ('x_blocked', '=', True),
+            ('state', 'not in', ['1_done', '1_canceled']),
+        ])
+
+    def _post_status_update(self, status, description=None):
+        """Post a status update (automation, sudo)."""
+        self.ensure_one()
+        vals = {
+            'name': 'Mise à jour du statut - %s' % fields.Date.context_today(self).strftime('%d/%m/%Y'),
+            'project_id': self.id,
+            'status': status,
+        }
+        if description:
+            vals['description'] = description
+        return self.env['project.update'].sudo().with_context(default_project_id=self.id).create(vals)
+
+    def _sync_blocked_from_tasks(self):
+        """Admin projects follow their blocked tasks: Bloqué as soon as an
+        open task is blocked; back to the status they had before once no
+        task is blocked any more (only when the block came from the tasks)."""
+        for project in self.sudo().exists():
+            if project.is_template or not project._get_dossier_order():
+                continue
+            blocked_tasks = project._blocked_open_tasks()
+            if blocked_tasks and project.last_update_status != BLOCKED_STATUS:
+                project._post_status_update(BLOCKED_STATUS, description=(
+                    '<p>Bloqué automatiquement : tâche(s) bloquée(s) : %s.</p>'
+                    % ', '.join(blocked_tasks.mapped('name'))))
+                project.x_blocked_by_task = True
+                _logger.info("Dossier: project %s blocked by tasks %s", project.id, blocked_tasks.ids)
+            elif not blocked_tasks and project.x_blocked_by_task:
+                previous = self.env['project.update'].sudo().search([
+                    ('project_id', '=', project.id),
+                    ('status', '!=', BLOCKED_STATUS),
+                ], order='date desc, id desc', limit=1)
+                project._post_status_update(previous.status or 'on_track', description=(
+                    '<p>Débloqué automatiquement : plus aucune tâche bloquée.</p>'))
+                project.x_blocked_by_task = False
+                _logger.info("Dossier: project %s unblocked (no blocked task)", project.id)
+
     @api.model_create_multi
     def create(self, vals_list):
         """Override create to trigger automation rules on new projects"""

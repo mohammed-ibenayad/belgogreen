@@ -5,8 +5,10 @@ import logging
 
 import pytz
 
-from odoo import api, models
+from odoo import _, api, fields, models
+from odoo.exceptions import ValidationError
 
+from .project_update import check_blocked_status_change_allowed, user_can_manage_blocked_status
 from .sale_order import BGG_TZ, normalize_task_name
 
 _logger = logging.getLogger(__name__)
@@ -17,18 +19,72 @@ ADMIN_DEADLINE_HOUR = 17
 ADMIN_START_HOUR = 8
 
 
+# Task changes after which the project's Bloqué status is re-evaluated.
+BLOCKED_SYNC_FIELDS = ('x_blocked', 'state', 'project_id', 'active')
+
+
 class ProjectTask(models.Model):
     _inherit = 'project.task'
+
+    # ------------------------------------------------------------------
+    # Dossier: "Bloqué" tasks of the admin projects. An open blocked task
+    # sets its project to Bloqué (see project.project._sync_blocked_from_tasks).
+    # ------------------------------------------------------------------
+
+    x_blocked = fields.Boolean(
+        string='Bloqué',
+        copy=False,
+        tracking=True,
+        help="Tâche bloquée (projets admin uniquement). Tant qu'une tâche ouverte "
+             "est bloquée, le projet est au statut « Bloqué ». Réservé au groupe "
+             "« Responsable Dossier » ; la raison se note dans le chatter.",
+    )
+    x_is_admin_dossier_project = fields.Boolean(related='project_id.x_is_admin_dossier_project')
+    # View helper: True when the current user may block / unblock a task.
+    x_user_can_manage_blocked = fields.Boolean(compute='_compute_user_can_manage_blocked')
+
+    @api.depends_context('uid')
+    def _compute_user_can_manage_blocked(self):
+        allowed = user_can_manage_blocked_status(self.env)
+        for task in self:
+            task.x_user_can_manage_blocked = allowed
+
+    @api.constrains('x_blocked', 'project_id')
+    def _check_blocked_admin_project(self):
+        for task in self.filtered('x_blocked'):
+            if not task.project_id or not task.project_id._get_dossier_order():
+                raise ValidationError(_(
+                    "Seules les tâches des projets admin (projets liés à une commande) "
+                    "peuvent être bloquées : %(task)s.", task=task.display_name))
 
     @api.model_create_multi
     def create(self, vals_list):
         """Override create to trigger automation rules on new tasks"""
+        if any(vals.get('x_blocked') for vals in vals_list):
+            check_blocked_status_change_allowed(self.env)
         records = super(ProjectTask, self).create(vals_list)
 
         records._assign_responsable_dossier_on_create()
         records._apply_admin_dates_on_create()
+        records.filtered('x_blocked').project_id._sync_blocked_from_tasks()
 
         return records
+
+    def write(self, vals):
+        if 'x_blocked' in vals and any(task.x_blocked != bool(vals['x_blocked']) for task in self):
+            check_blocked_status_change_allowed(self.env)
+        sync = any(fname in vals for fname in BLOCKED_SYNC_FIELDS)
+        projects = self.project_id if sync else self.env['project.project']
+        result = super().write(vals)
+        if sync:
+            (projects | self.project_id)._sync_blocked_from_tasks()
+        return result
+
+    def unlink(self):
+        projects = self.filtered('x_blocked').project_id
+        result = super().unlink()
+        projects._sync_blocked_from_tasks()
+        return result
 
     # ------------------------------------------------------------------
     # Dossier: Responsable of the linked sale order
