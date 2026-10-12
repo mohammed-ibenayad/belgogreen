@@ -162,6 +162,12 @@ $amss-accent: #e8a500;
         }
     }
 
+    .amss_card_note {
+        font-size: 11px;
+        font-style: italic;
+        color: $amss-muted;
+    }
+
     .amss_card_delta {
         font-size: 12px;
         font-weight: 600;

@@ -58,6 +58,17 @@
                         </t>
                     </select>
                 </div>
+                <div class="amss_filter">
+                    <label>Conditions de paiement :</label>
+                    <select t-on-change="onPaymentTermFilterChange">
+                        <option value="">Toutes</option>
+                        <t t-foreach="state.availablePaymentTerms" t-as="pt" t-key="pt.id">
+                            <option t-att-value="pt.id" t-att-selected="state.filterPaymentTermId === pt.id ? 'selected' : undefined">
+                                <t t-esc="pt.name"/>
+                            </option>
+                        </t>
+                    </select>
+                </div>
             </div>
 
             <!-- Tabs: only Direction for now -->
@@ -105,6 +116,10 @@
                         <div t-att-class="'amss_card_delta ' + deltaClass('tx_conversion')"
                              t-att-title="'Période précédente : ' + cards.tx_conversion.previous + ' %'"
                              t-esc="formatDelta('tx_conversion')"/>
+                        <div t-if="state.data.payment_term_filtered" class="amss_card_note"
+                             title="Les RDV n'ont pas de condition de paiement : TX CONVERSION porte sur toutes les conditions.">
+                            Toutes conditions de paiement
+                        </div>
                     </div>
                     <div class="amss_card">
                         <div class="amss_card_title">

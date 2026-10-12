@@ -16,15 +16,18 @@ class AmssDashboardController(http.Controller):
 
     @http.route('/amss/dashboard/data', type='jsonrpc', auth='user')
     def get_dashboard_data(self, month=None, year=None, period_type='month',
-                           quarter=None, company_id=None, date_from=None, date_to=None):
+                           quarter=None, company_id=None, date_from=None, date_to=None,
+                           payment_term_id=None):
         return request.env['amss.management.dashboard'].get_dashboard_data(
             month=month, year=year, period_type=period_type, quarter=quarter,
             company_id=company_id, date_from=date_from, date_to=date_to,
+            payment_term_id=payment_term_id,
         )
 
     @http.route('/amss/dashboard/export', type='http', auth='user')
     def export_excel(self, month=None, year=None, period_type='month',
-                     quarter=None, company_id=None, date_from=None, date_to=None):
+                     quarter=None, company_id=None, date_from=None, date_to=None,
+                     payment_term_id=None):
         b64_data = request.env['amss.management.dashboard'].export_excel(
             month=int(month) if month else None,
             year=int(year) if year else None,
@@ -32,6 +35,7 @@ class AmssDashboardController(http.Controller):
             quarter=int(quarter) if quarter else None,
             company_id=int(company_id) if company_id else None,
             date_from=date_from, date_to=date_to,
+            payment_term_id=int(payment_term_id) if payment_term_id else None,
         )
         if period_type == 'custom' and date_from and date_to:
             suffix = f"{date_from.replace('-', '')}_{date_to.replace('-', '')}"
