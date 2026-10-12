@@ -41,9 +41,6 @@
           SSS reference dates computed from the same rules
         - Admin projects: project manager and planned dates are computed
           from the order and locked against manual edits
-        - "Recalculer les dates du dossier" action (sale orders, Responsable
-          Dossier Admin group) recomputes the admin project dates from the
-          current rules
 
         **Sales Orders (sale.order)**:
         - Call Center (Sale Owner) attribution and RDV smart button

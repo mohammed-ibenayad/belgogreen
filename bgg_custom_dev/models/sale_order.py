@@ -85,21 +85,6 @@ def normalize_task_name(name):
     return ' '.join(text.casefold().split())
 
 
-def upgrade_admin_deadline_rules(rules):
-    """Rules of the former format (admin project end = start + per-category
-    delay) converted to the current one (end = SSS end + 'end_offset'): the
-    per-category delays at the top of each rule are dropped and 'end_offset'
-    is added when missing. The 'sss' blocks and the day types are kept as
-    they are. Returns a new dict; non-dict entries are left unchanged."""
-    upgraded = {}
-    for name, rule in rules.items():
-        if isinstance(rule, dict):
-            rule = {key: value for key, value in rule.items() if key in RULE_RESERVED_KEYS}
-            rule.setdefault('end_offset', ADMIN_END_OFFSET_DEFAULT)
-        upgraded[name] = rule
-    return upgraded
-
-
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
@@ -389,28 +374,6 @@ class SaleOrder(models.Model):
             if projects:
                 projects._apply_admin_project_dates(
                     *dates, task_dates=order._compute_admin_task_dates())
-
-    @api.model
-    def _get_admin_dossier_orders(self):
-        """Confirmed orders that have an admin project (projects linked
-        through a sale line or as re-invoiced order, templates excluded)."""
-        projects = self.env['project.project'].sudo().search([
-            '|',
-            ('sale_line_id', '!=', False),
-            ('reinvoiced_sale_order_id', '!=', False),
-            ('is_template', '=', False),
-        ])
-        orders = projects.sale_line_id.order_id | projects.reinvoiced_sale_order_id
-        return orders.filtered(lambda o: o.state == 'sale').with_env(self.env)
-
-    def _recompute_admin_project_dates(self):
-        """Recompute the admin project and task dates of these orders from the
-        current rules (manual action and module upgrade). Only confirmed
-        orders are handled. Returns the orders handled."""
-        orders = self.filtered(lambda o: o.state == 'sale')
-        orders._sync_admin_project_dates()
-        _logger.info("Dossier: admin project dates recomputed for %s order(s)", len(orders))
-        return orders
 
     def _get_dossier_projects(self):
         """Projects created for / linked to this order (same links as the

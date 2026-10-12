@@ -3,13 +3,9 @@
 import datetime
 
 from odoo import fields
-from odoo.exceptions import AccessError, UserError
+from odoo.exceptions import UserError
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
-
-from odoo.addons.bgg_custom_dev.models.sale_order import (
-    ADMIN_DEADLINE_RULES_DEFAULT, upgrade_admin_deadline_rules,
-)
 
 RULES_PARAM = 'bgg.admin_project_deadline_rules'
 BGG_TZ = 'Europe/Brussels'
@@ -521,81 +517,19 @@ class TestAdminProjectDeadlines(TransactionCase):
                          project.date)
 
     # ------------------------------------------------------------------
-    # recomputation of existing projects (action and module upgrade)
+    # recomputation of existing projects
     # ------------------------------------------------------------------
 
-    def _make_stale(self, order):
-        """Dates of the former rule (start + 10 business days) on the project
-        and its open tasks, as found on projects created before the change."""
+    def test_sync_fixes_existing_projects(self):
+        """Projects dated with the former rule (start + 10 business days) get
+        the new dates from _sync_admin_project_dates, the routine a manual
+        recomputation calls."""
+        order = self._order('Paiement immédiat', 'Panneaux')
         project = self._project(order)
         stale_end = order._add_business_days(project.date_start, 10)
         project.sudo().write({'date': stale_end})
         self._open_tasks(project).sudo().write({
             'date_deadline': datetime.datetime.combine(stale_end, datetime.time(15, 0)),
         })
-        self.assertEqual(project.date, stale_end)
-        return project
-
-    def test_recompute_fixes_existing_projects(self):
-        order = self._order('Paiement immédiat', 'Panneaux')
-        self._make_stale(order)
-        done = order._recompute_admin_project_dates()
-        self.assertEqual(done, order)
+        order._sync_admin_project_dates()
         self._assert_dates(order, 5, 5)
-
-    def test_recompute_skips_unconfirmed_orders(self):
-        order = self._order('Paiement immédiat', 'Panneaux')
-        self._make_stale(order)
-        order.state = 'cancel'
-        self.assertFalse(order._recompute_admin_project_dates())
-
-    def test_admin_dossier_orders(self):
-        order = self._order('Paiement immédiat', 'Panneaux')
-        quotation = self._order('Paiement immédiat', 'Panneaux', confirm=False)
-        orders = self.env['sale.order']._get_admin_dossier_orders()
-        self.assertIn(order, orders)
-        self.assertNotIn(quotation, orders)
-
-    def test_recompute_server_action(self):
-        order = self._order('Paiement immédiat', 'Panneaux')
-        self._make_stale(order)
-        action = self.env.ref('bgg_custom_dev.action_recompute_admin_project_dates')
-        admin_group = self.env.ref('bgg_custom_dev.group_responsable_dossier_admin')
-        self.assertEqual(action.group_ids, admin_group)
-        base_groups = [self.env.ref('base.group_user').id,
-                       self.env.ref('sales_team.group_sale_salesman_all_leads').id]
-        seller = self.env['res.users'].create({
-            'name': 'Vendeur test', 'login': 'vendeur.recalcul@test.bgg',
-            'group_ids': [(6, 0, base_groups)],
-        })
-        dossier_admin = self.env['res.users'].create({
-            'name': 'Admin dossier test', 'login': 'admin.recalcul@test.bgg',
-            'group_ids': [(6, 0, base_groups + [admin_group.id])],
-        })
-        ctx = {'active_model': 'sale.order', 'active_ids': order.ids}
-        with self.assertRaises(AccessError):
-            action.with_user(seller).with_context(**ctx).run()
-        action.with_user(dossier_admin).with_context(**ctx).run()
-        self._assert_dates(order, 5, 5)
-
-    def test_upgrade_rules_former_format(self):
-        """Migration 19.0.1.11.0: per-category delays dropped, end_offset
-        added, sss values and day types kept."""
-        former = {
-            'Paiement immédiat': {
-                'day_type': 'business', 'Panneaux': 10, 'PAC': 15,
-                'sss': {'start_offset': 7, 'day_type': 'business', 'Panneaux': 6},
-            },
-            'Custom': {'day_type': 'calendar', 'end_offset': 4, 'sss': {'Panneaux': 1}},
-            'Broken': 'not a rule',
-        }
-        self.assertEqual(upgrade_admin_deadline_rules(former), {
-            'Paiement immédiat': {
-                'day_type': 'business', 'end_offset': 10,
-                'sss': {'start_offset': 7, 'day_type': 'business', 'Panneaux': 6},
-            },
-            'Custom': {'day_type': 'calendar', 'end_offset': 4, 'sss': {'Panneaux': 1}},
-            'Broken': 'not a rule',
-        })
-        self.assertEqual(upgrade_admin_deadline_rules(ADMIN_DEADLINE_RULES_DEFAULT),
-                         ADMIN_DEADLINE_RULES_DEFAULT)
