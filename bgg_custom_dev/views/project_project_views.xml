@@ -25,4 +25,17 @@
             </xpath>
         </field>
     </record>
+
+    <!-- "Bloqué" project status (see project_update.py): red in the kanban
+         status progress bar, like "Off Track". -->
+    <record id="view_project_kanban_inherit_blocked_status" model="ir.ui.view">
+        <field name="name">project.project.kanban.inherit.blocked.status</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.view_project_kanban"/>
+        <field name="arch" type="xml">
+            <xpath expr="//progressbar[@field='last_update_status']" position="attributes">
+                <attribute name="colors">{"on_track": "success", "at_risk": "warning", "off_track": "danger", "on_hold": "info", "blocked": "danger", "done": "purple"}</attribute>
+            </xpath>
+        </field>
+    </record>
 </odoo>

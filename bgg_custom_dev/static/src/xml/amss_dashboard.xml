@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="bgg_custom_dev.AmssManagementDashboard">
+        <div class="amss_dashboard">
+            <!-- Header -->
+            <div class="amss_header">
+                <h1>AMSS Management</h1>
+                <div class="amss_period_nav" t-if="state.data">
+                    <button class="btn btn-sm btn-outline-secondary" t-on-click="onPrevPeriod"
+                            t-att-disabled="state.periodType === 'custom'" title="Période précédente">
+                        <i class="fa fa-chevron-left"/>
+                    </button>
+                    <span class="amss_period_label" t-esc="state.data.period_label"/>
+                    <button class="btn btn-sm btn-outline-secondary" t-on-click="onNextPeriod"
+                            t-att-disabled="state.periodType === 'custom'" title="Période suivante">
+                        <i class="fa fa-chevron-right"/>
+                    </button>
+                </div>
+                <div class="amss_header_actions">
+                    <button class="btn btn-sm amss_btn" t-on-click="onExportExcel">
+                        <i class="fa fa-file-excel-o"/> Excel
+                    </button>
+                    <button class="btn btn-sm amss_btn" t-on-click="onRefresh">
+                        <i class="fa fa-refresh"/> Actualiser
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="amss_filters">
+                <label class="amss_filter">
+                    <span>Période :</span>
+                    <select t-on-change="onPeriodTypeChange">
+                        <option value="month" t-att-selected="state.periodType === 'month' ? 'selected' : undefined">Mois</option>
+                        <option value="quarter" t-att-selected="state.periodType === 'quarter' ? 'selected' : undefined">Trimestre</option>
+                        <option value="year" t-att-selected="state.periodType === 'year' ? 'selected' : undefined">Année</option>
+                        <option value="custom" t-att-selected="state.periodType === 'custom' ? 'selected' : undefined">Personnalisé</option>
+                    </select>
+                </label>
+                <t t-if="state.periodType === 'custom'">
+                    <label class="amss_filter">
+                        <span>Du :</span>
+                        <input type="date" t-att-value="state.dateFrom" t-on-change="onDateFromChange"/>
+                    </label>
+                    <label class="amss_filter">
+                        <span>Au :</span>
+                        <input type="date" t-att-value="state.dateTo" t-on-change="onDateToChange"/>
+                    </label>
+                </t>
+                <label class="amss_filter">
+                    <span>Société :</span>
+                    <select t-on-change="onCompanyFilterChange">
+                        <option value="">Toutes</option>
+                        <t t-foreach="state.availableCompanies" t-as="c" t-key="c.id">
+                            <option t-att-value="c.id" t-att-selected="state.filterCompanyId === c.id ? 'selected' : undefined">
+                                <t t-esc="c.name"/>
+                            </option>
+                        </t>
+                    </select>
+                </label>
+            </div>
+
+            <!-- Tabs: only Direction for now -->
+            <div class="amss_tabs">
+                <button type="button" class="amss_tab amss_tab_active">Direction</button>
+            </div>
+
+            <div t-if="state.error" class="alert alert-danger" role="alert">
+                <strong>Erreur :</strong> <t t-esc="state.error"/>
+            </div>
+            <div t-elif="state.loading and !state.data" class="text-center p-5 text-muted">
+                <i class="fa fa-spinner fa-spin fa-2x"/>
+                <p class="mt-3">Chargement...</p>
+            </div>
+
+            <div t-if="state.data and !state.error" t-att-class="'amss_content' + (state.loading ? ' amss_loading' : '')">
+                <t t-set="cards" t-value="state.data.cards"/>
+                <t t-set="tips" t-value="state.data.tooltips"/>
+
+                <!-- KPI cards -->
+                <div class="amss_cards">
+                    <div class="amss_card">
+                        <div class="amss_card_title">
+                            CA NET <i class="fa fa-info-circle amss_info" t-att-title="tips.ca_net"/>
+                        </div>
+                        <div class="amss_card_value" t-att-title="formatAmount(cards.ca_net.value)" t-esc="formatKAmount(cards.ca_net.value)"/>
+                        <div t-att-class="'amss_card_delta ' + deltaClass('ca_net')"
+                             t-att-title="'Période précédente : ' + formatAmount(cards.ca_net.previous)"
+                             t-esc="formatDelta('ca_net')"/>
+                    </div>
+                    <div class="amss_card">
+                        <div class="amss_card_title">
+                            VENTES CONFIRMÉES <i class="fa fa-info-circle amss_info" t-att-title="tips.ventes_confirmees"/>
+                        </div>
+                        <div class="amss_card_value" t-esc="cards.ventes_confirmees.value"/>
+                        <div t-att-class="'amss_card_delta ' + deltaClass('ventes_confirmees')"
+                             t-att-title="'Période précédente : ' + cards.ventes_confirmees.previous"
+                             t-esc="formatDelta('ventes_confirmees')"/>
+                    </div>
+                    <div class="amss_card">
+                        <div class="amss_card_title">
+                            TX CONVERSION <i class="fa fa-info-circle amss_info" t-att-title="tips.tx_conversion"/>
+                        </div>
+                        <div class="amss_card_value"><t t-esc="cards.tx_conversion.value"/> %</div>
+                        <div t-att-class="'amss_card_delta ' + deltaClass('tx_conversion')"
+                             t-att-title="'Période précédente : ' + cards.tx_conversion.previous + ' %'"
+                             t-esc="formatDelta('tx_conversion')"/>
+                    </div>
+                    <div class="amss_card">
+                        <div class="amss_card_title">
+                            Chantiers en retard <i class="fa fa-info-circle amss_info" t-att-title="tips.chantiers_retard"/>
+                        </div>
+                        <div class="amss_card_value" t-esc="cards.chantiers_retard.value"/>
+                        <div class="amss_card_delta amss_delta_neutral">à ce jour</div>
+                    </div>
+                    <div class="amss_card">
+                        <div class="amss_card_title">
+                            Dossiers bloqués <i class="fa fa-info-circle amss_info" t-att-title="tips.dossiers_bloques"/>
+                        </div>
+                        <div class="amss_card_value" t-esc="cards.dossiers_bloques.value"/>
+                        <div t-att-class="'amss_card_delta ' + deltaClass('dossiers_bloques')"
+                             t-att-title="'Fin de la période précédente : ' + cards.dossiers_bloques.previous"
+                             t-esc="formatDelta('dossiers_bloques')"/>
+                    </div>
+                </div>
+
+                <!-- CA signé / facturé / encaissé -->
+                <div class="amss_panels">
+                    <div class="amss_panel">
+                        <h2>CA signé / facturé / encaissé (k<t t-esc="currencySymbol"/>)</h2>
+                        <t t-foreach="[['signe', 'Signé'], ['facture', 'Facturé'], ['encaisse', 'Encaissé']]" t-as="bar" t-key="bar[0]">
+                            <div class="amss_bar_row">
+                                <span class="amss_bar_label">
+                                    <t t-esc="bar[1]"/> <i class="fa fa-info-circle amss_info" t-att-title="tips[bar[0]]"/>
+                                </span>
+                                <span class="amss_bar_track">
+                                    <span class="amss_bar_fill" t-att-style="'width: ' + barWidth(bar[0])"/>
+                                </span>
+                                <span class="amss_bar_value" t-att-title="formatAmount(state.data.cash_flow[bar[0]])"
+                                      t-esc="formatThousands(state.data.cash_flow[bar[0]])"/>
+                            </div>
+                        </t>
+                        <p class="amss_panel_note">Commandes confirmées dans la période, montants HT.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>
