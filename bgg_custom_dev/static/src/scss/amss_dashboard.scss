@@ -82,8 +82,12 @@ $amss-accent: #e8a500;
             display: flex;
             align-items: center;
             gap: 6px;
-            margin: 0;
-            font-weight: 600;
+
+            label {
+                margin: 0;
+                font-weight: 600;
+                white-space: nowrap;
+            }
 
             select, input {
                 font-weight: 400;

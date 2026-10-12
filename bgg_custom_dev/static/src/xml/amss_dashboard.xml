@@ -28,27 +28,27 @@
 
             <!-- Filters -->
             <div class="amss_filters">
-                <label class="amss_filter">
-                    <span>Période :</span>
+                <div class="amss_filter">
+                    <label>Période :</label>
                     <select t-on-change="onPeriodTypeChange">
                         <option value="month" t-att-selected="state.periodType === 'month' ? 'selected' : undefined">Mois</option>
                         <option value="quarter" t-att-selected="state.periodType === 'quarter' ? 'selected' : undefined">Trimestre</option>
                         <option value="year" t-att-selected="state.periodType === 'year' ? 'selected' : undefined">Année</option>
                         <option value="custom" t-att-selected="state.periodType === 'custom' ? 'selected' : undefined">Personnalisé</option>
                     </select>
-                </label>
+                </div>
                 <t t-if="state.periodType === 'custom'">
-                    <label class="amss_filter">
-                        <span>Du :</span>
+                    <div class="amss_filter">
+                        <label>Du :</label>
                         <input type="date" t-att-value="state.dateFrom" t-on-change="onDateFromChange"/>
-                    </label>
-                    <label class="amss_filter">
-                        <span>Au :</span>
+                    </div>
+                    <div class="amss_filter">
+                        <label>Au :</label>
                         <input type="date" t-att-value="state.dateTo" t-on-change="onDateToChange"/>
-                    </label>
+                    </div>
                 </t>
-                <label class="amss_filter">
-                    <span>Société :</span>
+                <div class="amss_filter">
+                    <label>Société :</label>
                     <select t-on-change="onCompanyFilterChange">
                         <option value="">Toutes</option>
                         <t t-foreach="state.availableCompanies" t-as="c" t-key="c.id">
@@ -57,7 +57,7 @@
                             </option>
                         </t>
                     </select>
-                </label>
+                </div>
             </div>
 
             <!-- Tabs: only Direction for now -->
