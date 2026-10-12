@@ -8,7 +8,7 @@ import pytz
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
-from .project_update import check_blocked_status_change_allowed, user_can_manage_blocked_status
+from .project_update import check_blocked_status_change_allowed
 from .sale_order import BGG_TZ, normalize_task_name
 
 _logger = logging.getLogger(__name__)
@@ -20,38 +20,37 @@ ADMIN_START_HOUR = 8
 
 
 # Task changes after which the project's Bloqué status is re-evaluated.
-BLOCKED_SYNC_FIELDS = ('x_blocked', 'state', 'project_id', 'active')
+# "Bloqué" task state (admin projects only): an open task in this state sets
+# its project to Bloqué (see project.project._sync_blocked_from_tasks). It is
+# an extra value of Odoo's task state, kept when Odoo recomputes the state
+# (stage or dependency change) so that only a person can remove it.
+BLOCKED_TASK_STATE = '05_blocked'
+# Task changes after which the project's Bloqué status is re-evaluated.
+BLOCKED_SYNC_FIELDS = ('state', 'project_id', 'active')
 
 
 class ProjectTask(models.Model):
     _inherit = 'project.task'
 
-    # ------------------------------------------------------------------
-    # Dossier: "Bloqué" tasks of the admin projects. An open blocked task
-    # sets its project to Bloqué (see project.project._sync_blocked_from_tasks).
-    # ------------------------------------------------------------------
-
-    x_blocked = fields.Boolean(
-        string='Bloqué',
-        copy=False,
-        tracking=True,
-        help="Tâche bloquée (projets admin uniquement). Tant qu'une tâche ouverte "
-             "est bloquée, le projet est au statut « Bloqué ». Réservé au groupe "
-             "« Responsable Dossier » ; la raison se note dans le chatter.",
+    state = fields.Selection(
+        selection_add=[(BLOCKED_TASK_STATE, 'Bloqué')],
+        ondelete={BLOCKED_TASK_STATE: 'set default'},
     )
+    # View helper for the state widget: "Bloqué" is offered on admin projects only.
     x_is_admin_dossier_project = fields.Boolean(related='project_id.x_is_admin_dossier_project')
-    # View helper: True when the current user may block / unblock a task.
-    x_user_can_manage_blocked = fields.Boolean(compute='_compute_user_can_manage_blocked')
 
-    @api.depends_context('uid')
-    def _compute_user_can_manage_blocked(self):
-        allowed = user_can_manage_blocked_status(self.env)
-        for task in self:
-            task.x_user_can_manage_blocked = allowed
+    @api.depends('stage_id', 'depend_on_ids.state')
+    def _compute_state(self):
+        """Odoo resets every open state to In Progress (or Waiting) when the
+        stage or the dependencies change: a blocked task keeps Bloqué."""
+        blocked = self.filtered(lambda task: task.state == BLOCKED_TASK_STATE)
+        for task in blocked:
+            task.state = BLOCKED_TASK_STATE
+        super(ProjectTask, self - blocked)._compute_state()
 
-    @api.constrains('x_blocked', 'project_id')
+    @api.constrains('state', 'project_id')
     def _check_blocked_admin_project(self):
-        for task in self.filtered('x_blocked'):
+        for task in self.filtered(lambda t: t.state == BLOCKED_TASK_STATE):
             if not task.project_id or not task.project_id._get_dossier_order():
                 raise ValidationError(_(
                     "Seules les tâches des projets admin (projets liés à une commande) "
@@ -60,18 +59,20 @@ class ProjectTask(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         """Override create to trigger automation rules on new tasks"""
-        if any(vals.get('x_blocked') for vals in vals_list):
+        if any(vals.get('state') == BLOCKED_TASK_STATE for vals in vals_list):
             check_blocked_status_change_allowed(self.env)
         records = super(ProjectTask, self).create(vals_list)
 
         records._assign_responsable_dossier_on_create()
         records._apply_admin_dates_on_create()
-        records.filtered('x_blocked').project_id._sync_blocked_from_tasks()
+        records.filtered(lambda t: t.state == BLOCKED_TASK_STATE).project_id._sync_blocked_from_tasks()
 
         return records
 
     def write(self, vals):
-        if 'x_blocked' in vals and any(task.x_blocked != bool(vals['x_blocked']) for task in self):
+        if 'state' in vals and any(
+                (vals['state'] == BLOCKED_TASK_STATE) != (task.state == BLOCKED_TASK_STATE)
+                for task in self):
             check_blocked_status_change_allowed(self.env)
         sync = any(fname in vals for fname in BLOCKED_SYNC_FIELDS)
         projects = self.project_id if sync else self.env['project.project']
@@ -81,7 +82,7 @@ class ProjectTask(models.Model):
         return result
 
     def unlink(self):
-        projects = self.filtered('x_blocked').project_id
+        projects = self.filtered(lambda t: t.state == BLOCKED_TASK_STATE).project_id
         result = super().unlink()
         projects._sync_blocked_from_tasks()
         return result

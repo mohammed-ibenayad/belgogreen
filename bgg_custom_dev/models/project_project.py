@@ -45,7 +45,7 @@ class ProjectProject(models.Model):
         super(ProjectProject, self - blocked)._compute_last_update_color()
 
     # Technical: the project was set to Bloqué automatically because one of
-    # its tasks is blocked (see project.task.x_blocked). Only such a project
+    # its tasks is blocked (task state "Bloqué", see project_task.py). Only such a project
     # gets its previous status back once no task is blocked any more; a
     # project blocked by hand stays blocked.
     x_blocked_by_task = fields.Boolean(string='Bloqué par une tâche', copy=False, readonly=True)
@@ -53,8 +53,7 @@ class ProjectProject(models.Model):
     def _blocked_open_tasks(self):
         return self.env['project.task'].sudo().search([
             ('project_id', 'in', self.ids),
-            ('x_blocked', '=', True),
-            ('state', 'not in', ['1_done', '1_canceled']),
+            ('state', '=', '05_blocked'),
         ])
 
     def _post_status_update(self, status, description=None):

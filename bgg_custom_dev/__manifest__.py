@@ -43,9 +43,10 @@
           from the order and locked against manual edits
         - "Bloqué" project status (status updates), admin projects only, set
           or removed by the Responsable Dossier group
-        - "Bloqué" tasks (admin projects, Responsable Dossier group): an open
-          blocked task sets its project to Bloqué; once no task is blocked
-          the project gets its previous status back
+        - "Bloqué" task state (admin projects, Responsable Dossier group),
+          kept when the stage or the dependencies change: a blocked task sets
+          its project to Bloqué; once no task is blocked the project gets its
+          previous status back
 
         **Sales Orders (sale.order)**:
         - Call Center (Sale Owner) attribution and RDV smart button
@@ -122,6 +123,7 @@
             'bgg_custom_dev/static/src/xml/amss_dashboard.xml',
             'bgg_custom_dev/static/src/scss/amss_dashboard.scss',
             'bgg_custom_dev/static/src/js/project_status_blocked.js',
+            'bgg_custom_dev/static/src/js/project_task_state_blocked.js',
         ],
     },
     'post_init_hook': 'link_external_groups',
