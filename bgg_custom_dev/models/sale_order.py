@@ -25,12 +25,15 @@ BGG_TZ = 'Europe/Brussels'
 # defaults below are used when a parameter is missing or not valid JSON.
 #
 # bgg.admin_project_deadline_rules: payment term name -> rule
-#   - 'day_type': 'business' (Monday to Friday) or 'calendar' (every day),
-#   - '<product category name>': delay in days for the admin project end date
-#     (the product's category or one of its parents; longest delay wins),
 #   - 'sss': reference dates of the field service (SSS) project, computed in
 #     memory only, never written: 'start_offset' (+ 'start_day_type') from the
-#     confirmation date, then 'day_type' and '<category>': duration.
+#     confirmation date, then 'day_type' and '<product category name>':
+#     duration (the product's category or one of its parents; the longest
+#     duration on the order wins). The category names listed here are also
+#     the products that need an installation (form warning).
+#   - 'end_offset' and 'day_type': admin project end date = SSS reference end
+#     date + 'end_offset' days, counted as 'business' (Monday to Friday) or
+#     'calendar' (every day) days.
 # bgg.admin_task_deadline_rules: admin template tasks whose dates follow the
 #   SSS reference end date: 'day_type' and 'tasks': {task name: offset days}.
 #   Task names are matched ignoring case, accents and extra spaces. Start of
@@ -38,11 +41,13 @@ BGG_TZ = 'Europe/Brussels'
 ADMIN_DEADLINE_RULES_PARAM = 'bgg.admin_project_deadline_rules'
 ADMIN_TASK_RULES_PARAM = 'bgg.admin_task_deadline_rules'
 # Keys of a rule that are not product category names.
-RULE_RESERVED_KEYS = {'day_type', 'sss', 'start_offset', 'start_day_type'}
+RULE_RESERVED_KEYS = {'day_type', 'sss', 'start_offset', 'start_day_type', 'end_offset'}
+# Admin project end = SSS end + this many days when a rule has no 'end_offset'.
+ADMIN_END_OFFSET_DEFAULT = 10
 
 _IMMEDIATE_RULE = {
     'day_type': 'business',
-    'Panneaux': 10, 'Onduleurs': 10, 'Batteries': 10, 'PAC': 15, 'Isolation': 20,
+    'end_offset': ADMIN_END_OFFSET_DEFAULT,
     'sss': {
         'start_offset': 5, 'start_day_type': 'business', 'day_type': 'business',
         'Panneaux': 5, 'Onduleurs': 5, 'Batteries': 5, 'PAC': 10, 'Isolation': 15,
@@ -50,7 +55,7 @@ _IMMEDIATE_RULE = {
 }
 _FINANCING_RULE = {
     'day_type': 'business',
-    'Panneaux': 15, 'Onduleurs': 15, 'Batteries': 15, 'PAC': 20, 'Isolation': 25,
+    'end_offset': ADMIN_END_OFFSET_DEFAULT,
     'sss': {
         'start_offset': 10, 'start_day_type': 'business', 'day_type': 'business',
         'Panneaux': 25, 'Onduleurs': 25, 'Batteries': 25, 'PAC': 30, 'Isolation': 35,
@@ -78,6 +83,21 @@ def normalize_task_name(name):
     text = unicodedata.normalize('NFKD', name or '')
     text = ''.join(ch for ch in text if not unicodedata.combining(ch))
     return ' '.join(text.casefold().split())
+
+
+def upgrade_admin_deadline_rules(rules):
+    """Rules of the former format (admin project end = start + per-category
+    delay) converted to the current one (end = SSS end + 'end_offset'): the
+    per-category delays at the top of each rule are dropped and 'end_offset'
+    is added when missing. The 'sss' blocks and the day types are kept as
+    they are. Returns a new dict; non-dict entries are left unchanged."""
+    upgraded = {}
+    for name, rule in rules.items():
+        if isinstance(rule, dict):
+            rule = {key: value for key, value in rule.items() if key in RULE_RESERVED_KEYS}
+            rule.setdefault('end_offset', ADMIN_END_OFFSET_DEFAULT)
+        upgraded[name] = rule
+    return upgraded
 
 
 class SaleOrder(models.Model):
@@ -218,12 +238,14 @@ class SaleOrder(models.Model):
 
     @api.model
     def _admin_deadline_all_category_names(self):
-        """Lowercased product category names listed in any deadline rule:
-        the categories that require an admin project (installation)."""
+        """Lowercased product category names listed in the 'sss' block of any
+        deadline rule: the categories that require an admin project
+        (installation)."""
         names = set()
         for rule in self._admin_deadline_rules().values():
-            if isinstance(rule, dict):
-                names.update(str(k).strip().lower() for k in rule
+            sss = rule.get('sss') if isinstance(rule, dict) else None
+            if isinstance(sss, dict):
+                names.update(str(k).strip().lower() for k in sss
                              if k not in RULE_RESERVED_KEYS)
         return names
 
@@ -338,17 +360,21 @@ class SaleOrder(models.Model):
     def _compute_admin_project_dates(self):
         """(date_start, date_end) for the admin project of this order, or None
         when no rule applies: no rule for the payment term, or no product of a
-        category listed in the rule. With several categories on the order the
-        longest delay wins."""
+        category listed in its 'sss' block. Start = confirmation date, end =
+        SSS reference end date + the rule's 'end_offset' (the SSS end already
+        follows the longest category duration on the order)."""
         self.ensure_one()
         start = self._admin_deadline_start_date()
+        sss_dates = self._compute_sss_reference_dates()
+        if not start or not sss_dates:
+            return None
         rule = self._admin_deadline_rule()
-        if not start or not rule:
-            return None
-        delays = self._admin_deadline_delays(rule)
-        if not delays:
-            return None
-        end = self._add_days(start, max(delays), rule.get('day_type'))
+        try:
+            end_offset = int(rule.get('end_offset', ADMIN_END_OFFSET_DEFAULT))
+        except (TypeError, ValueError):
+            end_offset = ADMIN_END_OFFSET_DEFAULT
+        _sss_start, sss_end = sss_dates
+        end = self._add_days(sss_end, end_offset, rule.get('day_type'))
         return start, end
 
     def _sync_admin_project_dates(self):
@@ -363,6 +389,28 @@ class SaleOrder(models.Model):
             if projects:
                 projects._apply_admin_project_dates(
                     *dates, task_dates=order._compute_admin_task_dates())
+
+    @api.model
+    def _get_admin_dossier_orders(self):
+        """Confirmed orders that have an admin project (projects linked
+        through a sale line or as re-invoiced order, templates excluded)."""
+        projects = self.env['project.project'].sudo().search([
+            '|',
+            ('sale_line_id', '!=', False),
+            ('reinvoiced_sale_order_id', '!=', False),
+            ('is_template', '=', False),
+        ])
+        orders = projects.sale_line_id.order_id | projects.reinvoiced_sale_order_id
+        return orders.filtered(lambda o: o.state == 'sale').with_env(self.env)
+
+    def _recompute_admin_project_dates(self):
+        """Recompute the admin project and task dates of these orders from the
+        current rules (manual action and module upgrade). Only confirmed
+        orders are handled. Returns the orders handled."""
+        orders = self.filtered(lambda o: o.state == 'sale')
+        orders._sync_admin_project_dates()
+        _logger.info("Dossier: admin project dates recomputed for %s order(s)", len(orders))
+        return orders
 
     def _get_dossier_projects(self):
         """Projects created for / linked to this order (same links as the

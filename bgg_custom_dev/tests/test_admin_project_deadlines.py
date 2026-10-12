@@ -3,9 +3,13 @@
 import datetime
 
 from odoo import fields
-from odoo.exceptions import UserError
+from odoo.exceptions import AccessError, UserError
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
+
+from odoo.addons.bgg_custom_dev.models.sale_order import (
+    ADMIN_DEADLINE_RULES_DEFAULT, upgrade_admin_deadline_rules,
+)
 
 RULES_PARAM = 'bgg.admin_project_deadline_rules'
 BGG_TZ = 'Europe/Brussels'
@@ -14,8 +18,13 @@ BGG_TZ = 'Europe/Brussels'
 @tagged('post_install', '-at_install')
 class TestAdminProjectDeadlines(TransactionCase):
     """Admin project deadlines (Dossier): project start = order confirmation
-    date, project end = start + delay from the payment term x product
-    category rules, task deadlines = project end date."""
+    date, project end = SSS reference end date (from the payment term x
+    product category rules) + end_offset, task deadlines = project end date.
+
+    Delivered rules (business days): SSS start = confirmation + 5 (immediate
+    terms) or + 10 (financing); SSS duration Panneaux/Onduleurs/Batteries
+    5 / PAC 10 / Isolation 15 (immediate) or 25 / 30 / 35 (financing);
+    end_offset 10."""
 
     @classmethod
     def setUpClass(cls):
@@ -25,7 +34,8 @@ class TestAdminProjectDeadlines(TransactionCase):
         # Payment terms exist in production with these names; resolve or create.
         Term = cls.env['account.payment.term']
         cls.terms = {}
-        for name in ('Paiement immédiat', 'Financement', 'Financement RW'):
+        for name in ('Paiement immédiat', "50% maintenant, le solde à l'installation",
+                     'Financement', 'Financement RW'):
             cls.terms[name] = (Term.search([('name', '=ilike', name)], limit=1)
                                or Term.create({'name': name}))
 
@@ -94,15 +104,21 @@ class TestAdminProjectDeadlines(TransactionCase):
         return fields.Datetime.context_timestamp(
             task.with_context(tz=BGG_TZ), task.date_deadline).date()
 
-    def _assert_dates(self, order, expected_days, calendar=False):
+    def _expected_end(self, order, sss_start_offset, sss_days, end_offset=10,
+                      day_type='business'):
+        """Confirmation + SSS start offset + SSS duration + end_offset."""
+        end = order._admin_deadline_start_date()
+        for days in (sss_start_offset, sss_days, end_offset):
+            end = order._add_days(end, days, day_type)
+        return end
+
+    def _assert_dates(self, order, sss_start_offset, sss_days, end_offset=10,
+                      day_type='business'):
         project = self._project(order)
         start = order._admin_deadline_start_date()
         self.assertEqual(project.date_start, start,
                          "project start must be the confirmation date")
-        if calendar:
-            end = start + datetime.timedelta(days=expected_days)
-        else:
-            end = order._add_business_days(start, expected_days)
+        end = self._expected_end(order, sss_start_offset, sss_days, end_offset, day_type)
         self.assertEqual(project.date, end)
         tasks = self._open_tasks(project)
         self.assertEqual(len(tasks), 2, "template tasks must be copied")
@@ -129,19 +145,29 @@ class TestAdminProjectDeadlines(TransactionCase):
     # rules
     # ------------------------------------------------------------------
 
-    def test_immediate_panels_10_business_days(self):
+    def test_immediate_panels(self):
         order = self._order('Paiement immédiat', 'Panneaux', 'Onduleurs')
-        self._assert_dates(order, 10)
+        self._assert_dates(order, 5, 5)
 
     def test_longest_delay_wins(self):
         order = self._order('Paiement immédiat', 'Panneaux', 'PAC')
-        self._assert_dates(order, 15)
+        self._assert_dates(order, 5, 10)
         order = self._order('Paiement immédiat', 'Batteries', 'Isolation', 'PAC')
-        self._assert_dates(order, 20)
+        self._assert_dates(order, 5, 15)
 
-    def test_financement_isolation_25_business_days(self):
+    def test_financement_isolation(self):
         order = self._order('Financement', 'Isolation')
-        self._assert_dates(order, 25)
+        self._assert_dates(order, 10, 35)
+
+    def test_s01802_example(self):
+        """Confirmed Monday 28 Sept 2026, 50% / Panneaux: SSS 5 Oct -> 12 Oct,
+        project end 12 Oct + 10 business days = 26 Oct."""
+        order = self._order("50% maintenant, le solde à l'installation", 'Panneaux')
+        order.date_order = datetime.datetime(2026, 9, 28, 13, 3, 2)
+        self.assertEqual(order._compute_sss_reference_dates(),
+                         (datetime.date(2026, 10, 5), datetime.date(2026, 10, 12)))
+        self.assertEqual(order._compute_admin_project_dates(),
+                         (datetime.date(2026, 9, 28), datetime.date(2026, 10, 26)))
 
     def test_financement_rw_has_no_rule(self):
         order = self._order('Financement RW', 'Panneaux')
@@ -170,19 +196,19 @@ class TestAdminProjectDeadlines(TransactionCase):
 
     def test_payment_term_change_recomputes(self):
         order = self._order('Paiement immédiat', 'Panneaux')
-        self._assert_dates(order, 10)
+        self._assert_dates(order, 5, 5)
         order.payment_term_id = self.terms['Financement']
-        self._assert_dates(order, 15)
+        self._assert_dates(order, 10, 25)
 
     def test_payment_term_change_to_no_rule_keeps_dates(self):
         order = self._order('Paiement immédiat', 'Panneaux')
-        project, _start, end = self._assert_dates(order, 10)
+        project, _start, end = self._assert_dates(order, 5, 5)
         order.payment_term_id = self.terms['Financement RW']
         self.assertEqual(project.date, end, "no rule: dates are left as they are")
 
     def test_unrelated_order_write_keeps_dates(self):
         order = self._order('Paiement immédiat', 'Panneaux')
-        project, _start, end = self._assert_dates(order, 10)
+        project, _start, end = self._assert_dates(order, 5, 5)
         order.write({'note': 'unrelated change'})
         self.assertEqual(project.date, end)
 
@@ -222,7 +248,7 @@ class TestAdminProjectDeadlines(TransactionCase):
 
     def test_admin_project_locked_fields(self):
         order = self._order('Paiement immédiat', 'Panneaux')
-        project, start, end = self._assert_dates(order, 10)
+        project, start, end = self._assert_dates(order, 5, 5)
         self.assertTrue(project.x_is_admin_dossier_project)
         # The test environment runs as the superuser, which counts as sudo
         # (the automations' path). Write as a regular project manager, the
@@ -259,7 +285,7 @@ class TestAdminProjectDeadlines(TransactionCase):
         """The order-driven recomputation (sudo) is not blocked."""
         order = self._order('Paiement immédiat', 'Panneaux')
         order.payment_term_id = self.terms['Financement']
-        self._assert_dates(order, 15)
+        self._assert_dates(order, 10, 25)
 
     def test_project_without_order_not_locked(self):
         project = self.env['project.project'].create({'name': 'Interne'})
@@ -270,7 +296,7 @@ class TestAdminProjectDeadlines(TransactionCase):
 
     def test_new_task_gets_project_end_deadline(self):
         order = self._order('Paiement immédiat', 'Panneaux')
-        project, _start, end = self._assert_dates(order, 10)
+        project, _start, end = self._assert_dates(order, 5, 5)
         task = self.env['project.task'].create({
             'name': 'Visite technique', 'project_id': project.id,
         })
@@ -278,7 +304,7 @@ class TestAdminProjectDeadlines(TransactionCase):
 
     def test_closed_task_not_updated(self):
         order = self._order('Paiement immédiat', 'Panneaux')
-        project, _start, end = self._assert_dates(order, 10)
+        project, _start, end = self._assert_dates(order, 5, 5)
         done = self._open_tasks(project)[0]
         done.state = '1_done'
         order.payment_term_id = self.terms['Financement']
@@ -297,26 +323,46 @@ class TestAdminProjectDeadlines(TransactionCase):
 
     def test_rules_param_overrides_defaults(self):
         self.env['ir.config_parameter'].sudo().set_param(RULES_PARAM, (
-            '{"Paiement immédiat": {"day_type": "calendar", "Panneaux": 3}}'))
+            '{"Paiement immédiat": {"day_type": "calendar", "end_offset": 3, '
+            '"sss": {"start_offset": 1, "day_type": "calendar", "Panneaux": 2}}}'))
         order = self._order('Paiement immédiat', 'Panneaux')
-        self._assert_dates(order, 3, calendar=True)
+        self._assert_dates(order, 1, 2, end_offset=3, day_type='calendar')
+
+    def test_end_offset_defaults_to_10(self):
+        self.env['ir.config_parameter'].sudo().set_param(RULES_PARAM, (
+            '{"Paiement immédiat": {"day_type": "business", '
+            '"sss": {"start_offset": 5, "day_type": "business", "Panneaux": 5}}}'))
+        order = self._order('Paiement immédiat', 'Panneaux')
+        self._assert_dates(order, 5, 5, end_offset=10)
 
     def test_new_category_added_by_param(self):
         self.env['ir.config_parameter'].sudo().set_param(RULES_PARAM, (
-            '{"Paiement immédiat": {"day_type": "business", "Accessoires": 7}}'))
+            '{"Paiement immédiat": {"day_type": "business", "end_offset": 10, '
+            '"sss": {"start_offset": 5, "day_type": "business", "Accessoires": 7}}}'))
         order = self._order('Paiement immédiat', 'Accessoires')
-        self._assert_dates(order, 7)
+        self._assert_dates(order, 5, 7)
+
+    def test_category_outside_sss_block_ignored(self):
+        """Only the categories of the 'sss' block count (a top-level
+        category delay of the former format has no effect)."""
+        self.env['ir.config_parameter'].sudo().set_param(RULES_PARAM, (
+            '{"Paiement immédiat": {"day_type": "business", "Accessoires": 7, '
+            '"sss": {"start_offset": 5, "day_type": "business", "Panneaux": 5}}}'))
+        order = self._order('Paiement immédiat', 'Accessoires')
+        self.assertFalse(self._project(order).date)
+        self.assertFalse(self._order_without_service('Accessoires').x_installation_product_missing)
 
     def test_invalid_param_falls_back_to_defaults(self):
         self.env['ir.config_parameter'].sudo().set_param(RULES_PARAM, 'not json')
         order = self._order('Paiement immédiat', 'Panneaux')
-        self._assert_dates(order, 10)
+        self._assert_dates(order, 5, 5)
 
     def test_names_matched_case_insensitively(self):
         self.env['ir.config_parameter'].sudo().set_param(RULES_PARAM, (
-            '{"PAIEMENT IMMÉDIAT": {"day_type": "business", "panneaux": 4}}'))
+            '{"PAIEMENT IMMÉDIAT": {"day_type": "business", "end_offset": 4, '
+            '"sss": {"start_offset": 0, "day_type": "business", "panneaux": 4}}}'))
         order = self._order('Paiement immédiat', 'Panneaux')
-        self._assert_dates(order, 4)
+        self._assert_dates(order, 0, 4, end_offset=4)
 
     def test_category_matched_through_parent(self):
         child = self.env['product.category'].create({
@@ -331,7 +377,7 @@ class TestAdminProjectDeadlines(TransactionCase):
             'product_id': product.id, 'product_uom_qty': 1, 'price_unit': 10.0,
         })]})
         order.action_confirm()
-        self._assert_dates(order, 10)
+        self._assert_dates(order, 5, 5)
 
     # ------------------------------------------------------------------
     # admin tasks following the SSS reference dates
@@ -385,7 +431,7 @@ class TestAdminProjectDeadlines(TransactionCase):
         return fields.Datetime.context_timestamp(
             task.with_context(tz=BGG_TZ), task.planned_date_begin).date()
 
-    def _assert_sss_tasks(self, order, sss_start_offset, sss_days, admin_days):
+    def _assert_sss_tasks(self, order, sss_start_offset, sss_days):
         project = self._project(order)
         bc = order._admin_deadline_start_date()
         add = order._add_business_days
@@ -399,25 +445,29 @@ class TestAdminProjectDeadlines(TransactionCase):
             start = self._planned_start_date(task)
             if start is not None:
                 self.assertEqual(start, sss_end, "planned start of %r" % name)
+        # admin project end = SSS end + 10: no task is due after it
+        self.assertEqual(project.date, add(sss_end, 10))
+        for task in self._open_tasks(project):
+            self.assertLessEqual(self._deadline_date(task), project.date,
+                                 "%r is due after the project end" % task.name)
         # a task outside the rules keeps the admin project end date
         other = self._task(project, 'Welcom call')
-        self.assertEqual(self._deadline_date(other), add(bc, admin_days))
-        self.assertEqual(project.date, add(bc, admin_days))
+        self.assertEqual(self._deadline_date(other), project.date)
         return project, sss_end
 
     def test_sss_tasks_immediate_panels(self):
         order = self._order_sss('Paiement immédiat', 'Panneaux', 'Onduleurs')
-        self._assert_sss_tasks(order, sss_start_offset=5, sss_days=5, admin_days=10)
+        self._assert_sss_tasks(order, sss_start_offset=5, sss_days=5)
 
     def test_sss_tasks_financing_pac_longest_wins(self):
         order = self._order_sss('Financement', 'Panneaux', 'PAC')
-        self._assert_sss_tasks(order, sss_start_offset=10, sss_days=30, admin_days=20)
+        self._assert_sss_tasks(order, sss_start_offset=10, sss_days=30)
 
     def test_sss_tasks_recomputed_on_term_change(self):
         order = self._order_sss('Paiement immédiat', 'Isolation')
-        self._assert_sss_tasks(order, sss_start_offset=5, sss_days=15, admin_days=20)
+        self._assert_sss_tasks(order, sss_start_offset=5, sss_days=15)
         order.payment_term_id = self.terms['Financement']
-        self._assert_sss_tasks(order, sss_start_offset=10, sss_days=35, admin_days=25)
+        self._assert_sss_tasks(order, sss_start_offset=10, sss_days=35)
 
     def test_sss_task_names_matched_loosely(self):
         service = self._make_sss_template_product(task_names=[
@@ -437,7 +487,7 @@ class TestAdminProjectDeadlines(TransactionCase):
 
     def test_sss_task_created_later_gets_its_dates(self):
         order = self._order_sss('Paiement immédiat', 'Panneaux')
-        project, sss_end = self._assert_sss_tasks(order, sss_start_offset=5, sss_days=5, admin_days=10)
+        project, sss_end = self._assert_sss_tasks(order, sss_start_offset=5, sss_days=5)
         task = self.env['project.task'].create({
             'name': 'Chargement schéma unifilaire (bis)', 'project_id': project.id,
         })
@@ -469,3 +519,83 @@ class TestAdminProjectDeadlines(TransactionCase):
         # no longer listed: back to the project end date
         self.assertEqual(self._deadline_date(self._task(project, 'Création des commissions')),
                          project.date)
+
+    # ------------------------------------------------------------------
+    # recomputation of existing projects (action and module upgrade)
+    # ------------------------------------------------------------------
+
+    def _make_stale(self, order):
+        """Dates of the former rule (start + 10 business days) on the project
+        and its open tasks, as found on projects created before the change."""
+        project = self._project(order)
+        stale_end = order._add_business_days(project.date_start, 10)
+        project.sudo().write({'date': stale_end})
+        self._open_tasks(project).sudo().write({
+            'date_deadline': datetime.datetime.combine(stale_end, datetime.time(15, 0)),
+        })
+        self.assertEqual(project.date, stale_end)
+        return project
+
+    def test_recompute_fixes_existing_projects(self):
+        order = self._order('Paiement immédiat', 'Panneaux')
+        self._make_stale(order)
+        done = order._recompute_admin_project_dates()
+        self.assertEqual(done, order)
+        self._assert_dates(order, 5, 5)
+
+    def test_recompute_skips_unconfirmed_orders(self):
+        order = self._order('Paiement immédiat', 'Panneaux')
+        self._make_stale(order)
+        order.state = 'cancel'
+        self.assertFalse(order._recompute_admin_project_dates())
+
+    def test_admin_dossier_orders(self):
+        order = self._order('Paiement immédiat', 'Panneaux')
+        quotation = self._order('Paiement immédiat', 'Panneaux', confirm=False)
+        orders = self.env['sale.order']._get_admin_dossier_orders()
+        self.assertIn(order, orders)
+        self.assertNotIn(quotation, orders)
+
+    def test_recompute_server_action(self):
+        order = self._order('Paiement immédiat', 'Panneaux')
+        self._make_stale(order)
+        action = self.env.ref('bgg_custom_dev.action_recompute_admin_project_dates')
+        admin_group = self.env.ref('bgg_custom_dev.group_responsable_dossier_admin')
+        self.assertEqual(action.group_ids, admin_group)
+        base_groups = [self.env.ref('base.group_user').id,
+                       self.env.ref('sales_team.group_sale_salesman_all_leads').id]
+        seller = self.env['res.users'].create({
+            'name': 'Vendeur test', 'login': 'vendeur.recalcul@test.bgg',
+            'group_ids': [(6, 0, base_groups)],
+        })
+        dossier_admin = self.env['res.users'].create({
+            'name': 'Admin dossier test', 'login': 'admin.recalcul@test.bgg',
+            'group_ids': [(6, 0, base_groups + [admin_group.id])],
+        })
+        ctx = {'active_model': 'sale.order', 'active_ids': order.ids}
+        with self.assertRaises(AccessError):
+            action.with_user(seller).with_context(**ctx).run()
+        action.with_user(dossier_admin).with_context(**ctx).run()
+        self._assert_dates(order, 5, 5)
+
+    def test_upgrade_rules_former_format(self):
+        """Migration 19.0.1.11.0: per-category delays dropped, end_offset
+        added, sss values and day types kept."""
+        former = {
+            'Paiement immédiat': {
+                'day_type': 'business', 'Panneaux': 10, 'PAC': 15,
+                'sss': {'start_offset': 7, 'day_type': 'business', 'Panneaux': 6},
+            },
+            'Custom': {'day_type': 'calendar', 'end_offset': 4, 'sss': {'Panneaux': 1}},
+            'Broken': 'not a rule',
+        }
+        self.assertEqual(upgrade_admin_deadline_rules(former), {
+            'Paiement immédiat': {
+                'day_type': 'business', 'end_offset': 10,
+                'sss': {'start_offset': 7, 'day_type': 'business', 'Panneaux': 6},
+            },
+            'Custom': {'day_type': 'calendar', 'end_offset': 4, 'sss': {'Panneaux': 1}},
+            'Broken': 'not a rule',
+        })
+        self.assertEqual(upgrade_admin_deadline_rules(ADMIN_DEADLINE_RULES_DEFAULT),
+                         ADMIN_DEADLINE_RULES_DEFAULT)

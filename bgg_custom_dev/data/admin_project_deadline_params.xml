@@ -15,20 +15,22 @@
         bgg.admin_project_deadline_rules
             { "<payment term name>": {
                   "day_type": "business" | "calendar",
-                  "<product category name>": <days>, ...,
+                  "end_offset": <days>,
                   "sss": { "start_offset": <days>, "start_day_type": "...",
                            "day_type": "...", "<product category name>": <days>, ... }
               }, ... }
             - the first-level key is the payment term name as shown in Odoo
               (case-insensitive, any installed language); a payment term absent
               from this map gets no dates (e.g. Financement RW);
-            - category keys are product category names (the product's category
-              or one of its parents, case-insensitive), e.g. "Panneaux";
-            - admin project: start = confirmation date, end = start + <days>;
-              with several listed categories on the order the longest wins;
             - "sss": reference dates of the field service project, computed in
               memory only (never written): start = confirmation date +
-              start_offset, end = start + <days> of the category (longest wins).
+              start_offset, end = start + <days> of the category (the
+              product's category or one of its parents, case-insensitive;
+              with several listed categories on the order the longest wins);
+              the categories listed here are also the products that need an
+              installation (warning on the sale order);
+            - admin project: start = confirmation date, end = SSS end +
+              end_offset, counted with the rule's day_type.
 
         bgg.admin_task_deadline_rules
             { "day_type": "business" | "calendar",
@@ -43,23 +45,19 @@
         <record id="admin_project_deadline_rules" model="ir.config_parameter">
             <field name="key">bgg.admin_project_deadline_rules</field>
             <field name="value">{
-  "Paiement immédiat": {
-    "day_type": "business", "Panneaux": 10, "Onduleurs": 10, "Batteries": 10, "PAC": 15, "Isolation": 20,
+  "Paiement immédiat": {"day_type": "business", "end_offset": 10,
     "sss": {"start_offset": 5, "start_day_type": "business", "day_type": "business",
             "Panneaux": 5, "Onduleurs": 5, "Batteries": 5, "PAC": 10, "Isolation": 15}
   },
-  "50% maintenant, le solde à l'installation": {
-    "day_type": "business", "Panneaux": 10, "Onduleurs": 10, "Batteries": 10, "PAC": 15, "Isolation": 20,
+  "50% maintenant, le solde à l'installation": {"day_type": "business", "end_offset": 10,
     "sss": {"start_offset": 5, "start_day_type": "business", "day_type": "business",
             "Panneaux": 5, "Onduleurs": 5, "Batteries": 5, "PAC": 10, "Isolation": 15}
   },
-  "Financement": {
-    "day_type": "business", "Panneaux": 15, "Onduleurs": 15, "Batteries": 15, "PAC": 20, "Isolation": 25,
+  "Financement": {"day_type": "business", "end_offset": 10,
     "sss": {"start_offset": 10, "start_day_type": "business", "day_type": "business",
             "Panneaux": 25, "Onduleurs": 25, "Batteries": 25, "PAC": 30, "Isolation": 35}
   },
-  "Financement (Banque/Courtier client)": {
-    "day_type": "business", "Panneaux": 15, "Onduleurs": 15, "Batteries": 15, "PAC": 20, "Isolation": 25,
+  "Financement (Banque/Courtier client)": {"day_type": "business", "end_offset": 10,
     "sss": {"start_offset": 10, "start_day_type": "business", "day_type": "business",
             "Panneaux": 25, "Onduleurs": 25, "Batteries": 25, "PAC": 30, "Isolation": 35}
   }

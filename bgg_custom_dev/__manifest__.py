@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen Custom Development',
-    'version': '19.0.1.10.0',
+    'version': '19.0.1.11.0',
     'category': 'Customizations',
     'summary': 'Custom business logic and automation for BelGoGreen',
     'description': """
@@ -30,15 +30,20 @@
         **Project Management (project.project, project.task)**:
         - Document folder naming from sales orders
         - Admin project deadlines: project start = order confirmation date,
-          project end = start + delay from the payment term x product
-          category rules (bgg.admin_project_deadline_rules system
-          parameter), task deadlines = project end date
+          project end = field service (SSS) reference end date + end_offset
+          (10 business days), the SSS reference dates coming from the
+          payment term x product category rules
+          (bgg.admin_project_deadline_rules system parameter); task
+          deadlines = project end date
         - Admin template tasks listed in bgg.admin_task_deadline_rules
           (Réclamation du solde, Création des commissions, Chargement
           schéma unifilaire, Envoi Belgotest) take their dates from the
-          field service (SSS) reference dates computed from the same rules
+          SSS reference dates computed from the same rules
         - Admin projects: project manager and planned dates are computed
           from the order and locked against manual edits
+        - "Recalculer les dates du dossier" action (sale orders, Responsable
+          Dossier Admin group) recomputes the admin project dates from the
+          current rules
 
         **Sales Orders (sale.order)**:
         - Call Center (Sale Owner) attribution and RDV smart button
@@ -48,8 +53,8 @@
           project manager and as assignee of their open tasks
         - Form warnings: Responsable not assigned on a confirmed order,
           installation product (project-creating service) missing
-        - Only the "Responsable Dossier Admin" group (and administrators)
-          may set or change the Responsable of an order
+        - Only the "Responsable Dossier Admin" group may set or change the
+          Responsable of an order
         - The "Créer tâches SSS" server action stays in Odoo Studio; it reads
           the bgg.sss_project_manager_login parameter (SSS manager email)
 

@@ -33,6 +33,39 @@ action = {
     </record>
 
     <!--
+        Recompute the admin project dates (Dossier) from the current rules:
+        project start/end and the dates of the open tasks. Needed after the
+        order lines or the bgg.admin_project_deadline_rules parameter change,
+        which do not trigger a recomputation on their own.
+
+        - No records selected → every confirmed order with an admin project.
+        - Records selected     → only those (confirmed orders only).
+    -->
+    <record id="action_recompute_admin_project_dates" model="ir.actions.server">
+        <field name="name">Recalculer les dates du dossier</field>
+        <field name="model_id" ref="sale.model_sale_order"/>
+        <field name="binding_model_id" ref="sale.model_sale_order"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="group_ids" eval="[(6, 0, [ref('bgg_custom_dev.group_responsable_dossier_admin')])]"/>
+        <field name="state">code</field>
+        <field name="code">
+targets = records if records else model._get_admin_dossier_orders()
+done = targets._recompute_admin_project_dates()
+action = {
+    'type': 'ir.actions.client',
+    'tag': 'display_notification',
+    'params': {
+        'title': 'Dates du dossier',
+        'message': '%d commande(s) recalculée(s).' % len(done),
+        'type': 'success',
+        'sticky': False,
+        'next': {'type': 'ir.actions.client', 'tag': 'soft_reload'},
+    },
+}
+        </field>
+    </record>
+
+    <!--
         "Créer tâches SSS" (field service project + tasks for paid orders) is
         deliberately NOT in this module: it is a server action maintained in
         Odoo Studio. It reads the bgg.sss_project_manager_login system
