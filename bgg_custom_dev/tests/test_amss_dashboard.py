@@ -230,19 +230,19 @@ class TestAmssDashboard(TransactionCase):
     def test_blocked_task_blocks_and_unblocks_project(self):
         project, task = self._admin_project_and_task()
         self._status_update(project, 'at_risk')
-        task.with_user(self.responsable).x_blocked = True
+        task.with_user(self.responsable).state = '05_blocked'
         self.assertEqual(project.last_update_status, 'blocked')
         self.assertTrue(project.x_blocked_by_task)
         # the project cannot leave Bloqué while the task is blocked
         with self.assertRaises(UserError):
             self._status_update(project, 'on_track', user=self.responsable)
-        task.with_user(self.responsable).x_blocked = False
+        task.with_user(self.responsable).state = '01_in_progress'
         self.assertEqual(project.last_update_status, 'at_risk', "previous status restored")
         self.assertFalse(project.x_blocked_by_task)
 
     def test_closing_blocked_task_unblocks_project(self):
         project, task = self._admin_project_and_task()
-        task.x_blocked = True
+        task.state = '05_blocked'
         self.assertEqual(project.last_update_status, 'blocked')
         task.state = '1_done'
         self.assertEqual(project.last_update_status, 'on_track', "no previous status: En bonne voie")
@@ -250,18 +250,26 @@ class TestAmssDashboard(TransactionCase):
     def test_project_blocked_by_hand_stays_blocked(self):
         project, task = self._admin_project_and_task()
         self._status_update(project, 'blocked', user=self.responsable)
-        task.x_blocked = True
-        task.x_blocked = False
+        task.state = '05_blocked'
+        task.state = '01_in_progress'
+        self.assertEqual(project.last_update_status, 'blocked')
+
+    def test_blocked_task_survives_stage_change(self):
+        project, task = self._admin_project_and_task()
+        task.state = '05_blocked'
+        stage = self.env['project.task.type'].create({'name': 'Étape AMSS', 'project_ids': [(4, project.id)]})
+        task.stage_id = stage
+        self.assertEqual(task.state, '05_blocked', "Odoo must not reset Bloqué on a stage change")
         self.assertEqual(project.last_update_status, 'blocked')
 
     def test_blocked_task_rights_and_scope(self):
         project, task = self._admin_project_and_task()
         with self.assertRaises(AccessError):
-            task.with_user(self.project_user).x_blocked = True
+            task.with_user(self.project_user).state = '05_blocked'
         internal = self.env['project.project'].create({'name': 'Projet interne AMSS'})
         other = self.env['project.task'].create({'name': 'T', 'project_id': internal.id})
         with self.assertRaises(ValidationError):
-            other.x_blocked = True
+            other.state = '05_blocked'
 
     # ------------------------------------------------------------------
     # Drill-down: clicking a card lists the records behind its figure
