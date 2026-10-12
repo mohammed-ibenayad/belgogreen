@@ -121,6 +121,33 @@ class TestAmssDashboard(TransactionCase):
                                sum(confirmed.mapped('amount_untaxed')), places=2)
         self.assertEqual(after['ventes_confirmees'] - before['ventes_confirmees'], 2)
 
+    def test_payment_term_filter(self):
+        start, end = self._today_range()
+        companies = [self.env.company.id]
+        Term = self.env['account.payment.term']
+        term_a = Term.create({'name': 'Condition AMSS A'})
+        term_b = Term.create({'name': 'Condition AMSS B'})
+        before_a = self.Dashboard._sales_figures(start, end, companies, term_a.id)
+        order_a = self._order(service=False, confirm=False)
+        order_a.payment_term_id = term_a
+        order_a.action_confirm()
+        order_b = self._order(service=False, confirm=False)
+        order_b.payment_term_id = term_b
+        order_b.action_confirm()
+        after_a = self.Dashboard._sales_figures(start, end, companies, term_a.id)
+        self.assertAlmostEqual(after_a['ca_net'] - before_a['ca_net'], order_a.amount_untaxed, places=2)
+        self.assertEqual(after_a['ventes_confirmees'] - before_a['ventes_confirmees'], 1)
+        # TX CONVERSION ignores the payment term (appointments have none)
+        self.assertEqual(after_a['tx_conversion'],
+                         self.Dashboard._sales_figures(start, end, companies)['tx_conversion'])
+        cash_a = self.Dashboard._cash_flow(start, end, companies, term_a.id)
+        cash_b = self.Dashboard._cash_flow(start, end, companies, term_b.id)
+        self.assertGreaterEqual(cash_a['signe'], order_a.amount_untaxed)
+        self.assertAlmostEqual(cash_b['signe'], order_b.amount_untaxed, places=2,
+                               msg="term B only has the order created here")
+        options = self.Dashboard.get_filter_options()
+        self.assertIn(term_a.id, [t['id'] for t in options['payment_terms']])
+
     # ------------------------------------------------------------------
     # Chantiers en retard
     # ------------------------------------------------------------------

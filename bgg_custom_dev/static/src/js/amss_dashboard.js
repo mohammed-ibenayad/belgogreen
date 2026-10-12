@@ -29,12 +29,15 @@ export class AmssManagementDashboard extends Component {
             dateFrom: null,
             dateTo: null,
             filterCompanyId: null,
+            filterPaymentTermId: null,
             availableCompanies: [],
+            availablePaymentTerms: [],
         });
         onWillStart(async () => {
             try {
                 const options = await rpc("/amss/dashboard/filters", {});
                 this.state.availableCompanies = options.companies || [];
+                this.state.availablePaymentTerms = options.payment_terms || [];
             } catch (error) {
                 this.state.error = error.data?.message || error.message;
             }
@@ -58,6 +61,7 @@ export class AmssManagementDashboard extends Component {
             params.date_to = this.state.dateTo;
         }
         if (this.state.filterCompanyId) params.company_id = this.state.filterCompanyId;
+        if (this.state.filterPaymentTermId) params.payment_term_id = this.state.filterPaymentTermId;
 
         this.state.loading = true;
         this.state.error = null;
@@ -143,6 +147,11 @@ export class AmssManagementDashboard extends Component {
         await this.loadData(this.state.currentMonth, this.state.currentYear);
     }
 
+    async onPaymentTermFilterChange(ev) {
+        this.state.filterPaymentTermId = ev.target.value ? parseInt(ev.target.value) : null;
+        await this.loadData(this.state.currentMonth, this.state.currentYear);
+    }
+
     onExportExcel() {
         const params = new URLSearchParams();
         if (this.state.currentMonth) params.set("month", this.state.currentMonth);
@@ -155,6 +164,7 @@ export class AmssManagementDashboard extends Component {
             params.set("date_to", this.state.dateTo);
         }
         if (this.state.filterCompanyId) params.set("company_id", this.state.filterCompanyId);
+        if (this.state.filterPaymentTermId) params.set("payment_term_id", this.state.filterPaymentTermId);
         window.open("/amss/dashboard/export?" + params.toString(), "_blank");
     }
 

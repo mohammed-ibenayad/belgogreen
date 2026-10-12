@@ -33,7 +33,8 @@ TOOLTIPS = {
         "TX CONVERSION = (Ventes Confirmées + Ventes Annulées) / (Présents Call "
         "+ Présents Commercial). Les annulations ultérieures sont incluses au "
         "numérateur pour refléter la capacité de transformation du commercial "
-        "(le suivi des annulations se fait via TX ANNULATION)."),
+        "(le suivi des annulations se fait via TX ANNULATION). Non filtré par "
+        "condition de paiement : les RDV n'ont pas de condition de paiement."),
     'chantiers_retard': (
         "Chantiers en retard = projets admin (commandes confirmées) ayant au "
         "moins une tâche ouverte dont l'échéance dépasse la date de fin du "
@@ -109,22 +110,30 @@ class AmssManagementDashboard(models.TransientModel):
     # ------------------------------------------------------------------
 
     @api.model
-    def _period_orders(self, date_start, date_end, company_ids, states):
-        return self.env['sale.order'].sudo().search([
+    def _period_orders(self, date_start, date_end, company_ids, states, payment_term_id=None):
+        domain = [
             ('date_order', '>=', fields.Datetime.to_string(date_start)),
             ('date_order', '<', fields.Datetime.to_string(date_end)),
             ('state', 'in', states),
             ('company_id', 'in', company_ids),
-        ])
+        ]
+        if payment_term_id:
+            domain.append(('payment_term_id', '=', payment_term_id))
+        return self.env['sale.order'].sudo().search(domain)
 
     @api.model
-    def _sales_figures(self, date_start, date_end, company_ids):
+    def _sales_figures(self, date_start, date_end, company_ids, payment_term_id=None):
         """CA NET, Ventes Confirmées and TX CONVERSION of a period, computed
         exactly as in Suivi Commercial (same helpers) but for every order and
-        appointment of the companies."""
+        appointment of the companies. CA NET and Ventes Confirmées follow the
+        payment term filter; TX CONVERSION does not (appointments have no
+        payment term, so its denominator cannot be filtered)."""
         commercial = self.env['commercial.dashboard']
-        orders = self._period_orders(date_start, date_end, company_ids, ['sale', 'done', 'cancel'])
+        all_orders = self._period_orders(date_start, date_end, company_ids, ['sale', 'done', 'cancel'])
+        orders = all_orders.filtered(
+            lambda o: o.payment_term_id.id == payment_term_id) if payment_term_id else all_orders
         fin = commercial._compute_financial_kpis(orders)
+        fin_all = commercial._compute_financial_kpis(all_orders) if payment_term_id else fin
 
         appointment_types = self.env['appointment.type'].sudo().search([
             ('x_appointment_ref', 'in', CALL_CENTER_APPOINTMENT_REFS + COMMERCIAL_APPOINTMENT_REFS),
@@ -136,7 +145,7 @@ class AmssManagementDashboard(models.TransientModel):
             ('user_id.company_id', 'in', company_ids),
         ])
         present = commercial._count_appointment_statuses(events)['attended']
-        ventes_signees = fin['nbre_vies'] + fin['ventes_annulees']
+        ventes_signees = fin_all['nbre_vies'] + fin_all['ventes_annulees']
         return {
             'ca_net': round(fin['ca_brut'] - fin['ca_annule'], 2),
             'ventes_confirmees': fin['nbre_vies'],
@@ -144,9 +153,9 @@ class AmssManagementDashboard(models.TransientModel):
         }
 
     @api.model
-    def _admin_projects(self, company_ids):
+    def _admin_projects(self, company_ids, payment_term_id=None):
         """Admin projects (linked to a sale order, templates excluded) of
-        confirmed orders."""
+        confirmed orders, optionally of orders with the given payment term."""
         projects = self.env['project.project'].sudo().search([
             '|',
             ('sale_line_id', '!=', False),
@@ -154,7 +163,8 @@ class AmssManagementDashboard(models.TransientModel):
             ('is_template', '=', False),
             ('company_id', 'in', company_ids),
         ])
-        return projects.filtered(lambda p: p._get_dossier_order().state == 'sale')
+        return projects.filtered(lambda p: p._get_dossier_order().state == 'sale' and (
+            not payment_term_id or p._get_dossier_order().payment_term_id.id == payment_term_id))
 
     @api.model
     def _late_projects(self, projects, today):
@@ -191,13 +201,14 @@ class AmssManagementDashboard(models.TransientModel):
         return sum(1 for status in last_status.values() if status == BLOCKED_STATUS)
 
     @api.model
-    def _cash_flow(self, date_start, date_end, company_ids):
+    def _cash_flow(self, date_start, date_end, company_ids, payment_term_id=None):
         """Signé / Facturé / Encaissé (HT) of the orders confirmed in the
         period. Credit notes are deducted (signed amounts); the paid part of a
         document is (total − residual) / total of its HT amount, so a credit
         note reconciled with an invoice cancels out instead of counting as
         cash."""
-        orders = self._period_orders(date_start, date_end, company_ids, ['sale', 'done'])
+        orders = self._period_orders(date_start, date_end, company_ids, ['sale', 'done'],
+                                     payment_term_id)
         moves = orders.invoice_ids.filtered(
             lambda m: m.state == 'posted' and m.move_type in ('out_invoice', 'out_refund'))
         facture = sum(moves.mapped('amount_untaxed_signed'))
@@ -218,11 +229,18 @@ class AmssManagementDashboard(models.TransientModel):
     def get_filter_options(self):
         self._check_dashboard_access()
         companies = self.env.user.company_ids.sorted('name')
-        return {'companies': [{'id': c.id, 'name': c.name} for c in companies]}
+        terms = self.env['account.payment.term'].sudo().search([
+            ('company_id', 'in', companies.ids + [False]),
+        ], order='name')
+        return {
+            'companies': [{'id': c.id, 'name': c.name} for c in companies],
+            'payment_terms': [{'id': t.id, 'name': t.name} for t in terms],
+        }
 
     @api.model
     def get_dashboard_data(self, month=None, year=None, period_type='month',
-                           quarter=None, company_id=None, date_from=None, date_to=None):
+                           quarter=None, company_id=None, date_from=None, date_to=None,
+                           payment_term_id=None):
         self._check_dashboard_access()
         date_start, date_end, period_label, month, year, quarter = \
             self.env['call.center.dashboard']._resolve_period(
@@ -231,10 +249,10 @@ class AmssManagementDashboard(models.TransientModel):
         company_ids = self._allowed_company_ids(company_id)
         today = fields.Date.context_today(self.with_context(tz=BGG_TZ))
 
-        current = self._sales_figures(date_start, date_end, company_ids)
-        previous = self._sales_figures(prev_start, prev_end, company_ids)
+        current = self._sales_figures(date_start, date_end, company_ids, payment_term_id)
+        previous = self._sales_figures(prev_start, prev_end, company_ids, payment_term_id)
 
-        projects = self._admin_projects(company_ids)
+        projects = self._admin_projects(company_ids, payment_term_id)
         blocked_now = self._blocked_count(projects, None if date_end > today else date_end)
         blocked_prev = self._blocked_count(projects, date_start)
 
@@ -257,6 +275,7 @@ class AmssManagementDashboard(models.TransientModel):
                 'decimal_places': company.currency_id.decimal_places,
             },
             'tooltips': TOOLTIPS,
+            'payment_term_filtered': bool(payment_term_id),
             'cards': {
                 'ca_net': {'value': current['ca_net'], 'previous': previous['ca_net'],
                            'delta': delta('ca_net', 'pct')},
@@ -270,18 +289,20 @@ class AmssManagementDashboard(models.TransientModel):
                 'dossiers_bloques': {'value': blocked_now, 'previous': blocked_prev,
                                      'delta': blocked_now - blocked_prev},
             },
-            'cash_flow': self._cash_flow(date_start, date_end, company_ids),
+            'cash_flow': self._cash_flow(date_start, date_end, company_ids, payment_term_id),
         }
 
     @api.model
     def export_excel(self, month=None, year=None, period_type='month',
-                     quarter=None, company_id=None, date_from=None, date_to=None):
+                     quarter=None, company_id=None, date_from=None, date_to=None,
+                     payment_term_id=None):
         """Excel file (base64): the Direction figures and a Calculs sheet."""
         import xlsxwriter
 
         data = self.get_dashboard_data(
             month=month, year=year, period_type=period_type, quarter=quarter,
-            company_id=company_id, date_from=date_from, date_to=date_to)
+            company_id=company_id, date_from=date_from, date_to=date_to,
+            payment_term_id=payment_term_id)
         cards, cash = data['cards'], data['cash_flow']
 
         output = io.BytesIO()
@@ -304,7 +325,8 @@ class AmssManagementDashboard(models.TransientModel):
         rows = [
             ('CA NET', cards['ca_net'], money_fmt, 'pct'),
             ('VENTES CONFIRMÉES', cards['ventes_confirmees'], cell_fmt, 'count'),
-            ('TX CONVERSION', cards['tx_conversion'], pct_fmt, 'points'),
+            ('TX CONVERSION (toutes conditions)' if data['payment_term_filtered'] else 'TX CONVERSION',
+             cards['tx_conversion'], pct_fmt, 'points'),
             ('CHANTIERS EN RETARD', cards['chantiers_retard'], cell_fmt, None),
             ('DOSSIERS BLOQUÉS', cards['dossiers_bloques'], cell_fmt, 'count'),
         ]
@@ -352,7 +374,8 @@ class AmssManagementDashboard(models.TransientModel):
             "Période précédente du même type (mois, trimestre, année ; pour une "
             "période personnalisée, le même nombre de jours juste avant). Toutes "
             "les commandes et tous les RDV des sociétés sélectionnées sont pris en "
-            "compte (pas seulement le groupe Commercial)."), wrap_fmt)
+            "compte (pas seulement le groupe Commercial). Le filtre condition de "
+            "paiement s'applique à toutes les valeurs sauf TX CONVERSION."), wrap_fmt)
 
         workbook.close()
         return base64.b64encode(output.getvalue()).decode('utf-8')
