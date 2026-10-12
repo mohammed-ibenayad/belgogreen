@@ -39,6 +39,12 @@ class ProjectUpdate(models.Model):
         ondelete={BLOCKED_STATUS: lambda updates: updates.write({'status': 'off_track'})},
     )
 
+    # A project blocked by its tasks that had no status before goes back to
+    # "no status" (Odoo cannot post a status update without a status): its
+    # Bloqué update stays in the history with this date, so the dashboard
+    # knows the block ended (see amss_dashboard._blocked_projects).
+    x_unblocked_on = fields.Date(string='Débloqué le (sans statut)', readonly=True, copy=False)
+
     @api.depends('status')
     def _compute_color(self):
         blocked = self.filtered(lambda u: u.status == BLOCKED_STATUS)

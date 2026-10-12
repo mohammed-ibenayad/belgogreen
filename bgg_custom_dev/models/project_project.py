@@ -87,8 +87,16 @@ class ProjectProject(models.Model):
                     ('project_id', '=', project.id),
                     ('status', '!=', BLOCKED_STATUS),
                 ], order='date desc, id desc', limit=1)
-                project._post_status_update(previous.status or 'on_track', description=(
-                    '<p>Débloqué automatiquement : plus aucune tâche bloquée.</p>'))
+                if previous:
+                    project._post_status_update(previous.status, description=(
+                        '<p>Débloqué automatiquement : plus aucune tâche bloquée.</p>'))
+                else:
+                    # No status before the block: back to "no status".
+                    project.last_update_id.x_unblocked_on = fields.Date.context_today(project)
+                    project.last_update_id = False
+                    project.message_post(body=(
+                        'Débloqué automatiquement : plus aucune tâche bloquée '
+                        '(retour sans statut, comme avant le blocage).'))
                 project.x_blocked_by_task = False
                 _logger.info("Dossier: project %s unblocked (no blocked task)", project.id)
 

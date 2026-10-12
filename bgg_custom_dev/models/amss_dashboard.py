@@ -202,10 +202,15 @@ class AmssManagementDashboard(models.TransientModel):
             ('project_id', 'in', projects.ids),
             ('date', '<', cutoff),
         ], order='date desc, id desc')
-        last_status = {}
+        last_update = {}
         for update in updates:
-            last_status.setdefault(update.project_id.id, update.status)
-        return projects.browse([pid for pid, status in last_status.items() if status == BLOCKED_STATUS])
+            last_update.setdefault(update.project_id.id, update)
+        # A Bloqué update cleared back to "no status" (x_unblocked_on) no
+        # longer blocks the project from that date.
+        return projects.browse([
+            pid for pid, update in last_update.items()
+            if update.status == BLOCKED_STATUS
+            and not (update.x_unblocked_on and update.x_unblocked_on < cutoff)])
 
     @api.model
     def _blocked_count(self, projects, cutoff=None):
