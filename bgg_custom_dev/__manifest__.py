@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen Custom Development',
-    'version': '19.0.1.25.0',
+    'version': '19.0.1.26.0',
     'category': 'Customizations',
     'summary': 'Custom business logic and automation for BelGoGreen',
     'description': """
@@ -65,8 +65,9 @@
           the bgg.sss_project_manager_login parameter (SSS manager email)
 
         **AMSS Management dashboard (Direction group)**:
-        - Direction tab: CA NET, Ventes Confirmées, TX Conversion (same
-          formulas as Suivi Commercial, all orders and appointments),
+        - Direction tab: CA NET, Ventes Confirmées (+ annulées), TX Conversion
+          (lists the RDV présents) (same formulas as Suivi Commercial, all
+          orders and appointments),
           Chantiers en retard, Dossiers bloqués, CA signé / facturé /
           encaissé (reste à facturer / à encaisser clickable in the bars),
           Carnet de commandes (À planifier / Planifiés / En cours /

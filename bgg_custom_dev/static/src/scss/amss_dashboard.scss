@@ -255,6 +255,13 @@ $amss-due: #9fd0d2;    // light teal (reste à encaisser)
         }
     }
 
+    .amss_card_secondary {
+        align-self: flex-start;
+        font-size: 12px;
+        font-weight: 600;
+        color: $amss-muted;
+    }
+
     .amss_card_note {
         font-size: 11px;
         font-style: italic;
