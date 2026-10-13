@@ -289,7 +289,13 @@ $amss-accent: #e8a500;
 
         > .amss_panel:only-child {
             flex: 0 1 calc(50% - 6px);
-            min-width: min(320px, 100%);
+        }
+
+        // (no CSS min(): Odoo's SCSS compiler takes it for its own min function)
+        @media (max-width: 767.98px) {
+            > .amss_panel:only-child {
+                flex-basis: 100%;
+            }
         }
     }
 
