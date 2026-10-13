@@ -32,7 +32,9 @@ export class AmssManagementDashboard extends Component {
             dateTo: null,
             filterCompanyId: null,
             filterPaymentTermId: null,
+            filterUserId: null,
             availableCompanies: [],
+            availableSalespeople: [],
             availablePaymentTerms: [],
         });
         onWillStart(async () => {
@@ -40,6 +42,7 @@ export class AmssManagementDashboard extends Component {
                 const options = await rpc("/amss/dashboard/filters", {});
                 this.state.availableCompanies = options.companies || [];
                 this.state.availablePaymentTerms = options.payment_terms || [];
+                this.state.availableSalespeople = options.salespeople || [];
             } catch (error) {
                 this.state.error = error.data?.message || error.message;
             }
@@ -67,6 +70,8 @@ export class AmssManagementDashboard extends Component {
         }
         if (this.state.filterCompanyId) params.company_id = this.state.filterCompanyId;
         if (this.state.filterPaymentTermId) params.payment_term_id = this.state.filterPaymentTermId;
+        // Commercial tab only (the server applies it to the Commercial figures)
+        if (this.state.filterUserId) params.user_id = this.state.filterUserId;
         return params;
     }
 
@@ -164,12 +169,40 @@ export class AmssManagementDashboard extends Component {
     async openCard(card) {
         const params = this.filterParams(this.state.currentMonth, this.state.currentYear);
         if (!params) return;
+        if (this.state.activeTab !== "commercial") {
+            // the Commercial filter only applies to the Commercial tab
+            delete params.user_id;
+        }
         try {
             const action = await rpc("/amss/dashboard/open", { ...params, card });
             await this.action.doAction(action);
         } catch (error) {
             this.state.error = error.data?.message || error.message;
         }
+    }
+
+    async onUserFilterChange(ev) {
+        this.state.filterUserId = ev.target.value ? parseInt(ev.target.value) : null;
+        await this.loadData(this.state.currentMonth, this.state.currentYear);
+    }
+
+    isSelectedSalesperson(key) {
+        const selected = this.state.data.commercial.selected_user_id;
+        return Boolean(selected) && `${selected}` === key;
+    }
+
+    funnelWidth(key) {
+        const funnel = this.state.data.commercial.funnel;
+        const max = Math.max(funnel.rdv_poses, funnel.rdv_tenus, funnel.bc_signes, 0);
+        if (!max) return "0%";
+        return `${(funnel[key] / max) * 100}%`;
+    }
+
+    salesWidth(count) {
+        const bars = this.state.data.commercial.bc_par_commercial;
+        const max = Math.max(...bars.map((b) => b.count), 0);
+        if (!max) return "0%";
+        return `${(count / max) * 100}%`;
     }
 
     async onPaymentTermFilterChange(ev) {
@@ -190,6 +223,7 @@ export class AmssManagementDashboard extends Component {
         }
         if (this.state.filterCompanyId) params.set("company_id", this.state.filterCompanyId);
         if (this.state.filterPaymentTermId) params.set("payment_term_id", this.state.filterPaymentTermId);
+        if (this.state.filterUserId) params.set("user_id", this.state.filterUserId);
         window.open("/amss/dashboard/export?" + params.toString(), "_blank");
     }
 
@@ -218,8 +252,36 @@ export class AmssManagementDashboard extends Component {
         return `${this.formatThousands(value)} k${this.currencySymbol}`;
     }
 
+    /** KPI cards: for the selected salesperson on the Commercial tab. */
+    get kpiCards() {
+        const data = this.state.data;
+        return this.state.activeTab === "commercial" && data.cards_user ? data.cards_user : data.cards;
+    }
+
+    get selectedSalespersonName() {
+        const user = this.state.availableSalespeople.find((u) => u.id === this.state.filterUserId);
+        return user ? user.name : "";
+    }
+
+    /** Which filters the current tab uses (shown under the filter bar). */
+    get appliedFiltersNote() {
+        const tab = this.state.activeTab;
+        const term = this.state.filterPaymentTermId ? " (sauf TX CONVERSION)" : "";
+        if (tab === "commercial") {
+            const who = this.state.filterUserId
+                ? `Commercial : ${this.selectedSalespersonName} (cartes du haut et panneaux)`
+                : "Commercial : tous";
+            return `Filtres appliqués : Période, Société, Conditions de paiement (commandes, pas les RDV), ${who}.`;
+        }
+        if (tab === "metiers") {
+            return `Filtres appliqués : Période, Société, Conditions de paiement${term}.`;
+        }
+        return `Filtres appliqués : Période, Société, Conditions de paiement${term}. ` +
+            "À ce jour, sans période : Chantiers en retard, Carnet de commandes.";
+    }
+
     formatDelta(key) {
-        const card = this.state.data.cards[key];
+        const card = this.kpiCards[key];
         if (card.delta === null || card.delta === undefined) return "";
         const sign = card.delta > 0 ? "+" : card.delta < 0 ? "−" : "±";
         const abs = Math.abs(card.delta);
@@ -228,7 +290,7 @@ export class AmssManagementDashboard extends Component {
     }
 
     deltaClass(key) {
-        const card = this.state.data.cards[key];
+        const card = this.kpiCards[key];
         if (!card.delta) return "amss_delta_neutral";
         const good = (card.delta > 0) === HIGHER_IS_BETTER[key];
         return good ? "amss_delta_good" : "amss_delta_bad";
