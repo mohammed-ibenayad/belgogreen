@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen Custom Development',
-    'version': '19.0.1.24.0',
+    'version': '19.0.1.25.0',
     'category': 'Customizations',
     'summary': 'Custom business logic and automation for BelGoGreen',
     'description': """
@@ -68,7 +68,8 @@
         - Direction tab: CA NET, Ventes Confirmées, TX Conversion (same
           formulas as Suivi Commercial, all orders and appointments),
           Chantiers en retard, Dossiers bloqués, CA signé / facturé /
-          encaissé, Carnet de commandes (À planifier / Planifiés / En cours /
+          encaissé (reste à facturer / à encaisser clickable in the bars),
+          Carnet de commandes (À planifier / Planifiés / En cours /
           Bloqués, today); comparison with the previous period; Excel export
         - Métiers tab: same filters and KPI cards, CA signé par métier (each
           order in one métier: Photovoltaïque = Panneaux / Onduleurs /

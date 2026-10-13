@@ -9,6 +9,8 @@ $amss-muted: #6c757d;
 $amss-good: #1e7e34;
 $amss-bad: #c0392b;
 $amss-accent: #e8a500;
+$amss-rest: #e5ebeb;   // empty part of a bar (reste à facturer)
+$amss-due: #9fd0d2;    // light teal (reste à encaisser)
 
 .amss_dashboard {
     padding: 16px;
@@ -311,6 +313,24 @@ $amss-accent: #e8a500;
             color: $amss-muted;
             font-size: 12px;
         }
+
+        .amss_legend {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            margin-left: 6px;
+            border-radius: 2px;
+            vertical-align: -1px;
+        }
+
+        .amss_legend_rest {
+            background: $amss-rest;
+            box-shadow: inset 0 0 0 1px darken($amss-rest, 15%);
+        }
+
+        .amss_legend_due {
+            background: $amss-due;
+        }
     }
 
     .amss_bar_row {
@@ -321,17 +341,46 @@ $amss-accent: #e8a500;
         padding: 6px 0;
 
         .amss_bar_track {
+            display: flex;
             height: 12px;
-            background: #e5ebeb;
+            background: $amss-rest;
             border-radius: 6px;
             overflow: hidden;
         }
 
         .amss_bar_fill {
             display: block;
+            flex: none;
             height: 100%;
             background: $amss-teal;
             border-radius: 6px;
+        }
+
+        .amss_bar_fill_joined {
+            border-radius: 6px 0 0 6px;
+        }
+
+        // Reste à encaisser (light) and reste à facturer (grey, rest of the
+        // track): clickable zones with their own list.
+        .amss_bar_due {
+            flex: none;
+            height: 100%;
+            background: $amss-due;
+            cursor: pointer;
+
+            &:hover {
+                background: darken($amss-due, 10%);
+            }
+        }
+
+        .amss_bar_rest {
+            flex: 1 1 auto;
+            height: 100%;
+            cursor: pointer;
+
+            &:hover {
+                background: darken($amss-rest, 10%);
+            }
         }
 
         .amss_bar_value {

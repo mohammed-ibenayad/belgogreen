@@ -85,7 +85,8 @@ class TestAmssDashboard(TransactionCase):
         data = self.Dashboard.with_user(self.direction_user).get_dashboard_data()
         self.assertEqual(set(data['cards']), {
             'ca_net', 'ventes_confirmees', 'tx_conversion', 'chantiers_retard', 'dossiers_bloques'})
-        self.assertEqual(set(data['cash_flow']), {'signe', 'facture', 'encaisse'})
+        self.assertEqual(set(data['cash_flow']), {
+            'signe', 'facture', 'encaisse', 'reste_a_facturer', 'reste_a_encaisser'})
 
     # ------------------------------------------------------------------
     # periods
@@ -501,8 +502,12 @@ class TestAmssDashboard(TransactionCase):
             self.skipTest("no bank or cash journal to register a payment")
         before = self.Dashboard._cash_flow(start, end, companies)
         order = self._order(service=False, qty=2)
+        f = self.Dashboard._resolve_filters(period_type='custom', date_from=start, date_to=start)
+        # not invoiced yet: in the Reste à facturer list
+        self.assertIn(order, self.Dashboard._card_records('reste_a_facturer', f))
         invoice = order._create_invoices()
         invoice.action_post()
+        self.assertNotIn(order, self.Dashboard._card_records('reste_a_facturer', f))
         self.env['account.payment.register'].with_context(
             active_model='account.move', active_ids=invoice.ids,
         ).create({'amount': invoice.amount_total / 2, 'journal_id': journal.id})._create_payments()
@@ -510,6 +515,13 @@ class TestAmssDashboard(TransactionCase):
         self.assertAlmostEqual(after['signe'] - before['signe'], order.amount_untaxed, places=2)
         self.assertAlmostEqual(after['facture'] - before['facture'], invoice.amount_untaxed, places=2)
         self.assertAlmostEqual(after['encaisse'] - before['encaisse'], invoice.amount_untaxed / 2, places=2)
+        # remaining parts of the bars
+        self.assertAlmostEqual(
+            after['reste_a_facturer'], max(0.0, after['signe'] - after['facture']), places=2)
+        self.assertAlmostEqual(
+            after['reste_a_encaisser'], max(0.0, after['facture'] - after['encaisse']), places=2)
+        # half paid: in the Reste à encaisser list
+        self.assertIn(invoice, self.Dashboard._card_records('reste_a_encaisser', f))
 
         # a full credit note cancels the invoiced and the collected amounts
         refund = invoice._reverse_moves()
