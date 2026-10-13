@@ -19,13 +19,12 @@ ADMIN_DEADLINE_HOUR = 17
 ADMIN_START_HOUR = 8
 
 
-# Task changes after which the project's Bloqué status is re-evaluated.
 # "Bloqué" task state (admin projects only): an open task in this state sets
-# its project to Bloqué (see project.project._sync_blocked_from_tasks). It is
+# its project to Bloqué (see project.project._sync_status_from_tasks). It is
 # an extra value of Odoo's task state, kept when Odoo recomputes the state
 # (stage or dependency change) so that only a person can remove it.
 BLOCKED_TASK_STATE = '05_blocked'
-# Task changes after which the project's Bloqué status is re-evaluated.
+# Task changes after which the project's Bloqué / Terminé status is re-evaluated.
 BLOCKED_SYNC_FIELDS = ('state', 'project_id', 'active')
 
 
@@ -65,7 +64,8 @@ class ProjectTask(models.Model):
 
         records._assign_responsable_dossier_on_create()
         records._apply_admin_dates_on_create()
-        records.filtered(lambda t: t.state == BLOCKED_TASK_STATE).project_id._sync_blocked_from_tasks()
+        # a new open task reopens a project Terminé by its tasks; a blocked one blocks it
+        records.project_id._sync_status_from_tasks()
 
         return records
 
@@ -78,13 +78,13 @@ class ProjectTask(models.Model):
         projects = self.project_id if sync else self.env['project.project']
         result = super().write(vals)
         if sync:
-            (projects | self.project_id)._sync_blocked_from_tasks()
+            (projects | self.project_id)._sync_status_from_tasks()
         return result
 
     def unlink(self):
-        projects = self.filtered(lambda t: t.state == BLOCKED_TASK_STATE).project_id
+        projects = self.project_id
         result = super().unlink()
-        projects._sync_blocked_from_tasks()
+        projects._sync_status_from_tasks()
         return result
 
     # ------------------------------------------------------------------

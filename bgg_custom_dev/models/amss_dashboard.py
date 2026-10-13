@@ -53,7 +53,27 @@ TOOLTIPS = {
     'encaisse': (
         "Encaissé = part HT effectivement payée de ces factures (paiements "
         "partiels inclus, au prorata), avoirs déduits."),
+    'carnet_bloques': (
+        "Bloqués = commandes confirmées non terminées dont le projet admin est "
+        "au statut « Bloqué »."),
+    'carnet_a_planifier': (
+        "À planifier = commandes confirmées non terminées, non bloquées, dont le "
+        "projet admin n'a pas encore de date de fin (ou qui n'ont pas de projet "
+        "admin), ou sans Responsable dossier."),
+    'carnet_en_cours': (
+        "En cours = commandes planifiées dont au moins une tâche du projet admin "
+        "est terminée."),
+    'carnet_planifies': (
+        "Planifiés = commandes confirmées non terminées avec dates du projet admin "
+        "et Responsable dossier, aucune tâche encore terminée."),
+    'carnet_total': (
+        "Carnet de commandes = commandes confirmées (BC signés) dont le projet "
+        "admin n'est pas au statut « Terminé », toutes dates de signature, à ce "
+        "jour. Montant = somme HT (comme le CA NET). Chaque commande est dans "
+        "une seule ligne : Bloqués, puis À planifier, En cours, Planifiés."),
 }
+
+CARNET_ROWS = ('carnet_a_planifier', 'carnet_planifies', 'carnet_en_cours', 'carnet_bloques')
 
 
 class AmssManagementDashboard(models.TransientModel):
@@ -261,6 +281,58 @@ class AmssManagementDashboard(models.TransientModel):
         }
 
     @api.model
+    def _order_book(self, company_ids, payment_term_id=None):
+        """Carnet de commandes, today: confirmed orders whose admin project is
+        not Terminé, each in one row (first match): Bloqués (admin project
+        Bloqué), À planifier (no admin project end date, no admin project, or
+        no Responsable dossier), En cours (an admin task is done), Planifiés.
+        Returns {row: sale.order recordset}."""
+        Order = self.env['sale.order'].sudo()
+        domain = [('state', '=', 'sale'), ('company_id', 'in', company_ids)]
+        if payment_term_id:
+            domain.append(('payment_term_id', '=', payment_term_id))
+        orders = Order.search(domain)
+        projects_by_order = {}
+        for project in self._admin_projects(company_ids, payment_term_id):
+            order = project._get_dossier_order()
+            projects_by_order[order.id] = projects_by_order.get(order.id, project.browse()) | project
+        projects = self.env['project.project'].sudo().browse(
+            [p.id for ps in projects_by_order.values() for p in ps])
+        started = set(self.env['project.task'].sudo().search([
+            ('project_id', 'in', projects.ids), ('state', '=', '1_done'),
+        ]).project_id.ids)
+
+        rows = {row: Order.browse() for row in CARNET_ROWS}
+        for order in orders:
+            order_projects = projects_by_order.get(order.id, self.env['project.project'])
+            if order_projects and all(p.last_update_status == 'done' for p in order_projects):
+                continue  # terminé
+            if any(p.last_update_status == BLOCKED_STATUS for p in order_projects):
+                row = 'carnet_bloques'
+            elif (not order_projects or not all(order_projects.mapped('date'))
+                  or not order.x_responsable_dossier_id):
+                row = 'carnet_a_planifier'
+            elif set(order_projects.ids) & started:
+                row = 'carnet_en_cours'
+            else:
+                row = 'carnet_planifies'
+            rows[row] |= order
+        return rows
+
+    @api.model
+    def _order_book_figures(self, company_ids, payment_term_id=None):
+        rows = self._order_book(company_ids, payment_term_id)
+        total = self.env['sale.order'].sudo().browse()
+        for orders in rows.values():
+            total |= orders
+        figures = {row: len(orders) for row, orders in rows.items()}
+        figures.update({
+            'carnet_total': len(total),
+            'carnet_total_amount': round(sum(total.mapped('amount_untaxed')), 2),
+        })
+        return figures
+
+    @api.model
     def _card_records(self, card, f):
         """Records behind a card or a bar (the ones its figure is computed
         from), for the resolved filters `f`."""
@@ -273,6 +345,14 @@ class AmssManagementDashboard(models.TransientModel):
                 return self._invoiced_moves(orders).filtered(
                     lambda m: m.amount_total and m.amount_residual < m.amount_total)
             return orders
+        if card in CARNET_ROWS or card == 'carnet_total':
+            rows = self._order_book(f['company_ids'], f['payment_term_id'])
+            if card in rows:
+                return rows[card]
+            total = self.env['sale.order'].sudo().browse()
+            for orders in rows.values():
+                total |= orders
+            return total
         projects = self._admin_projects(f['company_ids'], f['payment_term_id'])
         if card == 'chantiers_retard':
             return self._late_projects(projects, f['today'])
@@ -351,6 +431,7 @@ class AmssManagementDashboard(models.TransientModel):
                                      'delta': blocked_now - blocked_prev},
             },
             'cash_flow': self._cash_flow(date_start, date_end, company_ids, payment_term_id),
+            'order_book': self._order_book_figures(company_ids, payment_term_id),
         }
 
     @api.model
@@ -366,8 +447,13 @@ class AmssManagementDashboard(models.TransientModel):
             'ca_net': 'CA NET', 'ventes_confirmees': 'Ventes confirmées', 'signe': 'Signé',
             'facture': 'Facturé', 'encaisse': 'Encaissé',
             'chantiers_retard': 'Chantiers en retard', 'dossiers_bloques': 'Dossiers bloqués',
+            'carnet_a_planifier': 'Carnet de commandes – À planifier',
+            'carnet_planifies': 'Carnet de commandes – Planifiés',
+            'carnet_en_cours': 'Carnet de commandes – En cours',
+            'carnet_bloques': 'Carnet de commandes – Bloqués',
+            'carnet_total': 'Carnet de commandes – BC signés non terminés',
         }
-        suffix = ('à ce jour' if card == 'chantiers_retard'
+        suffix = ('à ce jour' if card == 'chantiers_retard' or card.startswith('carnet_')
                   or (card == 'dossiers_bloques' and f['blocked_cutoff'] is None)
                   else f['period_label'])
         return {
@@ -445,6 +531,20 @@ class AmssManagementDashboard(models.TransientModel):
             sheet.write(row, 0, label, label_fmt)
             sheet.write_number(row, 1, cash[key], money_fmt)
 
+        book = data['order_book']
+        row += 2
+        sheet.write(row, 0, 'CARNET DE COMMANDES (à ce jour)', header_fmt)
+        sheet.write(row, 1, 'Commandes', header_fmt)
+        for label, key in (('À planifier', 'carnet_a_planifier'), ('Planifiés', 'carnet_planifies'),
+                           ('En cours', 'carnet_en_cours'), ('Bloqués', 'carnet_bloques')):
+            row += 1
+            sheet.write(row, 0, label, label_fmt)
+            sheet.write_number(row, 1, book[key], cell_fmt)
+        row += 1
+        sheet.write(row, 0, 'BC signés non terminés', label_fmt)
+        sheet.write_number(row, 1, book['carnet_total'], cell_fmt)
+        sheet.write_number(row, 2, book['carnet_total_amount'], money_fmt)
+
         calc = workbook.add_worksheet('Calculs')
         calc.set_column(0, 0, 26)
         calc.set_column(1, 1, 90)
@@ -453,7 +553,10 @@ class AmssManagementDashboard(models.TransientModel):
                 ('CA NET', 'ca_net'), ('VENTES CONFIRMÉES', 'ventes_confirmees'),
                 ('TX CONVERSION', 'tx_conversion'), ('CHANTIERS EN RETARD', 'chantiers_retard'),
                 ('DOSSIERS BLOQUÉS', 'dossiers_bloques'), ('SIGNÉ', 'signe'),
-                ('FACTURÉ', 'facture'), ('ENCAISSÉ', 'encaisse')), start=1):
+                ('FACTURÉ', 'facture'), ('ENCAISSÉ', 'encaisse'),
+                ('CARNET – BLOQUÉS', 'carnet_bloques'), ('CARNET – À PLANIFIER', 'carnet_a_planifier'),
+                ('CARNET – EN COURS', 'carnet_en_cours'), ('CARNET – PLANIFIÉS', 'carnet_planifies'),
+                ('CARNET DE COMMANDES', 'carnet_total')), start=1):
             calc.write(i, 0, label, label_fmt)
             calc.write(i, 1, TOOLTIPS[key], wrap_fmt)
             calc.set_row(i, 42)

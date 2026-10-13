@@ -280,6 +280,79 @@ class TestAmssDashboard(TransactionCase):
             other.state = '05_blocked'
 
     # ------------------------------------------------------------------
+    # Admin project Terminé from its tasks
+    # ------------------------------------------------------------------
+
+    def test_all_tasks_closed_sets_project_done(self):
+        project = self._order()._get_dossier_projects()
+        tasks = self.env['project.task'].search([('project_id', '=', project.id)])
+        self.assertGreaterEqual(len(tasks), 2)
+        self._status_update(project, 'at_risk')
+        tasks[0].state = '1_done'
+        self.assertEqual(project.last_update_status, 'at_risk', "one task still open")
+        tasks[1:].write({'state': '1_canceled'})
+        self.assertEqual(project.last_update_status, 'done')
+        self.assertTrue(project.x_done_by_tasks)
+        # a reopened task gives the previous status back
+        tasks[0].state = '01_in_progress'
+        self.assertEqual(project.last_update_status, 'at_risk')
+        self.assertFalse(project.x_done_by_tasks)
+
+    def test_done_project_without_previous_status_reopens_to_no_status(self):
+        project = self._order()._get_dossier_projects()
+        self.env['project.task'].search([('project_id', '=', project.id)]).write({'state': '1_done'})
+        self.assertEqual(project.last_update_status, 'done')
+        self.env['project.task'].create({'name': 'Nouvelle tâche', 'project_id': project.id})
+        self.assertEqual(project.last_update_status, 'to_define')
+
+    def test_project_done_by_hand_stays_done(self):
+        project = self._order()._get_dossier_projects()
+        self._status_update(project, 'done')
+        self.env['project.task'].create({'name': 'Nouvelle tâche', 'project_id': project.id})
+        self.assertEqual(project.last_update_status, 'done')
+
+    # ------------------------------------------------------------------
+    # Carnet de commandes
+    # ------------------------------------------------------------------
+
+    def _planned_order(self):
+        order = self._order()
+        order.x_responsable_dossier_id = self.responsable
+        project = order._get_dossier_projects()
+        project.sudo().write({'date_start': fields.Date.today(),
+                              'date': fields.Date.today() + datetime.timedelta(days=20)})
+        return order, project
+
+    def test_order_book_rows(self):
+        companies = [self.env.company.id]
+        no_project = self._order(service=False)
+        no_dates = self._order()
+        planned, _project = self._planned_order()
+        started, started_project = self._planned_order()
+        self.env['project.task'].search([('project_id', '=', started_project.id)], limit=1).state = '1_done'
+        blocked, blocked_project = self._planned_order()
+        self._status_update(blocked_project, 'blocked')
+        finished, finished_project = self._planned_order()
+        self.env['project.task'].search([('project_id', '=', finished_project.id)]).write({'state': '1_done'})
+        no_responsable = self._order()
+        no_responsable._get_dossier_projects().sudo().write({
+            'date_start': fields.Date.today(), 'date': fields.Date.today() + datetime.timedelta(days=20)})
+
+        rows = self.Dashboard._order_book(companies)
+        self.assertIn(no_project, rows['carnet_a_planifier'], "no admin project")
+        self.assertIn(no_dates, rows['carnet_a_planifier'], "no deadlines")
+        self.assertIn(no_responsable, rows['carnet_a_planifier'], "no Responsable")
+        self.assertIn(planned, rows['carnet_planifies'])
+        self.assertIn(started, rows['carnet_en_cours'])
+        self.assertIn(blocked, rows['carnet_bloques'])
+        for orders in rows.values():
+            self.assertNotIn(finished, orders, "Terminé: out of the order book")
+        figures = self.Dashboard._order_book_figures(companies)
+        self.assertEqual(figures['carnet_total'], sum(len(o) for o in rows.values()))
+        action = self.Dashboard.open_card('carnet_en_cours')
+        self.assertIn(started.id, action['domain'][0][2])
+
+    # ------------------------------------------------------------------
     # Drill-down: clicking a card lists the records behind its figure
     # ------------------------------------------------------------------
 

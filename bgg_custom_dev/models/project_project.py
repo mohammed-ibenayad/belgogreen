@@ -49,6 +49,10 @@ class ProjectProject(models.Model):
     # gets its previous status back once no task is blocked any more; a
     # project blocked by hand stays blocked.
     x_blocked_by_task = fields.Boolean(string='Bloqué par une tâche', copy=False, readonly=True)
+    # Technical: the project was set to Terminé automatically because all its
+    # tasks are closed. Only such a project leaves Terminé by itself when a
+    # task is reopened or added; a project set to Terminé by hand stays so.
+    x_done_by_tasks = fields.Boolean(string='Terminé par les tâches', copy=False, readonly=True)
 
     def _blocked_open_tasks(self):
         return self.env['project.task'].sudo().search([
@@ -68,13 +72,49 @@ class ProjectProject(models.Model):
             vals['description'] = description
         return self.env['project.update'].sudo().with_context(default_project_id=self.id).create(vals)
 
-    def _sync_blocked_from_tasks(self):
-        """Admin projects follow their blocked tasks: Bloqué as soon as an
-        open task is blocked; back to the status they had before once no
-        task is blocked any more (only when the block came from the tasks)."""
+    def _restore_previous_status(self, left_status, message):
+        """Give back to this project the status it had before `left_status`
+        (the last update with another status), or "no status" when it had
+        none: the current update is then kept in the history, marked with the
+        date it was left (x_unblocked_on), and a chatter message is posted."""
+        self.ensure_one()
+        previous = self.env['project.update'].sudo().search([
+            ('project_id', '=', self.id),
+            ('status', '!=', left_status),
+        ], order='date desc, id desc', limit=1)
+        if previous:
+            self._post_status_update(previous.status, description='<p>%s</p>' % message)
+        else:
+            self.last_update_id.x_unblocked_on = fields.Date.context_today(self)
+            self.last_update_id = False
+            self.message_post(body='%s (retour sans statut, comme avant).' % message)
+
+    def _sync_status_from_tasks(self):
+        """Admin projects follow their tasks (automation, sudo):
+        - Terminé once every task is closed (done or cancelled, at least one
+          done); the previous status back when a task is reopened or added;
+        - Bloqué as soon as an open task is blocked; the previous status back
+          once no task is blocked any more.
+        Only automatic statuses are undone automatically."""
+        Task = self.env['project.task'].sudo()
         for project in self.sudo().exists():
             if project.is_template or not project._get_dossier_order():
                 continue
+            # Terminé from the tasks
+            tasks = Task.search([('project_id', '=', project.id)])
+            all_closed = bool(tasks) and all(t.state in ('1_done', '1_canceled') for t in tasks) \
+                and any(t.state == '1_done' for t in tasks)
+            if (all_closed and project.last_update_status not in ('done', BLOCKED_STATUS)):
+                project._post_status_update('done', description=(
+                    '<p>Terminé automatiquement : toutes les tâches sont closes.</p>'))
+                project.x_done_by_tasks = True
+                _logger.info("Dossier: project %s done (all tasks closed)", project.id)
+            elif not all_closed and project.x_done_by_tasks:
+                project._restore_previous_status(
+                    'done', 'Rouvert automatiquement : une tâche est de nouveau ouverte')
+                project.x_done_by_tasks = False
+                _logger.info("Dossier: project %s reopened (open task)", project.id)
+            # Bloqué from the tasks
             blocked_tasks = project._blocked_open_tasks()
             if blocked_tasks and project.last_update_status != BLOCKED_STATUS:
                 project._post_status_update(BLOCKED_STATUS, description=(
@@ -83,20 +123,8 @@ class ProjectProject(models.Model):
                 project.x_blocked_by_task = True
                 _logger.info("Dossier: project %s blocked by tasks %s", project.id, blocked_tasks.ids)
             elif not blocked_tasks and project.x_blocked_by_task:
-                previous = self.env['project.update'].sudo().search([
-                    ('project_id', '=', project.id),
-                    ('status', '!=', BLOCKED_STATUS),
-                ], order='date desc, id desc', limit=1)
-                if previous:
-                    project._post_status_update(previous.status, description=(
-                        '<p>Débloqué automatiquement : plus aucune tâche bloquée.</p>'))
-                else:
-                    # No status before the block: back to "no status".
-                    project.last_update_id.x_unblocked_on = fields.Date.context_today(project)
-                    project.last_update_id = False
-                    project.message_post(body=(
-                        'Débloqué automatiquement : plus aucune tâche bloquée '
-                        '(retour sans statut, comme avant le blocage).'))
+                project._restore_previous_status(
+                    BLOCKED_STATUS, 'Débloqué automatiquement : plus aucune tâche bloquée')
                 project.x_blocked_by_task = False
                 _logger.info("Dossier: project %s unblocked (no blocked task)", project.id)
 

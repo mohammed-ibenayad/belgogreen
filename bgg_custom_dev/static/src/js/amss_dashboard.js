@@ -240,6 +240,14 @@ export class AmssManagementDashboard extends Component {
         if (!max) return "0%";
         return `${Math.max(0, (cash[key] / max) * 100)}%`;
     }
+
+    orderBookWidth(key) {
+        const book = this.state.data.order_book;
+        const max = Math.max(
+            book.carnet_a_planifier, book.carnet_planifies, book.carnet_en_cours, book.carnet_bloques, 0);
+        if (!max) return "0%";
+        return `${(book[key] / max) * 100}%`;
+    }
 }
 
 registry.category("actions").add("amss_management_dashboard", AmssManagementDashboard);

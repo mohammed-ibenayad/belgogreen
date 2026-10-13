@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen Custom Development',
-    'version': '19.0.1.15.0',
+    'version': '19.0.1.16.0',
     'category': 'Customizations',
     'summary': 'Custom business logic and automation for BelGoGreen',
     'description': """
@@ -47,6 +47,9 @@
           kept when the stage or the dependencies change: a blocked task sets
           its project to Bloqué; once no task is blocked the project gets its
           previous status back
+        - Admin projects become Terminé once all their tasks are closed (done
+          or cancelled), and get their previous status back if a task is
+          reopened or added
 
         **Sales Orders (sale.order)**:
         - Call Center (Sale Owner) attribution and RDV smart button
@@ -65,7 +68,8 @@
         - Direction tab: CA NET, Ventes Confirmées, TX Conversion (same
           formulas as Suivi Commercial, all orders and appointments),
           Chantiers en retard, Dossiers bloqués, CA signé / facturé /
-          encaissé; comparison with the previous period; Excel export
+          encaissé, Carnet de commandes (À planifier / Planifiés / En cours /
+          Bloqués, today); comparison with the previous period; Excel export
 
         All business logic includes comprehensive logging for debugging and monitoring.
     """,

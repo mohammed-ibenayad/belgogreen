@@ -185,6 +185,15 @@ $amss-accent: #e8a500;
         }
     }
 
+    .amss_clickable_note {
+        cursor: pointer;
+
+        &:hover {
+            color: $amss-teal;
+            text-decoration: underline;
+        }
+    }
+
     .amss_card_note {
         font-size: 11px;
         font-style: italic;
