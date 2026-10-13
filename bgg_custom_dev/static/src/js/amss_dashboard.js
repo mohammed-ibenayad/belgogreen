@@ -241,6 +241,17 @@ export class AmssManagementDashboard extends Component {
         return `${Math.max(0, (cash[key] / max) * 100)}%`;
     }
 
+    onTabClick(tab) {
+        this.state.activeTab = tab;
+    }
+
+    metierWidth(amount) {
+        const rows = this.state.data.metiers.ca_par_metier;
+        const max = Math.max(...rows.map((r) => r.amount), 0);
+        if (!max) return "0%";
+        return `${Math.max(0, (amount / max) * 100)}%`;
+    }
+
     orderBookWidth(key) {
         const book = this.state.data.order_book;
         const max = Math.max(

@@ -111,7 +111,11 @@ $amss-accent: #e8a500;
             border-radius: 999px;
             background: white;
             font-weight: 600;
-            cursor: default;
+            cursor: pointer;
+
+            &:hover:not(.amss_tab_active) {
+                border-color: $amss-teal;
+            }
         }
 
         .amss_tab_active {

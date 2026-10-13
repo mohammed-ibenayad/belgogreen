@@ -75,6 +75,22 @@ TOOLTIPS = {
 
 CARNET_ROWS = ('carnet_a_planifier', 'carnet_planifies', 'carnet_en_cours', 'carnet_bloques')
 
+# Métiers tab: product category of an order (see _order_metier).
+SALEABLE_PATH = ('All', 'Saleable')
+METIER_SALEABLE = 'All / Saleable'   # products directly in All / Saleable
+METIER_NONE = 'Aucun'                # products without category
+METIER_OTHER = 'Autres'              # categories outside All / Saleable
+METIER_MIXED = 'Mixte'               # several main categories on the order
+# Categories that do not decide the métier of an order (installation
+# services, accessories, products without category).
+METIER_MINOR = {'Services', 'Accessoires', METIER_NONE}
+TOOLTIPS['ca_metier'] = (
+    "CA signé par métier = CA NET de la période réparti par catégorie de "
+    "produit (sous-catégories de All / Saleable, All / Saleable, Aucun, "
+    "Autres). Chaque commande va entière dans une seule barre : la catégorie "
+    "de ses produits principaux (Services, Accessoires et Aucun ne comptent "
+    "pas), « Mixte » si elle en a plusieurs. Les barres totalisent le CA NET.")
+
 
 class AmssManagementDashboard(models.TransientModel):
     """AMSS Management dashboard, "Direction" tab: company-wide figures of
@@ -333,6 +349,53 @@ class AmssManagementDashboard(models.TransientModel):
         return figures
 
     @api.model
+    def _category_metier(self, categ):
+        """Métier of a product category: its level under All / Saleable
+        (sub-categories grouped on their first level), All / Saleable,
+        Aucun or Autres."""
+        if not categ:
+            return METIER_NONE
+        parts = tuple(part.strip() for part in (categ.complete_name or '').split('/'))
+        if parts[:len(SALEABLE_PATH)] != SALEABLE_PATH:
+            return METIER_OTHER
+        return parts[len(SALEABLE_PATH)] if len(parts) > len(SALEABLE_PATH) else METIER_SALEABLE
+
+    @api.model
+    def _order_metier(self, order):
+        """Métier of an order: the category of its main products, Mixte if
+        several. Services / Accessoires / Aucun only decide when the order has
+        no main product."""
+        main, minor = set(), set()
+        for line in order.order_line:
+            if line.display_type or not line.product_id or line.is_downpayment:
+                continue
+            metier = self._category_metier(line.product_id.categ_id)
+            (minor if metier in METIER_MINOR else main).add(metier)
+        found = main or minor
+        if not found:
+            return METIER_NONE
+        return found.pop() if len(found) == 1 else METIER_MIXED
+
+    @api.model
+    def _orders_by_metier(self, f):
+        """{métier: confirmed orders of the period} (the CA NET orders)."""
+        orders = self._period_orders(f['date_start'], f['date_end'], f['company_ids'],
+                                     ['sale', 'done'], f['payment_term_id'])
+        result = {}
+        for order in orders:
+            metier = self._order_metier(order)
+            result[metier] = result.get(metier, order.browse()) | order
+        return result
+
+    @api.model
+    def _ca_by_metier(self, f):
+        """[{'key', 'label', 'amount'}] sorted by amount, largest first."""
+        rows = [{'key': metier, 'label': metier,
+                 'amount': round(sum(orders.mapped('amount_untaxed')), 2)}
+                for metier, orders in self._orders_by_metier(f).items()]
+        return sorted(rows, key=lambda r: (-r['amount'], r['label']))
+
+    @api.model
     def _card_records(self, card, f):
         """Records behind a card or a bar (the ones its figure is computed
         from), for the resolved filters `f`."""
@@ -345,6 +408,8 @@ class AmssManagementDashboard(models.TransientModel):
                 return self._invoiced_moves(orders).filtered(
                     lambda m: m.amount_total and m.amount_residual < m.amount_total)
             return orders
+        if card.startswith('metier:'):
+            return self._orders_by_metier(f).get(card[len('metier:'):], self.env['sale.order'])
         if card in CARNET_ROWS or card == 'carnet_total':
             rows = self._order_book(f['company_ids'], f['payment_term_id'])
             if card in rows:
@@ -432,6 +497,7 @@ class AmssManagementDashboard(models.TransientModel):
             },
             'cash_flow': self._cash_flow(date_start, date_end, company_ids, payment_term_id),
             'order_book': self._order_book_figures(company_ids, payment_term_id),
+            'metiers': {'ca_par_metier': self._ca_by_metier(f)},
         }
 
     @api.model
@@ -453,6 +519,8 @@ class AmssManagementDashboard(models.TransientModel):
             'carnet_bloques': 'Carnet de commandes – Bloqués',
             'carnet_total': 'Carnet de commandes – BC signés non terminés',
         }
+        if card.startswith('metier:'):
+            titles[card] = 'CA signé – %s' % card[len('metier:'):]
         suffix = ('à ce jour' if card == 'chantiers_retard' or card.startswith('carnet_')
                   or (card == 'dossiers_bloques' and f['blocked_cutoff'] is None)
                   else f['period_label'])
@@ -545,6 +613,15 @@ class AmssManagementDashboard(models.TransientModel):
         sheet.write_number(row, 1, book['carnet_total'], cell_fmt)
         sheet.write_number(row, 2, book['carnet_total_amount'], money_fmt)
 
+        metiers = workbook.add_worksheet('Métiers')
+        metiers.set_column(0, 0, 30)
+        metiers.set_column(1, 1, 18)
+        metiers.write_row(0, 0, ['CA SIGNÉ PAR MÉTIER – %s' % data['period_label'], 'Montant HT'],
+                          header_fmt)
+        for i, item in enumerate(data['metiers']['ca_par_metier'], start=1):
+            metiers.write(i, 0, item['label'], label_fmt)
+            metiers.write_number(i, 1, item['amount'], money_fmt)
+
         calc = workbook.add_worksheet('Calculs')
         calc.set_column(0, 0, 26)
         calc.set_column(1, 1, 90)
@@ -556,7 +633,8 @@ class AmssManagementDashboard(models.TransientModel):
                 ('FACTURÉ', 'facture'), ('ENCAISSÉ', 'encaisse'),
                 ('CARNET – BLOQUÉS', 'carnet_bloques'), ('CARNET – À PLANIFIER', 'carnet_a_planifier'),
                 ('CARNET – EN COURS', 'carnet_en_cours'), ('CARNET – PLANIFIÉS', 'carnet_planifies'),
-                ('CARNET DE COMMANDES', 'carnet_total')), start=1):
+                ('CARNET DE COMMANDES', 'carnet_total'),
+                ('CA SIGNÉ PAR MÉTIER', 'ca_metier')), start=1):
             calc.write(i, 0, label, label_fmt)
             calc.write(i, 1, TOOLTIPS[key], wrap_fmt)
             calc.set_row(i, 42)
