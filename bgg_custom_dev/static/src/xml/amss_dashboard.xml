@@ -2,6 +2,8 @@
 <templates xml:space="preserve">
     <t t-name="bgg_custom_dev.AmssManagementDashboard">
         <div class="amss_dashboard">
+            <!-- Header, filters and tabs stay visible while scrolling -->
+            <div class="amss_sticky">
             <!-- Header -->
             <div class="amss_header">
                 <h1>AMSS Management</h1>
@@ -91,6 +93,7 @@
                             t-att-class="'amss_tab' + (state.activeTab === tab[0] ? ' amss_tab_active' : '')"
                             t-esc="tab[1]"/>
                 </t>
+            </div>
             </div>
 
             <div t-if="state.error" class="alert alert-danger" role="alert">
@@ -242,10 +245,6 @@
                                 <span class="amss_bar_value" t-esc="com.funnel[step[0]]"/>
                             </div>
                         </t>
-                        <p class="amss_panel_note">
-                            <t t-esc="state.data.period_label"/>
-                            <t t-if="com.selected_user_id"> · commercial sélectionné</t>
-                        </p>
                     </div>
 
                     <div class="amss_panel">
