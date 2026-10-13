@@ -129,8 +129,17 @@
                         <div t-att-class="'amss_card_delta ' + deltaClass('ventes_confirmees')"
                              t-att-title="'Période précédente : ' + cards.ventes_confirmees.previous"
                              t-esc="formatDelta('ventes_confirmees')"/>
+                        <!-- secondary figure: cancelled orders, with their own list -->
+                        <div class="amss_card_secondary amss_clickable_note"
+                             t-on-click.stop="() => this.openCard('ventes_annulees')"
+                             t-att-title="tips.ventes_annulees + ' Période précédente : ' + cards.ventes_annulees.previous + '. Cliquer pour voir le détail.'">
+                            <t t-esc="cards.ventes_annulees.value"/>
+                            <t t-if="cards.ventes_annulees.value > 1"> annulées</t>
+                            <t t-else=""> annulée</t>
+                        </div>
                     </div>
-                    <div class="amss_card">
+                    <div class="amss_card amss_clickable" t-on-click="() => this.openCard('tx_conversion')"
+                         title="Cliquer pour voir les RDV présents">
                         <div class="amss_card_title">
                             TX CONVERSION <i class="fa fa-info-circle amss_info" t-att-title="tips.tx_conversion"/>
                         </div>

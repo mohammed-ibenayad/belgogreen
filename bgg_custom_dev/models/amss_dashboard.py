@@ -38,7 +38,12 @@ TOOLTIPS = {
         "+ Présents Commercial). Les annulations ultérieures sont incluses au "
         "numérateur pour refléter la capacité de transformation du commercial "
         "(le suivi des annulations se fait via TX ANNULATION). Non filtré par "
-        "condition de paiement : les RDV n'ont pas de condition de paiement."),
+        "condition de paiement : les RDV n'ont pas de condition de paiement. "
+        "Cliquer : les RDV Présents de la période (dénominateur)."),
+    'ventes_annulees': (
+        "Ventes Annulées = nombre de commandes de la période à l'état Annulé "
+        "(state = cancel), comme dans Suivi Commercial : un devis annulé avant "
+        "signature compte aussi."),
     'chantiers_retard': (
         "Chantiers en retard = projets admin (commandes confirmées) ayant au "
         "moins une tâche ouverte dont l'échéance dépasse la date de fin du "
@@ -232,25 +237,32 @@ class AmssManagementDashboard(models.TransientModel):
         fin = commercial._compute_financial_kpis(orders)
         fin_all = commercial._compute_financial_kpis(all_orders) if payment_term_id else fin
 
+        events = self._appointment_events(date_start, date_end, company_ids, user_id)
+        present = commercial._count_appointment_statuses(events)['attended']
+        ventes_signees = fin_all['nbre_vies'] + fin_all['ventes_annulees']
+        return {
+            'ca_net': round(fin['ca_brut'] - fin['ca_annule'], 2),
+            'ventes_confirmees': fin['nbre_vies'],
+            'ventes_annulees': fin['ventes_annulees'],
+            'tx_conversion': round(ventes_signees / present * 100) if present else 0,
+        }
+
+    @api.model
+    def _appointment_events(self, date_start, date_end, company_ids, user_id=None):
+        """Call center + commercial appointments of the period, archived
+        included (as in Suivi Commercial), all statuses."""
         appointment_types = self.env['appointment.type'].sudo().search([
             ('x_appointment_ref', 'in', CALL_CENTER_APPOINTMENT_REFS + COMMERCIAL_APPOINTMENT_REFS),
         ])
-        event_domain = [
+        domain = [
             ('start', '>=', fields.Datetime.to_string(date_start)),
             ('start', '<', fields.Datetime.to_string(date_end)),
             ('appointment_type_id', 'in', appointment_types.ids),
             ('user_id.company_id', 'in', company_ids),
         ]
         if user_id:
-            event_domain.append(('user_id', '=', user_id))
-        events = self.env['calendar.event'].sudo().with_context(active_test=False).search(event_domain)
-        present = commercial._count_appointment_statuses(events)['attended']
-        ventes_signees = fin_all['nbre_vies'] + fin_all['ventes_annulees']
-        return {
-            'ca_net': round(fin['ca_brut'] - fin['ca_annule'], 2),
-            'ventes_confirmees': fin['nbre_vies'],
-            'tx_conversion': round(ventes_signees / present * 100) if present else 0,
-        }
+            domain.append(('user_id', '=', user_id))
+        return self.env['calendar.event'].sudo().with_context(active_test=False).search(domain)
 
     @api.model
     def _admin_projects(self, company_ids, payment_term_id=None, user_id=None):
@@ -576,6 +588,17 @@ class AmssManagementDashboard(models.TransientModel):
     def _card_records(self, card, f):
         """Records behind a card or a bar (the ones its figure is computed
         from), for the resolved filters `f`."""
+        if card == 'ventes_annulees':
+            orders = self._period_orders(f['date_start'], f['date_end'], f['company_ids'],
+                                         ['cancel'], f['payment_term_id'])
+            if f.get('user_id'):
+                orders = orders.filtered(lambda o: o.user_id.id == f['user_id'])
+            return orders
+        if card == 'tx_conversion':
+            # the denominator: RDV Présents
+            return self._appointment_events(
+                f['date_start'], f['date_end'], f['company_ids'], f.get('user_id'),
+            ).filtered(lambda e: e.appointment_status == 'attended')
         if card in ('ca_net', 'ventes_confirmees', 'signe', 'facture', 'encaisse',
                     'reste_a_facturer', 'reste_a_encaisser'):
             orders = self._period_orders(f['date_start'], f['date_end'], f['company_ids'],
@@ -699,6 +722,10 @@ class AmssManagementDashboard(models.TransientModel):
             'ventes_confirmees': {'value': current['ventes_confirmees'],
                                   'previous': previous['ventes_confirmees'],
                                   'delta': delta('ventes_confirmees', 'count')},
+            # secondary figure of the Ventes Confirmées card
+            'ventes_annulees': {'value': current['ventes_annulees'],
+                                'previous': previous['ventes_annulees'],
+                                'delta': delta('ventes_annulees', 'count')},
             'tx_conversion': {'value': current['tx_conversion'],
                               'previous': previous['tx_conversion'],
                               'delta': delta('tx_conversion', 'points')},
@@ -718,7 +745,9 @@ class AmssManagementDashboard(models.TransientModel):
                                   date_from, date_to, payment_term_id, user_id)
         records = self._card_records(card, f)
         titles = {
-            'ca_net': 'CA NET', 'ventes_confirmees': 'Ventes confirmées', 'signe': 'Signé',
+            'ca_net': 'CA NET', 'ventes_confirmees': 'Ventes confirmées',
+            'ventes_annulees': 'Ventes annulées', 'tx_conversion': 'TX CONVERSION – RDV présents',
+            'signe': 'Signé',
             'facture': 'Facturé', 'encaisse': 'Encaissé',
             'reste_a_facturer': 'Reste à facturer', 'reste_a_encaisser': 'Reste à encaisser',
             'chantiers_retard': 'Chantiers en retard', 'dossiers_bloques': 'Dossiers bloqués',
@@ -787,6 +816,7 @@ class AmssManagementDashboard(models.TransientModel):
         rows = [
             ('CA NET', cards['ca_net'], money_fmt, 'pct'),
             ('VENTES CONFIRMÉES', cards['ventes_confirmees'], cell_fmt, 'count'),
+            ('VENTES ANNULÉES', cards['ventes_annulees'], cell_fmt, 'count'),
             ('TX CONVERSION (toutes conditions)' if data['payment_term_filtered'] else 'TX CONVERSION',
              cards['tx_conversion'], pct_fmt, 'points'),
             ('CHANTIERS EN RETARD', cards['chantiers_retard'], cell_fmt, None),
@@ -884,6 +914,7 @@ class AmssManagementDashboard(models.TransientModel):
         calc.write_row(0, 0, ['Champ', 'Formule / description'], header_fmt)
         for i, (label, key) in enumerate((
                 ('CA NET', 'ca_net'), ('VENTES CONFIRMÉES', 'ventes_confirmees'),
+                ('VENTES ANNULÉES', 'ventes_annulees'),
                 ('TX CONVERSION', 'tx_conversion'), ('CHANTIERS EN RETARD', 'chantiers_retard'),
                 ('DOSSIERS BLOQUÉS', 'dossiers_bloques'), ('SIGNÉ', 'signe'),
                 ('FACTURÉ', 'facture'), ('ENCAISSÉ', 'encaisse'),

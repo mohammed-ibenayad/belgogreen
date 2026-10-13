@@ -84,7 +84,8 @@ class TestAmssDashboard(TransactionCase):
             self.Dashboard.with_user(self.plain_user).get_filter_options()
         data = self.Dashboard.with_user(self.direction_user).get_dashboard_data()
         self.assertEqual(set(data['cards']), {
-            'ca_net', 'ventes_confirmees', 'tx_conversion', 'chantiers_retard', 'dossiers_bloques'})
+            'ca_net', 'ventes_confirmees', 'ventes_annulees', 'tx_conversion',
+            'chantiers_retard', 'dossiers_bloques'})
         self.assertEqual(set(data['cash_flow']), {
             'signe', 'facture', 'encaisse', 'reste_a_facturer', 'reste_a_encaisser'})
 
@@ -121,6 +122,12 @@ class TestAmssDashboard(TransactionCase):
         self.assertAlmostEqual(after['ca_net'] - before['ca_net'],
                                sum(confirmed.mapped('amount_untaxed')), places=2)
         self.assertEqual(after['ventes_confirmees'] - before['ventes_confirmees'], 2)
+        self.assertEqual(after['ventes_annulees'] - before['ventes_annulees'], 1)
+        # drill-down of the secondary figure: the cancelled orders
+        f = self.Dashboard._resolve_filters(period_type='custom', date_from=start, date_to=start)
+        records = self.Dashboard._card_records('ventes_annulees', f)
+        self.assertIn(cancelled, records)
+        self.assertFalse(records & confirmed)
 
     def test_payment_term_filter(self):
         start, end = self._today_range()
@@ -486,6 +493,14 @@ class TestAmssDashboard(TransactionCase):
         project.sudo().company_id = False
         self.assertIn(project, self.Dashboard._admin_projects([order.company_id.id]))
         self.assertEqual(self.Dashboard.open_card('facture')['res_model'], 'account.move')
+        # TX CONVERSION lists the RDV Présents, archived ones included
+        action = self.Dashboard.open_card('tx_conversion')
+        self.assertEqual(action['res_model'], 'calendar.event')
+        self.assertFalse(action['context']['active_test'])
+        f = self.Dashboard._resolve_filters()
+        events = self.Dashboard._card_records('tx_conversion', f)
+        self.assertTrue(all(e.appointment_status == 'attended' for e in events))
+        self.assertEqual(sorted(events.ids), sorted(action['domain'][0][2]))
         with self.assertRaises(AccessError):
             self.Dashboard.with_user(self.plain_user).open_card('ca_net')
 
