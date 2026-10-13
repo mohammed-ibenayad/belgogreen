@@ -56,6 +56,17 @@
                         </t>
                     </select>
                 </div>
+                <div class="amss_filter" t-if="state.activeTab === 'commercial'">
+                    <label>Commercial :</label>
+                    <select t-on-change="onUserFilterChange" t-att-title="state.data and state.data.tooltips.filtre_commercial">
+                        <option value="">Tous</option>
+                        <t t-foreach="state.availableSalespeople" t-as="u" t-key="u.id">
+                            <option t-att-value="u.id" t-att-selected="state.filterUserId === u.id ? 'selected' : undefined">
+                                <t t-esc="u.name"/>
+                            </option>
+                        </t>
+                    </select>
+                </div>
                 <div class="amss_filter">
                     <label>Conditions de paiement :</label>
                     <select t-on-change="onPaymentTermFilterChange">
@@ -71,7 +82,7 @@
 
             <!-- Tabs -->
             <div class="amss_tabs">
-                <t t-foreach="[['direction', 'Direction'], ['metiers', 'Métiers']]" t-as="tab" t-key="tab[0]">
+                <t t-foreach="[['direction', 'Direction'], ['metiers', 'Métiers'], ['commercial', 'Commercial']]" t-as="tab" t-key="tab[0]">
                     <button type="button" t-on-click="() => this.onTabClick(tab[0])"
                             t-att-class="'amss_tab' + (state.activeTab === tab[0] ? ' amss_tab_active' : '')"
                             t-esc="tab[1]"/>
@@ -190,6 +201,71 @@
                             <span t-att-title="formatAmount(state.data.order_book.carnet_total_amount)" t-esc="formatKAmount(state.data.order_book.carnet_total_amount)"/>
                             HT · à ce jour
                         </p>
+                    </div>
+                </div>
+
+                <!-- Commercial tab -->
+                <div class="amss_panels" t-if="state.activeTab === 'commercial'">
+                    <t t-set="com" t-value="state.data.commercial"/>
+                    <div class="amss_panel">
+                        <h2>BC signés par commercial <i class="fa fa-info-circle amss_info" t-att-title="tips.bc_par_commercial"/></h2>
+                        <t t-if="com.bc_par_commercial.length">
+                            <t t-foreach="com.bc_par_commercial" t-as="bar" t-key="bar.key">
+                                <div t-att-class="'amss_bar_row amss_clickable' + (isSelectedSalesperson(bar.key) ? ' amss_bar_selected' : '')"
+                                     t-on-click="() => this.openCard('commercial_bc:' + bar.key)" title="Cliquer pour voir le détail">
+                                    <span class="amss_bar_label" t-esc="bar.label"/>
+                                    <span class="amss_bar_track">
+                                        <span class="amss_bar_fill" t-att-style="'width: ' + salesWidth(bar.count)"/>
+                                    </span>
+                                    <span class="amss_bar_value" t-esc="bar.count"/>
+                                </div>
+                            </t>
+                        </t>
+                        <p t-else="" class="amss_panel_note">Aucune vente confirmée dans la période.</p>
+                    </div>
+
+                    <div class="amss_panel">
+                        <h2>Entonnoir de conversion</h2>
+                        <t t-foreach="[['rdv_poses', 'RDV posés', 'funnel_rdv_poses'], ['rdv_tenus', 'RDV tenus', 'funnel_rdv_tenus'], ['bc_signes', 'BC signés', 'funnel_bc']]" t-as="step" t-key="step[0]">
+                            <div class="amss_bar_row amss_clickable" t-on-click="() => this.openCard(step[2])"
+                                 title="Cliquer pour voir le détail">
+                                <span class="amss_bar_label">
+                                    <t t-esc="step[1]"/> <i class="fa fa-info-circle amss_info" t-att-title="tips[step[2]]"/>
+                                </span>
+                                <span class="amss_bar_track">
+                                    <span class="amss_bar_fill" t-att-style="'width: ' + funnelWidth(step[0])"/>
+                                </span>
+                                <span class="amss_bar_value" t-esc="com.funnel[step[0]]"/>
+                            </div>
+                        </t>
+                        <p class="amss_panel_note">
+                            <t t-esc="state.data.period_label"/>
+                            <t t-if="com.selected_user_id"> · commercial sélectionné</t>
+                        </p>
+                    </div>
+
+                    <div class="amss_panel">
+                        <h2>Qualité commerciale</h2>
+                        <table class="amss_table">
+                            <thead><tr><th>Indicateur</th><th class="text-end">Valeur</th></tr></thead>
+                            <tbody>
+                                <tr>
+                                    <td>Panier moyen (tous métiers) <i class="fa fa-info-circle amss_info" t-att-title="tips.panier_moyen"/></td>
+                                    <td class="text-end" t-esc="formatAmount(com.qualite.panier_moyen)"/>
+                                </tr>
+                                <t t-foreach="com.qualite.panier_par_metier" t-as="item" t-key="item.key">
+                                    <tr class="amss_clickable_row" t-on-click="() => this.openCard('panier_metier:' + item.key)"
+                                        t-att-title="tips.panier_metier + ' (' + item.count + ' BC)'">
+                                        <td>Panier moyen <t t-esc="item.label"/></td>
+                                        <td class="text-end" t-esc="formatAmount(item.panier)"/>
+                                    </tr>
+                                </t>
+                                <tr>
+                                    <td>Annulation après signature <i class="fa fa-info-circle amss_info" t-att-title="tips.annulation_signature"/></td>
+                                    <td class="text-end"><t t-esc="com.qualite.annulation_signature"/> %</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 

@@ -16,6 +16,10 @@ from .sale_order import BGG_TZ
 _logger = logging.getLogger(__name__)
 
 DIRECTION_GROUP = 'bgg_custom_dev.group_direction'
+# "Commercial" group (created outside the module, linked to this xmlid by the
+# post-init hook, see hooks.py).
+COMMERCIAL_GROUP = 'bgg_custom_dev.group_commercial'
+OTHER_SALESPEOPLE = 'autres'
 
 MONTH_NAMES_FR = {
     1: 'janvier', 2: 'février', 3: 'mars', 4: 'avril', 5: 'mai', 6: 'juin',
@@ -84,6 +88,31 @@ METIER_MIXED = 'Mixte'               # several main categories on the order
 # Categories that do not decide the métier of an order (installation
 # services, accessories, products without category).
 METIER_MINOR = {'Services', 'Accessoires', METIER_NONE}
+TOOLTIPS.update({
+    'bc_par_commercial': (
+        "BC signés par commercial = VENTES CONFIRMÉES (commandes à l'état "
+        "Confirmé ou Verrouillé, state ∈ {sale, done}) de la période par "
+        "vendeur de la commande ; membres du groupe Commercial, les autres "
+        "vendeurs dans « Autres »."),
+    'funnel_rdv_poses': (
+        "RDV posés = RDV Call Center + RDV Commercial de la période (Présent, "
+        "No-Show, Refusé, Réservé), comme le Total RDV de Suivi Commercial."),
+    'funnel_rdv_tenus': "RDV tenus = RDV de la période où le client s'est présenté (Présent).",
+    'funnel_bc': (
+        "BC signés = Ventes Confirmées + Ventes Annulées de la période (numérateur "
+        "du TX CONVERSION) : BC signés / RDV tenus = TX CONVERSION."),
+    'panier_moyen': "PANIER MOYEN = CA NET / Ventes Confirmées (comme Suivi Commercial).",
+    'panier_metier': (
+        "Panier moyen par métier = CA NET des commandes du métier / nombre de ces "
+        "commandes (métier de la commande comme dans l'onglet Métiers)."),
+    'annulation_signature': (
+        "Annulation après signature = Ventes Annulées / (Ventes Confirmées + "
+        "Ventes Annulées), en nombre de commandes (TX ANNULATION de Suivi "
+        "Commercial est en montant)."),
+    'filtre_commercial': (
+        "Le filtre Commercial s'applique à l'onglet Commercial : commandes dont "
+        "il est le vendeur, RDV dont il est l'organisateur."),
+})
 TOOLTIPS['ca_metier'] = (
     "CA signé par métier = CA NET de la période réparti par catégorie de "
     "produit (sous-catégories de All / Saleable, All / Saleable, Aucun, "
@@ -280,7 +309,8 @@ class AmssManagementDashboard(models.TransientModel):
 
     @api.model
     def _resolve_filters(self, month=None, year=None, period_type='month', quarter=None,
-                         company_id=None, date_from=None, date_to=None, payment_term_id=None):
+                         company_id=None, date_from=None, date_to=None, payment_term_id=None,
+                         user_id=None):
         date_start, date_end, period_label, month, year, quarter = \
             self.env['call.center.dashboard']._resolve_period(
                 month, year, period_type, quarter, date_from, date_to)
@@ -294,6 +324,8 @@ class AmssManagementDashboard(models.TransientModel):
             'blocked_cutoff': None if date_end > today else date_end,
             'company_ids': self._allowed_company_ids(company_id),
             'payment_term_id': payment_term_id,
+            # Commercial tab only
+            'user_id': user_id,
         }
 
     @api.model
@@ -377,15 +409,104 @@ class AmssManagementDashboard(models.TransientModel):
         return found.pop() if len(found) == 1 else METIER_MIXED
 
     @api.model
-    def _orders_by_metier(self, f):
-        """{métier: confirmed orders of the period} (the CA NET orders)."""
-        orders = self._period_orders(f['date_start'], f['date_end'], f['company_ids'],
-                                     ['sale', 'done'], f['payment_term_id'])
+    def _group_by_metier(self, orders):
         result = {}
         for order in orders:
             metier = self._order_metier(order)
             result[metier] = result.get(metier, order.browse()) | order
         return result
+
+    @api.model
+    def _orders_by_metier(self, f):
+        """{métier: confirmed orders of the period} (the CA NET orders)."""
+        return self._group_by_metier(self._period_orders(
+            f['date_start'], f['date_end'], f['company_ids'], ['sale', 'done'], f['payment_term_id']))
+
+    # ------------------------------------------------------------------
+    # Commercial tab
+    # ------------------------------------------------------------------
+
+    @api.model
+    def _commercial_users(self):
+        group = self.env.ref(COMMERCIAL_GROUP, raise_if_not_found=False)
+        if not group:
+            return self.env['res.users']
+        return group.sudo().user_ids.filtered('active').sorted('name')
+
+    @api.model
+    def _commercial_orders(self, f, states, by_user=True):
+        """Orders of the period (filters), of the selected salesperson."""
+        orders = self._period_orders(f['date_start'], f['date_end'], f['company_ids'],
+                                     states, f['payment_term_id'])
+        if by_user and f.get('user_id'):
+            orders = orders.filtered(lambda o: o.user_id.id == f['user_id'])
+        return orders
+
+    @api.model
+    def _commercial_events(self, f):
+        """Call center + commercial appointments of the period (archived
+        included, as in Suivi Commercial), of the selected salesperson."""
+        types = self.env['appointment.type'].sudo().search([
+            ('x_appointment_ref', 'in', CALL_CENTER_APPOINTMENT_REFS + COMMERCIAL_APPOINTMENT_REFS),
+        ])
+        domain = [
+            ('start', '>=', fields.Datetime.to_string(f['date_start'])),
+            ('start', '<', fields.Datetime.to_string(f['date_end'])),
+            ('appointment_type_id', 'in', types.ids),
+            ('user_id.company_id', 'in', f['company_ids']),
+            ('appointment_status', 'in', ['attended', 'no_show', 'cancelled', 'booked']),
+        ]
+        if f.get('user_id'):
+            domain.append(('user_id', '=', f['user_id']))
+        return self.env['calendar.event'].sudo().with_context(active_test=False).search(domain)
+
+    @api.model
+    def _commercial_bc_groups(self, f):
+        """{salesperson id (str) or 'autres': confirmed orders of the period}
+        for every salesperson (the bars are not limited by the filter)."""
+        users = set(self._commercial_users().ids)
+        groups = {}
+        for order in self._commercial_orders(f, ['sale', 'done'], by_user=False):
+            key = str(order.user_id.id) if order.user_id.id in users else OTHER_SALESPEOPLE
+            groups[key] = groups.get(key, order.browse()) | order
+        return groups
+
+    @api.model
+    def _commercial_figures(self, f):
+        users = self._commercial_users()
+        groups = self._commercial_bc_groups(f)
+        selected = str(f['user_id']) if f.get('user_id') else None
+        bars = [{'key': str(u.id), 'label': u.name, 'count': len(groups.get(str(u.id), []))}
+                for u in users if groups.get(str(u.id)) or str(u.id) == selected]
+        bars.sort(key=lambda b: (-b['count'], b['label']))
+        if groups.get(OTHER_SALESPEOPLE):
+            bars.append({'key': OTHER_SALESPEOPLE, 'label': 'Autres',
+                         'count': len(groups[OTHER_SALESPEOPLE])})
+
+        confirmed = self._commercial_orders(f, ['sale', 'done'])
+        cancelled = self._commercial_orders(f, ['cancel'])
+        events = self._commercial_events(f)
+        signed = len(confirmed) + len(cancelled)
+        metiers = []
+        for metier, orders in self._group_by_metier(confirmed).items():
+            metiers.append({'key': metier, 'label': metier, 'count': len(orders),
+                            'panier': round(sum(orders.mapped('amount_untaxed')) / len(orders), 2)})
+        metiers.sort(key=lambda m: (-m['count'], m['label']))
+        return {
+            'selected_user_id': f.get('user_id') or False,
+            'bc_par_commercial': bars,
+            'funnel': {
+                'rdv_poses': len(events),
+                'rdv_tenus': len(events.filtered(lambda e: e.appointment_status == 'attended')),
+                'bc_signes': signed,
+            },
+            'qualite': {
+                'panier_moyen': round(sum(confirmed.mapped('amount_untaxed')) / len(confirmed), 2)
+                if confirmed else 0,
+                'panier_par_metier': metiers,
+                'annulation_signature': round(len(cancelled) / signed * 100, 1) if signed else 0,
+            },
+        }
 
     @api.model
     def _ca_by_metier(self, f):
@@ -410,6 +531,18 @@ class AmssManagementDashboard(models.TransientModel):
             return orders
         if card.startswith('metier:'):
             return self._orders_by_metier(f).get(card[len('metier:'):], self.env['sale.order'])
+        if card.startswith('commercial_bc:'):
+            return self._commercial_bc_groups(f).get(card[len('commercial_bc:'):], self.env['sale.order'])
+        if card.startswith('panier_metier:'):
+            return self._group_by_metier(self._commercial_orders(f, ['sale', 'done'])).get(
+                card[len('panier_metier:'):], self.env['sale.order'])
+        if card == 'funnel_bc':
+            return self._commercial_orders(f, ['sale', 'done', 'cancel'])
+        if card in ('funnel_rdv_poses', 'funnel_rdv_tenus'):
+            events = self._commercial_events(f)
+            if card == 'funnel_rdv_tenus':
+                events = events.filtered(lambda e: e.appointment_status == 'attended')
+            return events
         if card in CARNET_ROWS or card == 'carnet_total':
             rows = self._order_book(f['company_ids'], f['payment_term_id'])
             if card in rows:
@@ -439,15 +572,16 @@ class AmssManagementDashboard(models.TransientModel):
         return {
             'companies': [{'id': c.id, 'name': c.name} for c in companies],
             'payment_terms': [{'id': t.id, 'name': t.name} for t in terms],
+            'salespeople': [{'id': u.id, 'name': u.name} for u in self._commercial_users()],
         }
 
     @api.model
     def get_dashboard_data(self, month=None, year=None, period_type='month',
                            quarter=None, company_id=None, date_from=None, date_to=None,
-                           payment_term_id=None):
+                           payment_term_id=None, user_id=None):
         self._check_dashboard_access()
         f = self._resolve_filters(month, year, period_type, quarter, company_id,
-                                  date_from, date_to, payment_term_id)
+                                  date_from, date_to, payment_term_id, user_id)
         date_start, date_end, prev_start, prev_end = (
             f['date_start'], f['date_end'], f['prev_start'], f['prev_end'])
         company_ids, today = f['company_ids'], f['today']
@@ -498,16 +632,18 @@ class AmssManagementDashboard(models.TransientModel):
             'cash_flow': self._cash_flow(date_start, date_end, company_ids, payment_term_id),
             'order_book': self._order_book_figures(company_ids, payment_term_id),
             'metiers': {'ca_par_metier': self._ca_by_metier(f)},
+            'commercial': self._commercial_figures(f),
         }
 
     @api.model
     def open_card(self, card, month=None, year=None, period_type='month', quarter=None,
-                  company_id=None, date_from=None, date_to=None, payment_term_id=None):
+                  company_id=None, date_from=None, date_to=None, payment_term_id=None,
+                  user_id=None):
         """Window action listing the records behind a card, with the same
         filters. The list opens with the user's own access rights."""
         self._check_dashboard_access()
         f = self._resolve_filters(month, year, period_type, quarter, company_id,
-                                  date_from, date_to, payment_term_id)
+                                  date_from, date_to, payment_term_id, user_id)
         records = self._card_records(card, f)
         titles = {
             'ca_net': 'CA NET', 'ventes_confirmees': 'Ventes confirmées', 'signe': 'Signé',
@@ -521,6 +657,16 @@ class AmssManagementDashboard(models.TransientModel):
         }
         if card.startswith('metier:'):
             titles[card] = 'CA signé – %s' % card[len('metier:'):]
+        if card.startswith('panier_metier:'):
+            titles[card] = 'Panier moyen – %s' % card[len('panier_metier:'):]
+        if card.startswith('commercial_bc:'):
+            key = card[len('commercial_bc:'):]
+            titles[card] = 'BC signés – %s' % (
+                'Autres' if key == OTHER_SALESPEOPLE else self.env['res.users'].sudo().browse(int(key)).name)
+        titles.update({'funnel_rdv_poses': 'RDV posés', 'funnel_rdv_tenus': 'RDV tenus',
+                       'funnel_bc': 'BC signés (confirmés + annulés)'})
+        if f.get('user_id') and (card.startswith(('panier_metier:', 'funnel_'))):
+            titles[card] += ' (%s)' % self.env['res.users'].sudo().browse(f['user_id']).name
         suffix = ('à ce jour' if card == 'chantiers_retard' or card.startswith('carnet_')
                   or (card == 'dossiers_bloques' and f['blocked_cutoff'] is None)
                   else f['period_label'])
@@ -530,21 +676,22 @@ class AmssManagementDashboard(models.TransientModel):
             'res_model': records._name,
             'views': [(False, 'list'), (False, 'form')],
             'domain': [('id', 'in', records.ids)],
-            'context': {'create': False},
+            # appointments include archived ones (as in Suivi Commercial)
+            'context': {'create': False, 'active_test': records._name != 'calendar.event'},
             'target': 'current',
         }
 
     @api.model
     def export_excel(self, month=None, year=None, period_type='month',
                      quarter=None, company_id=None, date_from=None, date_to=None,
-                     payment_term_id=None):
+                     payment_term_id=None, user_id=None):
         """Excel file (base64): the Direction figures and a Calculs sheet."""
         import xlsxwriter
 
         data = self.get_dashboard_data(
             month=month, year=year, period_type=period_type, quarter=quarter,
             company_id=company_id, date_from=date_from, date_to=date_to,
-            payment_term_id=payment_term_id)
+            payment_term_id=payment_term_id, user_id=user_id)
         cards, cash = data['cards'], data['cash_flow']
 
         output = io.BytesIO()
@@ -622,6 +769,40 @@ class AmssManagementDashboard(models.TransientModel):
             metiers.write(i, 0, item['label'], label_fmt)
             metiers.write_number(i, 1, item['amount'], money_fmt)
 
+        com = data['commercial']
+        com_sheet = workbook.add_worksheet('Commercial')
+        com_sheet.set_column(0, 0, 34)
+        com_sheet.set_column(1, 1, 18)
+        title = 'COMMERCIAL – %s' % data['period_label']
+        if com['selected_user_id']:
+            title += ' – %s' % self.env['res.users'].sudo().browse(com['selected_user_id']).name
+        com_sheet.write_row(0, 0, [title, ''], header_fmt)
+        r = 1
+        com_sheet.write_row(r, 0, ['BC SIGNÉS PAR COMMERCIAL', 'BC'], header_fmt)
+        for bar in com['bc_par_commercial']:
+            r += 1
+            com_sheet.write(r, 0, bar['label'], label_fmt)
+            com_sheet.write_number(r, 1, bar['count'], cell_fmt)
+        r += 2
+        com_sheet.write_row(r, 0, ['ENTONNOIR DE CONVERSION', ''], header_fmt)
+        for label, key in (('RDV posés', 'rdv_poses'), ('RDV tenus', 'rdv_tenus'),
+                           ('BC signés (confirmés + annulés)', 'bc_signes')):
+            r += 1
+            com_sheet.write(r, 0, label, label_fmt)
+            com_sheet.write_number(r, 1, com['funnel'][key], cell_fmt)
+        r += 2
+        com_sheet.write_row(r, 0, ['QUALITÉ COMMERCIALE', 'Valeur'], header_fmt)
+        r += 1
+        com_sheet.write(r, 0, 'Panier moyen (tous métiers)', label_fmt)
+        com_sheet.write_number(r, 1, com['qualite']['panier_moyen'], money_fmt)
+        for item in com['qualite']['panier_par_metier']:
+            r += 1
+            com_sheet.write(r, 0, 'Panier moyen %s' % item['label'], label_fmt)
+            com_sheet.write_number(r, 1, item['panier'], money_fmt)
+        r += 1
+        com_sheet.write(r, 0, 'Annulation après signature', label_fmt)
+        com_sheet.write_number(r, 1, com['qualite']['annulation_signature'] / 100.0, pct_fmt)
+
         calc = workbook.add_worksheet('Calculs')
         calc.set_column(0, 0, 26)
         calc.set_column(1, 1, 90)
@@ -634,7 +815,12 @@ class AmssManagementDashboard(models.TransientModel):
                 ('CARNET – BLOQUÉS', 'carnet_bloques'), ('CARNET – À PLANIFIER', 'carnet_a_planifier'),
                 ('CARNET – EN COURS', 'carnet_en_cours'), ('CARNET – PLANIFIÉS', 'carnet_planifies'),
                 ('CARNET DE COMMANDES', 'carnet_total'),
-                ('CA SIGNÉ PAR MÉTIER', 'ca_metier')), start=1):
+                ('CA SIGNÉ PAR MÉTIER', 'ca_metier'),
+                ('BC SIGNÉS PAR COMMERCIAL', 'bc_par_commercial'), ('RDV POSÉS', 'funnel_rdv_poses'),
+                ('RDV TENUS', 'funnel_rdv_tenus'), ('BC SIGNÉS (ENTONNOIR)', 'funnel_bc'),
+                ('PANIER MOYEN', 'panier_moyen'), ('PANIER MOYEN PAR MÉTIER', 'panier_metier'),
+                ('ANNULATION APRÈS SIGNATURE', 'annulation_signature'),
+                ('FILTRE COMMERCIAL', 'filtre_commercial')), start=1):
             calc.write(i, 0, label, label_fmt)
             calc.write(i, 1, TOOLTIPS[key], wrap_fmt)
             calc.set_row(i, 42)

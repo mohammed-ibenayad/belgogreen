@@ -411,6 +411,40 @@ class TestAmssDashboard(TransactionCase):
         self.assertEqual(action['res_model'], 'sale.order')
 
     # ------------------------------------------------------------------
+    # Commercial tab
+    # ------------------------------------------------------------------
+
+    def test_commercial_figures(self):
+        seller = self.env['res.users'].create({
+            'name': 'Vendeur AMSS', 'login': 'vendeur.amss@test.bgg',
+            'group_ids': [(6, 0, [self.env.ref('base.group_user').id,
+                                  self.env.ref('sales_team.group_sale_salesman').id])],
+        })
+        f = self.Dashboard._resolve_filters(user_id=seller.id)
+        self.assertEqual(self.Dashboard._commercial_figures(f)['funnel']['bc_signes'], 0)
+
+        def order_for(seller, cancel=False):
+            order = self._order_with('All / Saleable / PAC')
+            order.user_id = seller
+            if cancel:
+                order._action_cancel()
+            return order
+        confirmed = order_for(seller) | order_for(seller)
+        order_for(seller, cancel=True)
+        figures = self.Dashboard._commercial_figures(f)
+        self.assertEqual(figures['funnel']['bc_signes'], 3, "confirmed + cancelled")
+        quality = figures['qualite']
+        self.assertAlmostEqual(quality['panier_moyen'],
+                               sum(confirmed.mapped('amount_untaxed')) / 2, places=2)
+        self.assertAlmostEqual(quality['annulation_signature'], round(100 / 3, 1), places=1)
+        self.assertEqual([m['key'] for m in quality['panier_par_metier']], ['PAC'])
+        # the seller is not in the Commercial group: counted in Autres
+        autres = [b for b in figures['bc_par_commercial'] if b['key'] == 'autres']
+        self.assertTrue(autres and autres[0]['count'] >= 2)
+        action = self.Dashboard.open_card('funnel_bc', user_id=seller.id)
+        self.assertEqual(len(action['domain'][0][2]), 3)
+
+    # ------------------------------------------------------------------
     # Drill-down: clicking a card lists the records behind its figure
     # ------------------------------------------------------------------
 

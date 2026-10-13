@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen Custom Development',
-    'version': '19.0.1.17.0',
+    'version': '19.0.1.18.0',
     'category': 'Customizations',
     'summary': 'Custom business logic and automation for BelGoGreen',
     'description': """
@@ -72,6 +72,10 @@
           Bloqués, today); comparison with the previous period; Excel export
         - Métiers tab: same filters and KPI cards, CA signé par métier (each
           order in one product category bar, or Mixte)
+        - Commercial tab (salesperson filter): BC signés par commercial,
+          entonnoir de conversion (RDV posés / tenus / BC signés), qualité
+          commerciale (panier moyen global and per métier, annulation après
+          signature)
 
         All business logic includes comprehensive logging for debugging and monitoring.
     """,

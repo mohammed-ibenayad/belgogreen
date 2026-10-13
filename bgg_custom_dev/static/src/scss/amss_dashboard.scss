@@ -189,6 +189,38 @@ $amss-accent: #e8a500;
         }
     }
 
+    .amss_bar_selected {
+        background: #eef6f6;
+        border-radius: 4px;
+        font-weight: 700;
+    }
+
+    .amss_table {
+        width: 100%;
+        border-collapse: collapse;
+
+        th {
+            color: $amss-muted;
+            font-weight: 600;
+            padding: 6px 4px;
+            border-bottom: 1px solid $amss-border;
+        }
+
+        td {
+            padding: 8px 4px;
+            border-bottom: 1px solid $amss-border;
+            font-variant-numeric: tabular-nums;
+        }
+    }
+
+    .amss_clickable_row {
+        cursor: pointer;
+
+        &:hover td {
+            background: #eef6f6;
+        }
+    }
+
     .amss_clickable_note {
         cursor: pointer;
 

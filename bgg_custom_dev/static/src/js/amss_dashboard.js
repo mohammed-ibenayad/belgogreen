@@ -32,7 +32,9 @@ export class AmssManagementDashboard extends Component {
             dateTo: null,
             filterCompanyId: null,
             filterPaymentTermId: null,
+            filterUserId: null,
             availableCompanies: [],
+            availableSalespeople: [],
             availablePaymentTerms: [],
         });
         onWillStart(async () => {
@@ -40,6 +42,7 @@ export class AmssManagementDashboard extends Component {
                 const options = await rpc("/amss/dashboard/filters", {});
                 this.state.availableCompanies = options.companies || [];
                 this.state.availablePaymentTerms = options.payment_terms || [];
+                this.state.availableSalespeople = options.salespeople || [];
             } catch (error) {
                 this.state.error = error.data?.message || error.message;
             }
@@ -67,6 +70,8 @@ export class AmssManagementDashboard extends Component {
         }
         if (this.state.filterCompanyId) params.company_id = this.state.filterCompanyId;
         if (this.state.filterPaymentTermId) params.payment_term_id = this.state.filterPaymentTermId;
+        // Commercial tab only (the server applies it to the Commercial figures)
+        if (this.state.filterUserId) params.user_id = this.state.filterUserId;
         return params;
     }
 
@@ -172,6 +177,30 @@ export class AmssManagementDashboard extends Component {
         }
     }
 
+    async onUserFilterChange(ev) {
+        this.state.filterUserId = ev.target.value ? parseInt(ev.target.value) : null;
+        await this.loadData(this.state.currentMonth, this.state.currentYear);
+    }
+
+    isSelectedSalesperson(key) {
+        const selected = this.state.data.commercial.selected_user_id;
+        return Boolean(selected) && `${selected}` === key;
+    }
+
+    funnelWidth(key) {
+        const funnel = this.state.data.commercial.funnel;
+        const max = Math.max(funnel.rdv_poses, funnel.rdv_tenus, funnel.bc_signes, 0);
+        if (!max) return "0%";
+        return `${(funnel[key] / max) * 100}%`;
+    }
+
+    salesWidth(count) {
+        const bars = this.state.data.commercial.bc_par_commercial;
+        const max = Math.max(...bars.map((b) => b.count), 0);
+        if (!max) return "0%";
+        return `${(count / max) * 100}%`;
+    }
+
     async onPaymentTermFilterChange(ev) {
         this.state.filterPaymentTermId = ev.target.value ? parseInt(ev.target.value) : null;
         await this.loadData(this.state.currentMonth, this.state.currentYear);
@@ -190,6 +219,7 @@ export class AmssManagementDashboard extends Component {
         }
         if (this.state.filterCompanyId) params.set("company_id", this.state.filterCompanyId);
         if (this.state.filterPaymentTermId) params.set("payment_term_id", this.state.filterPaymentTermId);
+        if (this.state.filterUserId) params.set("user_id", this.state.filterUserId);
         window.open("/amss/dashboard/export?" + params.toString(), "_blank");
     }
 
