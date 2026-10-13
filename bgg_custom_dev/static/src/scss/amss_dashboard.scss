@@ -275,10 +275,22 @@ $amss-accent: #e8a500;
         margin-left: 2px;
     }
 
+    // Big cards: 2 or 3 share the row equally; a card alone takes half the
+    // page. They wrap one per row on narrow screens.
     .amss_panels {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        display: flex;
+        flex-wrap: wrap;
+        align-items: stretch;
         gap: 12px;
+
+        > .amss_panel {
+            flex: 1 1 320px;
+        }
+
+        > .amss_panel:only-child {
+            flex: 0 1 calc(50% - 6px);
+            min-width: min(320px, 100%);
+        }
     }
 
     .amss_panel {
