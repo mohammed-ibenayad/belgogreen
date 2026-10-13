@@ -21,6 +21,20 @@ $amss-accent: #e8a500;
     font-size: 13px;
     color: $amss-text;
 
+    // Header, filter bar, applied filters line and tabs: always visible.
+    .amss_sticky {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin: -16px -16px 0;
+        padding: 16px 16px 12px;
+        background-color: $amss-bg;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+    }
+
     .amss_header {
         display: flex;
         align-items: center;
