@@ -3,6 +3,7 @@
 import { registry } from "@web/core/registry";
 import { rpc } from "@web/core/network/rpc";
 import { useService } from "@web/core/utils/hooks";
+import { user } from "@web/core/user";
 import { Component, onWillStart, useState } from "@odoo/owl";
 
 // For each card: does an increase mean good news?
@@ -39,7 +40,9 @@ export class AmssManagementDashboard extends Component {
         });
         onWillStart(async () => {
             try {
-                const options = await rpc("/amss/dashboard/filters", {});
+                const options = await rpc("/amss/dashboard/filters", {
+                    allowed_company_ids: this.activeCompanyIds,
+                });
                 this.state.availableCompanies = options.companies || [];
                 this.state.availablePaymentTerms = options.payment_terms || [];
                 this.state.availableSalespeople = options.salespeople || [];
@@ -55,7 +58,11 @@ export class AmssManagementDashboard extends Component {
      * incomplete.
      */
     filterParams(month = null, year = null) {
-        const params = { period_type: this.state.periodType };
+        const params = {
+            period_type: this.state.periodType,
+            // companies active in the company switcher, as Odoo's own lists
+            allowed_company_ids: this.activeCompanyIds,
+        };
         if (month) params.month = month;
         if (year) params.year = year;
         if (this.state.periodType === "quarter" && this.state.currentQuarter) {
@@ -165,6 +172,10 @@ export class AmssManagementDashboard extends Component {
         await this.loadData(this.state.currentMonth, this.state.currentYear);
     }
 
+    get activeCompanyIds() {
+        return user.context.allowed_company_ids || [];
+    }
+
     /** Open the records behind a card or a bar, with the same filters. */
     async openCard(card) {
         const params = this.filterParams(this.state.currentMonth, this.state.currentYear);
@@ -215,6 +226,7 @@ export class AmssManagementDashboard extends Component {
         if (this.state.currentMonth) params.set("month", this.state.currentMonth);
         if (this.state.currentYear) params.set("year", this.state.currentYear);
         params.set("period_type", this.state.periodType);
+        params.set("allowed_company_ids", this.activeCompanyIds.join(","));
         if (this.state.currentQuarter) params.set("quarter", this.state.currentQuarter);
         if (this.state.periodType === "custom") {
             if (!this.state.dateFrom || !this.state.dateTo) return;

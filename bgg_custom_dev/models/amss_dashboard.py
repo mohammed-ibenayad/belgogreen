@@ -155,7 +155,11 @@ class AmssManagementDashboard(models.TransientModel):
 
     @api.model
     def _allowed_company_ids(self, company_id=None):
-        allowed = self.env.user.company_ids.ids
+        """Companies of the figures: the companies active in the user's
+        company switcher (allowed_company_ids, sent by the dashboard), so the
+        figures match the lists opened from the cards; one of them when the
+        Société filter is set."""
+        allowed = self.env.companies.ids
         if company_id:
             return [company_id] if company_id in allowed or self.env.su else []
         return allowed
@@ -595,7 +599,7 @@ class AmssManagementDashboard(models.TransientModel):
     @api.model
     def get_filter_options(self):
         self._check_dashboard_access()
-        companies = self.env.user.company_ids.sorted('name')
+        companies = self.env.companies.sorted('name')
         terms = self.env['account.payment.term'].sudo().search([
             ('company_id', 'in', companies.ids + [False]),
         ], order='name')
