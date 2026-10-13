@@ -13,7 +13,10 @@ $amss-rest: #e5ebeb;   // empty part of a bar (reste à facturer)
 $amss-due: #9fd0d2;    // light teal (reste à encaisser)
 
 .amss_dashboard {
-    padding: 16px;
+    // no top padding: the sticky bar starts at the very top (a sticky element
+    // is kept inside the scroll container's padding, so a negative top margin
+    // would shift it down over the cards)
+    padding: 0 16px 16px;
     background-color: $amss-bg;
     height: 100%;
     overflow: auto;
@@ -23,7 +26,8 @@ $amss-due: #9fd0d2;    // light teal (reste à encaisser)
     font-size: 13px;
     color: $amss-text;
 
-    // Header, filter bar, applied filters line and tabs: always visible.
+    // Header, filter bar, applied filters line and tabs: always visible, on
+    // white with a clear bottom edge so the content visibly scrolls under it.
     .amss_sticky {
         position: sticky;
         top: 0;
@@ -31,10 +35,11 @@ $amss-due: #9fd0d2;    // light teal (reste à encaisser)
         display: flex;
         flex-direction: column;
         gap: 12px;
-        margin: -16px -16px 0;
+        margin: 0 -16px;
         padding: 16px 16px 12px;
-        background-color: $amss-bg;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+        background-color: white;
+        border-bottom: 1px solid $amss-border;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
     }
 
     .amss_header {
