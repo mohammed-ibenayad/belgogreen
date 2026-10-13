@@ -7,6 +7,8 @@ from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
+from odoo.addons.bgg_custom_dev.models.sale_order import dashboard_states_domain
+
 
 @tagged('post_install', '-at_install')
 class TestAmssDashboard(TransactionCase):
@@ -123,6 +125,20 @@ class TestAmssDashboard(TransactionCase):
                                sum(confirmed.mapped('amount_untaxed')), places=2)
         self.assertEqual(after['ventes_confirmees'] - before['ventes_confirmees'], 2)
         self.assertEqual(after['ventes_annulees'] - before['ventes_annulees'], 1)
+        # a quote cancelled before confirmation is not a cancelled sale
+        # (same rule in Suivi Commercial and Call Center)
+        quote = self._order(service=False, confirm=False)
+        quote._action_cancel()
+        self.assertTrue(cancelled.x_was_confirmed)
+        self.assertFalse(quote.x_was_confirmed)
+        final = self.Dashboard._sales_figures(start, end, companies)
+        self.assertEqual(final['ventes_annulees'], after['ventes_annulees'])
+        self.assertEqual(final['tx_conversion'], after['tx_conversion'])
+        both = cancelled | quote
+        self.assertEqual(
+            self.env['sale.order'].search(
+                dashboard_states_domain(['sale', 'done', 'cancel']) + [('id', 'in', both.ids)]),
+            cancelled)
         # drill-down of the secondary figure: the cancelled orders
         f = self.Dashboard._resolve_filters(period_type='custom', date_from=start, date_to=start)
         records = self.Dashboard._card_records('ventes_annulees', f)

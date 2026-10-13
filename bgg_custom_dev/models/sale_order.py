@@ -13,6 +13,19 @@ from .calendar_event import CALL_CENTER_APPOINTMENT_REFS
 _logger = logging.getLogger(__name__)
 
 DASHBOARD_GROUP = 'bgg_custom_dev.group_bgg_dashboard'
+
+# Order states that mean "confirmed" (x_was_confirmed is set on them).
+CONFIRMED_STATES = ('sale', 'done')
+
+
+def dashboard_states_domain(states):
+    """Domain on the order state for the dashboards (Suivi Commercial, Call
+    Center, AMSS): a cancelled order counts only if it was confirmed before
+    (x_was_confirmed); a quote cancelled before signature is not a sale."""
+    domain = [('state', 'in', list(states))]
+    if 'cancel' in states:
+        domain += ['|', ('state', '!=', 'cancel'), ('x_was_confirmed', '=', True)]
+    return domain
 RESPONSABLE_DOSSIER_GROUP = 'bgg_custom_dev.group_responsable_dossier'
 # Only members of this group may set or change the Responsable of an order
 # (no administrator exception). Automations (sudo) are not restricted.
@@ -113,9 +126,27 @@ class SaleOrder(models.Model):
         ),
     )
 
+    # Set when the order is confirmed, kept when it is cancelled: tells a sale
+    # cancelled after signature from a quote cancelled before (dashboards).
+    # Existing orders are filled from the status history by the 19.0.1.28.0
+    # migration.
+    x_was_confirmed = fields.Boolean(
+        string='Confirmée au moins une fois',
+        readonly=True,
+        copy=False,
+        index=True,
+        help=(
+            "Cochée dès que la commande est confirmée et conservée si elle est "
+            "annulée ensuite. Les tableaux de bord ne comptent une commande "
+            "annulée comme vente annulée que si elle a été confirmée."
+        ),
+    )
+
     def write(self, vals):
         """Propagate to the order's projects: a Responsable change (manager /
         assignees) and a payment term change (admin project deadlines)."""
+        if vals.get('state') in CONFIRMED_STATES:
+            vals = dict(vals, x_was_confirmed=True)
         watched = ('x_responsable_dossier_id', 'payment_term_id')
         previous = {
             fname: {order.id: order[fname] for order in self}
@@ -438,6 +469,8 @@ class SaleOrder(models.Model):
     def create(self, vals_list):
         if any(vals.get('x_responsable_dossier_id') for vals in vals_list):
             self._check_responsable_dossier_edit_allowed()
+        vals_list = [dict(vals, x_was_confirmed=True) if vals.get('state') in CONFIRMED_STATES
+                     else vals for vals in vals_list]
         return super().create(vals_list)
 
     @api.constrains('x_responsable_dossier_id')

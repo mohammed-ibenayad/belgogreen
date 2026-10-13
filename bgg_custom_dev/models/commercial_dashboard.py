@@ -5,6 +5,8 @@ import logging
 from odoo import api, fields, models
 from dateutil.relativedelta import relativedelta
 
+from .sale_order import dashboard_states_domain
+
 _logger = logging.getLogger(__name__)
 
 QUARTER_NAMES_FR = {1: '1er', 2: '2ème', 3: '3ème', 4: '4ème'}
@@ -134,7 +136,8 @@ class CommercialDashboard(models.TransientModel):
         so_domain = [
             ('date_order', '>=', fields.Datetime.to_string(date_start)),
             ('date_order', '<', fields.Datetime.to_string(date_end)),
-            ('state', 'in', ['sale', 'done', 'cancel']),
+            # cancelled orders: only those confirmed before (not cancelled quotes)
+            *dashboard_states_domain(['sale', 'done', 'cancel']),
         ]
         if user_id:
             so_domain.append(('user_id', '=', user_id))
@@ -511,8 +514,8 @@ class CommercialDashboard(models.TransientModel):
              "Count(sale.order) où state ∈ {sale, done}",
              "Nombre de commandes confirmées (et non annulées) dans la période."),
             (red_fmt,     'VENTES ANNULÉES',
-             "Count(sale.order) où state = cancel",
-             "Nombre de commandes annulées dans la période."),
+             "Count(sale.order) où state = cancel et confirmée au moins une fois",
+             "Nombre de commandes annulées après confirmation dans la période (les devis annulés avant signature ne comptent pas)."),
             (green_fmt,   'CA BRUT',
              'Σ amount_untaxed (toutes les commandes, confirmées + annulées)',
              "Chiffre d'affaires brut HT de la période."),
@@ -520,7 +523,7 @@ class CommercialDashboard(models.TransientModel):
              'CA BRUT − CA ANNULÉ',
              "Chiffre d'affaires net HT après déduction des annulations."),
             (red_fmt,     'CA ANNULÉ',
-             "Σ amount_untaxed des commandes où state = cancel",
+             "Σ amount_untaxed des commandes où state = cancel et confirmée au moins une fois",
              "Montant HT total des commandes annulées."),
             (section_fmt, 'TX ANNULATION',
              'CA ANNULÉ / CA BRUT',
