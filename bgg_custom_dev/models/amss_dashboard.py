@@ -79,15 +79,29 @@ TOOLTIPS = {
 
 CARNET_ROWS = ('carnet_a_planifier', 'carnet_planifies', 'carnet_en_cours', 'carnet_bloques')
 
-# Métiers tab: product category of an order (see _order_metier).
+# Métiers tab: métier of an order (see _order_metier). Rule agreed from the
+# analysis of the October 2026 orders: Panneaux, Onduleurs and Batteries are
+# always sold together (Photovoltaïque), boilers (ballon thermodynamique) go
+# with the heat pumps (Chauffage / PAC).
 SALEABLE_PATH = ('All', 'Saleable')
-METIER_SALEABLE = 'All / Saleable'   # products directly in All / Saleable
+METIER_BY_CATEGORY = {               # first level under All / Saleable
+    'Panneaux': 'Photovoltaïque',
+    'Onduleurs': 'Photovoltaïque',
+    'Batteries': 'Photovoltaïque',
+    'PAC': 'Chauffage / PAC',
+    'Boilers': 'Chauffage / PAC',
+    'Isolation': 'Isolation',
+}                                    # other sub-categories: their own name
+METIER_SALEABLE = 'Autres métiers'   # products directly in All / Saleable (adoucisseur, ventilation…)
 METIER_NONE = 'Aucun'                # products without category
-METIER_OTHER = 'Autres'              # categories outside All / Saleable
-METIER_MIXED = 'Mixte'               # several main categories on the order
-# Categories that do not decide the métier of an order (installation
-# services, accessories, products without category).
-METIER_MINOR = {'Services', 'Accessoires', METIER_NONE}
+METIER_OTHER = 'Autres'              # categories outside All / Saleable (All / Expenses…)
+METIER_MIXED = 'Mixte'               # several métiers on the order
+# Lines that do not decide the métier of an order: installation services,
+# discounts, accessories, expenses, products without category.
+METIER_MINOR = {'Services', 'Accessoires', METIER_NONE, METIER_OTHER}
+# Products ignored by the rule, whatever their category ("Frais divers" is
+# filed under Isolation but used in every métier).
+METIER_IGNORED_PRODUCT_CODES = {'FRAIS-DIV'}
 TOOLTIPS.update({
     'bc_par_commercial': (
         "BC signés par commercial = VENTES CONFIRMÉES (commandes à l'état "
@@ -114,11 +128,13 @@ TOOLTIPS.update({
         "il est le vendeur, RDV dont il est l'organisateur."),
 })
 TOOLTIPS['ca_metier'] = (
-    "CA signé par métier = CA NET de la période réparti par catégorie de "
-    "produit (sous-catégories de All / Saleable, All / Saleable, Aucun, "
-    "Autres). Chaque commande va entière dans une seule barre : la catégorie "
-    "de ses produits principaux (Services, Accessoires et Aucun ne comptent "
-    "pas), « Mixte » si elle en a plusieurs. Les barres totalisent le CA NET.")
+    "CA signé par métier = CA NET de la période. Chaque commande va entière "
+    "dans un métier selon ses produits principaux : Photovoltaïque (Panneaux, "
+    "Onduleurs, Batteries), Chauffage / PAC (PAC, Boilers), Isolation, "
+    "Autres métiers (produits directement dans All / Saleable). Services, "
+    "Accessoires, Expenses, produits sans catégorie et « Frais divers » ne "
+    "comptent pas. « Mixte » : commande avec plusieurs métiers. Les barres "
+    "totalisent le CA NET.")
 
 
 class AmssManagementDashboard(models.TransientModel):
@@ -389,24 +405,29 @@ class AmssManagementDashboard(models.TransientModel):
 
     @api.model
     def _category_metier(self, categ):
-        """Métier of a product category: its level under All / Saleable
-        (sub-categories grouped on their first level), All / Saleable,
-        Aucun or Autres."""
+        """Métier of a product category, from its first level under
+        All / Saleable (METIER_BY_CATEGORY, else the sub-category name);
+        Autres métiers for All / Saleable itself, Aucun / Autres otherwise."""
         if not categ:
             return METIER_NONE
         parts = tuple(part.strip() for part in (categ.complete_name or '').split('/'))
         if parts[:len(SALEABLE_PATH)] != SALEABLE_PATH:
             return METIER_OTHER
-        return parts[len(SALEABLE_PATH)] if len(parts) > len(SALEABLE_PATH) else METIER_SALEABLE
+        if len(parts) == len(SALEABLE_PATH):
+            return METIER_SALEABLE
+        sub = parts[len(SALEABLE_PATH)]
+        return METIER_BY_CATEGORY.get(sub, sub)
 
     @api.model
     def _order_metier(self, order):
-        """Métier of an order: the category of its main products, Mixte if
-        several. Services / Accessoires / Aucun only decide when the order has
-        no main product."""
+        """Métier of an order: the métier of its main products, Mixte if
+        several. Services / Accessoires / Aucun / Autres only decide when the
+        order has no main product; "Frais divers" never does."""
         main, minor = set(), set()
         for line in order.order_line:
             if line.display_type or not line.product_id or line.is_downpayment:
+                continue
+            if line.product_id.default_code in METIER_IGNORED_PRODUCT_CODES:
                 continue
             metier = self._category_metier(line.product_id.categ_id)
             (minor if metier in METIER_MINOR else main).add(metier)

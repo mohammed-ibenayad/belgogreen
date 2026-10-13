@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen Custom Development',
-    'version': '19.0.1.21.0',
+    'version': '19.0.1.22.0',
     'category': 'Customizations',
     'summary': 'Custom business logic and automation for BelGoGreen',
     'description': """
@@ -71,7 +71,9 @@
           encaissé, Carnet de commandes (À planifier / Planifiés / En cours /
           Bloqués, today); comparison with the previous period; Excel export
         - Métiers tab: same filters and KPI cards, CA signé par métier (each
-          order in one product category bar, or Mixte)
+          order in one métier: Photovoltaïque = Panneaux / Onduleurs /
+          Batteries, Chauffage / PAC = PAC / Boilers, Isolation, Autres
+          métiers; Mixte when several)
         - Commercial tab (salesperson filter): BC signés par commercial,
           entonnoir de conversion (RDV posés / tenus / BC signés), qualité
           commerciale (panier moyen global and per métier, annulation après
