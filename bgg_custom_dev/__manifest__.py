@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen Custom Development',
-    'version': '19.0.1.16.0',
+    'version': '19.0.1.17.0',
     'category': 'Customizations',
     'summary': 'Custom business logic and automation for BelGoGreen',
     'description': """
@@ -70,6 +70,8 @@
           Chantiers en retard, Dossiers bloqués, CA signé / facturé /
           encaissé, Carnet de commandes (À planifier / Planifiés / En cours /
           Bloqués, today); comparison with the previous period; Excel export
+        - Métiers tab: same filters and KPI cards, CA signé par métier (each
+          order in one product category bar, or Mixte)
 
         All business logic includes comprehensive logging for debugging and monitoring.
     """,

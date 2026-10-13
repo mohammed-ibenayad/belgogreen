@@ -353,6 +353,64 @@ class TestAmssDashboard(TransactionCase):
         self.assertIn(started.id, action['domain'][0][2])
 
     # ------------------------------------------------------------------
+    # Métiers: CA signé par catégorie de produit
+    # ------------------------------------------------------------------
+
+    def _categ(self, path):
+        """Product category for a path like 'All / Saleable / PAC' (found or
+        created level by level)."""
+        Categ = self.env['product.category']
+        parent = Categ
+        for name in [p.strip() for p in path.split('/')]:
+            categ = Categ.search([('name', '=', name), ('parent_id', '=', parent.id or False)], limit=1)
+            parent = categ or Categ.create({'name': name, 'parent_id': parent.id or False})
+        return parent
+
+    def _product_in(self, path):
+        return self.env['product.product'].create({
+            'name': 'Produit %s (test)' % path, 'type': 'consu', 'list_price': 100.0,
+            'categ_id': self._categ(path).id if path else False,
+        })
+
+    def _order_with(self, *paths):
+        order = self.env['sale.order'].create({
+            'partner_id': self.customer.id,
+            'order_line': [(0, 0, {'product_id': self._product_in(p).id, 'product_uom_qty': 1,
+                                   'price_unit': 100.0}) for p in paths],
+        })
+        order.action_confirm()
+        return order
+
+    def test_category_metier(self):
+        D = self.Dashboard
+        self.assertEqual(D._category_metier(self._categ('All / Saleable / PAC')), 'PAC')
+        self.assertEqual(D._category_metier(self._categ('All / Saleable / PAC / Air-eau')), 'PAC')
+        self.assertEqual(D._category_metier(self._categ('All / Saleable')), 'All / Saleable')
+        self.assertEqual(D._category_metier(self._categ('All / Expenses')), 'Autres')
+        self.assertEqual(D._category_metier(self.env['product.category']), 'Aucun')
+
+    def test_order_metier(self):
+        D = self.Dashboard
+        pac = self._order_with('All / Saleable / PAC', 'All / Saleable / Services',
+                               'All / Saleable / Accessoires')
+        self.assertEqual(D._order_metier(pac), 'PAC', "services and accessories do not count")
+        mixed = self._order_with('All / Saleable / Panneaux', 'All / Saleable / Onduleurs')
+        self.assertEqual(D._order_metier(mixed), 'Mixte')
+        services = self._order_with('All / Saleable / Services')
+        self.assertEqual(D._order_metier(services), 'Services')
+
+    def test_ca_by_metier_adds_up_to_ca_net(self):
+        self._order_with('All / Saleable / PAC')
+        self._order_with('All / Saleable / Panneaux', 'All / Saleable / Batteries')
+        f = self.Dashboard._resolve_filters()
+        rows = self.Dashboard._ca_by_metier(f)
+        ca_net = self.Dashboard._sales_figures(f['date_start'], f['date_end'], f['company_ids'])['ca_net']
+        self.assertAlmostEqual(sum(r['amount'] for r in rows), ca_net, places=2)
+        self.assertIn('Mixte', [r['key'] for r in rows])
+        action = self.Dashboard.open_card('metier:PAC')
+        self.assertEqual(action['res_model'], 'sale.order')
+
+    # ------------------------------------------------------------------
     # Drill-down: clicking a card lists the records behind its figure
     # ------------------------------------------------------------------
 
