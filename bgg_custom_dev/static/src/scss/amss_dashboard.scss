@@ -100,6 +100,13 @@ $amss-accent: #e8a500;
         }
     }
 
+    .amss_filters_note {
+        margin: -4px 0 0;
+        padding: 0 4px;
+        font-size: 12px;
+        color: $amss-muted;
+    }
+
     .amss_tabs {
         display: flex;
         flex-wrap: wrap;

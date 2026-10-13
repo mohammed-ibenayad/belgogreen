@@ -188,7 +188,7 @@ class AmssManagementDashboard(models.TransientModel):
         return self.env['sale.order'].sudo().search(domain)
 
     @api.model
-    def _sales_figures(self, date_start, date_end, company_ids, payment_term_id=None):
+    def _sales_figures(self, date_start, date_end, company_ids, payment_term_id=None, user_id=None):
         """CA NET, Ventes Confirmées and TX CONVERSION of a period, computed
         exactly as in Suivi Commercial (same helpers) but for every order and
         appointment of the companies. CA NET and Ventes Confirmées follow the
@@ -196,6 +196,9 @@ class AmssManagementDashboard(models.TransientModel):
         payment term, so its denominator cannot be filtered)."""
         commercial = self.env['commercial.dashboard']
         all_orders = self._period_orders(date_start, date_end, company_ids, ['sale', 'done', 'cancel'])
+        if user_id:
+            # Commercial tab: orders of the selected salesperson
+            all_orders = all_orders.filtered(lambda o: o.user_id.id == user_id)
         orders = all_orders.filtered(
             lambda o: o.payment_term_id.id == payment_term_id) if payment_term_id else all_orders
         fin = commercial._compute_financial_kpis(orders)
@@ -204,12 +207,15 @@ class AmssManagementDashboard(models.TransientModel):
         appointment_types = self.env['appointment.type'].sudo().search([
             ('x_appointment_ref', 'in', CALL_CENTER_APPOINTMENT_REFS + COMMERCIAL_APPOINTMENT_REFS),
         ])
-        events = self.env['calendar.event'].sudo().with_context(active_test=False).search([
+        event_domain = [
             ('start', '>=', fields.Datetime.to_string(date_start)),
             ('start', '<', fields.Datetime.to_string(date_end)),
             ('appointment_type_id', 'in', appointment_types.ids),
             ('user_id.company_id', 'in', company_ids),
-        ])
+        ]
+        if user_id:
+            event_domain.append(('user_id', '=', user_id))
+        events = self.env['calendar.event'].sudo().with_context(active_test=False).search(event_domain)
         present = commercial._count_appointment_statuses(events)['attended']
         ventes_signees = fin_all['nbre_vies'] + fin_all['ventes_annulees']
         return {
@@ -219,7 +225,7 @@ class AmssManagementDashboard(models.TransientModel):
         }
 
     @api.model
-    def _admin_projects(self, company_ids, payment_term_id=None):
+    def _admin_projects(self, company_ids, payment_term_id=None, user_id=None):
         """Admin projects (linked to a sale order, templates excluded) of
         confirmed orders of `company_ids`, optionally of orders with the given
         payment term. The company is the order's: a project created from a
@@ -235,7 +241,8 @@ class AmssManagementDashboard(models.TransientModel):
             order = project._get_dossier_order()
             return (order.state == 'sale'
                     and order.company_id.id in company_ids
-                    and (not payment_term_id or order.payment_term_id.id == payment_term_id))
+                    and (not payment_term_id or order.payment_term_id.id == payment_term_id)
+                    and (not user_id or order.user_id.id == user_id))
         return projects.filtered(keep)
 
     @api.model
@@ -523,6 +530,8 @@ class AmssManagementDashboard(models.TransientModel):
         if card in ('ca_net', 'ventes_confirmees', 'signe', 'facture', 'encaisse'):
             orders = self._period_orders(f['date_start'], f['date_end'], f['company_ids'],
                                          ['sale', 'done'], f['payment_term_id'])
+            if f.get('user_id') and card in ('ca_net', 'ventes_confirmees'):
+                orders = orders.filtered(lambda o: o.user_id.id == f['user_id'])
             if card == 'facture':
                 return self._invoiced_moves(orders)
             if card == 'encaisse':
@@ -551,7 +560,7 @@ class AmssManagementDashboard(models.TransientModel):
             for orders in rows.values():
                 total |= orders
             return total
-        projects = self._admin_projects(f['company_ids'], f['payment_term_id'])
+        projects = self._admin_projects(f['company_ids'], f['payment_term_id'], f.get('user_id'))
         if card == 'chantiers_retard':
             return self._late_projects(projects, f['today'])
         if card == 'dossiers_bloques':
@@ -587,19 +596,6 @@ class AmssManagementDashboard(models.TransientModel):
         company_ids, today = f['company_ids'], f['today']
         month, year, quarter, period_label = f['month'], f['year'], f['quarter'], f['period_label']
 
-        current = self._sales_figures(date_start, date_end, company_ids, payment_term_id)
-        previous = self._sales_figures(prev_start, prev_end, company_ids, payment_term_id)
-
-        projects = self._admin_projects(company_ids, payment_term_id)
-        blocked_now = self._blocked_count(projects, f['blocked_cutoff'])
-        blocked_prev = self._blocked_count(projects, date_start)
-
-        def delta(key, kind):
-            cur, prev = current[key], previous[key]
-            if kind == 'pct':
-                return round((cur - prev) / prev * 100) if prev else None
-            return cur - prev
-
         company = self.env['res.company'].browse(company_ids[:1]) if company_ids else self.env.company
         return {
             'period_label': period_label,
@@ -616,23 +612,45 @@ class AmssManagementDashboard(models.TransientModel):
             'payment_term_filtered': bool(payment_term_id),
             'blocked_as_of': (False if f['blocked_cutoff'] is None else
                               (date_end - relativedelta(days=1)).strftime('%d/%m/%Y')),
-            'cards': {
-                'ca_net': {'value': current['ca_net'], 'previous': previous['ca_net'],
-                           'delta': delta('ca_net', 'pct')},
-                'ventes_confirmees': {'value': current['ventes_confirmees'],
-                                      'previous': previous['ventes_confirmees'],
-                                      'delta': delta('ventes_confirmees', 'count')},
-                'tx_conversion': {'value': current['tx_conversion'],
-                                  'previous': previous['tx_conversion'],
-                                  'delta': delta('tx_conversion', 'points')},
-                'chantiers_retard': {'value': len(self._late_projects(projects, today))},
-                'dossiers_bloques': {'value': blocked_now, 'previous': blocked_prev,
-                                     'delta': blocked_now - blocked_prev},
-            },
+            'cards': self._kpi_cards(f),
+            # Commercial tab: the same cards for the selected salesperson
+            'cards_user': self._kpi_cards(f, user_id) if user_id else False,
             'cash_flow': self._cash_flow(date_start, date_end, company_ids, payment_term_id),
             'order_book': self._order_book_figures(company_ids, payment_term_id),
             'metiers': {'ca_par_metier': self._ca_by_metier(f)},
             'commercial': self._commercial_figures(f),
+        }
+
+    @api.model
+    def _kpi_cards(self, f, user_id=None):
+        """The KPI cards shown on top of every tab: company-wide, or for the
+        orders / appointments of one salesperson (Commercial tab)."""
+        current = self._sales_figures(f['date_start'], f['date_end'], f['company_ids'],
+                                      f['payment_term_id'], user_id)
+        previous = self._sales_figures(f['prev_start'], f['prev_end'], f['company_ids'],
+                                       f['payment_term_id'], user_id)
+        projects = self._admin_projects(f['company_ids'], f['payment_term_id'], user_id)
+        blocked_now = self._blocked_count(projects, f['blocked_cutoff'])
+        blocked_prev = self._blocked_count(projects, f['date_start'])
+
+        def delta(key, kind):
+            cur, prev = current[key], previous[key]
+            if kind == 'pct':
+                return round((cur - prev) / prev * 100) if prev else None
+            return cur - prev
+
+        return {
+            'ca_net': {'value': current['ca_net'], 'previous': previous['ca_net'],
+                       'delta': delta('ca_net', 'pct')},
+            'ventes_confirmees': {'value': current['ventes_confirmees'],
+                                  'previous': previous['ventes_confirmees'],
+                                  'delta': delta('ventes_confirmees', 'count')},
+            'tx_conversion': {'value': current['tx_conversion'],
+                              'previous': previous['tx_conversion'],
+                              'delta': delta('tx_conversion', 'points')},
+            'chantiers_retard': {'value': len(self._late_projects(projects, f['today']))},
+            'dossiers_bloques': {'value': blocked_now, 'previous': blocked_prev,
+                                 'delta': blocked_now - blocked_prev},
         }
 
     @api.model

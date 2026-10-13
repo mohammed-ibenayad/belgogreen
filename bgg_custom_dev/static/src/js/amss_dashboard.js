@@ -169,6 +169,10 @@ export class AmssManagementDashboard extends Component {
     async openCard(card) {
         const params = this.filterParams(this.state.currentMonth, this.state.currentYear);
         if (!params) return;
+        if (this.state.activeTab !== "commercial") {
+            // the Commercial filter only applies to the Commercial tab
+            delete params.user_id;
+        }
         try {
             const action = await rpc("/amss/dashboard/open", { ...params, card });
             await this.action.doAction(action);
@@ -248,8 +252,36 @@ export class AmssManagementDashboard extends Component {
         return `${this.formatThousands(value)} k${this.currencySymbol}`;
     }
 
+    /** KPI cards: for the selected salesperson on the Commercial tab. */
+    get kpiCards() {
+        const data = this.state.data;
+        return this.state.activeTab === "commercial" && data.cards_user ? data.cards_user : data.cards;
+    }
+
+    get selectedSalespersonName() {
+        const user = this.state.availableSalespeople.find((u) => u.id === this.state.filterUserId);
+        return user ? user.name : "";
+    }
+
+    /** Which filters the current tab uses (shown under the filter bar). */
+    get appliedFiltersNote() {
+        const tab = this.state.activeTab;
+        const term = this.state.filterPaymentTermId ? " (sauf TX CONVERSION)" : "";
+        if (tab === "commercial") {
+            const who = this.state.filterUserId
+                ? `Commercial : ${this.selectedSalespersonName} (cartes du haut et panneaux)`
+                : "Commercial : tous";
+            return `Filtres appliqués : Période, Société, Conditions de paiement (commandes, pas les RDV), ${who}.`;
+        }
+        if (tab === "metiers") {
+            return `Filtres appliqués : Période, Société, Conditions de paiement${term}.`;
+        }
+        return `Filtres appliqués : Période, Société, Conditions de paiement${term}. ` +
+            "À ce jour, sans période : Chantiers en retard, Carnet de commandes.";
+    }
+
     formatDelta(key) {
-        const card = this.state.data.cards[key];
+        const card = this.kpiCards[key];
         if (card.delta === null || card.delta === undefined) return "";
         const sign = card.delta > 0 ? "+" : card.delta < 0 ? "−" : "±";
         const abs = Math.abs(card.delta);
@@ -258,7 +290,7 @@ export class AmssManagementDashboard extends Component {
     }
 
     deltaClass(key) {
-        const card = this.state.data.cards[key];
+        const card = this.kpiCards[key];
         if (!card.delta) return "amss_delta_neutral";
         const good = (card.delta > 0) === HIGHER_IS_BETTER[key];
         return good ? "amss_delta_good" : "amss_delta_bad";

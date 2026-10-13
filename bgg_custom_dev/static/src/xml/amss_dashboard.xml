@@ -80,6 +80,10 @@
                 </div>
             </div>
 
+            <p class="amss_filters_note" t-if="state.data">
+                <i class="fa fa-filter"/> <t t-esc="appliedFiltersNote"/>
+            </p>
+
             <!-- Tabs -->
             <div class="amss_tabs">
                 <t t-foreach="[['direction', 'Direction'], ['metiers', 'Métiers'], ['commercial', 'Commercial']]" t-as="tab" t-key="tab[0]">
@@ -98,7 +102,7 @@
             </div>
 
             <div t-if="state.data and !state.error" t-att-class="'amss_content' + (state.loading ? ' amss_loading' : '')">
-                <t t-set="cards" t-value="state.data.cards"/>
+                <t t-set="cards" t-value="kpiCards"/>
                 <t t-set="tips" t-value="state.data.tooltips"/>
 
                 <!-- KPI cards -->

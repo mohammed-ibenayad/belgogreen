@@ -443,6 +443,13 @@ class TestAmssDashboard(TransactionCase):
         self.assertTrue(autres and autres[0]['count'] >= 2)
         action = self.Dashboard.open_card('funnel_bc', user_id=seller.id)
         self.assertEqual(len(action['domain'][0][2]), 3)
+        # KPI cards of the Commercial tab follow the salesperson
+        data = self.Dashboard.get_dashboard_data(user_id=seller.id)
+        self.assertEqual(data['cards_user']['ventes_confirmees']['value'], 2)
+        self.assertAlmostEqual(data['cards_user']['ca_net']['value'],
+                               sum(confirmed.mapped('amount_untaxed')), places=2)
+        self.assertGreaterEqual(data['cards']['ventes_confirmees']['value'], 2)
+        self.assertFalse(self.Dashboard.get_dashboard_data()['cards_user'])
 
     # ------------------------------------------------------------------
     # Drill-down: clicking a card lists the records behind its figure
