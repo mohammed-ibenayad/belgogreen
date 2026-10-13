@@ -164,6 +164,29 @@
                         </t>
                         <p class="amss_panel_note">Commandes confirmées dans la période, montants HT.</p>
                     </div>
+
+                    <!-- Carnet de commandes (à ce jour) -->
+                    <div class="amss_panel">
+                        <h2>Carnet de commandes <i class="fa fa-info-circle amss_info" t-att-title="tips.carnet_total"/></h2>
+                        <t t-foreach="[['carnet_a_planifier', 'À planifier'], ['carnet_planifies', 'Planifiés'], ['carnet_en_cours', 'En cours'], ['carnet_bloques', 'Bloqués']]" t-as="row" t-key="row[0]">
+                            <div class="amss_bar_row amss_clickable" t-on-click="() => this.openCard(row[0])"
+                                 title="Cliquer pour voir le détail">
+                                <span class="amss_bar_label">
+                                    <t t-esc="row[1]"/> <i class="fa fa-info-circle amss_info" t-att-title="tips[row[0]]"/>
+                                </span>
+                                <span class="amss_bar_track">
+                                    <span class="amss_bar_fill" t-att-style="'width: ' + orderBookWidth(row[0])"/>
+                                </span>
+                                <span class="amss_bar_value" t-esc="state.data.order_book[row[0]]"/>
+                            </div>
+                        </t>
+                        <p class="amss_panel_note amss_clickable_note" t-on-click="() => this.openCard('carnet_total')"
+                           title="Cliquer pour voir le détail">
+                            <t t-esc="state.data.order_book.carnet_total"/> BC signés non terminés ·
+                            <span t-att-title="formatAmount(state.data.order_book.carnet_total_amount)" t-esc="formatKAmount(state.data.order_book.carnet_total_amount)"/>
+                            HT · à ce jour
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
