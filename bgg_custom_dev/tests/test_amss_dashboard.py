@@ -383,31 +383,46 @@ class TestAmssDashboard(TransactionCase):
 
     def test_category_metier(self):
         D = self.Dashboard
-        self.assertEqual(D._category_metier(self._categ('All / Saleable / PAC')), 'PAC')
-        self.assertEqual(D._category_metier(self._categ('All / Saleable / PAC / Air-eau')), 'PAC')
-        self.assertEqual(D._category_metier(self._categ('All / Saleable')), 'All / Saleable')
+        self.assertEqual(D._category_metier(self._categ('All / Saleable / PAC')), 'Chauffage / PAC')
+        self.assertEqual(D._category_metier(self._categ('All / Saleable / Boilers')), 'Chauffage / PAC')
+        self.assertEqual(D._category_metier(self._categ('All / Saleable / PAC / Air-eau')), 'Chauffage / PAC')
+        self.assertEqual(D._category_metier(self._categ('All / Saleable / Batteries')), 'Photovoltaïque')
+        self.assertEqual(D._category_metier(self._categ('All / Saleable / Isolation')), 'Isolation')
+        self.assertEqual(D._category_metier(self._categ('All / Saleable / Toiture')), 'Toiture')
+        self.assertEqual(D._category_metier(self._categ('All / Saleable')), 'Autres métiers')
         self.assertEqual(D._category_metier(self._categ('All / Expenses')), 'Autres')
         self.assertEqual(D._category_metier(self.env['product.category']), 'Aucun')
 
     def test_order_metier(self):
         D = self.Dashboard
-        pac = self._order_with('All / Saleable / PAC', 'All / Saleable / Services',
-                               'All / Saleable / Accessoires')
-        self.assertEqual(D._order_metier(pac), 'PAC', "services and accessories do not count")
-        mixed = self._order_with('All / Saleable / Panneaux', 'All / Saleable / Onduleurs')
+        pac = self._order_with('All / Saleable / PAC', 'All / Saleable / Boilers',
+                               'All / Saleable / Services', 'All / Saleable / Accessoires',
+                               'All / Expenses')
+        self.assertEqual(D._order_metier(pac), 'Chauffage / PAC',
+                         "boilers go with PAC; services, accessories, expenses do not count")
+        pv = self._order_with('All / Saleable / Panneaux', 'All / Saleable / Onduleurs',
+                              'All / Saleable / Batteries')
+        self.assertEqual(D._order_metier(pv), 'Photovoltaïque')
+        mixed = self._order_with('All / Saleable / Batteries', 'All / Saleable / PAC')
         self.assertEqual(D._order_metier(mixed), 'Mixte')
+        # "Frais divers" (filed under Isolation) does not decide the métier
+        frais = self._product_in('All / Saleable / Isolation')
+        frais.default_code = 'FRAIS-DIV'
+        softener = self._order_with('All / Saleable')
+        softener.order_line = [(0, 0, {'product_id': frais.id, 'product_uom_qty': 1, 'price_unit': 50.0})]
+        self.assertEqual(D._order_metier(softener), 'Autres métiers')
         services = self._order_with('All / Saleable / Services')
         self.assertEqual(D._order_metier(services), 'Services')
 
     def test_ca_by_metier_adds_up_to_ca_net(self):
         self._order_with('All / Saleable / PAC')
-        self._order_with('All / Saleable / Panneaux', 'All / Saleable / Batteries')
+        self._order_with('All / Saleable / Panneaux', 'All / Saleable / Isolation')
         f = self.Dashboard._resolve_filters()
         rows = self.Dashboard._ca_by_metier(f)
         ca_net = self.Dashboard._sales_figures(f['date_start'], f['date_end'], f['company_ids'])['ca_net']
         self.assertAlmostEqual(sum(r['amount'] for r in rows), ca_net, places=2)
         self.assertIn('Mixte', [r['key'] for r in rows])
-        action = self.Dashboard.open_card('metier:PAC')
+        action = self.Dashboard.open_card('metier:Chauffage / PAC')
         self.assertEqual(action['res_model'], 'sale.order')
 
     # ------------------------------------------------------------------
@@ -437,7 +452,7 @@ class TestAmssDashboard(TransactionCase):
         self.assertAlmostEqual(quality['panier_moyen'],
                                sum(confirmed.mapped('amount_untaxed')) / 2, places=2)
         self.assertAlmostEqual(quality['annulation_signature'], round(100 / 3, 1), places=1)
-        self.assertEqual([m['key'] for m in quality['panier_par_metier']], ['PAC'])
+        self.assertEqual([m['key'] for m in quality['panier_par_metier']], ['Chauffage / PAC'])
         # the seller is not in the Commercial group: counted in Autres
         autres = [b for b in figures['bc_par_commercial'] if b['key'] == 'autres']
         self.assertTrue(autres and autres[0]['count'] >= 2)
