@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen Custom Development',
-    'version': '19.0.1.27.0',
+    'version': '19.0.1.28.0',
     'category': 'Customizations',
     'summary': 'Custom business logic and automation for BelGoGreen',
     'description': """
@@ -57,6 +57,10 @@
           of the sale), restricted to the "Responsable Dossier" group
         - The Responsable is propagated to the projects of the order as
           project manager and as assignee of their open tasks
+        - "Confirmée au moins une fois" flag (x_was_confirmed): the dashboards
+          (Suivi Commercial, Call Center, AMSS) count a cancelled order as a
+          cancelled sale only if it was confirmed before; cancelled quotes are
+          left out (existing orders filled from the status history)
         - Form warnings: Responsable not assigned on a confirmed order,
           installation product (project-creating service) missing
         - Only the "Responsable Dossier Admin" group may set or change the

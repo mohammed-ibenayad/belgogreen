@@ -11,7 +11,7 @@ from odoo.exceptions import AccessError
 
 from .commercial_dashboard import CALL_CENTER_APPOINTMENT_REFS, COMMERCIAL_APPOINTMENT_REFS
 from .project_update import BLOCKED_STATUS
-from .sale_order import BGG_TZ
+from .sale_order import BGG_TZ, dashboard_states_domain
 
 _logger = logging.getLogger(__name__)
 
@@ -41,9 +41,9 @@ TOOLTIPS = {
         "condition de paiement : les RDV n'ont pas de condition de paiement. "
         "Cliquer : les RDV Présents de la période (dénominateur)."),
     'ventes_annulees': (
-        "Ventes Annulées = nombre de commandes de la période à l'état Annulé "
-        "(state = cancel), comme dans Suivi Commercial : un devis annulé avant "
-        "signature compte aussi."),
+        "Ventes Annulées = nombre de commandes de la période annulées après "
+        "avoir été confirmées (comme dans Suivi Commercial). Un devis annulé "
+        "avant signature ne compte pas."),
     'chantiers_retard': (
         "Chantiers en retard = projets admin (commandes confirmées) ayant au "
         "moins une tâche ouverte dont l'échéance dépasse la date de fin du "
@@ -213,7 +213,8 @@ class AmssManagementDashboard(models.TransientModel):
         domain = [
             ('date_order', '>=', fields.Datetime.to_string(date_start)),
             ('date_order', '<', fields.Datetime.to_string(date_end)),
-            ('state', 'in', states),
+            # cancelled orders: only those confirmed before (not cancelled quotes)
+            *dashboard_states_domain(states),
             ('company_id', 'in', company_ids),
         ]
         if payment_term_id:
