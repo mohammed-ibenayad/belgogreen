@@ -157,9 +157,11 @@ $amss-accent: #e8a500;
         }
     }
 
+    // KPI cards: share the full width (auto-fit collapses the empty tracks
+    // auto-fill would keep), wrapping on narrow screens.
     .amss_cards {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
         gap: 12px;
     }
 
@@ -275,7 +277,7 @@ $amss-accent: #e8a500;
 
     .amss_panels {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
         gap: 12px;
     }
 
