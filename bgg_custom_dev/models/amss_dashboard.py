@@ -57,6 +57,14 @@ TOOLTIPS = {
     'encaisse': (
         "Encaissé = part HT effectivement payée de ces factures (paiements "
         "partiels inclus, au prorata), avoirs déduits."),
+    'reste_a_facturer': (
+        "Reste à facturer = Signé − Facturé (zone grise des barres Facturé et "
+        "Encaissé). Liste : les commandes dont le montant facturé HT (avoirs "
+        "déduits) est inférieur au montant HT de la commande."),
+    'reste_a_encaisser': (
+        "Reste à encaisser = Facturé − Encaissé (zone claire de la barre "
+        "Encaissé). Liste : les factures et avoirs de ces commandes pas encore "
+        "entièrement payés."),
     'carnet_bloques': (
         "Bloqués = commandes confirmées non terminées dont le projet admin est "
         "au statut « Bloqué »."),
@@ -318,14 +326,18 @@ class AmssManagementDashboard(models.TransientModel):
         orders = self._period_orders(date_start, date_end, company_ids, ['sale', 'done'],
                                      payment_term_id)
         moves = self._invoiced_moves(orders)
-        facture = sum(moves.mapped('amount_untaxed_signed'))
-        encaisse = sum(
+        signe = round(sum(orders.mapped('amount_untaxed')), 2)
+        facture = round(sum(moves.mapped('amount_untaxed_signed')), 2)
+        encaisse = round(sum(
             move.amount_untaxed_signed * (move.amount_total - move.amount_residual) / move.amount_total
-            for move in moves if move.amount_total)
+            for move in moves if move.amount_total), 2)
         return {
-            'signe': round(sum(orders.mapped('amount_untaxed')), 2),
-            'facture': round(facture, 2),
-            'encaisse': round(encaisse, 2),
+            'signe': signe,
+            'facture': facture,
+            'encaisse': encaisse,
+            # remaining parts, shown as the grey / light zones of the bars
+            'reste_a_facturer': round(max(0.0, signe - facture), 2),
+            'reste_a_encaisser': round(max(0.0, facture - encaisse), 2),
         }
 
     @api.model
@@ -333,6 +345,18 @@ class AmssManagementDashboard(models.TransientModel):
         """Posted customer invoices and credit notes of `orders` (Facturé)."""
         return orders.invoice_ids.filtered(
             lambda m: m.state == 'posted' and m.move_type in ('out_invoice', 'out_refund'))
+
+    @api.model
+    def _not_fully_invoiced(self, orders):
+        """Orders whose invoiced HT amount (posted invoices, credit notes
+        deducted) is below their HT amount (Reste à facturer)."""
+        return orders.filtered(lambda o: o.currency_id.compare_amounts(
+            sum(self._invoiced_moves(o).mapped('amount_untaxed_signed')), o.amount_untaxed) < 0)
+
+    @api.model
+    def _not_fully_paid(self, moves):
+        """Invoices and credit notes not fully paid yet (Reste à encaisser)."""
+        return moves.filtered(lambda m: not m.currency_id.is_zero(m.amount_residual))
 
     @api.model
     def _resolve_filters(self, month=None, year=None, period_type='month', quarter=None,
@@ -552,7 +576,8 @@ class AmssManagementDashboard(models.TransientModel):
     def _card_records(self, card, f):
         """Records behind a card or a bar (the ones its figure is computed
         from), for the resolved filters `f`."""
-        if card in ('ca_net', 'ventes_confirmees', 'signe', 'facture', 'encaisse'):
+        if card in ('ca_net', 'ventes_confirmees', 'signe', 'facture', 'encaisse',
+                    'reste_a_facturer', 'reste_a_encaisser'):
             orders = self._period_orders(f['date_start'], f['date_end'], f['company_ids'],
                                          ['sale', 'done'], f['payment_term_id'])
             if f.get('user_id') and card in ('ca_net', 'ventes_confirmees'):
@@ -562,6 +587,10 @@ class AmssManagementDashboard(models.TransientModel):
             if card == 'encaisse':
                 return self._invoiced_moves(orders).filtered(
                     lambda m: m.amount_total and m.amount_residual < m.amount_total)
+            if card == 'reste_a_facturer':
+                return self._not_fully_invoiced(orders)
+            if card == 'reste_a_encaisser':
+                return self._not_fully_paid(self._invoiced_moves(orders))
             return orders
         if card.startswith('metier:'):
             return self._orders_by_metier(f).get(card[len('metier:'):], self.env['sale.order'])
@@ -691,6 +720,7 @@ class AmssManagementDashboard(models.TransientModel):
         titles = {
             'ca_net': 'CA NET', 'ventes_confirmees': 'Ventes confirmées', 'signe': 'Signé',
             'facture': 'Facturé', 'encaisse': 'Encaissé',
+            'reste_a_facturer': 'Reste à facturer', 'reste_a_encaisser': 'Reste à encaisser',
             'chantiers_retard': 'Chantiers en retard', 'dossiers_bloques': 'Dossiers bloqués',
             'carnet_a_planifier': 'Carnet de commandes – À planifier',
             'carnet_planifies': 'Carnet de commandes – Planifiés',
@@ -784,7 +814,9 @@ class AmssManagementDashboard(models.TransientModel):
         row += 1
         sheet.write(row, 0, 'CA SIGNÉ / FACTURÉ / ENCAISSÉ', header_fmt)
         sheet.write(row, 1, 'Montant HT', header_fmt)
-        for label, key in (('Signé', 'signe'), ('Facturé', 'facture'), ('Encaissé', 'encaisse')):
+        for label, key in (('Signé', 'signe'), ('Facturé', 'facture'), ('Encaissé', 'encaisse'),
+                           ('Reste à facturer', 'reste_a_facturer'),
+                           ('Reste à encaisser', 'reste_a_encaisser')):
             row += 1
             sheet.write(row, 0, label, label_fmt)
             sheet.write_number(row, 1, cash[key], money_fmt)
@@ -855,6 +887,7 @@ class AmssManagementDashboard(models.TransientModel):
                 ('TX CONVERSION', 'tx_conversion'), ('CHANTIERS EN RETARD', 'chantiers_retard'),
                 ('DOSSIERS BLOQUÉS', 'dossiers_bloques'), ('SIGNÉ', 'signe'),
                 ('FACTURÉ', 'facture'), ('ENCAISSÉ', 'encaisse'),
+                ('RESTE À FACTURER', 'reste_a_facturer'), ('RESTE À ENCAISSER', 'reste_a_encaisser'),
                 ('CARNET – BLOQUÉS', 'carnet_bloques'), ('CARNET – À PLANIFIER', 'carnet_a_planifier'),
                 ('CARNET – EN COURS', 'carnet_en_cours'), ('CARNET – PLANIFIÉS', 'carnet_planifies'),
                 ('CARNET DE COMMANDES', 'carnet_total'),

@@ -177,14 +177,31 @@
                                 <span class="amss_bar_label">
                                     <t t-esc="bar[1]"/> <i class="fa fa-info-circle amss_info" t-att-title="tips[bar[0]]"/>
                                 </span>
+                                <!-- remaining parts in the bar: light = reste à encaisser,
+                                     grey = reste à facturer; each opens its own list -->
+                                <t t-set="cash" t-value="state.data.cash_flow"/>
+                                <t t-set="showDue" t-value="bar[0] === 'encaisse' and cash.reste_a_encaisser > 0"/>
                                 <span class="amss_bar_track">
-                                    <span class="amss_bar_fill" t-att-style="'width: ' + barWidth(bar[0])"/>
+                                    <span t-att-class="'amss_bar_fill' + (showDue ? ' amss_bar_fill_joined' : '')"
+                                          t-att-style="'width: ' + barWidth(bar[0])"/>
+                                    <span t-if="showDue" class="amss_bar_due"
+                                          t-att-style="'width: ' + barWidth('reste_a_encaisser')"
+                                          t-att-title="'Reste à encaisser : ' + formatAmount(cash.reste_a_encaisser) + ' – cliquer pour voir les factures'"
+                                          t-on-click.stop="() => this.openCard('reste_a_encaisser')"/>
+                                    <span t-if="bar[0] !== 'signe' and cash.reste_a_facturer > 0" class="amss_bar_rest"
+                                          t-att-title="(bar[0] === 'facture' ? 'Reste à facturer : ' : 'Non facturé : ') + formatAmount(cash.reste_a_facturer) + ' – cliquer pour voir les commandes'"
+                                          t-on-click.stop="() => this.openCard('reste_a_facturer')"/>
                                 </span>
-                                <span class="amss_bar_value" t-att-title="formatAmount(state.data.cash_flow[bar[0]])"
-                                      t-esc="formatThousands(state.data.cash_flow[bar[0]])"/>
+                                <span class="amss_bar_value" t-att-title="formatAmount(cash[bar[0]])"
+                                      t-esc="formatThousands(cash[bar[0]])"/>
                             </div>
                         </t>
-                        <p class="amss_panel_note">Commandes confirmées dans la période, montants HT.</p>
+                        <p class="amss_panel_note">
+                            Commandes confirmées dans la période, montants HT.
+                            <span class="amss_legend amss_legend_rest"/> Reste à facturer
+                            <span class="amss_legend amss_legend_due"/> Reste à encaisser
+                            (survoler pour le montant, cliquer pour la liste).
+                        </p>
                     </div>
 
                     <!-- Carnet de commandes (à ce jour) -->
