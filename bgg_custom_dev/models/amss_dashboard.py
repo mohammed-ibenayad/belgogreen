@@ -70,6 +70,19 @@ TOOLTIPS = {
         "Reste à encaisser = Facturé − Encaissé (zone claire de la barre "
         "Encaissé). Liste : les factures et avoirs de ces commandes pas encore "
         "entièrement payés."),
+    'recouvrement_facturer': (
+        "Reste à facturer (à ce jour) = pour chaque commande confirmée, toutes "
+        "dates de signature : montant HT − montant facturé HT (factures "
+        "comptabilisées, avoirs déduits), commandes où il reste à facturer."),
+    'recouvrement_encaisser': (
+        "Reste à encaisser (à ce jour) = part HT non payée des factures et "
+        "avoirs comptabilisés de toutes les commandes confirmées : montant HT × "
+        "reste à payer ÷ montant TTC."),
+    'recouvrement_sss': (
+        "Reste à encaisser – chantiers SSS terminés (à ce jour) = commandes "
+        "confirmées dont le projet SSS (service sur site) a toutes ses tâches "
+        "terminées ou annulées (au moins une terminée) : montant HT − montant "
+        "encaissé HT, facturé ou non."),
     'carnet_bloques': (
         "Bloqués = commandes confirmées non terminées dont le projet admin est "
         "au statut « Bloqué »."),
@@ -431,6 +444,101 @@ class AmssManagementDashboard(models.TransientModel):
             rows[row] |= order
         return rows
 
+    # ------------------------------------------------------------------
+    # Recouvrement (Direction tab), à ce jour: all confirmed orders
+    # ------------------------------------------------------------------
+
+    @api.model
+    def _confirmed_orders(self, company_ids, payment_term_id=None):
+        """Confirmed orders of the companies, whatever their date."""
+        domain = [('state', 'in', ['sale', 'done']), ('company_id', 'in', company_ids)]
+        if payment_term_id:
+            domain.append(('payment_term_id', '=', payment_term_id))
+        return self.env['sale.order'].sudo().search(domain)
+
+    @api.model
+    def _paid_untaxed(self, moves):
+        """Paid part (HT) of invoices / credit notes, credit notes deducted:
+        HT × (total − residual) / total, as in Encaissé."""
+        return sum(
+            move.amount_untaxed_signed * (move.amount_total - move.amount_residual) / move.amount_total
+            for move in moves if move.amount_total)
+
+    @api.model
+    def _sss_projects_by_order(self, orders):
+        """{order id: field service (SSS) projects} for `orders`. The SSS
+        project is created by the "Créer tâches SSS" server action (Studio):
+        a field service project linked to the order (sale_order_id) and named
+        "<order> - SSS - <client>"."""
+        Project = self.env['project.project'].sudo()
+        if 'is_fsm' not in Project._fields or not orders:
+            return {}
+        by_name = {order.name: order.id for order in orders}
+        projects = Project.search([('is_fsm', '=', True), ('is_template', '=', False)])
+        result = {}
+        for project in projects:
+            order_id = (project.sale_order_id.id if 'sale_order_id' in Project._fields else False)
+            if order_id not in orders.ids:
+                order_id = by_name.get((project.name or '').split(' - SSS - ')[0].strip())
+            if order_id:
+                result[order_id] = result.get(order_id, Project.browse()) | project
+        return result
+
+    @api.model
+    def _sss_finished_orders(self, orders):
+        """Orders whose SSS project(s) have all their tasks closed (done or
+        cancelled), at least one done."""
+        sss = self._sss_projects_by_order(orders)
+        if not sss:
+            return orders.browse()
+        projects = self.env['project.project'].sudo().browse(
+            [p.id for ps in sss.values() for p in ps])
+        tasks_by_project = self.env['project.task'].sudo().search(
+            [('project_id', 'in', projects.ids)]).grouped('project_id')
+
+        def finished(project):
+            tasks = tasks_by_project.get(project, self.env['project.task'])
+            return (tasks and all(t.state in ('1_done', '1_canceled') for t in tasks)
+                    and any(t.state == '1_done' for t in tasks))
+        return orders.filtered(lambda o: o.id in sss and all(finished(p) for p in sss[o.id]))
+
+    @api.model
+    def _recouvrement(self, company_ids, payment_term_id=None):
+        """Reste à facturer / Reste à encaisser / Reste à encaisser des
+        chantiers SSS terminés, à ce jour. Returns {key: (records, amount)}."""
+        orders = self._confirmed_orders(company_ids, payment_term_id)
+        moves = self._invoiced_moves(orders)
+        rounding = self.env.company.currency_id
+
+        to_invoice, to_invoice_amount = orders.browse(), 0.0
+        for order in orders:
+            gap = order.amount_untaxed - sum(self._invoiced_moves(order).mapped('amount_untaxed_signed'))
+            if rounding.compare_amounts(gap, 0) > 0:
+                to_invoice |= order
+                to_invoice_amount += gap
+
+        unpaid = self._not_fully_paid(moves)
+        unpaid_amount = sum(
+            move.amount_untaxed_signed * move.amount_residual / move.amount_total
+            for move in unpaid if move.amount_total)
+
+        sss_due, sss_amount = orders.browse(), 0.0
+        for order in self._sss_finished_orders(orders):
+            gap = order.amount_untaxed - self._paid_untaxed(self._invoiced_moves(order))
+            if rounding.compare_amounts(gap, 0) > 0:
+                sss_due |= order
+                sss_amount += gap
+        return {
+            'recouvrement_facturer': (to_invoice, round(to_invoice_amount, 2)),
+            'recouvrement_encaisser': (unpaid, round(unpaid_amount, 2)),
+            'recouvrement_sss': (sss_due, round(sss_amount, 2)),
+        }
+
+    @api.model
+    def _recouvrement_figures(self, company_ids, payment_term_id=None):
+        return {key: {'amount': amount, 'count': len(records)}
+                for key, (records, amount) in self._recouvrement(company_ids, payment_term_id).items()}
+
     @api.model
     def _order_book_figures(self, company_ids, payment_term_id=None):
         rows = self._order_book(company_ids, payment_term_id)
@@ -630,6 +738,8 @@ class AmssManagementDashboard(models.TransientModel):
             if card == 'funnel_rdv_tenus':
                 events = events.filtered(lambda e: e.appointment_status == 'attended')
             return events
+        if card.startswith('recouvrement_'):
+            return self._recouvrement(f['company_ids'], f['payment_term_id'])[card][0]
         if card in CARNET_ROWS or card == 'carnet_total':
             rows = self._order_book(f['company_ids'], f['payment_term_id'])
             if card in rows:
@@ -695,6 +805,7 @@ class AmssManagementDashboard(models.TransientModel):
             'cards_user': self._kpi_cards(f, user_id) if user_id else False,
             'cash_flow': self._cash_flow(date_start, date_end, company_ids, payment_term_id),
             'order_book': self._order_book_figures(company_ids, payment_term_id),
+            'recouvrement': self._recouvrement_figures(company_ids, payment_term_id),
             'metiers': {'ca_par_metier': self._ca_by_metier(f)},
             'commercial': self._commercial_figures(f),
         }
@@ -751,6 +862,9 @@ class AmssManagementDashboard(models.TransientModel):
             'signe': 'Signé',
             'facture': 'Facturé', 'encaisse': 'Encaissé',
             'reste_a_facturer': 'Reste à facturer', 'reste_a_encaisser': 'Reste à encaisser',
+            'recouvrement_facturer': 'Reste à facturer',
+            'recouvrement_encaisser': 'Reste à encaisser',
+            'recouvrement_sss': 'Reste à encaisser – chantiers SSS terminés',
             'chantiers_retard': 'Chantiers en retard', 'dossiers_bloques': 'Dossiers bloqués',
             'carnet_a_planifier': 'Carnet de commandes – À planifier',
             'carnet_planifies': 'Carnet de commandes – Planifiés',
@@ -770,7 +884,8 @@ class AmssManagementDashboard(models.TransientModel):
                        'funnel_bc': 'BC signés (confirmés + annulés)'})
         if f.get('user_id') and (card.startswith(('panier_metier:', 'funnel_'))):
             titles[card] += ' (%s)' % self.env['res.users'].sudo().browse(f['user_id']).name
-        suffix = ('à ce jour' if card == 'chantiers_retard' or card.startswith('carnet_')
+        suffix = ('à ce jour' if card == 'chantiers_retard'
+                  or card.startswith(('carnet_', 'recouvrement_'))
                   or (card == 'dossiers_bloques' and f['blocked_cutoff'] is None)
                   else f['period_label'])
         return {
@@ -852,6 +967,19 @@ class AmssManagementDashboard(models.TransientModel):
             sheet.write(row, 0, label, label_fmt)
             sheet.write_number(row, 1, cash[key], money_fmt)
 
+        recouvrement = data['recouvrement']
+        row += 2
+        sheet.write(row, 0, 'RECOUVREMENT (à ce jour)', header_fmt)
+        sheet.write(row, 1, 'Montant HT', header_fmt)
+        sheet.write(row, 2, 'Nombre', header_fmt)
+        for label, key in (('Reste à facturer', 'recouvrement_facturer'),
+                           ('Reste à encaisser', 'recouvrement_encaisser'),
+                           ('Reste à encaisser – chantiers SSS terminés', 'recouvrement_sss')):
+            row += 1
+            sheet.write(row, 0, label, label_fmt)
+            sheet.write_number(row, 1, recouvrement[key]['amount'], money_fmt)
+            sheet.write_number(row, 2, recouvrement[key]['count'], cell_fmt)
+
         book = data['order_book']
         row += 2
         sheet.write(row, 0, 'CARNET DE COMMANDES (à ce jour)', header_fmt)
@@ -920,6 +1048,9 @@ class AmssManagementDashboard(models.TransientModel):
                 ('DOSSIERS BLOQUÉS', 'dossiers_bloques'), ('SIGNÉ', 'signe'),
                 ('FACTURÉ', 'facture'), ('ENCAISSÉ', 'encaisse'),
                 ('RESTE À FACTURER', 'reste_a_facturer'), ('RESTE À ENCAISSER', 'reste_a_encaisser'),
+                ('RESTE À FACTURER (À CE JOUR)', 'recouvrement_facturer'),
+                ('RESTE À ENCAISSER (À CE JOUR)', 'recouvrement_encaisser'),
+                ('À ENCAISSER – SSS TERMINÉS', 'recouvrement_sss'),
                 ('CARNET – BLOQUÉS', 'carnet_bloques'), ('CARNET – À PLANIFIER', 'carnet_a_planifier'),
                 ('CARNET – EN COURS', 'carnet_en_cours'), ('CARNET – PLANIFIÉS', 'carnet_planifies'),
                 ('CARNET DE COMMANDES', 'carnet_total'),

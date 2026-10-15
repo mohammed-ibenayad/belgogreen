@@ -559,3 +559,44 @@ class TestAmssDashboard(TransactionCase):
         refund.action_post()
         final = self.Dashboard._cash_flow(start, end, companies)
         self.assertAlmostEqual(final['facture'] - before['facture'], 0, places=2)
+
+    # ------------------------------------------------------------------
+    # Recouvrement (à ce jour)
+    # ------------------------------------------------------------------
+
+    def test_recouvrement(self):
+        companies = [self.env.company.id]
+        journal = self.env['account.journal'].search([
+            ('type', 'in', ('bank', 'cash')), ('company_id', '=', self.env.company.id)], limit=1)
+        if not journal:
+            self.skipTest("no bank or cash journal to register a payment")
+        not_invoiced = self._order(service=False)
+        order = self._order(service=False, qty=2)
+        invoice = order._create_invoices()
+        invoice.action_post()
+        self.env['account.payment.register'].with_context(
+            active_model='account.move', active_ids=invoice.ids,
+        ).create({'amount': invoice.amount_total / 2, 'journal_id': journal.id})._create_payments()
+
+        rec = self.Dashboard._recouvrement(companies)
+        to_invoice, _amount = rec['recouvrement_facturer']
+        self.assertIn(not_invoiced, to_invoice)
+        self.assertNotIn(order, to_invoice, "fully invoiced")
+        unpaid, _amount = rec['recouvrement_encaisser']
+        self.assertIn(invoice, unpaid)
+        figures = self.Dashboard._recouvrement_figures(companies)
+        self.assertEqual(figures['recouvrement_encaisser']['count'], len(unpaid))
+        self.assertEqual(self.Dashboard.open_card('recouvrement_facturer')['res_model'], 'sale.order')
+
+        # SSS project with all tasks done: the unpaid HT of the order is due
+        Project = self.env['project.project']
+        if 'is_fsm' not in Project._fields:
+            self.skipTest("Field Service not installed")
+        sss = Project.create({'name': f"{order.name} - SSS - {order.partner_id.name}", 'is_fsm': True})
+        task = self.env['project.task'].create({'name': 'Installation', 'project_id': sss.id})
+        sss_orders, _amount = self.Dashboard._recouvrement(companies)['recouvrement_sss']
+        self.assertNotIn(order, sss_orders, "SSS task still open")
+        task.state = '1_done'
+        sss_orders, amount = self.Dashboard._recouvrement(companies)['recouvrement_sss']
+        self.assertIn(order, sss_orders)
+        self.assertGreaterEqual(amount, order.amount_untaxed / 2 - 0.01)
