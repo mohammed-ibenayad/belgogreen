@@ -267,6 +267,12 @@ $amss-due: #9fd0d2;    // light teal (reste à encaisser)
         color: $amss-muted;
     }
 
+    // "à ce jour" (and "au <date>" for Dossiers bloqués): always bold, never italic
+    .amss_as_of {
+        font-weight: 700;
+        font-style: normal;
+    }
+
     .amss_card_note {
         font-size: 11px;
         font-style: italic;
