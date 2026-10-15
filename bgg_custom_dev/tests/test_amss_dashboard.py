@@ -560,12 +560,24 @@ class TestAmssDashboard(TransactionCase):
         refund.action_post()
         final = self.Dashboard._cash_flow(start, end, companies)
         self.assertAlmostEqual(final['facture'] - before['facture'], 0, places=2)
-        # it is tied to the invoiced quantities: the order is to invoice again
+        # a credit note never puts quantities back "to invoice"
+        self.assertAlmostEqual(self.Dashboard._not_invoiced_untaxed(order), 0, places=2)
+
+    def test_reversed_invoice_is_not_invoiced(self):
+        """An invoice fully cancelled by its credit note (payment status
+        reversed) counts as not invoiced: the order is to invoice again."""
+        order = self._order(service=False)
+        invoice = order._create_invoices()
+        invoice.action_post()
+        self.assertAlmostEqual(self.Dashboard._not_invoiced_untaxed(order), 0, places=2)
+        invoice._reverse_moves(cancel=True)
+        self.assertEqual(invoice.payment_state, 'reversed')
         self.assertAlmostEqual(self.Dashboard._not_invoiced_untaxed(order), order.amount_untaxed, places=2)
 
-    def test_gesture_credit_note_is_not_to_invoice(self):
-        """A credit note not tied to the invoiced quantities (commercial
-        gesture) leaves nothing to invoice and, once paid, nothing to collect."""
+    def test_partial_credit_note_is_a_reduction(self):
+        """A partial credit note, made from the invoice (linked to the order
+        lines, e.g. a commercial reduction) or on its own, leaves nothing to
+        invoice."""
         order = self._order(service=False)
         self.assertAlmostEqual(self.Dashboard._not_invoiced_untaxed(order), order.amount_untaxed, places=2)
         invoice = order._create_invoices()
@@ -579,6 +591,12 @@ class TestAmssDashboard(TransactionCase):
         gesture.action_post()
         self.assertAlmostEqual(self.Dashboard._not_invoiced_untaxed(order), 0, places=2)
         self.assertNotIn(order, self.Dashboard._not_fully_invoiced(order))
+        # credit note from the invoice, on the order lines, for part of the price
+        refund = invoice._reverse_moves()
+        refund.invoice_line_ids.write({'price_unit': 100.0})
+        refund.action_post()
+        self.assertTrue(refund.invoice_line_ids.sale_line_ids)
+        self.assertAlmostEqual(self.Dashboard._not_invoiced_untaxed(order), 0, places=2)
 
     # ------------------------------------------------------------------
     # Recouvrement (à ce jour)
