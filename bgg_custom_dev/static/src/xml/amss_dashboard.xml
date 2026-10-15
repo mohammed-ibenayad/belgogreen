@@ -176,6 +176,25 @@
                     </div>
                 </div>
 
+                <!-- Direction tab: recouvrement cards (à ce jour) -->
+                <div class="amss_cards" t-if="state.activeTab === 'direction'">
+                    <t t-foreach="[['recouvrement_facturer', 'Reste à facturer', 'commande'], ['recouvrement_encaisser', 'Reste à encaisser', 'facture'], ['recouvrement_sss', 'À encaisser – chantiers SSS terminés', 'commande']]"
+                       t-as="rc" t-key="rc[0]">
+                        <t t-set="rcData" t-value="state.data.recouvrement[rc[0]]"/>
+                        <div class="amss_card amss_clickable" t-on-click="() => this.openCard(rc[0])"
+                             title="Cliquer pour voir le détail">
+                            <div class="amss_card_title">
+                                <t t-esc="rc[1]"/> <i class="fa fa-info-circle amss_info" t-att-title="tips[rc[0]]"/>
+                            </div>
+                            <div class="amss_card_value" t-att-title="formatAmount(rcData.amount)"
+                                 t-esc="formatKAmount(rcData.amount)"/>
+                            <div class="amss_card_delta amss_delta_neutral">
+                                <t t-esc="rcData.count"/> <t t-esc="rc[2]"/><t t-if="rcData.count > 1">s</t> · à ce jour
+                            </div>
+                        </div>
+                    </t>
+                </div>
+
                 <!-- Direction tab -->
                 <div class="amss_panels" t-if="state.activeTab === 'direction'">
                     <div class="amss_panel">

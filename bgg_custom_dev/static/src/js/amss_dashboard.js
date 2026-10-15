@@ -289,7 +289,7 @@ export class AmssManagementDashboard extends Component {
             return `Filtres appliqués : Période, Société, Conditions de paiement${term}.`;
         }
         return `Filtres appliqués : Période, Société, Conditions de paiement${term}. ` +
-            "À ce jour, sans période : Chantiers en retard, Carnet de commandes.";
+            "À ce jour, sans période : Chantiers en retard, Reste à facturer / à encaisser, Carnet de commandes.";
     }
 
     formatDelta(key) {
