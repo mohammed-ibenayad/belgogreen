@@ -65,9 +65,10 @@ TOOLTIPS = {
     'reste_a_facturer': (
         "Reste à facturer (zone grise des barres Facturé et Encaissé) = pour "
         "chaque commande, montant HT des quantités pas encore facturées "
-        "(colonne Facturé des lignes), acomptes facturés déduits. Un avoir de "
-        "geste commercial, sans lien avec les quantités facturées, n'est pas "
-        "« à facturer ». Liste : ces commandes."),
+        "(factures clients comptabilisées), acomptes facturés déduits. Un "
+        "avoir ne remet jamais de quantités « à facturer » (il réduit ce qui "
+        "est dû) ; une facture entièrement annulée par un avoir compte comme "
+        "non facturée. Liste : ces commandes."),
     'reste_a_encaisser': (
         "Reste à encaisser = Facturé − Encaissé (zone claire de la barre "
         "Encaissé). Liste : les factures et avoirs de ces commandes pas encore "
@@ -75,8 +76,9 @@ TOOLTIPS = {
     'recouvrement_facturer': (
         "Reste à facturer (à ce jour) = pour chaque commande confirmée, toutes "
         "dates de signature : montant HT des quantités pas encore facturées "
-        "(colonne Facturé des lignes), acomptes facturés déduits. Un avoir de "
-        "geste commercial n'est pas « à facturer »."),
+        "(factures clients comptabilisées), acomptes facturés déduits. Un "
+        "avoir ne remet jamais de quantités « à facturer » ; une facture "
+        "entièrement annulée par un avoir compte comme non facturée."),
     'recouvrement_encaisser': (
         "Reste à encaisser (à ce jour) = part HT non payée des factures et "
         "avoirs comptabilisés de toutes les commandes confirmées : montant HT × "
@@ -379,19 +381,26 @@ class AmssManagementDashboard(models.TransientModel):
 
     @api.model
     def _not_invoiced_untaxed(self, order):
-        """HT amount of `order` not invoiced yet, from the invoiced quantities
-        of its lines (the order's "Facturé" column): line HT × (ordered −
-        invoiced) / ordered; an invoiced down payment not yet deducted by the
-        final invoice comes off. A credit note not tied to the invoiced
-        quantities (commercial gesture) is not "to invoice"."""
+        """HT amount of `order` not invoiced yet: line HT × (ordered −
+        invoiced) / ordered, the invoiced quantities coming from the posted
+        customer invoices only; an invoiced down payment not yet deducted by
+        the final invoice comes off. Credit notes never put quantities back
+        "to invoice": they only reduce what is owed (Reste à encaisser). An
+        invoice fully cancelled by a credit note (payment status "reversed")
+        counts as not invoiced."""
         total = 0.0
         for line in order.order_line:
             if line.display_type:
                 continue
+            invoice_lines = line.invoice_lines.filtered(
+                lambda l: l.move_id.state == 'posted' and l.move_id.move_type == 'out_invoice'
+                and l.move_id.payment_state != 'reversed')
             if line.is_downpayment:
-                total -= line.untaxed_amount_invoiced
+                # down payment invoiced (+) and deducted by the final invoice (−)
+                total -= sum(invoice_lines.mapped('price_subtotal'))
             elif line.product_uom_qty:
-                total += line.price_subtotal * (line.product_uom_qty - line.qty_invoiced) / line.product_uom_qty
+                invoiced = sum(invoice_lines.mapped('quantity'))
+                total += line.price_subtotal * (line.product_uom_qty - invoiced) / line.product_uom_qty
         return total
 
     @api.model
