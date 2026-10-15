@@ -9,7 +9,8 @@ $amss-muted: #6c757d;
 $amss-good: #1e7e34;
 $amss-bad: #c0392b;
 $amss-accent: #e8a500;
-$amss-rest: #e5ebeb;   // empty part of a bar (reste à facturer)
+$amss-rest: #d9e1e1;   // reste à facturer zone of the bars
+$amss-track: #eef2f2;  // empty part of a bar
 $amss-due: #9fd0d2;    // light teal (reste à encaisser)
 
 .amss_dashboard {
@@ -391,7 +392,7 @@ $amss-due: #9fd0d2;    // light teal (reste à encaisser)
         .amss_bar_track {
             display: flex;
             height: 12px;
-            background: $amss-rest;
+            background: $amss-track;
             border-radius: 6px;
             overflow: hidden;
         }
@@ -408,8 +409,9 @@ $amss-due: #9fd0d2;    // light teal (reste à encaisser)
             border-radius: 6px 0 0 6px;
         }
 
-        // Reste à encaisser (light) and reste à facturer (grey, rest of the
-        // track): clickable zones with their own list.
+        // Reste à encaisser (light) and reste à facturer (grey): clickable
+        // zones with their own list. What is left of the track (e.g. a
+        // commercial gesture credit note) is neither.
         .amss_bar_due {
             flex: none;
             height: 100%;
@@ -422,8 +424,9 @@ $amss-due: #9fd0d2;    // light teal (reste à encaisser)
         }
 
         .amss_bar_rest {
-            flex: 1 1 auto;
+            flex: none;
             height: 100%;
+            background: $amss-rest;
             cursor: pointer;
 
             &:hover {

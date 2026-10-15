@@ -209,14 +209,16 @@
                                      grey = reste à facturer; each opens its own list -->
                                 <t t-set="cash" t-value="state.data.cash_flow"/>
                                 <t t-set="showDue" t-value="bar[0] === 'encaisse' and cash.reste_a_encaisser > 0"/>
+                                <t t-set="showRest" t-value="bar[0] !== 'signe' and cash.reste_a_facturer > 0"/>
                                 <span class="amss_bar_track">
-                                    <span t-att-class="'amss_bar_fill' + (showDue ? ' amss_bar_fill_joined' : '')"
+                                    <span t-att-class="'amss_bar_fill' + (showDue or showRest ? ' amss_bar_fill_joined' : '')"
                                           t-att-style="'width: ' + barWidth(bar[0])"/>
                                     <span t-if="showDue" class="amss_bar_due"
                                           t-att-style="'width: ' + barWidth('reste_a_encaisser')"
                                           t-att-title="'Reste à encaisser : ' + formatAmount(cash.reste_a_encaisser) + ' – cliquer pour voir les factures'"
                                           t-on-click.stop="() => this.openCard('reste_a_encaisser')"/>
-                                    <span t-if="bar[0] !== 'signe' and cash.reste_a_facturer > 0" class="amss_bar_rest"
+                                    <span t-if="showRest" class="amss_bar_rest"
+                                          t-att-style="'width: ' + barWidth('reste_a_facturer')"
                                           t-att-title="(bar[0] === 'facture' ? 'Reste à facturer : ' : 'Non facturé : ') + formatAmount(cash.reste_a_facturer) + ' – cliquer pour voir les commandes'"
                                           t-on-click.stop="() => this.openCard('reste_a_facturer')"/>
                                 </span>

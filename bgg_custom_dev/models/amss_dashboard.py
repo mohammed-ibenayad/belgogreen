@@ -63,17 +63,20 @@ TOOLTIPS = {
         "Encaissé = part HT effectivement payée de ces factures (paiements "
         "partiels inclus, au prorata), avoirs déduits."),
     'reste_a_facturer': (
-        "Reste à facturer = Signé − Facturé (zone grise des barres Facturé et "
-        "Encaissé). Liste : les commandes dont le montant facturé HT (avoirs "
-        "déduits) est inférieur au montant HT de la commande."),
+        "Reste à facturer (zone grise des barres Facturé et Encaissé) = pour "
+        "chaque commande, montant HT des quantités pas encore facturées "
+        "(colonne Facturé des lignes), acomptes facturés déduits. Un avoir de "
+        "geste commercial, sans lien avec les quantités facturées, n'est pas "
+        "« à facturer ». Liste : ces commandes."),
     'reste_a_encaisser': (
         "Reste à encaisser = Facturé − Encaissé (zone claire de la barre "
         "Encaissé). Liste : les factures et avoirs de ces commandes pas encore "
         "entièrement payés."),
     'recouvrement_facturer': (
         "Reste à facturer (à ce jour) = pour chaque commande confirmée, toutes "
-        "dates de signature : montant HT − montant facturé HT (factures "
-        "comptabilisées, avoirs déduits), commandes où il reste à facturer."),
+        "dates de signature : montant HT des quantités pas encore facturées "
+        "(colonne Facturé des lignes), acomptes facturés déduits. Un avoir de "
+        "geste commercial n'est pas « à facturer »."),
     'recouvrement_encaisser': (
         "Reste à encaisser (à ce jour) = part HT non payée des factures et "
         "avoirs comptabilisés de toutes les commandes confirmées : montant HT × "
@@ -81,8 +84,9 @@ TOOLTIPS = {
     'recouvrement_sss': (
         "Reste à encaisser – chantiers SSS terminés (à ce jour) = commandes "
         "confirmées dont le projet SSS (service sur site) a toutes ses tâches "
-        "terminées ou annulées (au moins une terminée) : montant HT − montant "
-        "encaissé HT, facturé ou non."),
+        "terminées ou annulées (au moins une terminée) : ce que le client doit "
+        "encore, HT = reste à facturer de la commande + part non payée de ses "
+        "factures et avoirs."),
     'carnet_bloques': (
         "Bloqués = commandes confirmées non terminées dont le projet admin est "
         "au statut « Bloqué »."),
@@ -362,7 +366,8 @@ class AmssManagementDashboard(models.TransientModel):
             'facture': facture,
             'encaisse': encaisse,
             # remaining parts, shown as the grey / light zones of the bars
-            'reste_a_facturer': round(max(0.0, signe - facture), 2),
+            'reste_a_facturer': round(sum(
+                max(0.0, self._not_invoiced_untaxed(order)) for order in orders), 2),
             'reste_a_encaisser': round(max(0.0, facture - encaisse), 2),
         }
 
@@ -373,11 +378,27 @@ class AmssManagementDashboard(models.TransientModel):
             lambda m: m.state == 'posted' and m.move_type in ('out_invoice', 'out_refund'))
 
     @api.model
+    def _not_invoiced_untaxed(self, order):
+        """HT amount of `order` not invoiced yet, from the invoiced quantities
+        of its lines (the order's "Facturé" column): line HT × (ordered −
+        invoiced) / ordered; an invoiced down payment not yet deducted by the
+        final invoice comes off. A credit note not tied to the invoiced
+        quantities (commercial gesture) is not "to invoice"."""
+        total = 0.0
+        for line in order.order_line:
+            if line.display_type:
+                continue
+            if line.is_downpayment:
+                total -= line.untaxed_amount_invoiced
+            elif line.product_uom_qty:
+                total += line.price_subtotal * (line.product_uom_qty - line.qty_invoiced) / line.product_uom_qty
+        return total
+
+    @api.model
     def _not_fully_invoiced(self, orders):
-        """Orders whose invoiced HT amount (posted invoices, credit notes
-        deducted) is below their HT amount (Reste à facturer)."""
-        return orders.filtered(lambda o: o.currency_id.compare_amounts(
-            sum(self._invoiced_moves(o).mapped('amount_untaxed_signed')), o.amount_untaxed) < 0)
+        """Orders with an HT amount left to invoice (Reste à facturer)."""
+        return orders.filtered(
+            lambda o: o.currency_id.compare_amounts(self._not_invoiced_untaxed(o), 0) > 0)
 
     @api.model
     def _not_fully_paid(self, moves):
@@ -457,11 +478,11 @@ class AmssManagementDashboard(models.TransientModel):
         return self.env['sale.order'].sudo().search(domain)
 
     @api.model
-    def _paid_untaxed(self, moves):
-        """Paid part (HT) of invoices / credit notes, credit notes deducted:
-        HT × (total − residual) / total, as in Encaissé."""
+    def _unpaid_untaxed(self, moves):
+        """Unpaid part (HT) of invoices / credit notes, credit notes deducted:
+        HT × residual / total (the complement of Encaissé)."""
         return sum(
-            move.amount_untaxed_signed * (move.amount_total - move.amount_residual) / move.amount_total
+            move.amount_untaxed_signed * move.amount_residual / move.amount_total
             for move in moves if move.amount_total)
 
     @api.model
@@ -510,21 +531,18 @@ class AmssManagementDashboard(models.TransientModel):
         moves = self._invoiced_moves(orders)
         rounding = self.env.company.currency_id
 
-        to_invoice, to_invoice_amount = orders.browse(), 0.0
-        for order in orders:
-            gap = order.amount_untaxed - sum(self._invoiced_moves(order).mapped('amount_untaxed_signed'))
-            if rounding.compare_amounts(gap, 0) > 0:
-                to_invoice |= order
-                to_invoice_amount += gap
+        not_invoiced = {order.id: max(0.0, self._not_invoiced_untaxed(order)) for order in orders}
+        to_invoice = orders.filtered(lambda o: rounding.compare_amounts(not_invoiced[o.id], 0) > 0)
+        to_invoice_amount = sum(not_invoiced[o.id] for o in to_invoice)
 
         unpaid = self._not_fully_paid(moves)
-        unpaid_amount = sum(
-            move.amount_untaxed_signed * move.amount_residual / move.amount_total
-            for move in unpaid if move.amount_total)
+        unpaid_amount = self._unpaid_untaxed(unpaid)
 
+        # still owed on the order: not invoiced yet + unpaid part of its
+        # invoices / credit notes
         sss_due, sss_amount = orders.browse(), 0.0
         for order in self._sss_finished_orders(orders):
-            gap = order.amount_untaxed - self._paid_untaxed(self._invoiced_moves(order))
+            gap = not_invoiced[order.id] + self._unpaid_untaxed(self._invoiced_moves(order))
             if rounding.compare_amounts(gap, 0) > 0:
                 sss_due |= order
                 sss_amount += gap
