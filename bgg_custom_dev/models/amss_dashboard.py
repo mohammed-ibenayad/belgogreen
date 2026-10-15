@@ -1050,7 +1050,7 @@ class AmssManagementDashboard(models.TransientModel):
                 ('RESTE À FACTURER', 'reste_a_facturer'), ('RESTE À ENCAISSER', 'reste_a_encaisser'),
                 ('RESTE À FACTURER (À CE JOUR)', 'recouvrement_facturer'),
                 ('RESTE À ENCAISSER (À CE JOUR)', 'recouvrement_encaisser'),
-                ('À ENCAISSER – SSS TERMINÉS', 'recouvrement_sss'),
+                ('RESTE À ENCAISSER – CHANTIERS SSS TERMINÉS', 'recouvrement_sss'),
                 ('CARNET – BLOQUÉS', 'carnet_bloques'), ('CARNET – À PLANIFIER', 'carnet_a_planifier'),
                 ('CARNET – EN COURS', 'carnet_en_cours'), ('CARNET – PLANIFIÉS', 'carnet_planifies'),
                 ('CARNET DE COMMANDES', 'carnet_total'),
