@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen Custom Development',
-    'version': '19.0.1.30.0',
+    'version': '19.0.1.31.0',
     'category': 'Customizations',
     'summary': 'Custom business logic and automation for BelGoGreen',
     'description': """
@@ -74,7 +74,7 @@
           orders and appointments),
           Chantiers en retard, Dossiers bloqués, CA signé / facturé /
           encaissé (reste à facturer / à encaisser clickable in the bars),
-          Reste à facturer / Reste à encaisser / À encaisser – chantiers SSS
+          Reste à facturer / Reste à encaisser / Reste à encaisser – chantiers SSS
           terminés cards (à ce jour), Carnet de commandes (À planifier / Planifiés / En cours /
           Bloqués, today); comparison with the previous period; Excel export
         - Métiers tab: same filters and KPI cards, CA signé par métier (each

@@ -178,10 +178,10 @@
 
                 <!-- Direction tab: recouvrement cards (à ce jour) -->
                 <div class="amss_cards" t-if="state.activeTab === 'direction'">
-                    <t t-foreach="[['recouvrement_facturer', 'Reste à facturer', 'commande'], ['recouvrement_encaisser', 'Reste à encaisser', 'facture'], ['recouvrement_sss', 'À encaisser – chantiers SSS terminés', 'commande']]"
+                    <t t-foreach="[['recouvrement_facturer', 'Reste à facturer', 'commande', 'amss_card_rest'], ['recouvrement_encaisser', 'Reste à encaisser', 'facture', 'amss_card_due'], ['recouvrement_sss', 'Reste à encaisser – chantiers SSS terminés', 'commande', 'amss_card_sss']]"
                        t-as="rc" t-key="rc[0]">
                         <t t-set="rcData" t-value="state.data.recouvrement[rc[0]]"/>
-                        <div class="amss_card amss_clickable" t-on-click="() => this.openCard(rc[0])"
+                        <div t-att-class="'amss_card amss_clickable ' + rc[3]" t-on-click="() => this.openCard(rc[0])"
                              title="Cliquer pour voir le détail">
                             <div class="amss_card_title">
                                 <t t-esc="rc[1]"/> <i class="fa fa-info-circle amss_info" t-att-title="tips[rc[0]]"/>

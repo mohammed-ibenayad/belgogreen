@@ -267,6 +267,36 @@ $amss-due: #9fd0d2;    // light teal (reste à encaisser)
         color: $amss-muted;
     }
 
+    // Recouvrement cards, in the colors of the bar zones: Reste à facturer
+    // (grey zone), Reste à encaisser (light zone), chantiers SSS terminés
+    // (orange of the active tab). Text kept dark for contrast.
+    .amss_card.amss_card_rest,
+    .amss_card.amss_card_due,
+    .amss_card.amss_card_sss {
+        color: $amss-text;
+
+        .amss_card_title,
+        .amss_delta_neutral,
+        .amss_info {
+            color: $amss-text;
+        }
+    }
+
+    .amss_card.amss_card_rest {
+        background: $amss-rest;
+        border-color: darken($amss-rest, 10%);
+    }
+
+    .amss_card.amss_card_due {
+        background: $amss-due;
+        border-color: darken($amss-due, 10%);
+    }
+
+    .amss_card.amss_card_sss {
+        background: $amss-accent;
+        border-color: darken($amss-accent, 8%);
+    }
+
     // "à ce jour" (and "au <date>" for Dossiers bloqués): always bold, never italic
     .amss_as_of {
         font-weight: 700;
