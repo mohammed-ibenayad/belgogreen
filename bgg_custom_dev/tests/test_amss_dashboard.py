@@ -546,9 +546,10 @@ class TestAmssDashboard(TransactionCase):
         self.assertAlmostEqual(after['signe'] - before['signe'], order.amount_untaxed, places=2)
         self.assertAlmostEqual(after['facture'] - before['facture'], invoice.amount_untaxed, places=2)
         self.assertAlmostEqual(after['encaisse'] - before['encaisse'], invoice.amount_untaxed / 2, places=2)
-        # remaining parts of the bars
+        # remaining parts of the bars: the order is fully invoiced
         self.assertAlmostEqual(
-            after['reste_a_facturer'], max(0.0, after['signe'] - after['facture']), places=2)
+            after['reste_a_facturer'] - before['reste_a_facturer'], 0, places=2)
+        self.assertAlmostEqual(self.Dashboard._not_invoiced_untaxed(order), 0, places=2)
         self.assertAlmostEqual(
             after['reste_a_encaisser'], max(0.0, after['facture'] - after['encaisse']), places=2)
         # half paid: in the Reste à encaisser list
@@ -559,6 +560,25 @@ class TestAmssDashboard(TransactionCase):
         refund.action_post()
         final = self.Dashboard._cash_flow(start, end, companies)
         self.assertAlmostEqual(final['facture'] - before['facture'], 0, places=2)
+        # it is tied to the invoiced quantities: the order is to invoice again
+        self.assertAlmostEqual(self.Dashboard._not_invoiced_untaxed(order), order.amount_untaxed, places=2)
+
+    def test_gesture_credit_note_is_not_to_invoice(self):
+        """A credit note not tied to the invoiced quantities (commercial
+        gesture) leaves nothing to invoice and, once paid, nothing to collect."""
+        order = self._order(service=False)
+        self.assertAlmostEqual(self.Dashboard._not_invoiced_untaxed(order), order.amount_untaxed, places=2)
+        invoice = order._create_invoices()
+        invoice.action_post()
+        gesture = self.env['account.move'].create({
+            'move_type': 'out_refund',
+            'partner_id': order.partner_id.id,
+            'invoice_line_ids': [(0, 0, {'name': 'Geste commercial', 'quantity': 1, 'price_unit': 100.0,
+                                         'tax_ids': [(6, 0, [])]})],
+        })
+        gesture.action_post()
+        self.assertAlmostEqual(self.Dashboard._not_invoiced_untaxed(order), 0, places=2)
+        self.assertNotIn(order, self.Dashboard._not_fully_invoiced(order))
 
     # ------------------------------------------------------------------
     # Recouvrement (à ce jour)
