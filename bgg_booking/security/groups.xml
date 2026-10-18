@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Call-centre agents: book RDVs for the commercials. The OCA booking
+         user only sees the bookings he attends or follows; the agents see
+         them all. The post-install hook adds this group to the "Call Center"
+         role (created by hand, found by name). -->
+    <record id="group_booking_agent" model="res.groups">
+        <field name="name">Prise de RDV (call center)</field>
+        <field name="implied_ids" eval="[(4, ref('resource_booking.group_user'))]"/>
+        <field name="comment">Prise de RDV pour les commerciaux : voit et modifie toutes les réservations.</field>
+    </record>
+
+    <record id="rule_resource_booking_agent" model="ir.rule">
+        <field name="name">Prise de RDV : toutes les réservations</field>
+        <field name="model_id" ref="resource_booking.model_resource_booking"/>
+        <field name="groups" eval="[(4, ref('group_booking_agent'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+</odoo>

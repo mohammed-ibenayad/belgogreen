@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Calendar app: "Prise de RDV" for the call centre -->
+    <menuitem id="menu_bgg_booking"
+              name="Prise de RDV"
+              parent="calendar.mail_menu_calendar"
+              action="bgg_booking_wizard_action"
+              groups="bgg_booking.group_booking_agent"
+              sequence="1"/>
+    <menuitem id="menu_bgg_rdv_need"
+              name="Besoins (prise de RDV)"
+              parent="resource_booking.resource_booking_type_configuration_menu"
+              action="bgg_rdv_need_action"
+              groups="resource_booking.group_manager"
+              sequence="50"/>
+</odoo>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="bgg_booking_wizard_view_form" model="ir.ui.view">
+        <field name="name">bgg.booking.wizard.form</field>
+        <field name="model">bgg.booking.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Prise de RDV">
+                <group>
+                    <group string="Client">
+                        <field name="phone" widget="phone" placeholder="Saisir le téléphone : le client existant est retrouvé"/>
+                        <field name="partner_id" options="{'no_create': True}"/>
+                        <field name="partner_name" readonly="partner_id"/>
+                        <field name="email" widget="email"/>
+                        <field name="street"/>
+                        <field name="zip"/>
+                        <field name="city"/>
+                        <field name="country_id" options="{'no_create': True}"/>
+                    </group>
+                    <group string="Questionnaire">
+                        <field name="need_ids" widget="many2many_tags" options="{'no_create': True}"/>
+                        <field name="spouse_name"/>
+                        <field name="spouse_phone" widget="phone"/>
+                        <field name="sms_confirmation"/>
+                        <field name="on_behalf_id" options="{'no_create': True}"/>
+                        <field name="note"/>
+                    </group>
+                </group>
+                <group string="Rendez-vous">
+                    <group>
+                        <field name="type_id" options="{'no_create': True}"/>
+                    </group>
+                    <group>
+                        <field name="date"/>
+                    </group>
+                </group>
+                <div class="mb-3">
+                    <button name="action_search_slots" type="object" string="Afficher les créneaux libres"
+                            class="btn-primary" icon="fa-search"/>
+                </div>
+                <field name="slots_searched" invisible="1"/>
+                <div class="alert alert-info" role="status" invisible="not slots_searched or slot_ids">
+                    Aucun créneau libre ce jour-là : choisissez un autre jour.
+                </div>
+                <field name="slot_ids" invisible="not slot_ids" readonly="1" nolabel="1">
+                    <list>
+                        <field name="start" widget="datetime" string="Heure"/>
+                        <field name="combination_id" string="Commercial"/>
+                        <button name="action_book" type="object" string="Réserver" icon="fa-check"
+                                class="btn-primary"/>
+                    </list>
+                </field>
+                <footer>
+                    <button string="Fermer" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="bgg_booking_wizard_action" model="ir.actions.act_window">
+        <field name="name">Prise de RDV</field>
+        <field name="res_model">bgg.booking.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>
