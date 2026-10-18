@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_convert_documents" model="ir.actions.server">
+        <field name="name">Copier Documents vers DMS (nouveaux documents)</field>
+        <field name="model_id" ref="dms.model_dms_storage"/>
+        <field name="binding_model_id" ref="dms.model_dms_storage"/>
+        <field name="binding_view_types">list</field>
+        <field name="group_ids" eval="[(4, ref('base.group_system'))]"/>
+        <field name="state">code</field>
+        <field name="code">
+counts = env['bgg.documents.dms']._convert()
+action = {
+    'type': 'ir.actions.client',
+    'tag': 'display_notification',
+    'params': {
+        'title': 'Documents vers DMS',
+        'message': ', '.join('%s : %s' % item for item in counts.items()),
+        'sticky': True,
+    },
+}
+        </field>
+    </record>
+</odoo>
