@@ -30,6 +30,26 @@ class SaleOrder(models.Model):
         help='Indicates if commissions have been generated for this order'
     )
 
+    # Legacy "commission already paid" flags, created with Odoo Studio before
+    # this module existed. Declared here under the same names so the data is
+    # kept and they no longer depend on Studio. Any of them blocks commission
+    # generation for the order (see _create_commissions_for_order).
+    x_studio_payee_commercial = fields.Boolean(
+        string='Payée Commercial',
+        copy=False,
+        help='Cocher si la commision a été payée au commercial'
+    )
+    x_studio_payee_responsable_commercial = fields.Boolean(
+        string='Payée Responsable Commercial',
+        copy=False,
+        help='Cocher si la commision a été payée au responsable commercial'
+    )
+    x_studio_payee_directeur_commercial = fields.Boolean(
+        string='Payée Directeur Commercial',
+        copy=False,
+        help='Cocher si la commision a été payée au directeur commercial'
+    )
+
     @api.depends('commission_ids')
     def _compute_commission_count(self):
         """Count commissions for this sale order"""
@@ -122,10 +142,11 @@ class SaleOrder(models.Model):
             lambda inv: inv.move_type == 'out_refund' and inv.state != 'cancel'
         )
 
-        # ALL eligible invoices AND credit notes must be fully paid.
+        # ALL eligible invoices AND credit notes must be fully paid ('paid', or
+        # 'in_payment' unless disabled: see account.move._get_commission_paid_states).
         # An unpaid invoice OR an unpaid credit note blocks generation.
         unpaid_documents = (eligible_invoices | credit_notes).filtered(
-            lambda inv: inv.payment_state != 'paid'
+            lambda inv: not inv._is_paid_for_commission()
         )
 
         if unpaid_documents:
@@ -230,8 +251,7 @@ class SaleOrder(models.Model):
             return result
 
         # Find ALL applicable commission plans
-        commission_plans = self.env['sale.commission.plan'].search([
-            ('type', '=', 'hierarchical'),
+        commission_plans = self.env['bgg.commission.plan'].search([
             ('state', '=', 'approved'),
             ('company_id', '=', self.company_id.id)
         ])
@@ -306,7 +326,7 @@ class SaleOrder(models.Model):
         Returns an empty recordset when the user has no assignment or the
         plan is not effective on check_date.
         """
-        PlanUser = self.env['sale.commission.plan.user']
+        PlanUser = self.env['bgg.commission.plan.user']
         if commission_plan.date_from and check_date < commission_plan.date_from:
             return PlanUser
         if commission_plan.date_to and check_date > commission_plan.date_to:
@@ -330,7 +350,7 @@ class SaleOrder(models.Model):
 
         Args:
             base_user: res.users record (typically the salesperson who made the sale)
-            commission_plan: sale.commission.plan record (the plan to use for hierarchy)
+            commission_plan: bgg.commission.plan record (the plan to use for hierarchy)
 
         Returns:
             list of tuples: [(user, role, commission_type), ...] ordered from bottom to top of hierarchy
@@ -342,7 +362,7 @@ class SaleOrder(models.Model):
         invoice_date = fields.Date.today()
         if self.invoice_ids:
             paid_invoice = self.invoice_ids.filtered(
-                lambda inv: inv.move_type == 'out_invoice' and inv.payment_state == 'paid'
+                lambda inv: inv.move_type == 'out_invoice' and inv._is_paid_for_commission()
             )[:1]
             if paid_invoice and paid_invoice.invoice_date:
                 invoice_date = paid_invoice.invoice_date

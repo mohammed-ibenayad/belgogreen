@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Count invoices in "In payment" as paid for commissions.
+
+        On Odoo Community, without bank reconciliation, a payment registered by
+        hand often leaves the invoice "In payment" (posted on the outstanding
+        account, not yet matched with a bank statement line). With this
+        parameter set to True, such invoices (and vendor bills paying
+        commissions) are treated as paid. Set to False to require "Paid".
+    -->
+    <data noupdate="1">
+        <record id="param_count_in_payment_as_paid" model="ir.config_parameter">
+            <field name="key">belgogreen_sales_commission.count_in_payment_as_paid</field>
+            <field name="value">True</field>
+        </record>
+    </data>
+</odoo>

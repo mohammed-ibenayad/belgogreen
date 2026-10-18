@@ -23,9 +23,8 @@ class TestCommissionClaim(TransactionCase):
             'company_id': cls.company.id,
         })
 
-        cls.plan = cls.env['sale.commission.plan'].create({
+        cls.plan = cls.env['bgg.commission.plan'].create({
             'name': 'Claim Test Plan',
-            'type': 'hierarchical',
             'company_id': cls.company.id,
         })
         cls.env['hr.commission.role.config'].create({

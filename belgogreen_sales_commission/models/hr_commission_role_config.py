@@ -10,7 +10,7 @@ class HrCommissionRoleConfig(models.Model):
     _order = 'plan_id, role_id'
 
     plan_id = fields.Many2one(
-        'sale.commission.plan',
+        'bgg.commission.plan',
         string='Commission Plan',
         required=True,
         ondelete='cascade',

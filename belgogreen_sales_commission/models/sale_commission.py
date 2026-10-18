@@ -65,7 +65,7 @@ class SaleCommission(models.Model):
 
     # Commission Plan
     plan_id = fields.Many2one(
-        'sale.commission.plan',
+        'bgg.commission.plan',
         string='Commission Plan',
         required=False,
         help='Commission plan used for automatic commissions. Not required for manual commissions.'
@@ -309,7 +309,7 @@ class SaleCommission(models.Model):
                 if commission.invoice_id:
                     # Legacy per-invoice commission
                     commission.can_be_paid = (
-                        commission.invoice_id.payment_state == 'paid' and
+                        commission.invoice_id._is_paid_for_commission() and
                         commission.status in ['unpaid', 'claimed', 'processing']
                     )
                 elif commission.sale_order_id:
@@ -318,7 +318,7 @@ class SaleCommission(models.Model):
                         lambda inv: inv.move_type == 'out_invoice' and inv.state != 'cancel'
                     )
                     all_paid = eligible_invoices and all(
-                        inv.payment_state == 'paid' for inv in eligible_invoices
+                        inv._is_paid_for_commission() for inv in eligible_invoices
                     )
                     commission.can_be_paid = (
                         all_paid and
@@ -426,7 +426,7 @@ class SaleCommission(models.Model):
             visible_users |= commission.user_id
 
             # Get all plan assignments for this user across all plans
-            plan_users = self.env['sale.commission.plan.user'].search([
+            plan_users = self.env['bgg.commission.plan.user'].search([
                 ('user_id', '=', commission.user_id.id)
             ])
 

@@ -26,24 +26,26 @@ Main Features:
 * Role-based commission percentages
 * Hierarchical commission visibility (supervisors see all sub-level commissions)
 * Team commission dashboard and statistics
-* Integration with Odoo's existing commission and sales modules
+* Works on Odoo Community: commission plans are owned by this module and no
+  longer depend on the Enterprise sale_commission module
+* Invoices "In payment" (payment registered by hand, not yet matched with a
+  bank statement) count as paid; system parameter
+  belgogreen_sales_commission.count_in_payment_as_paid (default True)
     """,
 
     'author': "Belgogreen",
     'website': "https://www.belgogreen.com",
 
     'category': 'Sales/Sales',
-    'version': '19.0.0.0',
+    'version': '19.0.1.0.0',
     'license': 'LGPL-3',
 
-    # Dependencies - require Odoo sale_commission module
     'depends': [
         'base',
         'sale_management',
         'purchase',
         'account',
         'mail',
-        'sale_commission',  # Odoo's commission module
     ],
 
     # always loaded
@@ -55,12 +57,13 @@ Main Features:
         'data/sale_commission_role_data.xml',
         'data/email_template_data.xml',  # Email template for contractor invoice requests
         'data/cron_data.xml',
+        'data/ir_config_parameter_data.xml',
         'wizard/commission_claim_wizard_views.xml',
         'wizard/commission_manual_wizard_views.xml',
         'views/sale_commission_role_views.xml',
         'views/hr_commission_role_config_views.xml',
-        'views/sale_commission_plan_views.xml',
-        'views/sale_commission_plan_user_views.xml',
+        'views/bgg_commission_plan_views.xml',
+        'views/bgg_commission_plan_user_views.xml',
         'views/res_users_views.xml',
         # 'views/team_management_views.xml',  # Disabled - incompatible with plan-based architecture
         'views/commission_deduction_views.xml',

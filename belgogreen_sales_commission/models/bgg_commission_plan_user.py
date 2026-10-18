@@ -4,23 +4,46 @@ from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 
 
-class SaleCommissionPlanUser(models.Model):
-    _inherit = 'sale.commission.plan.user'
-    _description = 'Commission Plan User Assignment (Extended for Hierarchy)'
+class BggCommissionPlanUser(models.Model):
+    """User assignment in a hierarchical commission plan (role + manager).
+
+    Replaces the Enterprise ``sale.commission.plan.user``; existing assignments
+    are copied over with their ids by the 19.0.1.0.0 migration.
+    """
+    _name = 'bgg.commission.plan.user'
+    _description = 'Commission Plan User Assignment'
     _order = 'plan_id, role_sequence desc, user_id'
 
-    # NEW FIELDS for hierarchical plans (added to base model)
+    plan_id = fields.Many2one(
+        'bgg.commission.plan',
+        string='Commission Plan',
+        required=True,
+        ondelete='cascade',
+        index=True,
+    )
+
+    user_id = fields.Many2one(
+        'res.users',
+        string='Salesperson',
+        required=True,
+        domain="[('share', '=', False)]",
+        index=True,
+    )
+
+    date_from = fields.Date(string='Start Date')
+    date_to = fields.Date(string='End Date')
+
     role_id = fields.Many2one(
         'sale.commission.role',
         string='Role',
         domain="[('company_id', '=', company_id)]",
-        help='The role of this user in this commission plan (for hierarchical plans only)'
+        help='The role of this user in this commission plan'
     )
 
     manager_id = fields.Many2one(
         'res.users',
         string='Manager (in this plan)',
-        help='Direct manager in THIS commission plan\'s hierarchy (for hierarchical plans only)'
+        help='Direct manager in THIS commission plan\'s hierarchy'
     )
 
     # Related/Computed fields
@@ -76,7 +99,10 @@ class SaleCommissionPlanUser(models.Model):
         help='Commission percentage when this user receives commission on subordinate\'s sale'
     )
 
-    # Note: unique(plan_id, user_id) constraint already exists in base model
+    _plan_user_uniq = models.Constraint(
+        'UNIQUE (plan_id, user_id)',
+        'A user can only be assigned once per commission plan.',
+    )
 
     @api.depends('role_id', 'plan_id')
     def _compute_role_percentages(self):
@@ -121,16 +147,12 @@ class SaleCommissionPlanUser(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         """
-        Auto-populate smart defaults when creating user assignments
-        If adding via commerciaux tab (has dates but no role), record still appears in hierarchy tab
+        Post a reminder on the plan when a user is added without a role
         """
         records = super().create(vals_list)
 
-        # For hierarchical plans, show notification if role not set
         for record in records:
-            if record.plan_id.type == 'hierarchical' and not record.role_id:
-                # Record was added without role (probably from commerciaux tab)
-                # It will appear in hierarchy tab automatically (same user_ids field)
+            if not record.role_id:
                 record.plan_id.message_post(
                     body=_('User %s added to plan. Please set their role and manager in "Users & Hierarchy" tab.') % record.user_id.name,
                     subject=_('Complete Hierarchy Setup'),
@@ -220,7 +242,7 @@ class SaleCommissionPlanUser(models.Model):
             plan_id: ID of the commission plan
 
         Returns:
-            sale.commission.plan.user record or empty recordset
+            bgg.commission.plan.user record or empty recordset
         """
         return self.search([
             ('user_id', '=', user_id),
@@ -232,7 +254,7 @@ class SaleCommissionPlanUser(models.Model):
         Get the full management chain upwards from this user
 
         Returns:
-            List of sale.commission.plan.user records from bottom to top
+            List of bgg.commission.plan.user records from bottom to top
         """
         self.ensure_one()
         chain = [self]

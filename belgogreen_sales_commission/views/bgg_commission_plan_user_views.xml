@@ -3,9 +3,9 @@
     <data>
 
         <!-- Tree/List View for Commission Plan User Assignments -->
-        <record id="view_sale_commission_plan_user_tree" model="ir.ui.view">
-            <field name="name">sale.commission.plan.user.tree</field>
-            <field name="model">sale.commission.plan.user</field>
+        <record id="view_bgg_commission_plan_user_list" model="ir.ui.view">
+            <field name="name">bgg.commission.plan.user.list</field>
+            <field name="model">bgg.commission.plan.user</field>
             <field name="arch" type="xml">
                 <list string="Affectations des utilisateurs" editable="bottom">
                     <field name="plan_id" string="Plan" readonly="1"/>
@@ -22,9 +22,9 @@
         </record>
 
         <!-- Form View for Commission Plan User Assignments -->
-        <record id="view_sale_commission_plan_user_form" model="ir.ui.view">
-            <field name="name">sale.commission.plan.user.form</field>
-            <field name="model">sale.commission.plan.user</field>
+        <record id="view_bgg_commission_plan_user_form" model="ir.ui.view">
+            <field name="name">bgg.commission.plan.user.form</field>
+            <field name="model">bgg.commission.plan.user</field>
             <field name="arch" type="xml">
                 <form string="Affectation utilisateur au plan">
                     <sheet>

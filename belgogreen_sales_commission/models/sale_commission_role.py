@@ -112,7 +112,7 @@ class SaleCommissionRole(models.Model):
         """Count active users with this role (plan-based architecture)"""
         for role in self:
             # Count distinct users assigned to this role across all plans
-            plan_assignments = self.env['sale.commission.plan.user'].search([
+            plan_assignments = self.env['bgg.commission.plan.user'].search([
                 ('role_id', '=', role.id),
                 ('user_id.active', '=', True)
             ])
@@ -154,7 +154,7 @@ class SaleCommissionRole(models.Model):
         return {
             'name': _('Plan Assignments - %s') % self.name,
             'type': 'ir.actions.act_window',
-            'res_model': 'sale.commission.plan.user',
+            'res_model': 'bgg.commission.plan.user',
             'view_mode': 'list,form',
             'domain': [('role_id', '=', self.id)],
             'context': {'default_role_id': self.id}
@@ -167,7 +167,7 @@ class SaleCommissionRole(models.Model):
             'name': _('Commissions - %s') % self.name,
             'type': 'ir.actions.act_window',
             'res_model': 'sale.commission',
-            'view_mode': 'tree,form',
+            'view_mode': 'list,form',
             'domain': [('role_id', '=', self.id)],
             'context': {'default_role_id': self.id}
         }

@@ -30,9 +30,8 @@ class TestCommissionRecords(TransactionCase):
         })
 
         # Create plan with role configs
-        cls.plan = cls.env['sale.commission.plan'].create({
+        cls.plan = cls.env['bgg.commission.plan'].create({
             'name': 'Rec Test Plan',
-            'type': 'hierarchical',
             'company_id': cls.company.id,
         })
         cls.env['hr.commission.role.config'].create({
