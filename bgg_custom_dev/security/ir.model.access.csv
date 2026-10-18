@@ -3,3 +3,5 @@ access_commercial_dashboard_user,commercial.dashboard.user,model_commercial_dash
 access_call_center_dashboard_user,call.center.dashboard.user,model_call_center_dashboard,base.group_user,1,1,1,0
 access_amss_management_dashboard_direction,amss.management.dashboard.direction,model_amss_management_dashboard,bgg_custom_dev.group_direction,1,1,1,0
 access_avis_count_report_user,avis.count.report.user,model_avis_count_report,base.group_user,1,0,0,0
+access_bgg_rdv_type_user,bgg.rdv.type.user,model_bgg_rdv_type,base.group_user,1,0,0,0
+access_bgg_rdv_type_system,bgg.rdv.type.system,model_bgg_rdv_type,base.group_system,1,1,1,1

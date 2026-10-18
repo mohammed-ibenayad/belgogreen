@@ -515,7 +515,7 @@ class TestAmssDashboard(TransactionCase):
         self.assertFalse(action['context']['active_test'])
         f = self.Dashboard._resolve_filters()
         events = self.Dashboard._card_records('tx_conversion', f)
-        self.assertTrue(all(e.appointment_status == 'attended' for e in events))
+        self.assertTrue(all(e.x_rdv_status == 'attended' for e in events))
         self.assertEqual(sorted(events.ids), sorted(action['domain'][0][2]))
         with self.assertRaises(AccessError):
             self.Dashboard.with_user(self.plain_user).open_card('ca_net')
@@ -628,9 +628,7 @@ class TestAmssDashboard(TransactionCase):
 
         # SSS project with all tasks done: the unpaid HT of the order is due
         Project = self.env['project.project']
-        if 'is_fsm' not in Project._fields:
-            self.skipTest("Field Service not installed")
-        sss = Project.create({'name': f"{order.name} - SSS - {order.partner_id.name}", 'is_fsm': True})
+        sss = Project.create({'name': f"{order.name} - SSS - {order.partner_id.name}", 'x_is_sss_project': True})
         task = self.env['project.task'].create({'name': 'Installation', 'project_id': sss.id})
         sss_orders, _amount = self.Dashboard._recouvrement(companies)['recouvrement_sss']
         self.assertNotIn(order, sss_orders, "SSS task still open")

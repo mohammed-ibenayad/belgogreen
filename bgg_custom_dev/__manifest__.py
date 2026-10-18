@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen Custom Development',
-    'version': '19.0.1.33.0',
+    'version': '19.0.2.0.0',
     'category': 'Customizations',
     'summary': 'Custom business logic and automation for BelGoGreen',
     'description': """
@@ -12,7 +12,15 @@
 
         Model Extensions:
 
-        **Appointment Management (appointment.answer.input)**:
+        **No Enterprise dependency (19.0.2.0.0)**: the rules use the module's
+        own fields: RDV type (bgg.rdv.type, with its reference code) and RDV
+        status on calendar events, questionnaire answers summary on the event,
+        SSS project flag (x_is_sss_project). While Odoo Enterprise is
+        installed, the bridge module bgg_custom_dev_ee keeps them in sync with
+        Appointments / Field Service and holds the Enterprise-only automations
+        listed below (appointment answers, documents folder name).
+
+        **Appointment Management (appointment.answer.input, in bgg_custom_dev_ee)**:
         - Automatic spouse contact creation/update
         - Partner address information updates
         - Dynamic appointment title building
@@ -28,7 +36,7 @@
         - Customer deduplication by phone number
 
         **Project Management (project.project, project.task)**:
-        - Document folder naming from sales orders
+        - Document folder naming from sales orders (bgg_custom_dev_ee)
         - Admin project deadlines: project start = order confirmation date,
           project end = field service (SSS) reference end date + end_offset
           (10 business days), the SSS reference dates coming from the
@@ -95,10 +103,8 @@
         'base',
         'mail',
         'calendar',
-        'appointment',
         'crm',
         'project',
-        'documents',
         'sale_project',
         'sale',
     ],
@@ -112,6 +118,7 @@
         'data/admin_project_deadline_params.xml',
 
         # Views
+        'views/bgg_rdv_type_views.xml',
         'views/calendar_event_views.xml',
         'views/commercial_dashboard_views.xml',
         'views/call_center_dashboard_views.xml',

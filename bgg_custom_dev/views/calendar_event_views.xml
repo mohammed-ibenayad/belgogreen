@@ -11,12 +11,12 @@
             <!-- Alert banner prompting user to fill in KPI tab after status change -->
             <xpath expr="//sheet" position="before">
                 <div class="alert alert-warning text-center" role="alert"
-                     invisible="appointment_status not in ('attended', 'no_show') or not appointment_type_id">
+                     invisible="x_rdv_status not in ('attended', 'no_show') or not x_rdv_type_id">
                     Pensez à renseigner les informations dans l'onglet
                     <strong>Avis &amp; Recommandations</strong>.
                 </div>
                 <div class="alert alert-warning text-center" role="alert"
-                     invisible="appointment_status != 'no_show' or x_appointment_ref not in ['APT-ENERG-CNT', 'APT-NISOL-CNT'] or x_noshow_disposition">
+                     invisible="x_rdv_status != 'no_show' or x_appointment_ref not in ['APT-ENERG-CNT', 'APT-NISOL-CNT'] or x_noshow_disposition">
                     Veuillez compléter l'état du
                     <strong>Suivi No-show par commercial</strong>.
                 </div>
@@ -25,6 +25,16 @@
             <!-- Control fields hoisted out of the (potentially hidden) page so
                  their values are always loaded for the visibility rule. -->
             <xpath expr="//notebook" position="before">
+                <!-- RDV type and status (own fields). Hidden by the Enterprise
+                     bridge while Enterprise Appointments shows its own. -->
+                <group name="bgg_rdv" string="Rendez-vous">
+                    <group>
+                        <field name="x_rdv_type_id" options="{'no_create': True}"/>
+                    </group>
+                    <group>
+                        <field name="x_rdv_status"/>
+                    </group>
+                </group>
                 <field name="x_appointment_ref" invisible="1"/>
                 <field name="x_noshow_disposition" invisible="1"/>
                 <field name="x_user_can_edit_noshow_disposition" invisible="1"/>
@@ -33,7 +43,7 @@
             <!-- Add new "Avis &amp; Recommandations" tab in the notebook -->
             <xpath expr="//notebook" position="inside">
                 <page string="Avis &amp; Recommandations" name="page_avis_recommandations"
-                      invisible="not appointment_type_id">
+                      invisible="not x_rdv_type_id">
                     <group>
                         <group string="Avis clients">
                             <field name="x_avis_count"/>
@@ -46,7 +56,7 @@
 
                 <!-- No-show treatment workflow (call-center appointments only) -->
                 <page string="Suivi No-show par commercial" name="page_noshow"
-                      invisible="x_appointment_ref not in ['APT-ENERG-CNT', 'APT-NISOL-CNT'] or (appointment_status != 'no_show' and not x_noshow_disposition)">
+                      invisible="x_appointment_ref not in ['APT-ENERG-CNT', 'APT-NISOL-CNT'] or (x_rdv_status != 'no_show' and not x_noshow_disposition)">
                     <group>
                         <group string="Suivi commercial">
                             <field name="x_noshow_disposition"
@@ -72,6 +82,11 @@
                         détail dans la note (journal du rendez-vous).
                     </div>
                 </page>
+
+                <!-- Booking questionnaire answers -->
+                <page string="Questionnaire" name="page_rdv_answers" invisible="not x_rdv_answers">
+                    <field name="x_rdv_answers" readonly="1" nolabel="1"/>
+                </page>
             </xpath>
 
         </field>
@@ -89,10 +104,18 @@
         <field name="inherit_id" ref="calendar.view_calendar_event_search"/>
         <field name="arch" type="xml">
             <xpath expr="//search" position="inside">
+                <field name="x_rdv_type_id"/>
+                <separator/>
+                <filter name="rdv_booked" string="RDV réservés" domain="[('x_rdv_status', '=', 'booked')]"/>
+                <filter name="rdv_attended" string="RDV présents" domain="[('x_rdv_status', '=', 'attended')]"/>
+                <filter name="rdv_no_show" string="RDV no-show" domain="[('x_rdv_status', '=', 'no_show')]"/>
+                <filter name="rdv_cancelled" string="RDV annulés" domain="[('x_rdv_status', '=', 'cancelled')]"/>
+                <filter name="group_rdv_type" string="Type de RDV" context="{'group_by': 'x_rdv_type_id'}"/>
+                <filter name="group_rdv_status" string="Statut du RDV" context="{'group_by': 'x_rdv_status'}"/>
                 <separator/>
                 <filter name="noshow_a_recycler"
                         string="No-shows à recycler"
-                        domain="[('appointment_status', '=', 'no_show'), ('appointment_type_id.x_appointment_ref', 'in', ['APT-ENERG-CNT', 'APT-NISOL-CNT']), ('x_noshow_disposition', '=', False), ('x_noshow_available_date', '&lt;=', datetime.datetime.now())]"/>
+                        domain="[('x_rdv_status', '=', 'no_show'), ('x_rdv_type_id.code', 'in', ['APT-ENERG-CNT', 'APT-NISOL-CNT']), ('x_noshow_disposition', '=', False), ('x_noshow_available_date', '&lt;=', datetime.datetime.now())]"/>
             </xpath>
         </field>
     </record>

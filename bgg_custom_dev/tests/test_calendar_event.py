@@ -56,25 +56,21 @@ class TestCalendarEvent(TransactionCase):
             'email': 'internal@company.com',
         })
 
-        # Create appointment types (only if appointment module is installed)
-        cls.appointment_type_1 = None
-        cls.appointment_type_call_center = None
-        cls.appointment_type_commercial = None
-        if 'appointment.type' in cls.env:
-            # Use sudo() to avoid access rights issues in tests
-            cls.appointment_type_1 = cls.env['appointment.type'].sudo().create({
-                'name': 'Test Appointment Type 1',
-            })
-            # Create appointment type for call center automation rules (APT-ENERG-CNT)
-            cls.appointment_type_call_center = cls.env['appointment.type'].sudo().create({
-                'name': 'Test Call Center Appointment',
-                'x_appointment_ref': 'APT-ENERG-CNT',
-            })
-            # Create appointment type for commercial automation rules (APT-ENERG-COM)
-            cls.appointment_type_commercial = cls.env['appointment.type'].sudo().create({
-                'name': 'Test Commercial Appointment',
-                'x_appointment_ref': 'APT-ENERG-COM',
-            })
+        # Create RDV types (bgg.rdv.type, owned by bgg_custom_dev)
+        RdvType = cls.env['bgg.rdv.type'].sudo()
+        cls.appointment_type_1 = RdvType.create({
+            'name': 'Test Appointment Type 1',
+        })
+        # RDV type for call center automation rules (APT-ENERG-CNT)
+        cls.appointment_type_call_center = RdvType.search([('code', '=', 'APT-ENERG-CNT')]) or RdvType.create({
+            'name': 'Test Call Center Appointment',
+            'code': 'APT-ENERG-CNT',
+        })
+        # RDV type for commercial automation rules (APT-ENERG-COM)
+        cls.appointment_type_commercial = RdvType.search([('code', '=', 'APT-ENERG-COM')]) or RdvType.create({
+            'name': 'Test Commercial Appointment',
+            'code': 'APT-ENERG-COM',
+        })
 
         # Create NoShow activity type
         cls.noshow_activity_type = cls.env['mail.activity.type'].create({
@@ -144,9 +140,9 @@ class TestCalendarEvent(TransactionCase):
             'name': 'Test Event',
             'start': datetime.datetime.now(),
             'stop': datetime.datetime.now() + datetime.timedelta(hours=1),
-            'appointment_type_id': self.appointment_type_call_center.id,
+            'x_rdv_type_id': self.appointment_type_call_center.id,
         })
-        event.write({'appointment_status': 'no_show'})
+        event.write({'x_rdv_status': 'no_show'})
 
         # Create NoShow activity
         activity = self.env['mail.activity'].create({
@@ -173,7 +169,7 @@ class TestCalendarEvent(TransactionCase):
         self.assertEqual(len(active_noshow), 0,
                         "NoShow activity should be marked as done")
 
-    def test_reschedule_resets_appointment_status(self):
+    def test_reschedule_resets_x_rdv_status(self):
         """Test that appointment status is reset to 'booked' on reschedule"""
         # Skip if appointment module not installed
         if not self.appointment_type_call_center:
@@ -184,10 +180,10 @@ class TestCalendarEvent(TransactionCase):
             'name': 'Test Event',
             'start': datetime.datetime.now(),
             'stop': datetime.datetime.now() + datetime.timedelta(hours=1),
-            'appointment_type_id': self.appointment_type_call_center.id,
+            'x_rdv_type_id': self.appointment_type_call_center.id,
         })
-        event.write({'appointment_status': 'no_show'})
-        self.assertEqual(event.appointment_status, 'no_show')
+        event.write({'x_rdv_status': 'no_show'})
+        self.assertEqual(event.x_rdv_status, 'no_show')
 
         # Reschedule event
         event.write({
@@ -196,7 +192,7 @@ class TestCalendarEvent(TransactionCase):
         })
 
         # Assert status reset to 'booked'
-        self.assertEqual(event.appointment_status, 'booked',
+        self.assertEqual(event.x_rdv_status, 'booked',
                         "Appointment status should be reset to 'booked'")
 
     def test_reschedule_resets_status_without_active_activity(self):
@@ -209,10 +205,10 @@ class TestCalendarEvent(TransactionCase):
             'name': 'Reschedule no activity',
             'start': datetime.datetime(2026, 1, 8, 16, 0, 0),
             'stop': datetime.datetime(2026, 1, 8, 17, 30, 0),
-            'appointment_type_id': self.appointment_type_call_center.id,
+            'x_rdv_type_id': self.appointment_type_call_center.id,
         })
-        event.write({'appointment_status': 'no_show'})
-        self.assertEqual(event.appointment_status, 'no_show')
+        event.write({'x_rdv_status': 'no_show'})
+        self.assertEqual(event.x_rdv_status, 'no_show')
 
         # Simulate the NoShow activity having been closed earlier: remove it so
         # the reschedule rule finds no active activity.
@@ -229,7 +225,7 @@ class TestCalendarEvent(TransactionCase):
         })
 
         self.assertEqual(
-            event.appointment_status, 'booked',
+            event.x_rdv_status, 'booked',
             "rescheduling must reset the status even with no open NoShow activity")
 
     def test_reschedule_not_triggered_on_other_updates(self):
@@ -243,15 +239,15 @@ class TestCalendarEvent(TransactionCase):
             'name': 'Test Event',
             'start': datetime.datetime.now(),
             'stop': datetime.datetime.now() + datetime.timedelta(hours=1),
-            'appointment_type_id': self.appointment_type_1.id,
-            'appointment_status': 'no_show',
+            'x_rdv_type_id': self.appointment_type_1.id,
+            'x_rdv_status': 'no_show',
         })
 
         # Update name only (not a reschedule)
         event.write({'name': 'Updated Name'})
 
         # Assert status NOT reset
-        self.assertEqual(event.appointment_status, 'no_show',
+        self.assertEqual(event.x_rdv_status, 'no_show',
                         "Appointment status should not change on non-reschedule updates")
 
     # ========================
@@ -364,7 +360,7 @@ class TestCalendarEvent(TransactionCase):
             'start': datetime.datetime.now(),
             'stop': datetime.datetime.now() + datetime.timedelta(hours=1),
             'partner_ids': [(4, customer_with_internal_email.id)],
-            'appointment_type_id': self.appointment_type_commercial.id,  # Commercial appointment type
+            'x_rdv_type_id': self.appointment_type_commercial.id,  # Commercial appointment type
         })
 
         # Assert email replaced
@@ -420,7 +416,7 @@ class TestCalendarEvent(TransactionCase):
             'start': datetime.datetime.now(),
             'stop': datetime.datetime.now() + datetime.timedelta(hours=1),
             'x_studio_customer_phone': '<a href="tel:0412345678">0412 34 56 78</a>',
-            'appointment_type_id': self.appointment_type_commercial.id,  # Commercial appointment type
+            'x_rdv_type_id': self.appointment_type_commercial.id,  # Commercial appointment type
         })
 
         # Refresh to ensure we have latest attendee list
@@ -456,7 +452,7 @@ class TestCalendarEvent(TransactionCase):
             'start': datetime.datetime.now(),
             'stop': datetime.datetime.now() + datetime.timedelta(hours=1),
             'opportunity_id': opportunity.id,
-            'appointment_type_id': self.appointment_type_commercial.id,  # Commercial appointment type
+            'x_rdv_type_id': self.appointment_type_commercial.id,  # Commercial appointment type
         })
 
         # Set phone to match existing customer
@@ -528,11 +524,11 @@ class TestCalendarEvent(TransactionCase):
             'name': 'Test Event',
             'start': datetime.datetime.now(),
             'stop': datetime.datetime.now() + datetime.timedelta(hours=1),
-            'appointment_type_id': self.appointment_type_call_center.id,
+            'x_rdv_type_id': self.appointment_type_call_center.id,
         })
 
         # Set appointment status to no_show
-        event.write({'appointment_status': 'no_show'})
+        event.write({'x_rdv_status': 'no_show'})
 
         # Assert NoShow activity created
         activities = self.env['mail.activity'].search([
@@ -557,11 +553,11 @@ class TestCalendarEvent(TransactionCase):
             'name': 'Test Event',
             'start': datetime.datetime.now(),
             'stop': datetime.datetime.now() + datetime.timedelta(hours=1),
-            'appointment_type_id': self.appointment_type_call_center.id,
+            'x_rdv_type_id': self.appointment_type_call_center.id,
         })
 
         # Set appointment status to no_show
-        event.write({'appointment_status': 'no_show'})
+        event.write({'x_rdv_status': 'no_show'})
 
         # Assert activity assigned to organizer
         activity = self.env['mail.activity'].search([
@@ -584,8 +580,8 @@ class TestCalendarEvent(TransactionCase):
             'name': 'Test Event',
             'start': datetime.datetime.now(),
             'stop': datetime.datetime.now() + datetime.timedelta(hours=1),
-            'appointment_type_id': self.appointment_type_1.id,
-            'appointment_status': 'booked',
+            'x_rdv_type_id': self.appointment_type_1.id,
+            'x_rdv_status': 'booked',
         })
 
         # Assert no NoShow activity created
@@ -613,12 +609,12 @@ class TestCalendarEvent(TransactionCase):
             'name': 'Old NoShow',
             'start': start,
             'stop': stop,
-            'appointment_type_id': self.appointment_type_call_center.id,
+            'x_rdv_type_id': self.appointment_type_call_center.id,
         })
         # Flag the no-show on the existing event (the workflow path). Creating
         # the event already flagged no_show is not covered: the create path
         # runs the reschedule rule, which resets the status to booked.
-        event.write({'appointment_status': 'no_show'})
+        event.write({'x_rdv_status': 'no_show'})
 
         # Two unrelated edits/saves (the second is where the date used to jump).
         event.write({'x_avis_count': 1})
@@ -660,7 +656,7 @@ class TestCalendarEvent(TransactionCase):
             'name': 'Test Event',
             'start': datetime.datetime.now(),
             'stop': datetime.datetime.now() + datetime.timedelta(hours=1),
-            'appointment_type_id': self.appointment_type_1.id,
+            'x_rdv_type_id': self.appointment_type_1.id,
         })
 
         # Assert commercial field is False
@@ -700,7 +696,7 @@ class TestCalendarEvent(TransactionCase):
             'start': datetime.datetime.now(),
             'stop': datetime.datetime.now() + datetime.timedelta(hours=1),
             'partner_ids': [(4, self.customer_partner.id)],
-            'appointment_type_id': self.appointment_type_call_center.id,
+            'x_rdv_type_id': self.appointment_type_call_center.id,
         })
 
         # Verify clickable fields created
@@ -708,7 +704,7 @@ class TestCalendarEvent(TransactionCase):
                        "Address should be set")
 
         # Mark as no_show
-        event.write({'appointment_status': 'no_show'})
+        event.write({'x_rdv_status': 'no_show'})
 
         # Verify NoShow activity created
         activities = self.env['mail.activity'].search([
@@ -725,7 +721,7 @@ class TestCalendarEvent(TransactionCase):
         })
 
         # Verify status reset and activity closed
-        self.assertEqual(event.appointment_status, 'booked',
+        self.assertEqual(event.x_rdv_status, 'booked',
                         "Status should be reset to booked")
         active_activities = self.env['mail.activity'].search([
             ('res_model', '=', 'calendar.event'),
@@ -809,17 +805,15 @@ class TestCalendarEventNoShowTreatment(TransactionCase):
             'group_ids': [(6, 0, [base_group.id, cls.call_center_group.id])],
         })
 
-        cls.cnt_type = None
-        cls.com_type = None
-        if 'appointment.type' in cls.env:
-            cls.cnt_type = cls.env['appointment.type'].sudo().create({
-                'name': 'NoShow CNT Type',
-                'x_appointment_ref': 'APT-ENERG-CNT',
-            })
-            cls.com_type = cls.env['appointment.type'].sudo().create({
-                'name': 'NoShow COM Type',
-                'x_appointment_ref': 'APT-ENERG-COM',
-            })
+        RdvType = cls.env['bgg.rdv.type'].sudo()
+        cls.cnt_type = RdvType.search([('code', '=', 'APT-ENERG-CNT')]) or RdvType.create({
+            'name': 'NoShow CNT Type',
+            'code': 'APT-ENERG-CNT',
+        })
+        cls.com_type = RdvType.search([('code', '=', 'APT-ENERG-COM')]) or RdvType.create({
+            'name': 'NoShow COM Type',
+            'code': 'APT-ENERG-COM',
+        })
 
     def _create_flagged_noshow(self, vals):
         """Create the event from `vals`, then flag it no_show in a second write.
@@ -830,7 +824,7 @@ class TestCalendarEventNoShowTreatment(TransactionCase):
         status to booked and clears the anchor.
         """
         event = self.env['calendar.event'].create(vals)
-        event.write({'appointment_status': 'no_show'})
+        event.write({'x_rdv_status': 'no_show'})
         return event
 
     def _create_noshow(self, appointment_type=None):
@@ -841,7 +835,7 @@ class TestCalendarEventNoShowTreatment(TransactionCase):
             'name': 'NoShow Event',
             'start': now - datetime.timedelta(days=1, hours=1),
             'stop': now - datetime.timedelta(days=1),
-            'appointment_type_id': appointment_type.id,
+            'x_rdv_type_id': appointment_type.id,
         })
 
     def _backdate(self, event, days):
@@ -852,8 +846,8 @@ class TestCalendarEventNoShowTreatment(TransactionCase):
     def _queue_events(self):
         """Search using the same domain as the 'No-shows à recycler' filter."""
         return self.env['calendar.event'].search([
-            ('appointment_status', '=', 'no_show'),
-            ('appointment_type_id.x_appointment_ref', 'in',
+            ('x_rdv_status', '=', 'no_show'),
+            ('x_rdv_type_id.code', 'in',
              ['APT-ENERG-CNT', 'APT-NISOL-CNT']),
             ('x_noshow_disposition', '=', False),
             ('x_noshow_available_date', '<=', datetime.datetime.now()),
@@ -885,7 +879,7 @@ class TestCalendarEventNoShowTreatment(TransactionCase):
         if not self.cnt_type:
             self.skipTest("appointment module not installed")
         event = self._create_noshow()
-        event.write({'appointment_status': 'booked'})
+        event.write({'x_rdv_status': 'booked'})
         self.assertFalse(event.x_noshow_date,
                          "x_noshow_date should be cleared when not no_show")
         self.assertFalse(event.x_noshow_available_date,
@@ -897,13 +891,13 @@ class TestCalendarEventNoShowTreatment(TransactionCase):
         if not self.cnt_type:
             self.skipTest("appointment module not installed")
         event = self._create_noshow()
-        self.assertEqual(event.appointment_status, 'no_show')
+        self.assertEqual(event.x_rdv_status, 'no_show')
         event.write({
             'start': event.start,
             'stop': event.stop,
             'x_noshow_disposition': 'suivi_en_cours',
         })
-        self.assertEqual(event.appointment_status, 'no_show',
+        self.assertEqual(event.x_rdv_status, 'no_show',
                          "Re-sending unchanged dates must not reset the status")
         self.assertTrue(event.x_noshow_date,
                         "x_noshow_date must survive a non-reschedule save")
@@ -959,7 +953,7 @@ class TestCalendarEventNoShowTreatment(TransactionCase):
             'name': 'NoShow Access',
             'start': now - datetime.timedelta(days=1, hours=1),
             'stop': now - datetime.timedelta(days=1),
-            'appointment_type_id': self.cnt_type.id,
+            'x_rdv_type_id': self.cnt_type.id,
             'user_id': self.commercial_user.id,
             'partner_ids': [(6, 0, [
                 self.commercial_user.partner_id.id,
@@ -996,7 +990,7 @@ class TestCalendarEventNoShowTreatment(TransactionCase):
             'name': 'NoShow CC',
             'start': now - datetime.timedelta(days=1, hours=1),
             'stop': now - datetime.timedelta(days=1),
-            'appointment_type_id': self.cnt_type.id,
+            'x_rdv_type_id': self.cnt_type.id,
             'user_id': self.cc_user.id,
             'partner_ids': [(6, 0, [self.cc_user.partner_id.id])],
         })
@@ -1040,7 +1034,7 @@ class TestCalendarEventNoShowTreatment(TransactionCase):
             'start': new_start,
             'stop': new_start + datetime.timedelta(hours=1),
         })
-        self.assertEqual(event.appointment_status, 'booked',
+        self.assertEqual(event.x_rdv_status, 'booked',
                          "Rescheduling should reset the status to booked")
 
     def test_commercial_can_reschedule_in_window(self):
@@ -1052,7 +1046,7 @@ class TestCalendarEventNoShowTreatment(TransactionCase):
             'name': 'NoShow COM-resched',
             'start': now - datetime.timedelta(days=1, hours=1),
             'stop': now - datetime.timedelta(days=1),
-            'appointment_type_id': self.cnt_type.id,
+            'x_rdv_type_id': self.cnt_type.id,
             'user_id': self.commercial_user.id,
             'partner_ids': [(6, 0, [self.commercial_user.partner_id.id])],
         })  # available_date in the future (still in window)
@@ -1061,4 +1055,4 @@ class TestCalendarEventNoShowTreatment(TransactionCase):
             'start': new_start,
             'stop': new_start + datetime.timedelta(hours=1),
         })
-        self.assertEqual(event.appointment_status, 'booked')
+        self.assertEqual(event.x_rdv_status, 'booked')

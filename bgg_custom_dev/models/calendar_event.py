@@ -23,6 +23,15 @@ NOSHOW_DISPOSITION_FOLLOWUP = 'suivi_en_cours'
 # Roles allowed to act, resolved by name (created manually outside the modules).
 COMMERCIAL_GROUP_NAME = 'Commercial'
 CALL_CENTER_GROUP_NAME = 'Call Center'
+# Appointment statuses (same values as the Enterprise appointment_status, so
+# the history copied from it keeps its meaning).
+RDV_STATUS_SELECTION = [
+    ('request', 'Demande'),
+    ('booked', 'Réservé'),
+    ('attended', 'Présent'),
+    ('no_show', 'No-show'),
+    ('cancelled', 'Annulé'),
+]
 
 
 class CalendarEvent(models.Model):
@@ -45,6 +54,32 @@ class CalendarEvent(models.Model):
     x_studio_customer_phone = fields.Html(
         string='Customer Phone',
         help='Clickable phone number with tel: protocol'
+    )
+
+    # ------------------------------------------------------------------
+    # Appointment (RDV) type and status, owned by this module
+    # ------------------------------------------------------------------
+    # They replace the Enterprise Appointments fields appointment_type_id /
+    # appointment_status for all the business rules below. While Enterprise
+    # is installed, the bridge module bgg_custom_dev_ee keeps both in sync.
+    x_rdv_type_id = fields.Many2one(
+        'bgg.rdv.type',
+        string='Type de RDV',
+        index=True,
+        tracking=True,
+    )
+    x_rdv_status = fields.Selection(
+        selection=RDV_STATUS_SELECTION,
+        string='Statut du RDV',
+        index=True,
+        copy=False,
+        tracking=True,
+    )
+    # Answers given in the booking questionnaire ("Question : réponse" lines),
+    # kept on the event so they survive the removal of Enterprise Appointments.
+    x_rdv_answers = fields.Text(
+        string='Réponses du questionnaire',
+        copy=False,
     )
 
     # KPI fields for tracking reviews and referrals per appointment
@@ -116,7 +151,7 @@ class CalendarEvent(models.Model):
     # needed while the form is open.
     x_appointment_ref = fields.Char(
         string='Appointment Reference',
-        related='appointment_type_id.x_appointment_ref',
+        related='x_rdv_type_id.code',
     )
 
     # View helper: True when the current user may edit the no-show disposition,
@@ -132,10 +167,10 @@ class CalendarEvent(models.Model):
         """Override create to set organizer and trigger automation rules on new calendar events"""
         # Stamp the no-show anchor inline (no separate write on the event).
         for vals in vals_list:
-            if vals.get('appointment_status') == 'no_show' and not vals.get('x_noshow_date'):
-                atype_id = vals.get('appointment_type_id')
-                atype = self.env['appointment.type'].browse(atype_id).sudo() if atype_id else None
-                if atype and atype.x_appointment_ref in CALL_CENTER_APPOINTMENT_REFS:
+            if vals.get('x_rdv_status') == 'no_show' and not vals.get('x_noshow_date'):
+                rdv_type_id = vals.get('x_rdv_type_id')
+                rdv_type = self.env['bgg.rdv.type'].browse(rdv_type_id).sudo() if rdv_type_id else None
+                if rdv_type and rdv_type.code in CALL_CENTER_APPOINTMENT_REFS:
                     vals['x_noshow_date'] = fields.Datetime.now()
 
         records = super(CalendarEvent, self).create(vals_list)
@@ -202,21 +237,19 @@ class CalendarEvent(models.Model):
                 return True
         return False
 
-    @api.depends('attendee_ids', 'attendee_ids.partner_id', 'appointment_type_id')
+    @api.depends('attendee_ids', 'attendee_ids.partner_id', 'x_rdv_type_id')
     def _compute_commercial(self):
         """
         Compute Commercial field - finds the sales rep (commercial) from attendees
-        Only applies to specific appointment types (IDs: 2, 4, 19, 20)
-        Looks for attendees whose partner has a user in the Commercial group (ID: 59)
+        Only applies to the BGG appointment types (ALL_APPOINTMENT_REFS)
+        Looks for attendees whose partner has a user in the Commercial group
         """
-        # Appointment types where we look for a commercial
-        valid_appointment_types = [2, 4, 19, 20]
-        # Commercial group ID
-        commercial_group_id = 59
+        commercial_group = self._find_group_by_name(COMMERCIAL_GROUP_NAME)
+        commercial_group_id = commercial_group.id
 
         for record in self:
-            # Check if the record has one of the specified appointment types
-            if not record.appointment_type_id or record.appointment_type_id.id not in valid_appointment_types:
+            # Check if the record has one of the BGG appointment types
+            if self._appointment_ref_of(record) not in ALL_APPOINTMENT_REFS:
                 record.x_studio_commercial = False
                 continue
 
@@ -280,12 +313,11 @@ class CalendarEvent(models.Model):
         """Return the appointment ref code, read with sudo.
 
         Server-side automations must not depend on the saving user's access to
-        appointment.type (e.g. a commercial without read access on it raised an
-        AccessError on every save), so the ref code is always read in sudo.
+        the RDV type, so the ref code is always read in sudo.
         Returns False when there is no type or no ref.
         """
-        atype = record.appointment_type_id
-        return atype.sudo().x_appointment_ref if atype else False
+        rdv_type = record.x_rdv_type_id
+        return rdv_type.sudo().code if rdv_type else False
 
     def _is_call_center_appointment(self):
         """Return True when this event is a call-center appointment (CNT)."""
@@ -339,7 +371,7 @@ class CalendarEvent(models.Model):
         self.ensure_one()
         if self.env.su or self.env.user.has_group('base.group_system'):
             return
-        if self.appointment_status != 'no_show' or not self._is_call_center_appointment():
+        if self.x_rdv_status != 'no_show' or not self._is_call_center_appointment():
             return
         if not self._user_in_group_named(CALL_CENTER_GROUP_NAME):
             return
@@ -365,9 +397,9 @@ class CalendarEvent(models.Model):
         Commercial follow-ups don't change the status, so they never touch the
         anchor — the window is not reset by them.
         """
-        if 'x_noshow_date' in vals or 'appointment_status' not in vals:
+        if 'x_noshow_date' in vals or 'x_rdv_status' not in vals:
             return
-        if vals['appointment_status'] == 'no_show':
+        if vals['x_rdv_status'] == 'no_show':
             if any(r._is_call_center_appointment() and not r.x_noshow_date for r in self):
                 vals['x_noshow_date'] = fields.Datetime.now()
         elif any(r.x_noshow_date for r in self):
@@ -475,9 +507,9 @@ class CalendarEvent(models.Model):
             # of whether an active NoShow activity remained: it may have been
             # closed by an earlier follow-up (so the search above finds nothing),
             # yet replanning the RDV still means the no-show is no longer relevant.
-            if record.appointment_status == 'no_show':
+            if record.x_rdv_status == 'no_show':
                 record.sudo().with_context(ctx).write({
-                    'appointment_status': 'booked'
+                    'x_rdv_status': 'booked'
                 })
                 _logger.info("Reset appointment status to 'booked' for event ID %s", record.id)
 
@@ -809,7 +841,7 @@ class CalendarEvent(models.Model):
             if self._appointment_ref_of(record) not in CALL_CENTER_APPOINTMENT_REFS:
                 return
 
-            if record.appointment_status != 'no_show':
+            if record.x_rdv_status != 'no_show':
                 return
 
             _logger.info("Processing NoShow status for calendar event ID %s", record.id)

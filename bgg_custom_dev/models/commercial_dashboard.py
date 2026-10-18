@@ -97,11 +97,11 @@ class CommercialDashboard(models.TransientModel):
             period_label = date_start.strftime('%B %Y').upper()
 
         # Get appointment type IDs
-        cnt_types = self.env['appointment.type'].search([
-            ('x_appointment_ref', 'in', CALL_CENTER_APPOINTMENT_REFS)
+        cnt_types = self.env['bgg.rdv.type'].search([
+            ('code', 'in', CALL_CENTER_APPOINTMENT_REFS)
         ])
-        com_types = self.env['appointment.type'].search([
-            ('x_appointment_ref', 'in', COMMERCIAL_APPOINTMENT_REFS)
+        com_types = self.env['bgg.rdv.type'].search([
+            ('code', 'in', COMMERCIAL_APPOINTMENT_REFS)
         ])
 
         cnt_type_ids = cnt_types.ids
@@ -112,7 +112,7 @@ class CommercialDashboard(models.TransientModel):
         event_domain = [
             ('start', '>=', fields.Datetime.to_string(date_start)),
             ('start', '<', fields.Datetime.to_string(date_end)),
-            ('appointment_type_id', 'in', all_type_ids),
+            ('x_rdv_type_id', 'in', all_type_ids),
         ]
         if user_id:
             event_domain.append(('user_id', '=', user_id))
@@ -159,14 +159,14 @@ class CommercialDashboard(models.TransientModel):
 
         for user in users:
             user_events_cnt = events.filtered(
-                lambda e: e.user_id.id == user.id and e.appointment_type_id.id in cnt_type_ids
+                lambda e: e.user_id.id == user.id and e.x_rdv_type_id.id in cnt_type_ids
             )
             user_events_com = events.filtered(
-                lambda e: e.user_id.id == user.id and e.appointment_type_id.id in com_type_ids
+                lambda e: e.user_id.id == user.id and e.x_rdv_type_id.id in com_type_ids
             )
 
-            rdv_call_data[user.id] = self._count_appointment_statuses(user_events_cnt)
-            rdv_commercial_data[user.id] = self._count_appointment_statuses(user_events_com)
+            rdv_call_data[user.id] = self._count_x_rdv_statuses(user_events_cnt)
+            rdv_commercial_data[user.id] = self._count_x_rdv_statuses(user_events_com)
 
         # Build per-user financial data
         financial_data = {}
@@ -550,12 +550,12 @@ class CommercialDashboard(models.TransientModel):
         import base64
         return base64.b64encode(output.read()).decode('utf-8')
 
-    def _count_appointment_statuses(self, events):
+    def _count_x_rdv_statuses(self, events):
         """Count appointments by status."""
-        attended = len(events.filtered(lambda e: e.appointment_status == 'attended'))
-        no_show = len(events.filtered(lambda e: e.appointment_status == 'no_show'))
-        cancelled = len(events.filtered(lambda e: e.appointment_status == 'cancelled'))
-        booked = len(events.filtered(lambda e: e.appointment_status == 'booked'))
+        attended = len(events.filtered(lambda e: e.x_rdv_status == 'attended'))
+        no_show = len(events.filtered(lambda e: e.x_rdv_status == 'no_show'))
+        cancelled = len(events.filtered(lambda e: e.x_rdv_status == 'cancelled'))
+        booked = len(events.filtered(lambda e: e.x_rdv_status == 'booked'))
         total = attended + no_show + cancelled + booked
 
         return {

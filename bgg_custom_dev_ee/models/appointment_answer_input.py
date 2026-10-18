@@ -5,9 +5,9 @@ from odoo import api, models
 
 _logger = logging.getLogger(__name__)
 
-# Appointment reference constants for automation rules
-ALL_APPOINTMENT_REFS = ['APT-ENERG-CNT', 'APT-ENERG-COM', 'APT-NISOL-CNT', 'APT-NISOL-COM']
-CALL_CENTER_APPOINTMENT_REFS = ['APT-ENERG-CNT', 'APT-NISOL-CNT']
+from odoo.addons.bgg_custom_dev.models.calendar_event import (
+    ALL_APPOINTMENT_REFS, CALL_CENTER_APPOINTMENT_REFS,
+)
 
 
 class AppointmentAnswerInput(models.Model):
@@ -36,6 +36,8 @@ class AppointmentAnswerInput(models.Model):
 
     def _process_appointment_answer(self, record):
         """Process all automation rules for appointment answers"""
+        if record.calendar_event_id:
+            record.calendar_event_id._bgg_refresh_rdv_answers()
         self._add_conjoint_as_contact(record)
         self._update_contact_info(record)
         self._update_appointment_title(record)

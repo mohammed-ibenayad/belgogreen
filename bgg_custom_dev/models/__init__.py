@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Import model extensions
-from . import appointment_answer_input
-from . import appointment_type
+from . import bgg_rdv_type
 from . import calendar_event
 from . import project_update
 from . import project_project
