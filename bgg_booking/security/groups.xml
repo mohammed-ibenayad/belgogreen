@@ -3,7 +3,7 @@
     <!-- Call-centre agents: book RDVs for the commercials. The OCA booking
          user only sees the bookings he attends or follows; the agents see
          them all. The post-install hook adds this group to the "Call Center"
-         role (created by hand, found by name). -->
+         and "Commercial" roles (created by hand, found by name). -->
     <record id="group_booking_agent" model="res.groups">
         <field name="name">Prise de RDV (call center)</field>
         <field name="implied_ids" eval="[(4, ref('resource_booking.group_user'))]"/>

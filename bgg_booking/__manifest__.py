@@ -12,9 +12,12 @@
         centre, on top of OCA resource_booking (Odoo Community):
 
         - "Prise de RDV" form: client found by phone (or created), address,
-          questionnaire (besoin, conjoint, confirmation SMS, RDV pris à la
-          place de), free slots of the day per commercial, booking in one
-          click.
+          questionnaire of the booking type (as the Appointments types:
+          besoin - one or several -, propriétaires, panneaux depuis, conjoint,
+          confirmation SMS, RDV pris à la place de, commentaires), free slots
+          of the day per commercial, booking in one click.
+        - A CRM opportunity is created for each RDV and linked to it (sale
+          order attribution, organizer of the RDV).
         - Each booking type is linked to a bgg_custom_dev RDV type. The
           meeting created by the booking carries the RDV type, the "Réservé"
           status, the questionnaire summary and the "pris à la place de"
@@ -27,8 +30,10 @@
           (dashboards and reports count it); cancelled RDVs do not block the
           commercial's slot.
 
-        Call-centre agents need the "Prise de RDV (call center)" group (all
-        bookings); it is added to the "Call Center" role at installation.
+        Installation: the study booking types are created from the RDV types
+        and their commercials (Mon-Sat 9:00-21:00, 2 h RDVs, questionnaire of
+        each type); the "Prise de RDV (call center)" group (all bookings) is
+        added to the "Call Center" and "Commercial" roles.
 
         Requires the OCA modules resource_booking (OCA/calendar) and
         web_calendar_slot_duration (OCA/web). Not for Odoo.sh: installed on
@@ -50,7 +55,7 @@
         'wizard/bgg_booking_wizard_views.xml',
         'views/menu_views.xml',
     ],
-    'post_init_hook': 'link_call_center_group',
+    'post_init_hook': 'post_init',
     'installable': True,
     'application': False,
     'auto_install': False,

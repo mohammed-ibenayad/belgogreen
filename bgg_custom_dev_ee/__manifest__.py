@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen Custom Development - Enterprise bridge',
-    'version': '19.0.1.1.0',
+    'version': '19.0.1.2.0',
     'category': 'Customizations',
     'summary': 'Keeps bgg_custom_dev in sync with the Enterprise apps until they are removed',
     'description': """

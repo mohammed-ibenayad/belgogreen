@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen Custom Development',
-    'version': '19.0.2.1.0',
+    'version': '19.0.2.2.0',
     'category': 'Customizations',
     'summary': 'Custom business logic and automation for BelGoGreen',
     'description': """
@@ -106,6 +106,11 @@
         rendez-vous énergétique" (events, Action menu + daily job, inactive)
         and "Créer tâches SSS" now live in this module; the Enterprise parts
         are in bgg_custom_dev_ee.
+
+        **Commercials per RDV type (19.0.2.2.0)**: the staff of each Enterprise
+        appointment type is copied to its RDV type (Commerciaux) and kept in
+        sync by bgg_custom_dev_ee, so the Community booking can be set up from
+        it.
 
         All business logic includes comprehensive logging for debugging and monitoring.
     """,

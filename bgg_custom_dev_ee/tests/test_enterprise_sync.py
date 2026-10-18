@@ -34,6 +34,13 @@ class TestEnterpriseSync(TransactionCase):
         self.atype.x_appointment_ref = 'APT-TEST-BRIDGE-2'
         self.assertEqual(rdv_type.code, 'APT-TEST-BRIDGE-2')
 
+    def test_staff_copied_to_rdv_type(self):
+        commercial = self.env['res.users'].create({'name': 'Bridge Commercial', 'login': 'bridge_commercial'})
+        self.atype.staff_user_ids = [(6, 0, [commercial.id])]
+        self.assertEqual(self.atype.x_rdv_type_id.user_ids, commercial)
+        self.atype.staff_user_ids = [(5,)]
+        self.assertFalse(self.atype.x_rdv_type_id.user_ids)
+
     def test_event_type_and_status_copied(self):
         event = self._event(appointment_type_id=self.atype.id, appointment_status='booked')
         self.assertEqual(event.x_rdv_type_id, self.atype.x_rdv_type_id)

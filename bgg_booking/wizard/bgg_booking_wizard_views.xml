@@ -6,6 +6,11 @@
         <field name="arch" type="xml">
             <form string="Prise de RDV">
                 <group>
+                    <group>
+                        <field name="type_id" options="{'no_create': True}"/>
+                    </group>
+                </group>
+                <group>
                     <group string="Client">
                         <field name="phone" widget="phone" placeholder="Saisir le téléphone : le client existant est retrouvé"/>
                         <field name="partner_id" options="{'no_create': True}"/>
@@ -17,18 +22,24 @@
                         <field name="country_id" options="{'no_create': True}"/>
                     </group>
                     <group string="Questionnaire">
-                        <field name="need_ids" widget="many2many_tags" options="{'no_create': True}"/>
+                        <field name="allowed_need_ids" invisible="1"/>
+                        <field name="need_multiple" invisible="1"/>
+                        <field name="ask_solar_since" invisible="1"/>
+                        <field name="ask_sms_confirmation" invisible="1"/>
+                        <field name="ask_on_behalf" invisible="1"/>
+                        <field name="need_ids" widget="many2many_tags" options="{'no_create': True}"
+                               placeholder="Un seul besoin" invisible="need_multiple"/>
+                        <field name="need_ids" widget="many2many_checkboxes" invisible="not need_multiple"/>
+                        <field name="is_owner" widget="radio" options="{'horizontal': true}"/>
+                        <field name="solar_since" invisible="not ask_solar_since"/>
                         <field name="spouse_name"/>
                         <field name="spouse_phone" widget="phone"/>
-                        <field name="sms_confirmation"/>
-                        <field name="on_behalf_id" options="{'no_create': True}"/>
-                        <field name="note"/>
+                        <field name="sms_confirmation" invisible="not ask_sms_confirmation"/>
+                        <field name="on_behalf_id" options="{'no_create': True}" invisible="not ask_on_behalf"/>
+                        <field name="comments"/>
                     </group>
                 </group>
                 <group string="Rendez-vous">
-                    <group>
-                        <field name="type_id" options="{'no_create': True}"/>
-                    </group>
                     <group>
                         <field name="date"/>
                     </group>

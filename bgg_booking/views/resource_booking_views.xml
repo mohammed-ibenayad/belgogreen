@@ -16,6 +16,8 @@
                         <field name="x_zip"/>
                         <field name="x_city"/>
                         <field name="x_country_id" options="{'no_create': True}"/>
+                        <field name="x_is_owner"/>
+                        <field name="x_solar_since"/>
                     </group>
                     <group>
                         <field name="x_need_ids" widget="many2many_tags" options="{'no_create': True}"/>
@@ -24,6 +26,7 @@
                         <field name="x_sms_confirmation"/>
                         <field name="x_on_behalf_id" options="{'no_create': True}"/>
                     </group>
+                    <field name="x_comments" colspan="2"/>
                 </group>
             </field>
         </field>

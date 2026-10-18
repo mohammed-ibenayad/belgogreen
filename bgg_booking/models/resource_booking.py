@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from odoo import fields, models
+from odoo.tools import plaintext2html
 
 # Labels of the questionnaire in the RDV answers summary, in this order (same
 # wording as the former Appointments questions).
@@ -9,10 +10,13 @@ QUESTION_LABELS = [
     ('x_zip', 'Code Postale'),
     ('x_city', 'Ville'),
     ('x_country_id', 'Pays'),
-    ('x_need_ids', 'Besoin'),
+    ('x_solar_since', 'Depuis combien de temps les clients ont-ils des panneaux solaires ?'),
+    ('x_is_owner', 'Les clients sont-ils bien les propriétaires du bien ?'),
     ('x_spouse_name', 'Nom du conjoint'),
     ('x_spouse_phone', 'Numéro de téléphone du conjoint'),
+    ('x_need_ids', 'Besoin'),
     ('x_sms_confirmation', 'Confirmation du rendez-vous par SMS'),
+    ('x_comments', 'Commentaires'),
     ('x_on_behalf_id', 'Rendez-vous pris à la place de'),
 ]
 SMS_ICON = '📞 '
@@ -28,7 +32,10 @@ class ResourceBooking(models.Model):
     x_zip = fields.Char(string='Code postal')
     x_city = fields.Char(string='Ville')
     x_country_id = fields.Many2one('res.country', string='Pays')
+    x_solar_since = fields.Char(string='Panneaux solaires depuis')
+    x_is_owner = fields.Selection([('yes', 'Oui'), ('no', 'Non')], string='Propriétaires du bien')
     x_need_ids = fields.Many2many('bgg.rdv.need', string='Besoin')
+    x_comments = fields.Text(string='Commentaires')
     x_spouse_name = fields.Char(string='Nom du conjoint')
     x_spouse_phone = fields.Char(string='Téléphone du conjoint')
     x_sms_confirmation = fields.Boolean(string='Confirmation du RDV par SMS')
@@ -55,12 +62,16 @@ class ResourceBooking(models.Model):
         lines = []
         for fname, label in QUESTION_LABELS:
             value = self[fname]
-            if not value:
+            if fname == 'x_sms_confirmation':
+                if not self.type_id.x_ask_sms_confirmation:
+                    continue
+                value = 'Oui' if value else 'Non'
+            elif not value:
                 continue
-            if fname == 'x_need_ids':
+            elif fname == 'x_need_ids':
                 value = ' + '.join(value.mapped('name'))
-            elif fname == 'x_sms_confirmation':
-                value = 'Oui'
+            elif fname == 'x_is_owner':
+                value = dict(self._fields[fname].selection)[value]
             elif hasattr(value, 'display_name'):
                 value = value.display_name
             lines.append(f"{label} : {value}")
@@ -125,7 +136,30 @@ class ResourceBooking(models.Model):
         active = self.filtered('active')
         # the meeting rules (clickable address / phone) read the client
         active._bgg_apply_questionnaire()
-        return super(ResourceBooking, active)._sync_meeting()
+        result = super(ResourceBooking, active)._sync_meeting()
+        active._bgg_create_opportunities()
+        return result
+
+    # ------------------------------------------------------------------
+    # CRM opportunity of the RDV (Appointments "create opportunity")
+    # ------------------------------------------------------------------
+
+    def _bgg_create_opportunities(self):
+        """One opportunity per new RDV, linked to its meeting: the sale order
+        made from it finds the RDV (organizer, call-centre attribution)
+        through the opportunity. Created in sudo, as Appointments did."""
+        for booking in self.filtered(lambda b: b.type_id.x_create_opportunity and b.meeting_id):
+            meeting = booking.meeting_id.sudo()
+            if meeting.opportunity_id:
+                continue
+            lead = self.env['crm.lead'].sudo().create({
+                'name': meeting.name,
+                'type': 'opportunity',
+                'partner_id': booking.partner_id.id,
+                'user_id': meeting.user_id.id,
+                'description': plaintext2html(booking._bgg_answers_summary() or ''),
+            })
+            meeting.opportunity_id = lead
 
     # ------------------------------------------------------------------
     # Cancellation: the meeting is kept, as a cancelled RDV

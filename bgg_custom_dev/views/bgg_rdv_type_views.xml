@@ -9,6 +9,7 @@
                 <field name="sequence" widget="handle"/>
                 <field name="name"/>
                 <field name="code"/>
+                <field name="user_ids" widget="many2many_tags" optional="show"/>
                 <field name="active" column_invisible="True"/>
             </list>
         </field>

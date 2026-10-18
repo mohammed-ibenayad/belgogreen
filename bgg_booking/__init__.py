@@ -2,4 +2,4 @@
 
 from . import models
 from . import wizard
-from .hooks import link_call_center_group
+from .hooks import post_init

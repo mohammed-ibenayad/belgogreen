@@ -35,17 +35,26 @@ class BggBookingWizard(models.TransientModel):
     city = fields.Char(string='Ville')
     country_id = fields.Many2one('res.country', string='Pays',
                                  default=lambda self: self.env.ref('base.be', raise_if_not_found=False))
-    # Questionnaire
-    need_ids = fields.Many2many('bgg.rdv.need', string='Besoin')
+    # Questionnaire (the questions asked depend on the booking type)
+    solar_since = fields.Char(string='Depuis combien de temps les clients ont-ils des panneaux solaires ?')
+    is_owner = fields.Selection([('yes', 'Oui'), ('no', 'Non')],
+                                string='Les clients sont-ils bien les propriétaires du bien ?')
+    need_ids = fields.Many2many('bgg.rdv.need', string='Besoin',
+                                domain="[('id', 'in', allowed_need_ids)]")
     spouse_name = fields.Char(string='Nom du conjoint')
     spouse_phone = fields.Char(string='Téléphone du conjoint')
     sms_confirmation = fields.Boolean(string='Confirmation du RDV par SMS')
     on_behalf_id = fields.Many2one('res.partner', string='RDV pris à la place de',
                                    domain="[('category_id.name', '=', 'Call Center')]")
-    note = fields.Text(string='Remarque')
+    comments = fields.Text(string='Commentaires')
     # Slot
     type_id = fields.Many2one('resource.booking.type', string='Type de RDV', required=True,
                               domain="[('x_rdv_type_id', '!=', False)]")
+    allowed_need_ids = fields.Many2many(related='type_id.x_need_ids')
+    need_multiple = fields.Boolean(related='type_id.x_need_multiple')
+    ask_solar_since = fields.Boolean(related='type_id.x_ask_solar_since')
+    ask_sms_confirmation = fields.Boolean(related='type_id.x_ask_sms_confirmation')
+    ask_on_behalf = fields.Boolean(related='type_id.x_ask_on_behalf')
     date = fields.Date(string='Jour', required=True,
                        default=lambda self: fields.Date.context_today(self) + datetime.timedelta(days=1))
     slot_ids = fields.One2many('bgg.booking.wizard.slot', 'wizard_id', string='Créneaux libres')
@@ -76,6 +85,10 @@ class BggBookingWizard(models.TransientModel):
     def _onchange_slot_criteria(self):
         self.slot_ids = [Command.clear()]
         self.slots_searched = False
+
+    @api.onchange('type_id')
+    def _onchange_type_id(self):
+        self.need_ids = self.need_ids & self.type_id.x_need_ids
 
     @api.model
     def _find_partner_by_phone(self, key):
@@ -134,8 +147,6 @@ class BggBookingWizard(models.TransientModel):
         self.ensure_one()
         partner = self.partner_id.sudo()
         if not partner:
-            if not self.partner_name:
-                raise UserError(self.env._("Indiquez le nom du client."))
             partner = partner.create({
                 'name': self.partner_name,
                 'phone': self.phone,
@@ -153,8 +164,24 @@ class BggBookingWizard(models.TransientModel):
                 partner.write(missing)
         return partner.with_env(self.env)
 
+    def _check_questionnaire(self):
+        """The questions the Appointments form made mandatory."""
+        self.ensure_one()
+        labels = self._fields
+        missing = [labels[name].string for name in ('street', 'zip', 'city', 'country_id', 'is_owner', 'need_ids')
+                   if not self[name]]
+        if self.ask_solar_since and not self.solar_since:
+            missing.append(labels['solar_since'].string)
+        if not self.partner_id and not self.partner_name:
+            missing.insert(0, labels['partner_name'].string)
+        if missing:
+            raise UserError(self.env._("À compléter avant de réserver :\n- %s", "\n- ".join(missing)))
+        if not self.need_multiple and len(self.need_ids) > 1:
+            raise UserError(self.env._("Un seul besoin pour ce type de rendez-vous."))
+
     def _book(self, slot):
         self.ensure_one()
+        self._check_questionnaire()
         partner = self._get_or_create_partner()
         booking = self.env['resource.booking'].create({
             'type_id': self.type_id.id,
@@ -162,16 +189,18 @@ class BggBookingWizard(models.TransientModel):
             'combination_auto_assign': False,
             'combination_id': slot.combination_id.id,
             'start': slot.start,
-            'description': self.note and f'<p>{self.note}</p>',
             'x_street': self.street,
             'x_zip': self.zip,
             'x_city': self.city,
             'x_country_id': self.country_id.id,
+            'x_solar_since': self.ask_solar_since and self.solar_since or False,
+            'x_is_owner': self.is_owner,
             'x_need_ids': [Command.set(self.need_ids.ids)],
             'x_spouse_name': self.spouse_name,
             'x_spouse_phone': self.spouse_phone,
-            'x_sms_confirmation': self.sms_confirmation,
-            'x_on_behalf_id': self.on_behalf_id.id,
+            'x_sms_confirmation': self.ask_sms_confirmation and self.sms_confirmation,
+            'x_comments': self.comments,
+            'x_on_behalf_id': self.ask_on_behalf and self.on_behalf_id.id or False,
         })
         return booking
 
