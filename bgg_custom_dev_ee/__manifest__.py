@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen Custom Development - Enterprise bridge',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'category': 'Customizations',
     'summary': 'Keeps bgg_custom_dev in sync with the Enterprise apps until they are removed',
     'description': """
@@ -20,6 +20,10 @@
           la place de") and the questionnaire summary on the event.
         - Field Service: is_fsm on projects -> x_is_sss_project.
         - Documents: project folder named "<order> - Projet - <client>".
+        - "Créer tâches SSS": the SSS project and tasks are also Field Service
+          ones (worksheet, customer address on the task).
+        - The Odoo Studio view changes made on Enterprise screens (appointment
+          buttons, list columns and type form).
 
         Installed automatically with Enterprise; removed together with the
         Enterprise apps when moving to Odoo Community. Holds no data of its own.
@@ -35,6 +39,7 @@
     ],
     'data': [
         'views/calendar_event_views.xml',
+        'views/studio_views.xml',
     ],
     'installable': True,
     'application': False,

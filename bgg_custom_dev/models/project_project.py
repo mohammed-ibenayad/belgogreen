@@ -12,6 +12,8 @@ _logger = logging.getLogger(__name__)
 # from the order (Responsable du dossier, payment term x product categories)
 # and therefore locked against manual edits.
 ADMIN_PROJECT_LOCKED_FIELDS = ('user_id', 'date_start', 'date')
+# Project stage of the closed projects ("Clôturer les projets Admin/SSS").
+CLOSED_PROJECT_STAGE_NAME = 'Terminé'
 
 
 class ProjectProject(models.Model):
@@ -39,6 +41,15 @@ class ProjectProject(models.Model):
     x_is_sss_project = fields.Boolean(
         string='Projet SSS (service sur site)',
         index=True,
+        copy=False,
+    )
+    # Order of an SSS project, set by "Créer tâches SSS". The standard
+    # sale_order_id of a project comes from an order line, which an SSS
+    # project does not have.
+    x_sss_sale_order_id = fields.Many2one(
+        'sale.order',
+        string='Commande (SSS)',
+        index='btree_not_null',
         copy=False,
     )
 
@@ -247,6 +258,80 @@ class ProjectProject(models.Model):
             ('state', 'not in', ['1_done', '1_canceled']),
         ])
         open_tasks._apply_responsable_dossier(responsable, previous_user)
+
+    # ------------------------------------------------------------------
+    # "Clôturer les projets Admin/SSS" (Action menu, formerly in Studio)
+    # ------------------------------------------------------------------
+
+    def action_close_projects(self):
+        """Move the selected projects whose tasks are all closed to the
+        "Terminé" project stage, with the "Terminé" status. Projects without
+        task or with an open task are left as they are."""
+        Stage = self.env['project.project.stage']
+        closed_stage = (Stage.search([('name', '=', CLOSED_PROJECT_STAGE_NAME)], limit=1)
+                        or self.env.ref('project.project_project_stage_2', raise_if_not_found=False))
+        if not closed_stage:
+            return self._notification(
+                'Étape introuvable',
+                f"L'étape de projet « {CLOSED_PROJECT_STAGE_NAME} » est introuvable. "
+                "Aucun projet n'a été modifié.", 'danger', sticky=True)
+
+        projects = self.exists()
+        tasks_by_project = self.env['project.task'].search(
+            [('project_id', 'in', projects.ids)]).grouped('project_id')
+        Project = self.browse()
+        already_closed, no_tasks, with_open_tasks, to_close = Project, Project, Project, Project
+        for project in projects:
+            tasks = tasks_by_project.get(project, self.env['project.task'])
+            if project.stage_id == closed_stage:
+                already_closed |= project
+            elif not tasks:
+                no_tasks |= project
+            elif any(not task.is_closed for task in tasks):
+                with_open_tasks |= project
+            else:
+                to_close |= project
+        if to_close:
+            to_close.write({'stage_id': closed_stage.id, 'last_update_status': 'done'})
+            _logger.info("Close projects: %s moved to %s", to_close.ids, closed_stage.name)
+        status_aligned = already_closed.filtered(lambda p: p.last_update_status != 'done')
+        if status_aligned:
+            status_aligned.write({'last_update_status': 'done'})
+
+        parts = [f'{len(projects)} projet(s) sélectionné(s)']
+        if to_close:
+            parts.append(f'{len(to_close)} clôturé(s) → « {closed_stage.name} »')
+        if with_open_tasks:
+            parts.append(f'{len(with_open_tasks)} ignoré(s), tâches encore ouvertes')
+        if no_tasks:
+            parts.append(f'{len(no_tasks)} ignoré(s), sans tâche')
+        if already_closed:
+            parts.append(f'{len(already_closed)} déjà dans « {closed_stage.name} »'
+                         + (f' (dont {len(status_aligned)} statut mis à jour)' if status_aligned else ''))
+        skipped = with_open_tasks or no_tasks
+        if (to_close or status_aligned) and not skipped:
+            title, notif_type, sticky = 'Projets clôturés', 'success', False
+        elif to_close:
+            title, notif_type, sticky = 'Projets partiellement clôturés', 'warning', True
+        elif skipped:
+            title, notif_type, sticky = 'Aucun projet clôturé', 'warning', True
+        else:
+            title, notif_type, sticky = 'Rien à faire', 'info', False
+        return self._notification(title, ' | '.join(parts), notif_type, sticky=sticky)
+
+    @api.model
+    def _notification(self, title, message, notif_type, sticky=False):
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': title,
+                'message': message,
+                'type': notif_type,
+                'sticky': sticky,
+                'next': {'type': 'ir.actions.client', 'tag': 'soft_reload'},
+            },
+        }
 
     def write(self, vals):
         """Block manual edits of the locked admin project fields"""

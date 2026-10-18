@@ -38,6 +38,18 @@
     </record>
 
     <!--
+        "AMSS ADMIN": created in Odoo Studio (__custom__.group_58), adopted by
+        this module (the 19.0.2.1.0 migration gives the existing group this
+        xmlid, so it is not created twice). Runs "Créer tâches SSS" from the
+        sale order and sees the RDV columns of the quotation list.
+    -->
+    <data noupdate="1">
+        <record id="group_amss_admin" model="res.groups">
+            <field name="name">AMSS ADMIN</field>
+        </record>
+    </data>
+
+    <!--
         The "Commercial" and "Call Center" roles used by the no-show workflow are
         NOT defined here: they were created manually outside the custom modules.
         They are resolved by name at runtime (see calendar_event.py) and linked

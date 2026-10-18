@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Odoo Studio view changes on Enterprise screens (the Community ones are
+        in bgg_custom_dev/views/studio_views.xml). Removed with Enterprise.
+        The Studio changes of the Field Service task list and of the
+        timesheet columns are left in Studio: Enterprise only, removed with it.
+    -->
+
+    <!-- Calendar events list: the bgg_custom_dev RDV columns replace the
+         Appointments ones -->
+    <record id="view_calendar_event_tree_ee" model="ir.ui.view">
+        <field name="name">calendar.event.list.bgg.ee</field>
+        <field name="model">calendar.event</field>
+        <field name="inherit_id" ref="calendar.view_calendar_event_tree"/>
+        <field name="priority">160</field>
+        <field name="arch" type="xml">
+            <xpath expr="/list//field[@name='appointment_type_id']" position="attributes">
+                <attribute name="column_invisible">True</attribute>
+            </xpath>
+            <xpath expr="/list//field[@name='appointment_resource_ids']" position="attributes">
+                <attribute name="column_invisible">True</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Calendar events form: status buttons in French, appointment type
+         visible and required (the bgg_custom_dev RDV type is hidden) -->
+    <record id="view_calendar_event_form_ee" model="ir.ui.view">
+        <field name="name">calendar.event.form.bgg.ee</field>
+        <field name="model">calendar.event</field>
+        <field name="inherit_id" ref="calendar.view_calendar_event_form"/>
+        <field name="priority">160</field>
+        <field name="arch" type="xml">
+            <xpath expr="/form/header/button[@name='action_set_appointment_booked']" position="attributes">
+                <attribute name="string">Réservé</attribute>
+            </xpath>
+            <xpath expr="/form/header/button[@name='action_set_appointment_booked'][2]" position="attributes">
+                <attribute name="string">Réservé</attribute>
+            </xpath>
+            <xpath expr="/form//button[@name='action_set_appointment_attended']" position="attributes">
+                <attribute name="string">Présent</attribute>
+            </xpath>
+            <xpath expr="/form//button[@name='action_set_appointment_cancelled']" position="attributes">
+                <attribute name="string">Refusé</attribute>
+            </xpath>
+            <xpath expr="/form/sheet/notebook/page[@name='options']/group/group/field[@name='appointment_type_id']" position="attributes">
+                <attribute name="invisible">False</attribute>
+                <attribute name="required">True</attribute>
+            </xpath>
+        </field>
+    </record>
+    <record id="view_calendar_event_form_rdv_not_required" model="ir.ui.view">
+        <field name="name">calendar.event.form.bgg.rdv.not.required</field>
+        <field name="model">calendar.event</field>
+        <field name="inherit_id" ref="bgg_custom_dev.view_calendar_event_form_bgg_rdv_required"/>
+        <field name="arch" type="xml">
+            <field name="x_rdv_type_id" position="attributes">
+                <attribute name="required">False</attribute>
+            </field>
+        </field>
+    </record>
+
+    <!-- Appointment types: the names used by the rules cannot be changed -->
+    <record id="appointment_type_view_form_bgg" model="ir.ui.view">
+        <field name="name">appointment.type.form.bgg</field>
+        <field name="model">appointment.type</field>
+        <field name="inherit_id" ref="appointment.appointment_type_view_form"/>
+        <field name="priority">200</field>
+        <field name="arch" type="xml">
+            <xpath expr="//form[1]/sheet[1]/div[not(@name)][1]/h1[1]/field[@name='name']" position="attributes">
+                <attribute name="force_save">1</attribute>
+                <attribute name="readonly">name in ["Etude énergétique (par call center)", "Etude énergétique (par commercial)", "Etude isolation (par call center)", "Etude isolation (par commercial)", "RDV personnel", "RDV professionnel"]</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>

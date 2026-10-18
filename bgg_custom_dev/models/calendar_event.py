@@ -23,6 +23,8 @@ NOSHOW_DISPOSITION_FOLLOWUP = 'suivi_en_cours'
 # Roles allowed to act, resolved by name (created manually outside the modules).
 COMMERCIAL_GROUP_NAME = 'Commercial'
 CALL_CENTER_GROUP_NAME = 'Call Center'
+# Event tag: no "Rappel pour statuer" reminder on the events carrying it.
+STATUS_REMINDER_SKIP_TAG = 'à reporter'
 # Appointment statuses (same values as the Enterprise appointment_status, so
 # the history copied from it keeps its meaning).
 RDV_STATUS_SELECTION = [
@@ -100,6 +102,13 @@ class CalendarEvent(models.Model):
         'res.partner',
         string='Rendez-vous pris à la place de',
         help='Partner who made the appointment on behalf of the customer (e.g., Call Center agent)'
+    )
+
+    # Former Odoo Studio fields (same names, so their data stays in place)
+    x_studio_currency_id = fields.Many2one('res.currency', string='Currency')
+    x_studio_monetary_field_gq_1k2nflo0n = fields.Monetary(
+        string='Nouveau Monétaire',
+        currency_field='x_studio_currency_id',
     )
 
     # ------------------------------------------------------------------
@@ -897,3 +906,95 @@ class CalendarEvent(models.Model):
         except Exception as e:
             _logger.error("Create Activity for NoShow - Error processing event ID %s: %s",
                         record.id, str(e), exc_info=True)
+
+    # ------------------------------------------------------------------
+    # "Rappel pour statuer les rendez-vous énergétique" (formerly in Studio)
+    # ------------------------------------------------------------------
+    # A study RDV still "booked" 24 hours after its end gets a To-Do activity
+    # for each commercial attendee, asking them to set its status. Events
+    # tagged "à reporter" are left out.
+
+    @api.model
+    def _status_reminder_domain(self):
+        return [
+            ('stop', '<=', fields.Datetime.now() - datetime.timedelta(days=1)),
+            ('x_rdv_type_id.code', 'in', ALL_APPOINTMENT_REFS),
+            ('x_rdv_status', '=', 'booked'),
+            ('categ_ids', 'not any', [('name', '=', STATUS_REMINDER_SKIP_TAG)]),
+        ]
+
+    def _send_status_reminders(self):
+        """Create the reminders on these events. Returns (number of events
+        with a commercial attendee, number of activities created)."""
+        commercial_group = self._find_group_by_name(COMMERCIAL_GROUP_NAME)
+        todo = self.env.ref('mail.mail_activity_data_todo', raise_if_not_found=False)
+        if not commercial_group or not todo:
+            _logger.warning("Status reminder: group '%s' or the To-Do activity type is missing",
+                            COMMERCIAL_GROUP_NAME)
+            return 0, 0
+        Activity = self.env['mail.activity'].sudo()
+        model_id = self.env['ir.model']._get_id('calendar.event')
+        today = fields.Date.context_today(self)
+        odoobot = self.env.ref('base.partner_root')
+        events_done = activities_created = 0
+        for event in self:
+            # one activity per commercial attendee (first user of the partner)
+            users = self.env['res.users'].browse()
+            for partner in event.attendee_ids.partner_id:
+                if any(commercial_group in user.group_ids for user in partner.user_ids):
+                    users |= partner.user_ids[0]
+            if not users:
+                continue
+            events_done += 1
+            for user in users:
+                if Activity.search_count([
+                    ('res_model', '=', 'calendar.event'), ('res_id', '=', event.id),
+                    ('activity_type_id', '=', todo.id), ('user_id', '=', user.id),
+                ], limit=1):
+                    continue
+                Activity.create({
+                    'activity_type_id': todo.id,
+                    'summary': 'Mise à jour du statut requise',
+                    'note': f"Veuillez mettre à jour le statut de l'événement '{event.name}' qui est passé.",
+                    'user_id': user.id,
+                    'res_id': event.id,
+                    'res_model_id': model_id,
+                    'date_deadline': today,
+                })
+                activities_created += 1
+            event.sudo().message_post(
+                body="Rappel : Cet événement est passé et nécessite une mise à jour du statut.",
+                message_type='comment',
+                author_id=odoobot.id,
+                subtype_xmlid='mail.mt_note',
+            )
+        return events_done, activities_created
+
+    def action_send_status_reminders(self):
+        """Action menu: reminders on the selected events that qualify."""
+        events = self.filtered_domain(self._status_reminder_domain())
+        if not events:
+            return self._notification(
+                'Aucun événement',
+                'Aucun événement ne correspond aux critères (24h écoulées, rendez-vous '
+                'énergétique, statut réservé et commercial assigné).', 'warning')
+        events_done, activities_created = events._send_status_reminders()
+        if not events_done:
+            return self._notification(
+                'Aucune activité', 'Aucune activité créée (événements non pertinents).', 'info')
+        return self._notification(
+            'Succès',
+            f'{events_done} événements pertinents dans la sélection, {activities_created} activités créées.',
+            'success')
+
+    @api.model
+    def _cron_send_status_reminders(self):
+        self.search(self._status_reminder_domain())._send_status_reminders()
+
+    @api.model
+    def _notification(self, title, message, notif_type, sticky=False):
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {'title': title, 'message': message, 'type': notif_type, 'sticky': sticky},
+        }

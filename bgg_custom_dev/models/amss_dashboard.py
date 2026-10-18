@@ -497,9 +497,9 @@ class AmssManagementDashboard(models.TransientModel):
     @api.model
     def _sss_projects_by_order(self, orders):
         """{order id: field service (SSS) projects} for `orders`. The SSS
-        project is created by the "Créer tâches SSS" server action: a project
-        flagged x_is_sss_project, linked to the order (sale_order_id) and named
-        "<order> - SSS - <client>"."""
+        project is created by the "Créer tâches SSS" action: a project
+        flagged x_is_sss_project, linked to the order (x_sss_sale_order_id) and
+        named "<order> - SSS - <client>" (name used for older projects)."""
         Project = self.env['project.project'].sudo()
         if not orders:
             return {}
@@ -507,7 +507,7 @@ class AmssManagementDashboard(models.TransientModel):
         projects = Project.search([('x_is_sss_project', '=', True), ('is_template', '=', False)])
         result = {}
         for project in projects:
-            order_id = (project.sale_order_id.id if 'sale_order_id' in Project._fields else False)
+            order_id = project.x_sss_sale_order_id.id or project.sale_order_id.id
             if order_id not in orders.ids:
                 order_id = by_name.get((project.name or '').split(' - SSS - ')[0].strip())
             if order_id:

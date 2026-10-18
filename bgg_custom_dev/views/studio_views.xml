@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        View changes formerly made in Odoo Studio (studio_customization), now
+        owned by this module. The 19.0.2.1.0 migration switches the Studio
+        views off. The changes on Enterprise screens (Appointments buttons,
+        appointment type form, Field Service task list) are in
+        bgg_custom_dev_ee.
+    -->
+
+    <!-- "Tâches" smart button of the sale order: tasks linked to the order
+         and the tasks of its SSS project -->
+    <record id="action_sale_order_tasks" model="ir.actions.act_window">
+        <field name="name">Tâches</field>
+        <field name="res_model">project.task</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">['|', ('sale_order_id', '=', active_id), ('project_id.x_sss_sale_order_id', '=', active_id)]</field>
+        <field name="context">{'default_sale_order_id': active_id}</field>
+    </record>
+
+    <!-- Calendar events: list -->
+    <record id="view_calendar_event_tree_bgg" model="ir.ui.view">
+        <field name="name">calendar.event.list.bgg</field>
+        <field name="model">calendar.event</field>
+        <field name="inherit_id" ref="calendar.view_calendar_event_tree"/>
+        <field name="arch" type="xml">
+            <field name="partner_ids" position="after">
+                <field name="x_studio_commercial" optional="show"/>
+                <field name="x_rdv_type_id" optional="show"/>
+                <field name="x_rdv_status" optional="show"/>
+            </field>
+            <field name="categ_ids" position="attributes">
+                <attribute name="optional">show</attribute>
+            </field>
+            <field name="location" position="attributes">
+                <attribute name="column_invisible">True</attribute>
+            </field>
+            <field name="duration" position="attributes">
+                <attribute name="column_invisible">True</attribute>
+            </field>
+        </field>
+    </record>
+
+    <!-- Calendar events: form. Title, dates, attendees and organizer editable
+         by everyone; clickable customer address / phone; creator and "pris à
+         la place de" shown; video call and location hidden; RDV type
+         required. -->
+    <record id="view_calendar_event_form_bgg_layout" model="ir.ui.view">
+        <field name="name">calendar.event.form.bgg.layout</field>
+        <field name="model">calendar.event</field>
+        <field name="inherit_id" ref="calendar.view_calendar_event_form"/>
+        <field name="priority">160</field>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="attributes">
+                <attribute name="readonly">False</attribute>
+            </xpath>
+            <xpath expr="/form/sheet/group/group/div" position="after">
+                <field name="x_studio_customer_address" readonly="True"/>
+                <field name="x_studio_customer_phone" readonly="True"/>
+            </xpath>
+            <xpath expr="//label[@for='videocall_location']" position="replace"/>
+            <xpath expr="//field[@name='start']" position="attributes">
+                <attribute name="readonly">False</attribute>
+            </xpath>
+            <xpath expr="//field[@name='location']" position="attributes">
+                <attribute name="invisible">True</attribute>
+            </xpath>
+            <xpath expr="//field[@name='videocall_location']" position="attributes">
+                <attribute name="invisible">True</attribute>
+            </xpath>
+            <xpath expr="//button[@name='set_discuss_videocall_location']" position="attributes">
+                <attribute name="invisible">True</attribute>
+            </xpath>
+            <xpath expr="//field[@name='res_id']" position="attributes">
+                <attribute name="invisible">True</attribute>
+            </xpath>
+            <xpath expr="//field[@name='partner_ids']" position="attributes">
+                <attribute name="readonly">False</attribute>
+            </xpath>
+            <xpath expr="//field[@name='user_id']" position="before">
+                <field name="create_uid"/>
+            </xpath>
+            <xpath expr="//field[@name='user_id']" position="after">
+                <field name="x_studio_rendez_vous_pris_la_place_de" readonly="True"/>
+            </xpath>
+            <xpath expr="//field[@name='user_id']" position="attributes">
+                <attribute name="readonly">False</attribute>
+            </xpath>
+        </field>
+    </record>
+    <record id="view_calendar_event_form_bgg_rdv_required" model="ir.ui.view">
+        <field name="name">calendar.event.form.bgg.rdv.required</field>
+        <field name="model">calendar.event</field>
+        <field name="inherit_id" ref="bgg_custom_dev.view_calendar_event_form_inherit_bgg"/>
+        <field name="arch" type="xml">
+            <field name="x_rdv_type_id" position="attributes">
+                <attribute name="required">True</attribute>
+            </field>
+        </field>
+    </record>
+
+    <!-- Sale order: form -->
+    <record id="view_order_form_bgg_studio" model="ir.ui.view">
+        <field name="name">sale.order.form.bgg.studio</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="priority">160</field>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='state']" position="after">
+                <button string="Créer Tâches SSS" name="action_create_sss_tasks" type="object"
+                        groups="bgg_custom_dev.group_amss_admin"/>
+            </xpath>
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button class="oe_stat_button" icon="fa-tasks" type="action"
+                        name="%(bgg_custom_dev.action_sale_order_tasks)d">
+                    <field widget="statinfo" name="x_sale_order_id_project_task_count" string="Tâches"/>
+                </button>
+            </xpath>
+            <xpath expr="//button[@name='action_view_project_ids']" position="attributes">
+                <attribute name="invisible">True</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Quotations list -->
+    <record id="view_quotation_tree_bgg_studio" model="ir.ui.view">
+        <field name="name">sale.order.quotation.list.bgg.studio</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_quotation_tree_with_onboarding"/>
+        <field name="arch" type="xml">
+            <field name="state" position="after">
+                <field name="x_studio_rendez_vous_pris_la_place_de" optional="show"
+                       groups="spreadsheet_dashboard.group_dashboard_manager,bgg_custom_dev.group_amss_admin"/>
+                <field name="x_studio_organisateur_du_rendez_vous" optional="show"
+                       groups="spreadsheet_dashboard.group_dashboard_manager,bgg_custom_dev.group_amss_admin"/>
+                <field name="invoice_ids" optional="hide"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- Sales list (upload) -->
+    <record id="sale_order_list_upload_bgg_studio" model="ir.ui.view">
+        <field name="name">sale.order.list.upload.bgg.studio</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.sale_order_list_upload"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='amount_total']" position="after">
+                <field name="currency_id"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Contacts: tags read-only in the form, country code in the list -->
+    <record id="view_partner_form_bgg_studio" model="ir.ui.view">
+        <field name="name">res.partner.form.bgg.studio</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="priority">200</field>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='category_id']" position="attributes">
+                <attribute name="force_save">1</attribute>
+                <attribute name="readonly">True</attribute>
+            </xpath>
+        </field>
+    </record>
+    <record id="view_partner_tree_bgg_studio" model="ir.ui.view">
+        <field name="name">res.partner.list.bgg.studio</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_tree"/>
+        <field name="arch" type="xml">
+            <field name="city" position="after">
+                <field name="country_code" optional="show"/>
+            </field>
+            <field name="country_id" position="attributes">
+                <attribute name="readonly">False</attribute>
+            </field>
+        </field>
+    </record>
+
+    <!-- Payment terms: name read-only (the admin project deadline rules use it) -->
+    <record id="view_payment_term_form_bgg_studio" model="ir.ui.view">
+        <field name="name">account.payment.term.form.bgg.studio</field>
+        <field name="model">account.payment.term</field>
+        <field name="inherit_id" ref="account.view_payment_term_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="attributes">
+                <attribute name="force_save">1</attribute>
+                <attribute name="readonly">True</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Projects list -->
+    <record id="view_project_bgg_studio" model="ir.ui.view">
+        <field name="name">project.project.list.bgg.studio</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.view_project"/>
+        <field name="arch" type="xml">
+            <field name="stage_id" position="after">
+                <field name="privacy_visibility" optional="show"/>
+            </field>
+            <field name="user_id" position="attributes">
+                <attribute name="column_invisible">True</attribute>
+            </field>
+        </field>
+    </record>
+
+    <!-- All tasks list -->
+    <record id="open_view_all_tasks_list_view_bgg_studio" model="ir.ui.view">
+        <field name="name">project.task.all.list.bgg.studio</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.open_view_all_tasks_list_view"/>
+        <field name="arch" type="xml">
+            <field name="project_id" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </field>
+            <field name="date_deadline" position="attributes">
+                <attribute name="column_invisible">False</attribute>
+                <attribute name="invisible">False</attribute>
+                <attribute name="optional">show</attribute>
+            </field>
+            <field name="tag_ids" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </field>
+            <field name="stage_id" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </field>
+        </field>
+    </record>
+
+    <!-- SMS list -->
+    <record id="sms_sms_view_tree_bgg_studio" model="ir.ui.view">
+        <field name="name">sms.sms.list.bgg.studio</field>
+        <field name="model">sms.sms</field>
+        <field name="inherit_id" ref="sms.sms_sms_view_tree"/>
+        <field name="arch" type="xml">
+            <field name="state" position="after">
+                <field name="create_date" optional="show"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- Logs list -->
+    <record id="ir_logging_tree_view_bgg_studio" model="ir.ui.view">
+        <field name="name">ir.logging.list.bgg.studio</field>
+        <field name="model">ir.logging</field>
+        <field name="inherit_id" ref="base.ir_logging_tree_view"/>
+        <field name="arch" type="xml">
+            <field name="create_uid" position="after">
+                <field name="display_name" optional="show"/>
+                <field name="id" optional="show"/>
+            </field>
+            <field name="dbname" position="after">
+                <field name="message" optional="show"/>
+            </field>
+        </field>
+    </record>
+</odoo>

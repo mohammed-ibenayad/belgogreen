@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen Custom Development',
-    'version': '19.0.2.0.0',
+    'version': '19.0.2.1.0',
     'category': 'Customizations',
     'summary': 'Custom business logic and automation for BelGoGreen',
     'description': """
@@ -73,8 +73,13 @@
           installation product (project-creating service) missing
         - Only the "Responsable Dossier Admin" group may set or change the
           Responsable of an order
-        - The "Créer tâches SSS" server action stays in Odoo Studio; it reads
-          the bgg.sss_project_manager_login parameter (SSS manager email)
+        - "Créer tâches SSS" (button for AMSS ADMIN, Action menu): for each
+          confirmed order with a (partly) paid invoice, a project flagged SSS
+          "<order> - SSS - <client>" linked to the order (manager from the
+          bgg.sss_project_manager_login parameter, stages "SSS: À faire" /
+          "SSS: Encours/Fait") with one task "<qty> x <product>" per
+          consumable product of the "All / Saleable" category; "Tâches" smart
+          button; "Recalculate Project deadline" action
 
         **AMSS Management dashboard (Direction group)**:
         - Direction tab: CA NET, Ventes Confirmées (+ annulées), TX Conversion
@@ -94,6 +99,14 @@
           commerciale (panier moyen global and per métier, annulation après
           signature)
 
+        **Former Odoo Studio customizations (19.0.2.1.0)**: fields (same
+        names and tables, data kept), view changes (calendar, sale order,
+        contacts, projects, tasks, SMS, logs, payment terms), saved filters,
+        "Clôturer les projets Admin/SSS" (projects), "Rappel pour statuer les
+        rendez-vous énergétique" (events, Action menu + daily job, inactive)
+        and "Créer tâches SSS" now live in this module; the Enterprise parts
+        are in bgg_custom_dev_ee.
+
         All business logic includes comprehensive logging for debugging and monitoring.
     """,
     'author': 'BelGoGreen',
@@ -107,6 +120,8 @@
         'project',
         'sale_project',
         'sale',
+        'sms',
+        'spreadsheet_dashboard',
     ],
     'data': [
         # Security
@@ -133,6 +148,7 @@
         # Menus
         'views/menu_views.xml',
         'views/res_partner_views.xml',
+        'views/studio_views.xml',
 
         # Server actions
         'data/sale_order_server_actions.xml',
