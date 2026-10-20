@@ -2,6 +2,7 @@
 
 import collections
 import logging
+import math
 import os
 
 from odoo import Command, api, models
@@ -222,10 +223,15 @@ class BggDocumentsDms(models.AbstractModel):
                         'storage_id': storage.id,
                         'group_ids': [Command.set(self._top_folder_groups(doc, subtree(doc_id), docs, access).ids)],
                     })
-                directory = Directory.create(vals)
+                try:
+                    with self.env.cr.savepoint():
+                        directory = Directory.create(vals)
+                        self._save_map(doc_id, directory_id=directory.id)
+                        self._move_messages(doc_id, directory)
+                except Exception as error:  # noqa: BLE001 - one bad folder must not stop the others
+                    self._failed(counts, 'dossiers en erreur', doc, error)
+                    continue
                 directory_of[doc_id] = directory
-                self._save_map(doc_id, directory_id=directory.id)
-                self._move_messages(doc_id, directory)
                 counts['dossiers'] += 1
             level = next_level
 
@@ -253,26 +259,53 @@ class BggDocumentsDms(models.AbstractModel):
                     no_folder = self._no_folder_directory(storage)
                 directory = no_folder
             files_by_directory[directory].append(doc)
+        self._fit_max_size([doc['attachment_id'] for docs_ in files_by_directory.values() for doc in docs_])
         File = self.env['dms.file']
         for directory, directory_docs in files_by_directory.items():
             names = taken_names(directory, files=True)
             for doc in directory_docs:
-                dms_file = File.create({
-                    'name': unique_name(clean_name(self._source_name(doc['name'])), names, is_file=True),
-                    'directory_id': directory.id,
-                    'active': doc['active'],
-                    'mimetype': doc['mimetype'] or 'application/octet-stream',
-                    'tag_ids': [Command.set(tags.get(doc['id'], []))],
-                })
-                self._link_stored_file(dms_file, doc)
-                self._save_map(doc['id'], file_id=dms_file.id)
-                self._move_messages(doc['id'], dms_file)
+                try:
+                    with self.env.cr.savepoint():
+                        dms_file = File.create({
+                            'name': unique_name(clean_name(self._source_name(doc['name'])), names, is_file=True),
+                            'directory_id': directory.id,
+                            'active': doc['active'],
+                            'mimetype': doc['mimetype'] or 'application/octet-stream',
+                            'tag_ids': [Command.set(tags.get(doc['id'], []))],
+                        })
+                        self._link_stored_file(dms_file, doc)
+                        self._save_map(doc['id'], file_id=dms_file.id)
+                        self._move_messages(doc['id'], dms_file)
+                except Exception as error:  # noqa: BLE001 - one bad file must not stop the others
+                    self._failed(counts, 'fichiers en erreur', doc, error)
+                    continue
                 counts['fichiers'] += 1
                 counts['fichiers archivés'] += not doc['active']
         self._refresh_images()
         self._grant_dms_rights()
         _logger.info("bgg_documents_dms: %s", dict(counts))
         return dict(counts)
+
+    def _failed(self, counts, key, doc, error):
+        """Logged and counted; the document is not marked as done, so the
+        next run tries it again."""
+        self.env.invalidate_all()
+        counts[key] += 1
+        _logger.warning("bgg_documents_dms: document %s %r not moved: %s",
+                        doc['id'], self._source_name(doc['name']), error)
+
+    def _fit_max_size(self, attachment_ids):
+        """dms refuses files above its "max upload size" (25 MB by default);
+        Documents had no limit: the setting is raised to the largest file."""
+        if not attachment_ids:
+            return
+        self.env.cr.execute("SELECT max(file_size) FROM ir_attachment WHERE id = ANY(%s)", [attachment_ids])
+        largest = self.env.cr.fetchone()[0] or 0
+        limit = self.env['dms.file']._get_binary_max_size()
+        needed = math.ceil(largest / 1024 / 1024)
+        if needed > limit:
+            self.env['ir.config_parameter'].set_param('dms.binary_max_size', needed)
+            _logger.info("bgg_documents_dms: dms max upload size raised from %s to %s MB (largest file)", limit, needed)
 
     def _no_folder_directory(self, storage):
         Directory = self.env['dms.directory']

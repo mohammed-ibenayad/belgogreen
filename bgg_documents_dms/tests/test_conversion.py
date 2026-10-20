@@ -129,6 +129,25 @@ class TestDocumentsToDms(TransactionCase):
         bill.invalidate_recordset()
         self.assertEqual(base64.b64decode(bill.content), b'%PDF-1.4 test')
 
+    def test_files_above_the_dms_size_limit(self):
+        self.env['ir.config_parameter'].set_param('dms.binary_max_size', 1)
+        self.file('video chantier.mp4', self.interne1, data=b'0' * (1024 * 1024 + 500 * 1024), mimetype='video/mp4')
+        self.env['bgg.documents.dms']._convert()
+        self.assertEqual(self.env['dms.file']._get_binary_max_size(), 2)
+        self.assertTrue(self.env['dms.file'].search([('name', '=', 'video chantier.mp4')]))
+
+    def test_refused_file_does_not_stop_the_others(self):
+        self.env['ir.config_parameter'].set_param('dms.forbidden_extensions', 'exe')
+        self.file('outil.exe', self.interne1, mimetype='application/x-msdownload')
+        counts = self.env['bgg.documents.dms']._convert()
+        self.assertEqual(counts['fichiers en erreur'], 1)
+        self.assertFalse(self.env['dms.file'].search([('name', '=', 'outil.exe')]))
+        self.assertTrue(self.env['dms.file'].search([('name', '=', 'facture.pdf')]))
+        # allowed again: the next run moves it
+        self.env['ir.config_parameter'].set_param('dms.forbidden_extensions', '')
+        counts = self.env['bgg.documents.dms']._convert()
+        self.assertEqual((counts.get('fichiers'), counts.get('fichiers en erreur', 0)), (1, 0))
+
     def test_french_name_kept(self):
         self.env['res.lang']._activate_lang('fr_BE')
         folder = self.folder('Tâches Avant - Installation')

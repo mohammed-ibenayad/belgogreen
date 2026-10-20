@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen - Documents vers DMS',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.0.1',
     'category': 'Customizations',
     'summary': 'One-off move of the Enterprise Documents into OCA dms before Documents is uninstalled',
     'description': """
@@ -25,6 +25,9 @@
           had access to it. Documents users get the dms user right (managers:
           dms manager).
         - Not moved: spreadsheets, link documents, shortcuts.
+        - The dms "max upload size" is raised to the largest file (Documents
+          had no limit). A document dms refuses is logged ("not moved") and
+          counted, the others are moved; the next run tries it again.
 
         Running the conversion again (button in Settings > Technical, or
         env['bgg.documents.dms']._convert()) only adds the documents created
