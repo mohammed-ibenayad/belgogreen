@@ -49,7 +49,19 @@ class TestProjectDirectory(TransactionCase):
         self.assertEqual(self.env['dms.file'].search(action['domain']).mapped('name'), ['Commande - S09998.pdf'])
         self.assertEqual(action['context']['default_directory_id'], project.x_dms_directory_id.id)
 
+    def test_french_projects_folder(self):
+        self.projects_dir.name = 'Projets'
+        project = self.env['project.project'].create({'name': 'S09997 - Projet FR'})
+        self.assertEqual(project.x_dms_directory_id.parent_id, self.projects_dir)
+
+    def test_folder_holding_the_project_folders(self):
+        old = self.env['project.project'].create({'name': 'Ancien projet'})
+        self.projects_dir.name = 'Dossiers clients'
+        project = self.env['project.project'].create({'name': 'Nouveau projet'})
+        self.assertEqual(project.x_dms_directory_id.parent_id, old.x_dms_directory_id.parent_id)
+
     def test_no_projects_folder(self):
+        self.env['project.project'].search([]).x_dms_directory_id = False
         self.projects_dir.name = 'Projets archivés'
         project = self.env['project.project'].create({'name': 'Sans dossier parent'})
         self.assertFalse(project.x_dms_directory_id)

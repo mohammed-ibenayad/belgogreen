@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import collections
 import logging
 
 from odoo import api, fields, models
@@ -8,9 +9,12 @@ from odoo.exceptions import UserError
 _logger = logging.getLogger(__name__)
 
 # Parent folder of the project folders: system parameter (folder name or id),
-# else the top folder "Projects" (the Enterprise Documents workspace).
+# else the top folder "Projets" / "Projects" (the Enterprise Documents
+# workspace, French or English name), else the folder holding most of the
+# existing project folders.
 PARENT_PARAM = 'bgg_dms_project.parent_directory'
-DEFAULT_PARENT_NAME = 'Projects'
+DEFAULT_PARENT_NAMES = ('Projets', 'Projects')
+DEFAULT_PARENT_NAME = DEFAULT_PARENT_NAMES[0]
 
 
 class ProjectProject(models.Model):
@@ -41,7 +45,16 @@ class ProjectProject(models.Model):
         value = (self.env['ir.config_parameter'].sudo().get_param(PARENT_PARAM) or '').strip()
         if value.isdigit():
             return Directory.browse(int(value)).exists()
-        return Directory.search([('name', '=', value or DEFAULT_PARENT_NAME), ('is_root_directory', '=', True)], limit=1)
+        if value:
+            return Directory.search([('name', '=', value)], limit=1)
+        for name in DEFAULT_PARENT_NAMES:
+            parent = Directory.search([('name', '=', name), ('is_root_directory', '=', True)], limit=1)
+            if parent:
+                return parent
+        groups = self.sudo()._read_group([('x_dms_directory_id.parent_id', '!=', False)],
+                                         ['x_dms_directory_id'], order='x_dms_directory_id')
+        parents = collections.Counter(directory.parent_id for (directory,) in groups)
+        return parents.most_common(1)[0][0] if parents else Directory
 
     @api.model
     def _bgg_unique_child_name(self, parent, name):

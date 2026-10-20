@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen - DMS projets',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.0.1',
     'category': 'Document Management',
     'summary': 'Each project has its DMS folder and a Documents button, as with Enterprise Documents',
     'description': """
@@ -12,7 +12,7 @@
 
         - each project is linked to its DMS folder (field "Dossier documents"),
           with a "Documents" button on the project opening its files;
-        - a new project gets its folder, under the "Projects" folder (or the
+        - a new project gets its folder, under the "Projets" / "Projects" folder (or the
           folder set in the system parameter bgg_dms_project.parent_directory,
           name or id); a project created from a template also gets the
           template folder's sub-folders (empty);
