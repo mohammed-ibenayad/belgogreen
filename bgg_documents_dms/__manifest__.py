@@ -1,17 +1,22 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen - Documents vers DMS',
-    'version': '19.0.1.0.1',
+    'version': '19.0.1.1.0',
     'category': 'Customizations',
     'summary': 'One-off move of the Enterprise Documents into OCA dms before Documents is uninstalled',
     'description': """
         Documents (Enterprise) -> OCA dms
         =================================
 
-        Installed on Odoo.sh at migration time, next to Documents and OCA dms.
-        The installation copies every Documents folder and file into dms, in
-        the same database; Documents can then be uninstalled (this module goes
-        with it, the dms content stays).
+        Installed on Odoo.sh at migration time, next to Documents and OCA dms;
+        the copy is then run from the Odoo shell (saved every 200 records, so
+        it fits in the shell's memory and can be resumed):
+
+            env['bgg.documents.dms']._convert(commit=True)
+
+        It copies every Documents folder and file into dms, in the same
+        database; Documents can then be uninstalled (this module goes with
+        it, the dms content stays).
 
         - Storage "Documents" (filestore, all companies).
         - Folders -> directories, same tree. Names: French name kept, "/"
@@ -29,9 +34,8 @@
           had no limit). A document dms refuses is logged ("not moved") and
           counted, the others are moved; the next run tries it again.
 
-        Running the conversion again (button in Settings > Technical, or
-        env['bgg.documents.dms']._convert()) only adds the documents created
-        since the last run.
+        Running the conversion again only adds the documents created since the
+        last run (and retries the refused ones).
     """,
     'author': 'BelGoGreen',
     'website': 'https://www.belgogreen.com',
@@ -43,7 +47,6 @@
     'data': [
         'data/server_actions.xml',
     ],
-    'post_init_hook': 'post_init',
     'installable': True,
     'application': False,
     'auto_install': False,

@@ -17,6 +17,8 @@ TAG_CATEGORY_NAME = 'Documents'
 MAP_TABLE = 'bgg_documents_dms_map'
 # Longest name in bytes dms accepts (it checks names on the file system).
 MAX_NAME_BYTES = 240
+# Records saved per batch when run from the shell (commit=True).
+BATCH_SIZE = 200
 # Not moved: Odoo spreadsheets (no editor in Community).
 SPREADSHEET_MIMETYPES = ('application/o-spreadsheet',)
 
@@ -168,11 +170,28 @@ class BggDocumentsDms(models.AbstractModel):
     # ------------------------------------------------------------------
 
     @api.model
-    def _convert(self):
-        """Copy the Documents folders and files into dms. Returns counts."""
+    def _convert(self, commit=False, batch_size=BATCH_SIZE):
+        """Copy the Documents folders and files into dms. Returns counts.
+
+        commit=True (run from the Odoo shell): saved every `batch_size`
+        records and the memory cache emptied in between, so the run fits in
+        the memory of an Odoo.sh shell and can be resumed if interrupted
+        (converted documents are skipped)."""
         self = self.sudo().with_context(active_test=False, tracking_disable=True, mail_create_nolog=True,
                                         mail_notrack=True)
         counts = collections.Counter()
+        pending = [0]
+
+        def checkpoint(force=False):
+            pending[0] += 1
+            if force or pending[0] >= batch_size:
+                self.env.flush_all()
+                if commit:
+                    self.env.cr.commit()
+                    _logger.info("bgg_documents_dms: saved, %s", dict(counts))
+                self.env.invalidate_all()
+                pending[0] = 0
+
         # the Documents tables are read in SQL
         self.env.flush_all()
         done = self._ensure_map_table()
@@ -233,7 +252,9 @@ class BggDocumentsDms(models.AbstractModel):
                     continue
                 directory_of[doc_id] = directory
                 counts['dossiers'] += 1
+                checkpoint()
             level = next_level
+        checkpoint(force=True)
 
         # Files
         tags = self._tag_map()
@@ -281,8 +302,11 @@ class BggDocumentsDms(models.AbstractModel):
                     continue
                 counts['fichiers'] += 1
                 counts['fichiers archivés'] += not doc['active']
-        self._refresh_images()
+                checkpoint()
+        checkpoint(force=True)
+        self._refresh_images(checkpoint)
         self._grant_dms_rights()
+        checkpoint(force=True)
         _logger.info("bgg_documents_dms: %s", dict(counts))
         return dict(counts)
 
@@ -367,13 +391,21 @@ class BggDocumentsDms(models.AbstractModel):
         self.env.cr.execute("UPDATE mail_message SET model = %s, res_id = %s WHERE model = 'documents.document' "
                             "AND res_id = %s", [record._name, record.id, document_id])
 
-    def _refresh_images(self):
+    def _refresh_images(self, checkpoint):
         """Thumbnails of the images (computed from the content, which was
-        linked after the creation)."""
-        files = self.env['dms.file'].search([('mimetype', '=like', 'image/%'), ('image_1920', '=', False)])
-        files.invalidate_recordset(['content', 'content_file'])
-        for dms_file in files:
-            dms_file._compute_image_1920()
+        linked after the creation). One image at a time, written and
+        dropped from memory before the next: the images are large."""
+        file_ids = self.env['dms.file'].search([('mimetype', '=like', 'image/%'), ('image_1920', '=', False)]).ids
+        for file_id in file_ids:
+            dms_file = self.env['dms.file'].browse(file_id)
+            try:
+                with self.env.cr.savepoint():
+                    dms_file._compute_image_1920()
+                    dms_file.flush_recordset()
+            except Exception as error:  # noqa: BLE001 - a broken image keeps its icon
+                _logger.warning("bgg_documents_dms: no thumbnail for dms file %s: %s", file_id, error)
+            self.env.invalidate_all()
+            checkpoint()
 
     def _grant_dms_rights(self):
         for documents_group, dms_group in (('documents.group_documents_user', 'dms.group_dms_user'),
