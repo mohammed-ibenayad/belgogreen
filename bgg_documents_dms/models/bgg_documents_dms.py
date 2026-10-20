@@ -306,6 +306,9 @@ class BggDocumentsDms(models.AbstractModel):
         checkpoint(force=True)
         self._refresh_images(checkpoint)
         self._grant_dms_rights()
+        Project = self.env.get('project.project')
+        if Project is not None and 'x_dms_directory_id' in Project._fields:
+            counts['projets liés'] = Project._bgg_link_converted_directories()
         checkpoint(force=True)
         _logger.info("bgg_documents_dms: %s", dict(counts))
         return dict(counts)
