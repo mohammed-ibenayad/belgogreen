@@ -13,4 +13,29 @@
             </xpath>
         </field>
     </record>
+
+    <!-- Cards and list show the folder of each file (search results are
+         spread over several folders). -->
+    <record id="view_dms_file_kanban_folder" model="ir.ui.view">
+        <field name="name">dms_file.kanban.folder</field>
+        <field name="model">dms.file</field>
+        <field name="inherit_id" ref="dms.view_dms_file_kanban"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name'][@class='fw-bold']" position="after">
+                <div class="text-muted small text-truncate">
+                    <i class="fa fa-folder-o me-1" title="Dossier"/><field name="directory_id"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+    <record id="view_dms_file_tree_folder" model="ir.ui.view">
+        <field name="name">dms_file.list.folder</field>
+        <field name="model">dms.file</field>
+        <field name="inherit_id" ref="dms.view_dms_file_tree"/>
+        <field name="arch" type="xml">
+            <field name="directory_id" position="attributes">
+                <attribute name="optional">show</attribute>
+            </field>
+        </field>
+    </record>
 </odoo>

@@ -26,6 +26,8 @@ class TestFileSearch(TransactionCase):
                                 ('Autre.pdf', other)):
             File.create({'name': name, 'directory_id': directory.id, 'content': 'JVBERi0xLjQ='})
 
+        for view_type in ('kanban', 'list'):
+            self.assertIn('directory_id', File.get_view(view_type=view_type)['arch'])
         arch = File.get_view(view_type='search')['arch']
         self.assertIn('directory_id.complete_name', arch)
         domain = ['|', ('name', 'ilike', 'S00466'), ('directory_id.complete_name', 'ilike', 'S00466')]
