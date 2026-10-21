@@ -101,7 +101,7 @@ class TestDocumentsToDms(TransactionCase):
         # access per top folder
         self.assertEqual(projects.group_ids.group_ids, self.env.ref('base.group_user'))
         self.assertTrue(projects.group_ids.perm_write)
-        hr = self._dir('Ali Lmoughit')
+        hr = self.env['dms.directory'].search([('name', '=', 'Ali Lmoughit')])  # under RH
         self.assertFalse(hr.group_ids.group_ids)
         self.assertCountEqual(hr.group_ids.explicit_user_ids.ids, (self.alice | self.bob).ids)
         self.assertTrue(hr.group_ids.perm_write)
@@ -128,6 +128,30 @@ class TestDocumentsToDms(TransactionCase):
         source_attachments.unlink()
         bill.invalidate_recordset()
         self.assertEqual(base64.b64decode(bill.content), b'%PDF-1.4 test')
+
+    def test_employee_folders_grouped_under_rh(self):
+        # an employee folder open to everyone next to the private one
+        self.folder('Contrat', self.folder('Chrystel Slongo', access='edit'))
+        self.env['bgg.documents.dms']._convert()
+        Directory = self.env['dms.directory']
+        employee = Directory.search([('name', '=', 'Ali Lmoughit')])
+        self.assertFalse(employee.is_root_directory)
+        self.assertEqual(employee.parent_id.name, 'RH')
+        self.assertTrue(employee.parent_id.is_root_directory)
+        self.assertEqual(employee.child_directory_ids.mapped('name'), ['Fiche de paie'])
+        # access unchanged: still only Alice and Bob
+        File = self.env['dms.file']
+        payslip = File.search([('name', '=', 'fiche de paie.pdf')])
+        self.assertTrue(File.with_user(self.alice).search([('id', '=', payslip.id)]))
+        self.assertFalse(File.with_user(self.carl).search([('id', '=', payslip.id)]),
+                         "the private folder does not get the wider access of RH")
+        self.assertEqual(Directory.search([('name', '=', 'Chrystel Slongo')]).parent_id.name, 'RH')
+        self.assertTrue(Directory.with_user(self.carl).search([('name', '=', 'Chrystel Slongo')]))
+        # projects stay a top folder
+        self.assertTrue(Directory.search([('name', '=', 'Projects')]).is_root_directory)
+        # a second run moves nothing more
+        counts = self.env['bgg.documents.dms']._convert()
+        self.assertEqual(counts['dossiers employés regroupés sous RH'], 0)
 
     def test_files_above_the_dms_size_limit(self):
         self.env['ir.config_parameter'].set_param('dms.binary_max_size', 1)

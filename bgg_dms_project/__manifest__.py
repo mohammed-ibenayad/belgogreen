@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen - DMS projets',
-    'version': '19.0.1.0.1',
+    'version': '19.0.1.0.2',
     'category': 'Document Management',
     'summary': 'Each project has its DMS folder and a Documents button, as with Enterprise Documents',
     'description': """

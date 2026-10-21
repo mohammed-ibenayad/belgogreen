@@ -12,6 +12,10 @@ _logger = logging.getLogger(__name__)
 STORAGE_NAME = 'Documents'
 NO_FOLDER_NAME = 'Documents sans dossier'
 TAG_CATEGORY_NAME = 'Documents'
+# Employee folders (a "Contrat" or "Fiche de paie" sub-folder) are grouped
+# under this top folder instead of each being a top folder.
+HR_FOLDER_NAME = 'RH'
+HR_SUBFOLDER_NAMES = ('contrat', 'fiche de paie')
 # Document -> dms record of each converted document (makes a new run add only
 # the documents created since the previous one).
 MAP_TABLE = 'bgg_documents_dms_map'
@@ -213,7 +217,7 @@ class BggDocumentsDms(models.AbstractModel):
 
         def taken_names(directory, files):
             if not directory:
-                return set(storage.root_directory_ids.mapped('name'))
+                return set(self._root_directories(storage).mapped('name'))
             return set((directory.file_ids if files else directory.child_directory_ids).mapped('name'))
 
         # Folders, top-down
@@ -306,12 +310,43 @@ class BggDocumentsDms(models.AbstractModel):
         checkpoint(force=True)
         self._refresh_images(checkpoint)
         self._grant_dms_rights()
+        counts['dossiers employés regroupés sous RH'] = self._group_employee_folders(storage)
         Project = self.env.get('project.project')
         if Project is not None and 'x_dms_directory_id' in Project._fields:
             counts['projets liés'] = Project._bgg_link_converted_directories()
         checkpoint(force=True)
         _logger.info("bgg_documents_dms: %s", dict(counts))
         return dict(counts)
+
+    def _root_directories(self, storage):
+        """Top folders of the storage (the dms storage's "root" list holds
+        all of its folders)."""
+        return self.env['dms.directory'].search([('storage_id', '=', storage.id), ('is_root_directory', '=', True)])
+
+    def _group_employee_folders(self, storage):
+        """Move the employee top folders (with a "Contrat" / "Fiche de paie"
+        sub-folder) under one "RH" top folder. Their access stays the same
+        (each keeps its own access groups)."""
+        roots = self._root_directories(storage).filtered(lambda d: d.name != HR_FOLDER_NAME)
+        employees = roots.filtered(lambda d: any(
+            ' '.join(child.name.casefold().split()) in HR_SUBFOLDER_NAMES for child in d.child_directory_ids))
+        if not employees:
+            return 0
+        Directory = self.env['dms.directory']
+        hr = self._root_directories(storage).filtered(lambda d: d.name == HR_FOLDER_NAME)[:1] or Directory.create({
+            'name': HR_FOLDER_NAME,
+            'is_root_directory': True,
+            'storage_id': storage.id,
+            'group_ids': [Command.set(employees.group_ids.ids)],
+        })
+        taken = set(hr.child_directory_ids.mapped('name'))
+        for employee in employees:
+            name = unique_name(employee.name, taken, is_file=False)
+            # own access only: not the (wider) access of the RH folder
+            employee.write({'is_root_directory': False, 'parent_id': hr.id, 'name': name,
+                            'inherit_group_ids': False, 'group_ids': [Command.set(employee.group_ids.ids)]})
+        _logger.info("bgg_documents_dms: %s employee folder(s) grouped under %s", len(employees), HR_FOLDER_NAME)
+        return len(employees)
 
     def _failed(self, counts, key, doc, error):
         """Logged and counted; the document is not marked as done, so the
@@ -336,7 +371,7 @@ class BggDocumentsDms(models.AbstractModel):
 
     def _no_folder_directory(self, storage):
         Directory = self.env['dms.directory']
-        directory = storage.root_directory_ids.filtered(lambda d: d.name == NO_FOLDER_NAME)[:1]
+        directory = self._root_directories(storage).filtered(lambda d: d.name == NO_FOLDER_NAME)[:1]
         return directory or Directory.create({
             'name': NO_FOLDER_NAME,
             'is_root_directory': True,

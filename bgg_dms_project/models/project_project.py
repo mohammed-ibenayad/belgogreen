@@ -117,7 +117,9 @@ class ProjectProject(models.Model):
         action.update({
             'name': directory.name,
             'domain': [('directory_id', 'child_of', directory.id)],
-            'context': {'default_directory_id': directory.id, 'searchpanel_default_directory_id': directory.id},
+            # no folder pre-selected in the side panel: the list shows the
+            # files of the sub-folders too (as the button count)
+            'context': {'default_directory_id': directory.id},
         })
         return action
 
