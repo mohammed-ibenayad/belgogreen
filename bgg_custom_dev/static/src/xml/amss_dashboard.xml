@@ -1,0 +1,351 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="bgg_custom_dev.AmssManagementDashboard">
+        <div class="amss_dashboard">
+            <!-- Header, filters and tabs stay visible while scrolling -->
+            <div class="amss_sticky">
+            <!-- Header -->
+            <div class="amss_header">
+                <h1>AMSS Management</h1>
+                <div class="amss_header_actions">
+                    <button class="btn btn-sm amss_btn" t-on-click="onExportExcel">
+                        <i class="fa fa-file-excel-o"/> Excel
+                    </button>
+                    <button class="btn btn-sm amss_btn" t-on-click="onRefresh">
+                        <i class="fa fa-refresh"/> Actualiser
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="amss_filters">
+                <div class="amss_filter">
+                    <label>Période :</label>
+                    <select t-on-change="onPeriodTypeChange">
+                        <option value="month" t-att-selected="state.periodType === 'month' ? 'selected' : undefined">Mois</option>
+                        <option value="quarter" t-att-selected="state.periodType === 'quarter' ? 'selected' : undefined">Trimestre</option>
+                        <option value="year" t-att-selected="state.periodType === 'year' ? 'selected' : undefined">Année</option>
+                        <option value="custom" t-att-selected="state.periodType === 'custom' ? 'selected' : undefined">Personnalisé</option>
+                    </select>
+                    <div class="amss_period_nav" t-if="state.data and state.periodType !== 'custom'">
+                        <button class="btn btn-sm btn-outline-secondary" t-on-click="onPrevPeriod" title="Période précédente">
+                            <i class="fa fa-chevron-left"/>
+                        </button>
+                        <span class="amss_period_label" t-esc="state.data.period_label"/>
+                        <button class="btn btn-sm btn-outline-secondary" t-on-click="onNextPeriod" title="Période suivante">
+                            <i class="fa fa-chevron-right"/>
+                        </button>
+                    </div>
+                </div>
+                <t t-if="state.periodType === 'custom'">
+                    <div class="amss_filter">
+                        <label>Du :</label>
+                        <input type="date" t-att-value="state.dateFrom" t-on-change="onDateFromChange"/>
+                    </div>
+                    <div class="amss_filter">
+                        <label>Au :</label>
+                        <input type="date" t-att-value="state.dateTo" t-on-change="onDateToChange"/>
+                    </div>
+                </t>
+                <div class="amss_filter">
+                    <label>Société :</label>
+                    <select t-on-change="onCompanyFilterChange">
+                        <option value="">Toutes</option>
+                        <t t-foreach="state.availableCompanies" t-as="c" t-key="c.id">
+                            <option t-att-value="c.id" t-att-selected="state.filterCompanyId === c.id ? 'selected' : undefined">
+                                <t t-esc="c.name"/>
+                            </option>
+                        </t>
+                    </select>
+                </div>
+                <div class="amss_filter" t-if="state.activeTab === 'commercial'">
+                    <label>Commercial :</label>
+                    <select t-on-change="onUserFilterChange" t-att-title="state.data and state.data.tooltips.filtre_commercial">
+                        <option value="">Tous</option>
+                        <t t-foreach="state.availableSalespeople" t-as="u" t-key="u.id">
+                            <option t-att-value="u.id" t-att-selected="state.filterUserId === u.id ? 'selected' : undefined">
+                                <t t-esc="u.name"/>
+                            </option>
+                        </t>
+                    </select>
+                </div>
+                <div class="amss_filter">
+                    <label>Conditions de paiement :</label>
+                    <select t-on-change="onPaymentTermFilterChange">
+                        <option value="">Toutes</option>
+                        <t t-foreach="state.availablePaymentTerms" t-as="pt" t-key="pt.id">
+                            <option t-att-value="pt.id" t-att-selected="state.filterPaymentTermId === pt.id ? 'selected' : undefined">
+                                <t t-esc="pt.name"/>
+                            </option>
+                        </t>
+                    </select>
+                </div>
+            </div>
+
+            <p class="amss_filters_note" t-if="state.data">
+                <i class="fa fa-filter"/> <t t-esc="appliedFiltersNote"/>
+            </p>
+
+            <!-- Tabs -->
+            <div class="amss_tabs">
+                <t t-foreach="[['direction', 'Direction'], ['metiers', 'Métiers'], ['commercial', 'Commercial']]" t-as="tab" t-key="tab[0]">
+                    <button type="button" t-on-click="() => this.onTabClick(tab[0])"
+                            t-att-class="'amss_tab' + (state.activeTab === tab[0] ? ' amss_tab_active' : '')"
+                            t-esc="tab[1]"/>
+                </t>
+            </div>
+            </div>
+
+            <div t-if="state.error" class="alert alert-danger" role="alert">
+                <strong>Erreur :</strong> <t t-esc="state.error"/>
+            </div>
+            <div t-elif="state.loading and !state.data" class="text-center p-5 text-muted">
+                <i class="fa fa-spinner fa-spin fa-2x"/>
+                <p class="mt-3">Chargement...</p>
+            </div>
+
+            <div t-if="state.data and !state.error" t-att-class="'amss_content' + (state.loading ? ' amss_loading' : '')">
+                <t t-set="cards" t-value="kpiCards"/>
+                <t t-set="tips" t-value="state.data.tooltips"/>
+
+                <!-- KPI cards -->
+                <div class="amss_cards">
+                    <div class="amss_card amss_clickable" t-on-click="() => this.openCard('ca_net')"
+                         title="Cliquer pour voir le détail">
+                        <div class="amss_card_title">
+                            CA NET <i class="fa fa-info-circle amss_info" t-att-title="tips.ca_net"/>
+                        </div>
+                        <div class="amss_card_value" t-att-title="formatAmount(cards.ca_net.value)" t-esc="formatKAmount(cards.ca_net.value)"/>
+                        <div t-att-class="'amss_card_delta ' + deltaClass('ca_net')"
+                             t-att-title="'Période précédente : ' + formatAmount(cards.ca_net.previous)"
+                             t-esc="formatDelta('ca_net')"/>
+                    </div>
+                    <div class="amss_card amss_clickable" t-on-click="() => this.openCard('ventes_confirmees')"
+                         title="Cliquer pour voir le détail">
+                        <div class="amss_card_title">
+                            VENTES CONFIRMÉES <i class="fa fa-info-circle amss_info" t-att-title="tips.ventes_confirmees"/>
+                        </div>
+                        <div class="amss_card_value" t-esc="cards.ventes_confirmees.value"/>
+                        <div t-att-class="'amss_card_delta ' + deltaClass('ventes_confirmees')"
+                             t-att-title="'Période précédente : ' + cards.ventes_confirmees.previous"
+                             t-esc="formatDelta('ventes_confirmees')"/>
+                        <!-- secondary figure: cancelled orders, with their own list -->
+                        <div class="amss_card_secondary amss_clickable_note"
+                             t-on-click.stop="() => this.openCard('ventes_annulees')"
+                             t-att-title="tips.ventes_annulees + ' Période précédente : ' + cards.ventes_annulees.previous + '. Cliquer pour voir le détail.'">
+                            <t t-esc="cards.ventes_annulees.value"/>
+                            <t t-if="cards.ventes_annulees.value > 1"> annulées</t>
+                            <t t-else=""> annulée</t>
+                        </div>
+                    </div>
+                    <div class="amss_card amss_clickable" t-on-click="() => this.openCard('tx_conversion')"
+                         title="Cliquer pour voir les RDV présents">
+                        <div class="amss_card_title">
+                            TX CONVERSION <i class="fa fa-info-circle amss_info" t-att-title="tips.tx_conversion"/>
+                        </div>
+                        <div class="amss_card_value"><t t-esc="cards.tx_conversion.value"/> %</div>
+                        <div t-att-class="'amss_card_delta ' + deltaClass('tx_conversion')"
+                             t-att-title="'Période précédente : ' + cards.tx_conversion.previous + ' %'"
+                             t-esc="formatDelta('tx_conversion')"/>
+                        <div t-if="state.data.payment_term_filtered" class="amss_card_note"
+                             title="Les RDV n'ont pas de condition de paiement : TX CONVERSION porte sur toutes les conditions.">
+                            Toutes conditions de paiement
+                        </div>
+                    </div>
+                    <div class="amss_card amss_clickable" t-on-click="() => this.openCard('chantiers_retard')"
+                         title="Cliquer pour voir le détail">
+                        <div class="amss_card_title">
+                            Chantiers en retard <i class="fa fa-info-circle amss_info" t-att-title="tips.chantiers_retard"/>
+                        </div>
+                        <div class="amss_card_value" t-esc="cards.chantiers_retard.value"/>
+                        <div class="amss_card_delta amss_delta_neutral"><b class="amss_as_of">à ce jour</b></div>
+                    </div>
+                    <div class="amss_card amss_clickable" t-on-click="() => this.openCard('dossiers_bloques')"
+                         title="Cliquer pour voir le détail">
+                        <div class="amss_card_title">
+                            Dossiers bloqués <i class="fa fa-info-circle amss_info" t-att-title="tips.dossiers_bloques"/>
+                        </div>
+                        <div class="amss_card_value" t-esc="cards.dossiers_bloques.value"/>
+                        <div t-att-class="'amss_card_delta ' + deltaClass('dossiers_bloques')"
+                             t-att-title="'Fin de la période précédente : ' + cards.dossiers_bloques.previous"
+                             t-esc="formatDelta('dossiers_bloques')"/>
+                        <div class="amss_card_delta amss_delta_neutral">
+                            <b class="amss_as_of" t-if="state.data.blocked_as_of">au <t t-esc="state.data.blocked_as_of"/></b>
+                            <b class="amss_as_of" t-else="">à ce jour</b>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Direction tab: recouvrement cards (à ce jour) -->
+                <div class="amss_cards" t-if="state.activeTab === 'direction'">
+                    <t t-foreach="[['recouvrement_facturer', 'Reste à facturer', 'commande', 'amss_card_rest'], ['recouvrement_encaisser', 'Reste à encaisser', 'facture', 'amss_card_due'], ['recouvrement_sss', 'Reste à encaisser – chantiers SSS terminés', 'commande', 'amss_card_sss']]"
+                       t-as="rc" t-key="rc[0]">
+                        <t t-set="rcData" t-value="state.data.recouvrement[rc[0]]"/>
+                        <div t-att-class="'amss_card amss_clickable ' + rc[3]" t-on-click="() => this.openCard(rc[0])"
+                             title="Cliquer pour voir le détail">
+                            <div class="amss_card_title">
+                                <t t-esc="rc[1]"/> <i class="fa fa-info-circle amss_info" t-att-title="tips[rc[0]]"/>
+                            </div>
+                            <div class="amss_card_value" t-att-title="formatAmount(rcData.amount)"
+                                 t-esc="formatKAmount(rcData.amount)"/>
+                            <div class="amss_card_delta amss_delta_neutral">
+                                <t t-esc="rcData.count"/> <t t-esc="rc[2]"/><t t-if="rcData.count > 1">s</t> · <b class="amss_as_of">à ce jour</b>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+
+                <!-- Direction tab -->
+                <div class="amss_panels" t-if="state.activeTab === 'direction'">
+                    <div class="amss_panel">
+                        <h2>CA signé / facturé / encaissé (k<t t-esc="currencySymbol"/>)</h2>
+                        <t t-foreach="[['signe', 'Signé'], ['facture', 'Facturé'], ['encaisse', 'Encaissé']]" t-as="bar" t-key="bar[0]">
+                            <div class="amss_bar_row amss_clickable" t-on-click="() => this.openCard(bar[0])"
+                                 title="Cliquer pour voir le détail">
+                                <span class="amss_bar_label">
+                                    <t t-esc="bar[1]"/> <i class="fa fa-info-circle amss_info" t-att-title="tips[bar[0]]"/>
+                                </span>
+                                <!-- remaining parts in the bar: light = reste à encaisser,
+                                     grey = reste à facturer; each opens its own list -->
+                                <t t-set="cash" t-value="state.data.cash_flow"/>
+                                <t t-set="showDue" t-value="bar[0] === 'encaisse' and cash.reste_a_encaisser > 0"/>
+                                <t t-set="showRest" t-value="bar[0] !== 'signe' and cash.reste_a_facturer > 0"/>
+                                <span class="amss_bar_track">
+                                    <span t-att-class="'amss_bar_fill' + (showDue or showRest ? ' amss_bar_fill_joined' : '')"
+                                          t-att-style="'width: ' + barWidth(bar[0])"/>
+                                    <span t-if="showDue" class="amss_bar_due"
+                                          t-att-style="'width: ' + barWidth('reste_a_encaisser')"
+                                          t-att-title="'Reste à encaisser : ' + formatAmount(cash.reste_a_encaisser) + ' – cliquer pour voir les factures'"
+                                          t-on-click.stop="() => this.openCard('reste_a_encaisser')"/>
+                                    <span t-if="showRest" class="amss_bar_rest"
+                                          t-att-style="'width: ' + barWidth('reste_a_facturer')"
+                                          t-att-title="(bar[0] === 'facture' ? 'Reste à facturer : ' : 'Non facturé : ') + formatAmount(cash.reste_a_facturer) + ' – cliquer pour voir les commandes'"
+                                          t-on-click.stop="() => this.openCard('reste_a_facturer')"/>
+                                </span>
+                                <span class="amss_bar_value" t-att-title="formatAmount(cash[bar[0]])"
+                                      t-esc="formatThousands(cash[bar[0]])"/>
+                            </div>
+                        </t>
+                        <p class="amss_panel_note">
+                            Commandes confirmées dans la période, montants HT.
+                            <span class="amss_legend amss_legend_rest"/> Reste à facturer
+                            <span class="amss_legend amss_legend_due"/> Reste à encaisser
+                            (survoler pour le montant, cliquer pour la liste).
+                        </p>
+                    </div>
+
+                    <!-- Carnet de commandes (à ce jour) -->
+                    <div class="amss_panel">
+                        <h2>Carnet de commandes <i class="fa fa-info-circle amss_info" t-att-title="tips.carnet_total"/></h2>
+                        <t t-foreach="[['carnet_a_planifier', 'À planifier'], ['carnet_planifies', 'Planifiés'], ['carnet_en_cours', 'En cours'], ['carnet_bloques', 'Bloqués']]" t-as="row" t-key="row[0]">
+                            <div class="amss_bar_row amss_clickable" t-on-click="() => this.openCard(row[0])"
+                                 title="Cliquer pour voir le détail">
+                                <span class="amss_bar_label">
+                                    <t t-esc="row[1]"/> <i class="fa fa-info-circle amss_info" t-att-title="tips[row[0]]"/>
+                                </span>
+                                <span class="amss_bar_track">
+                                    <span class="amss_bar_fill" t-att-style="'width: ' + orderBookWidth(row[0])"/>
+                                </span>
+                                <span class="amss_bar_value" t-esc="state.data.order_book[row[0]]"/>
+                            </div>
+                        </t>
+                        <p class="amss_panel_note amss_clickable_note" t-on-click="() => this.openCard('carnet_total')"
+                           title="Cliquer pour voir le détail">
+                            <t t-esc="state.data.order_book.carnet_total"/> BC signés non terminés ·
+                            <span t-att-title="formatAmount(state.data.order_book.carnet_total_amount)" t-esc="formatKAmount(state.data.order_book.carnet_total_amount)"/>
+                            HT · <b class="amss_as_of">à ce jour</b>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Commercial tab -->
+                <div class="amss_panels" t-if="state.activeTab === 'commercial'">
+                    <t t-set="com" t-value="state.data.commercial"/>
+                    <div class="amss_panel">
+                        <h2>BC signés par commercial <i class="fa fa-info-circle amss_info" t-att-title="tips.bc_par_commercial"/></h2>
+                        <t t-if="com.bc_par_commercial.length">
+                            <t t-foreach="com.bc_par_commercial" t-as="bar" t-key="bar.key">
+                                <div t-att-class="'amss_bar_row amss_clickable' + (isSelectedSalesperson(bar.key) ? ' amss_bar_selected' : '')"
+                                     t-on-click="() => this.openCard('commercial_bc:' + bar.key)" title="Cliquer pour voir le détail">
+                                    <span class="amss_bar_label" t-esc="bar.label"/>
+                                    <span class="amss_bar_track">
+                                        <span class="amss_bar_fill" t-att-style="'width: ' + salesWidth(bar.count)"/>
+                                    </span>
+                                    <span class="amss_bar_value" t-esc="bar.count"/>
+                                </div>
+                            </t>
+                        </t>
+                        <p t-else="" class="amss_panel_note">Aucune vente confirmée dans la période.</p>
+                    </div>
+
+                    <div class="amss_panel">
+                        <h2>Entonnoir de conversion</h2>
+                        <t t-foreach="[['rdv_poses', 'RDV posés', 'funnel_rdv_poses'], ['rdv_tenus', 'RDV tenus', 'funnel_rdv_tenus'], ['bc_signes', 'BC signés', 'funnel_bc']]" t-as="step" t-key="step[0]">
+                            <div class="amss_bar_row amss_clickable" t-on-click="() => this.openCard(step[2])"
+                                 title="Cliquer pour voir le détail">
+                                <span class="amss_bar_label">
+                                    <t t-esc="step[1]"/> <i class="fa fa-info-circle amss_info" t-att-title="tips[step[2]]"/>
+                                </span>
+                                <span class="amss_bar_track">
+                                    <span class="amss_bar_fill" t-att-style="'width: ' + funnelWidth(step[0])"/>
+                                </span>
+                                <span class="amss_bar_value" t-esc="com.funnel[step[0]]"/>
+                            </div>
+                        </t>
+                    </div>
+
+                    <div class="amss_panel">
+                        <h2>Qualité commerciale</h2>
+                        <table class="amss_table">
+                            <thead><tr><th>Indicateur</th><th class="text-end">Valeur</th></tr></thead>
+                            <tbody>
+                                <tr>
+                                    <td>Panier moyen (tous métiers) <i class="fa fa-info-circle amss_info" t-att-title="tips.panier_moyen"/></td>
+                                    <td class="text-end" t-esc="formatAmount(com.qualite.panier_moyen)"/>
+                                </tr>
+                                <t t-foreach="com.qualite.panier_par_metier" t-as="item" t-key="item.key">
+                                    <tr class="amss_clickable_row" t-on-click="() => this.openCard('panier_metier:' + item.key)"
+                                        t-att-title="tips.panier_metier + ' (' + item.count + ' BC)'">
+                                        <td>Panier moyen <t t-esc="item.label"/></td>
+                                        <td class="text-end" t-esc="formatAmount(item.panier)"/>
+                                    </tr>
+                                </t>
+                                <tr>
+                                    <td>Annulation après signature <i class="fa fa-info-circle amss_info" t-att-title="tips.annulation_signature"/></td>
+                                    <td class="text-end"><t t-esc="com.qualite.annulation_signature"/> %</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Métiers tab -->
+                <div class="amss_panels" t-if="state.activeTab === 'metiers'">
+                    <div class="amss_panel">
+                        <h2>
+                            CA signé par métier (k<t t-esc="currencySymbol"/>)
+                            <i class="fa fa-info-circle amss_info" t-att-title="tips.ca_metier"/>
+                        </h2>
+                        <t t-if="state.data.metiers.ca_par_metier.length">
+                            <t t-foreach="state.data.metiers.ca_par_metier" t-as="item" t-key="item.key">
+                                <div class="amss_bar_row amss_clickable" t-on-click="() => this.openCard('metier:' + item.key)"
+                                     title="Cliquer pour voir le détail">
+                                    <span class="amss_bar_label" t-esc="item.label"/>
+                                    <span class="amss_bar_track">
+                                        <span class="amss_bar_fill" t-att-style="'width: ' + metierWidth(item.amount)"/>
+                                    </span>
+                                    <span class="amss_bar_value" t-att-title="formatAmount(item.amount)"
+                                          t-esc="formatThousands(item.amount)"/>
+                                </div>
+                            </t>
+                        </t>
+                        <p t-else="" class="amss_panel_note">Aucune commande confirmée dans la période.</p>
+                        <p class="amss_panel_note">
+                            <t t-esc="state.data.period_label"/> · commandes confirmées, montants HT (total = CA NET).
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

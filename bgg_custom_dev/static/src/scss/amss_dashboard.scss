@@ -1,0 +1,443 @@
+/* AMSS Management dashboard. Same palette as Suivi Commercial (teal #017e84). */
+
+$amss-teal: #017e84;
+$amss-teal-dark: #01666b;
+$amss-bg: #f4f6f6;
+$amss-border: #dee2e6;
+$amss-text: #212529;
+$amss-muted: #6c757d;
+$amss-good: #1e7e34;
+$amss-bad: #c0392b;
+$amss-accent: #e8a500;
+$amss-rest: #d9e1e1;   // reste à facturer zone of the bars
+$amss-track: #eef2f2;  // empty part of a bar
+$amss-due: #9fd0d2;    // light teal (reste à encaisser)
+
+.amss_dashboard {
+    // no top padding: the sticky bar starts at the very top (a sticky element
+    // is kept inside the scroll container's padding, so a negative top margin
+    // would shift it down over the cards)
+    padding: 0 16px 16px;
+    background-color: $amss-bg;
+    height: 100%;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    font-size: 13px;
+    color: $amss-text;
+
+    // Header, filter bar, applied filters line and tabs: always visible, on
+    // white with a clear bottom edge so the content visibly scrolls under it.
+    .amss_sticky {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin: 0 -16px;
+        padding: 16px 16px 12px;
+        background-color: white;
+        border-bottom: 1px solid $amss-border;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+
+    .amss_header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 12px 16px;
+        background: white;
+        border: 1px solid $amss-border;
+        border-radius: 6px;
+
+        h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 700;
+        }
+    }
+
+    .amss_period_nav {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+
+        margin-left: 6px;
+
+        .amss_period_label {
+            min-width: 150px;
+            text-align: center;
+            font-size: 15px;
+            font-weight: 700;
+        }
+    }
+
+    .amss_header_actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .amss_btn {
+        background: $amss-teal;
+        border: none;
+        color: white;
+        font-weight: 500;
+
+        &:hover {
+            background: $amss-teal-dark;
+            color: white;
+        }
+    }
+
+    .amss_filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 20px;
+        padding: 10px 16px;
+        background: white;
+        border: 1px solid $amss-border;
+        border-radius: 6px;
+
+        .amss_filter {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+
+            label {
+                margin: 0;
+                font-weight: 600;
+                white-space: nowrap;
+            }
+
+            select, input {
+                font-weight: 400;
+                padding: 2px 6px;
+                border: 1px solid $amss-border;
+                border-radius: 4px;
+            }
+        }
+    }
+
+    .amss_filters_note {
+        margin: -4px 0 0;
+        padding: 0 4px;
+        font-size: 12px;
+        color: $amss-muted;
+    }
+
+    .amss_tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+
+        .amss_tab {
+            padding: 6px 18px;
+            border: 1px solid $amss-border;
+            border-radius: 999px;
+            background: white;
+            font-weight: 600;
+            cursor: pointer;
+
+            &:hover:not(.amss_tab_active) {
+                border-color: $amss-teal;
+            }
+        }
+
+        .amss_tab_active {
+            background: $amss-accent;
+            border-color: $amss-accent;
+            color: $amss-text;
+        }
+    }
+
+    .amss_content {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        transition: opacity 0.2s;
+
+        &.amss_loading {
+            opacity: 0.5;
+        }
+    }
+
+    // KPI cards: share the full width (auto-fit collapses the empty tracks
+    // auto-fill would keep), wrapping on narrow screens.
+    .amss_cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+        gap: 12px;
+    }
+
+    .amss_card, .amss_panel {
+        background: white;
+        border: 1px solid $amss-border;
+        border-radius: 8px;
+        padding: 14px 16px;
+        min-width: 0;
+    }
+
+    .amss_card {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+
+        .amss_card_title {
+            color: $amss-muted;
+            font-weight: 600;
+        }
+
+        .amss_card_value {
+            font-size: 28px;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            line-height: 1.1;
+        }
+    }
+
+    .amss_clickable {
+        cursor: pointer;
+        transition: box-shadow 0.15s, border-color 0.15s;
+
+        &:hover {
+            border-color: $amss-teal;
+            box-shadow: 0 2px 6px rgba(1, 126, 132, 0.15);
+        }
+    }
+
+    .amss_bar_row.amss_clickable {
+        border-radius: 4px;
+        padding-left: 4px;
+        padding-right: 4px;
+
+        &:hover {
+            background: #eef6f6;
+            box-shadow: none;
+        }
+    }
+
+    .amss_bar_selected {
+        background: #eef6f6;
+        border-radius: 4px;
+        font-weight: 700;
+    }
+
+    .amss_table {
+        width: 100%;
+        border-collapse: collapse;
+
+        th {
+            color: $amss-muted;
+            font-weight: 600;
+            padding: 6px 4px;
+            border-bottom: 1px solid $amss-border;
+        }
+
+        td {
+            padding: 8px 4px;
+            border-bottom: 1px solid $amss-border;
+            font-variant-numeric: tabular-nums;
+        }
+    }
+
+    .amss_clickable_row {
+        cursor: pointer;
+
+        &:hover td {
+            background: #eef6f6;
+        }
+    }
+
+    .amss_clickable_note {
+        cursor: pointer;
+
+        &:hover {
+            color: $amss-teal;
+            text-decoration: underline;
+        }
+    }
+
+    .amss_card_secondary {
+        align-self: flex-start;
+        font-size: 12px;
+        font-weight: 600;
+        color: $amss-muted;
+    }
+
+    // Recouvrement cards, in the colors of the bar zones: Reste à facturer
+    // (grey zone), Reste à encaisser (light zone), chantiers SSS terminés
+    // (orange of the active tab). Text kept dark for contrast.
+    .amss_card.amss_card_rest,
+    .amss_card.amss_card_due,
+    .amss_card.amss_card_sss {
+        color: $amss-text;
+
+        .amss_card_title,
+        .amss_delta_neutral,
+        .amss_info {
+            color: $amss-text;
+        }
+    }
+
+    .amss_card.amss_card_rest {
+        background: $amss-rest;
+        border-color: darken($amss-rest, 10%);
+    }
+
+    .amss_card.amss_card_due {
+        background: $amss-due;
+        border-color: darken($amss-due, 10%);
+    }
+
+    .amss_card.amss_card_sss {
+        background: $amss-accent;
+        border-color: darken($amss-accent, 8%);
+    }
+
+    // "à ce jour" (and "au <date>" for Dossiers bloqués): always bold, never italic
+    .amss_as_of {
+        font-weight: 700;
+        font-style: normal;
+    }
+
+    .amss_card_note {
+        font-size: 11px;
+        font-style: italic;
+        color: $amss-muted;
+    }
+
+    .amss_card_delta {
+        font-size: 12px;
+        font-weight: 600;
+        min-height: 16px;
+    }
+
+    .amss_delta_good { color: $amss-good; }
+    .amss_delta_bad { color: $amss-bad; }
+    .amss_delta_neutral { color: $amss-muted; }
+
+    .amss_info {
+        color: $amss-teal;
+        cursor: help;
+        margin-left: 2px;
+    }
+
+    // Big cards: 2 or 3 share the row equally; a card alone takes half the
+    // page. They wrap one per row on narrow screens.
+    .amss_panels {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: stretch;
+        gap: 12px;
+
+        > .amss_panel {
+            flex: 1 1 320px;
+        }
+
+        > .amss_panel:only-child {
+            flex: 0 1 calc(50% - 6px);
+        }
+
+        // (no CSS min(): Odoo's SCSS compiler takes it for its own min function)
+        @media (max-width: 767.98px) {
+            > .amss_panel:only-child {
+                flex-basis: 100%;
+            }
+        }
+    }
+
+    .amss_panel {
+        h2 {
+            font-size: 15px;
+            font-weight: 700;
+            margin: 0 0 12px;
+        }
+
+        .amss_panel_note {
+            margin: 10px 0 0;
+            color: $amss-muted;
+            font-size: 12px;
+        }
+
+        .amss_legend {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            margin-left: 6px;
+            border-radius: 2px;
+            vertical-align: -1px;
+        }
+
+        .amss_legend_rest {
+            background: $amss-rest;
+            box-shadow: inset 0 0 0 1px darken($amss-rest, 15%);
+        }
+
+        .amss_legend_due {
+            background: $amss-due;
+        }
+    }
+
+    .amss_bar_row {
+        display: grid;
+        grid-template-columns: 110px 1fr 70px;
+        align-items: center;
+        gap: 12px;
+        padding: 6px 0;
+
+        .amss_bar_track {
+            display: flex;
+            height: 12px;
+            background: $amss-track;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .amss_bar_fill {
+            display: block;
+            flex: none;
+            height: 100%;
+            background: $amss-teal;
+            border-radius: 6px;
+        }
+
+        .amss_bar_fill_joined {
+            border-radius: 6px 0 0 6px;
+        }
+
+        // Reste à encaisser (light) and reste à facturer (grey): clickable
+        // zones with their own list. What is left of the track (e.g. a
+        // commercial gesture credit note) is neither.
+        .amss_bar_due {
+            flex: none;
+            height: 100%;
+            background: $amss-due;
+            cursor: pointer;
+
+            &:hover {
+                background: darken($amss-due, 10%);
+            }
+        }
+
+        .amss_bar_rest {
+            flex: none;
+            height: 100%;
+            background: $amss-rest;
+            cursor: pointer;
+
+            &:hover {
+                background: darken($amss-rest, 10%);
+            }
+        }
+
+        .amss_bar_value {
+            text-align: right;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+    }
+}

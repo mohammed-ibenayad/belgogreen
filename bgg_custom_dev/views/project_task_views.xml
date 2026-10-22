@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        "Bloqué" task state of the admin projects (see project_task.py): an
+        open blocked task sets its project to Bloqué. The state widget offers
+        "Bloqué" only on tasks of admin projects (x_is_admin_dossier_project,
+        loaded below); only the Responsable Dossier groups may set or remove
+        it (checked server side). The reason is written in the chatter.
+    -->
+    <record id="view_task_form2_inherit_blocked" model="ir.ui.view">
+        <field name="name">project.task.form.inherit.blocked</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group/field[@name='tag_ids']" position="before">
+                <field name="x_is_admin_dossier_project" invisible="1"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="project_task_view_tree_base_inherit_blocked" model="ir.ui.view">
+        <field name="name">project.task.list.inherit.blocked</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.project_task_view_tree_base"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='tag_ids']" position="after">
+                <field name="x_is_admin_dossier_project" column_invisible="1"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_task_kanban_inherit_blocked" model="ir.ui.view">
+        <field name="name">project.task.kanban.inherit.blocked</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_kanban"/>
+        <field name="arch" type="xml">
+            <xpath expr="//templates" position="before">
+                <field name="x_is_admin_dossier_project"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_task_search_form_project_base_inherit_blocked" model="ir.ui.view">
+        <field name="name">project.task.search.inherit.blocked</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_search_form_project_base"/>
+        <field name="arch" type="xml">
+            <filter name="open_tasks" position="after">
+                <filter string="Bloquées" name="bgg_blocked_tasks" domain="[('state', '=', '05_blocked')]"/>
+            </filter>
+        </field>
+    </record>
+</odoo>

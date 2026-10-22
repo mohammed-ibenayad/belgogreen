@@ -2,3 +2,4 @@
 
 from . import commercial_dashboard_controller
 from . import call_center_dashboard_controller
+from . import amss_dashboard_controller
