@@ -13,3 +13,5 @@ reportlab>=4.0.0
 weasyprint>=60.0
 # For GeoTIFF imagery processing (required for Solar API satellite images)
 rasterio>=1.3.0
+# OCA resource_booking (call-centre booking, bgg_booking)
+cssselect
