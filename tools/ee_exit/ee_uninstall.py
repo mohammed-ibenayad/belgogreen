@@ -117,6 +117,13 @@ EE_EXIT_SURVIVAL = [
     ('Automation rules', 'base_automation', None),
 ]
 
+# Rows linked to a model that is removed are deleted with it (ON DELETE
+# CASCADE on the model). These are kept: the link to the removed model is
+# emptied first. {table: (link column, other columns emptied with it)}
+EE_EXIT_KEEP_LINKED = {
+    'calendar_event': ('res_model_id', ('res_id', 'res_model')),
+}
+
 # Records of these models are not detailed (menus, views, actions, rights...).
 EE_EXIT_TECHNICAL = ('res.groups', 'res.groups.privilege', 'report.paperformat', 'digest.tip', 'web_tour.tour',
                      'onboarding.onboarding', 'onboarding.onboarding.step', 'mail.template', 'sms.template',
@@ -205,6 +212,11 @@ def _ee_expected_losses(env, analysis):
             elif table == 'mail_message':
                 loss += _ee_count(env, table, '(%s) AND model = %s AND res_id IN %s' % (
                     condition or 'TRUE', env.cr.mogrify('%s', [model]).decode(), ids)) or 0
+        for link_table, column, deltype, __ in analysis['model_links']:
+            if link_table == table and deltype == 'c' and table not in EE_EXIT_KEEP_LINKED:
+                ids = env.cr.mogrify('%s', [tuple(analysis['dropped_model_ids'])]).decode()
+                loss += _ee_count(env, table, '%s"%s" IN %s' % ('(%s) AND ' % condition if condition else '',
+                                                               column, ids)) or 0
         losses[label] = loss
     return losses
 
@@ -330,8 +342,20 @@ def _ee_analyse(env, names):
             ondelete = getattr(field, 'ondelete', None)
             ondelete = ondelete.get(value) if isinstance(ondelete, dict) else None
             selections.append((model, name, value, count, ondelete))
+    # rows of kept tables linked to a removed model (e.g. a calendar event
+    # linked to an appointment, an automation rule on an Enterprise model)
+    env.cr.execute("SELECT id FROM ir_model WHERE id = ANY(%s)", [owned.get('ir.model', [])])
+    dropped_model_ids = [r[0] for r in env.cr.fetchall()]
+    model_links = []
+    for table, column, __, deltype in foreign_keys('c.confrelid', 'ir_model'):
+        if table in dropped_tables or table.startswith('ir_') or not has_id(table):
+            continue
+        env.cr.execute('SELECT count(*) FROM "%s" WHERE "%s" = ANY(%%s)' % (table, column), [dropped_model_ids])
+        count = env.cr.fetchone()[0]
+        if count:
+            model_links.append((table, column, deltype, count))
     return {'dropped_models': dropped_models, 'dropped_fields': dropped_fields, 'records': records,
-            'selections': selections}
+            'selections': selections, 'dropped_model_ids': dropped_model_ids, 'model_links': model_links}
 
 
 def _ee_drop_orphans(env):
@@ -395,6 +419,14 @@ def ee_check(env, keep=()):
     _ee_print("\n=== TECHNICAL RECORDS DELETED (menus, views, actions, rights, groups...)")
     _ee_print("  " + ', '.join('%s %s' % (model, len(info['records']))
                               for model, info in analysis['records'].items() if info['technical']))
+
+    _ee_print("\n=== ROWS LINKED TO A REMOVED MODEL")
+    for table, column, deltype, count in analysis['model_links']:
+        fate = ('KEPT, link emptied first' if table in EE_EXIT_KEEP_LINKED else
+                {'c': 'deleted with the model', 'n': 'link emptied', 'r': 'blocks', 'a': 'blocks'}.get(deltype, deltype))
+        _ee_print("  %s.%s: %s rows (%s)" % (table, column, count, fate))
+    if not analysis['model_links']:
+        _ee_print("  none ✅")
 
     _ee_print("\n=== VALUES THAT DISAPPEAR FROM KEPT FIELDS")
     for model, name, value, count, ondelete in analysis['selections']:
@@ -487,6 +519,14 @@ def ee_uninstall(env, confirm=None, keep=(), go_live=False):
             rules.active = False
             _ee_print("Archived %s WhatsApp automation rules: %s" % (len(rules), rules.mapped('name')))
         analysis = _ee_analyse(env, names)
+        for table, (column, others) in EE_EXIT_KEEP_LINKED.items():
+            if not analysis['dropped_model_ids'] or _ee_count(env, table) is None:
+                continue
+            env.cr.execute('UPDATE "%s" SET %s WHERE "%s" = ANY(%%s)' % (
+                table, ', '.join('"%s" = NULL' % c for c in (column,) + tuple(others)), column),
+                [analysis['dropped_model_ids']])
+            if env.cr.rowcount:
+                _ee_print("Kept %s %s rows linked to a removed model (link emptied)" % (env.cr.rowcount, table))
         losses_path = os.path.join(folder, 'expected_losses.json')
         if not os.path.exists(losses_path):
             with open(losses_path, 'w', encoding='utf-8') as f:
