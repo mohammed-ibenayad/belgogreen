@@ -22,6 +22,12 @@ ready answer to give to Claude.
 |---|--------|----------|---------|---------|
 | 4 | ☐ Open | Show the SSS project on its order, and the order on the SSS project? | On Community the SSS project is linked to its order by our own field (`x_sss_sale_order_id`, set by "Créer Tâches SSS"). The order's "Tâches" button already opens the tasks of both projects (admin and SSS), but the standard "Projets" button only finds the admin project (linked through the order line), and the SSS project form does not show its order. | **Add both** (small change in bgg_custom_dev): the SSS project in the order's "Projets" button, and a "Bon de commande" field with a link on the SSS project. **Keep as is:** reach the SSS tasks through "Tâches". |
 
+## Uninstall rehearsal on bsi-staging (2026-10-23)
+
+| # | Status | Point | Context | Next step |
+|---|--------|-------|---------|-----------|
+| 5 | ☐ Later | 6 calendar events (RDVs with a type) lost in the rehearsal | They were linked to a record of an Enterprise model; Odoo deletes such events with the model. Lost on bsi-staging only (production still has them). The script now empties the link first and keeps the events (commit "keep calendar events linked to a removed model"). | Find which model on production (`SELECT m.model, count(*) FROM calendar_event e JOIN ir_model m ON m.id = e.res_model_id GROUP BY 1`), then confirm in a fresh rehearsal that "Calendar events" stays ✅. |
+
 ## Notes
 
 - "My Company" (not an active company) still owns 5 Finance sub-folders
