@@ -4,6 +4,7 @@ import { registry } from "@web/core/registry";
 import { rpc } from "@web/core/network/rpc";
 import { useService } from "@web/core/utils/hooks";
 import { user } from "@web/core/user";
+import { useSetupAction } from "@web/search/action_hook";
 import { Component, onWillStart, useState } from "@odoo/owl";
 
 // For each card: does an increase mean good news?
@@ -13,6 +14,21 @@ const HIGHER_IS_BETTER = {
     tx_conversion: true,
     dossiers_bloques: false,
 };
+
+// Tab, period and filters kept when the user opens the records behind a card
+// and comes back to the dashboard (breadcrumb / browser back).
+const KEPT_STATE_KEYS = [
+    "activeTab",
+    "currentMonth",
+    "currentYear",
+    "currentQuarter",
+    "periodType",
+    "dateFrom",
+    "dateTo",
+    "filterCompanyId",
+    "filterPaymentTermId",
+    "filterUserId",
+];
 
 export class AmssManagementDashboard extends Component {
     static template = "bgg_custom_dev.AmssManagementDashboard";
@@ -38,6 +54,18 @@ export class AmssManagementDashboard extends Component {
             availableSalespeople: [],
             availablePaymentTerms: [],
         });
+        // Coming back from a details page: the action service gives us the
+        // state exported by getLocalState when we left.
+        const kept = this.props.state || {};
+        for (const key of KEPT_STATE_KEYS) {
+            if (kept[key] !== undefined) {
+                this.state[key] = kept[key];
+            }
+        }
+        useSetupAction({
+            getLocalState: () =>
+                Object.fromEntries(KEPT_STATE_KEYS.map((key) => [key, this.state[key]])),
+        });
         onWillStart(async () => {
             try {
                 const options = await rpc("/amss/dashboard/filters", {
@@ -49,7 +77,9 @@ export class AmssManagementDashboard extends Component {
             } catch (error) {
                 this.state.error = error.data?.message || error.message;
             }
-            await this.loadData();
+            // month / year are null on a fresh open (server picks today's
+            // period) and the kept ones when coming back from a details page
+            await this.loadData(this.state.currentMonth, this.state.currentYear);
         });
     }
 
