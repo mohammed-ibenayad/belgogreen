@@ -334,6 +334,22 @@ def _ee_analyse(env, names):
             'selections': selections}
 
 
+def _ee_drop_orphans(env):
+    """External ids pointing to model, field or selection definitions that no
+    longer exist (e.g. a Studio field of a model an earlier batch removed):
+    Odoo's uninstall reads them and stops ("Record does not exist")."""
+    removed = 0
+    for model, table in (('ir.model.fields', 'ir_model_fields'), ('ir.model', 'ir_model'),
+                         ('ir.model.fields.selection', 'ir_model_fields_selection'),
+                         ('ir.model.constraint', 'ir_model_constraint')):
+        env.cr.execute("""DELETE FROM ir_model_data d WHERE d.model = %%s
+                           AND NOT EXISTS (SELECT 1 FROM "%s" t WHERE t.id = d.res_id)""" % table, [model])
+        removed += env.cr.rowcount
+    if removed:
+        _ee_print("    removed %s external ids pointing to nothing" % removed)
+    return removed
+
+
 def _ee_batches(names):
     names = set(names)
     batches, placed = [], set()
@@ -496,11 +512,15 @@ def ee_uninstall(env, confirm=None, keep=(), go_live=False):
                         break
                     start = time.time()
                     _ee_print("\n--- %s: %s" % (label, ', '.join(todo.mapped('name'))))
+                    _ee_drop_orphans(env)
+                    env.cr.commit()
                     todo.button_immediate_uninstall()
                     _ee_print("    done in %.0f s" % (time.time() - start))
                 break
-            except UserError as error:   # a cron or another module operation running
-                _ee_print("    busy (%s), retrying in 30 s" % error)
+            except UserError as error:
+                if 'Odoo is currently processing' not in str(error):
+                    raise   # a real error: stop and show it
+                _ee_print("    busy (%s), retrying in 30 s" % error)   # a cron or another module operation
                 time.sleep(30)
         else:
             raise UserError("Batch %s could not run. Stopped; run ee_uninstall again later." % label)
@@ -558,6 +578,7 @@ def ee_cleanup(env, lock_wait='60s'):
 def _ee_cleanup(dbname, lock_wait='60s'):
     with _ee_env(dbname) as env:
         env.cr.execute("SET lock_timeout = %s", [lock_wait])
+        _ee_drop_orphans(env)
         env.cr.execute("""
             SELECT d.module, d.model, count(*) FROM ir_model_data d
               JOIN ir_module_module m ON m.name = d.module
