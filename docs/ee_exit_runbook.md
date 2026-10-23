@@ -77,6 +77,12 @@ mods = env['ir.module.module'].search([('state', '=', 'installed')])
 print([m.name for m in mods if '/enterprise/' in (get_module_path(m.name) or '')] or "none")
 ```
 
+`ee_uninstall` runs `ee_cleanup` at its end: leftovers of lock timeouts,
+leftover required columns, and the view types of removed modules (gantt,
+map, grid, cohort) still listed in menus ("View types not defined gantt
+found in act_window action"). To run it again alone:
+`ee_cleanup(env)`.
+
 Rehearsal of 2026-10-23 (bsi-staging): all counts kept except 6 calendar
 events (fixed since, see open decisions #5); 4 leftovers of the lock
 timeouts removed by `ee_cleanup`; no Enterprise code installed, 141 modules.

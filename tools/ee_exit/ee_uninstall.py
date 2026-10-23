@@ -650,3 +650,17 @@ def _ee_cleanup(dbname, lock_wait='60s'):
                     env.cr.execute('ALTER TABLE "%s" ALTER COLUMN "%s" DROP NOT NULL' % (model._table, column))
                     fixed.append('%s.%s' % (model._table, column))
         _ee_print("    leftover required columns made optional: %s" % (', '.join(fixed) or 'none ✅'))
+
+        # view types of removed modules (gantt, map, grid, cohort) still
+        # listed in window actions: Odoo refuses to open such an action
+        valid = {value for value, __ in env['ir.ui.view']._fields['type'].selection}
+        env.cr.execute("SELECT id, view_mode FROM ir_act_window WHERE view_mode IS NOT NULL")
+        actions = []
+        for action_id, view_mode in env.cr.fetchall():
+            modes = [m.strip() for m in view_mode.split(',') if m.strip()]
+            keep = [m for m in modes if m in valid] or ['list', 'form']
+            if keep != modes:
+                env.cr.execute("UPDATE ir_act_window SET view_mode = %s WHERE id = %s", [','.join(keep), action_id])
+                actions.append('%s (%s -> %s)' % (action_id, view_mode, ','.join(keep)))
+        env.registry.clear_cache()
+        _ee_print("    actions with removed view types fixed: %s" % (', '.join(actions) or 'none ✅'))
