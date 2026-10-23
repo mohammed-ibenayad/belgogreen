@@ -69,6 +69,26 @@ Files kept in `~/ee_exit/<database>/`: `counts_before.json`,
 `expected_losses.json`, `counts_after.json`, `whatsapp.json` (Meta account
 ids and the 17 templates, without tokens). Download `whatsapp.json`.
 
+Then, in a new shell, check that no Enterprise code is still installed:
+
+```python
+from odoo.modules.module import get_module_path
+mods = env['ir.module.module'].search([('state', '=', 'installed')])
+print([m.name for m in mods if '/enterprise/' in (get_module_path(m.name) or '')] or "none")
+```
+
+Rehearsal of 2026-10-23 (bsi-staging): all counts kept except 6 calendar
+events (fixed since, see open decisions #5); 4 leftovers of the lock
+timeouts removed by `ee_cleanup`; no Enterprise code installed, 141 modules.
+
+## 4b. Remove bgg_staging_rebuild
+
+Decided: not taken to the Community server.
+
+```python
+env['ir.module.module'].search([('name', '=', 'bgg_staging_rebuild')]).button_immediate_uninstall()
+```
+
 ## 5. Look at it
 
 Log in and check: Sales (orders, "Créer Tâches SSS", "Tâches" button),
