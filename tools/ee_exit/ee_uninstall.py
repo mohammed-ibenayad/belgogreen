@@ -83,6 +83,7 @@ EE_EXIT_BATCHES = [
 EE_EXIT_SURVIVAL = [
     ('Contacts', 'res_partner', None),
     ('Users', 'res_users', None),
+    ('Internal users (active)', 'res_users', 'active AND NOT share'),
     ('Employees', 'hr_employee', None),
     ('Leads / opportunities', 'crm_lead', None),
     ('Sale orders', 'sale_order', None),
@@ -374,6 +375,49 @@ def _ee_drop_orphans(env):
     return removed
 
 
+def _ee_keep_user_rights(env, analysis):
+    """Keep the rights users get through a group the uninstall deletes.
+
+    In Odoo 19 most users are "Internal User" (and Sales, Project...) through
+    another group, e.g. "Appointments: User": when that group is deleted,
+    the rights it implied go with it and the user becomes a portal-like
+    user. Those rights are given directly to the user first."""
+    deleted = set(analysis['records']['res.groups']['records'].ids) if 'res.groups' in analysis['records'] else set()
+    if not deleted:
+        return 0
+    Groups = env['res.groups'].with_context(active_test=False)
+    implied = {}
+
+    def reach(group_ids):
+        seen, todo = set(), [g for g in group_ids if g not in deleted]
+        while todo:
+            gid = todo.pop()
+            if gid in seen:
+                continue
+            seen.add(gid)
+            if gid not in implied:
+                implied[gid] = Groups.browse(gid).implied_ids.ids
+            todo.extend(g for g in implied[gid] if g not in deleted)
+        return seen
+
+    changed = 0
+    for user in env['res.users'].with_context(active_test=False).search([]):
+        explicit = set(user.group_ids.ids) - deleted
+        missing = set(user.all_group_ids.ids) - deleted - reach(explicit)
+        added = []
+        while missing:
+            # the group giving the most of what is missing first (e.g. Internal User)
+            best = max(sorted(missing), key=lambda g: len(reach([g]) & missing))
+            added.append(best)
+            explicit.add(best)
+            missing -= reach(explicit)
+        if added:
+            user.write({'group_ids': [(4, gid) for gid in added]})
+            changed += 1
+    _ee_print("Kept the rights of %s users that came through deleted groups" % changed)
+    return changed
+
+
 def _ee_batches(names):
     names = set(names)
     batches, placed = [], set()
@@ -531,6 +575,7 @@ def ee_uninstall(env, confirm=None, keep=(), go_live=False):
         if not os.path.exists(losses_path):
             with open(losses_path, 'w', encoding='utf-8') as f:
                 json.dump(_ee_expected_losses(env, analysis), f, ensure_ascii=False, indent=2)
+        _ee_keep_user_rights(env, analysis)
         protected = 0
         Data = env['ir.model.data']
         for model, info in analysis['records'].items():
