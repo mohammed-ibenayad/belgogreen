@@ -662,5 +662,17 @@ def _ee_cleanup(dbname, lock_wait='60s'):
             if keep != modes:
                 env.cr.execute("UPDATE ir_act_window SET view_mode = %s WHERE id = %s", [','.join(keep), action_id])
                 actions.append('%s (%s -> %s)' % (action_id, view_mode, ','.join(keep)))
-        env.registry.clear_cache()
         _ee_print("    actions with removed view types fixed: %s" % (', '.join(actions) or 'none ✅'))
+
+        # app icons in Studio's format ("icon class,colour,background", drawn
+        # by the Enterprise home menu): Community expects "module,path" and
+        # the OCA app menu (web_responsive) stops on them. Default icon.
+        env.cr.execute("""WITH bad AS (SELECT id, web_icon FROM ir_ui_menu
+                                        WHERE array_length(string_to_array(web_icon, ','), 1) <> 2)
+                          UPDATE ir_ui_menu m SET web_icon = NULL FROM bad WHERE m.id = bad.id
+                       RETURNING m.id, bad.web_icon""")
+        menus = env.cr.fetchall()
+        env.registry.clear_cache()
+        _ee_print("    app icons in Studio's format reset: %s" % (', '.join('%s (%s)' % m for m in menus) or 'none ✅'))
+    # the running Odoo workers drop their cached menus and actions
+    Registry(dbname).signal_changes()
