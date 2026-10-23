@@ -77,6 +77,7 @@ class ProjectProject(models.Model):
             directory = Directory.create({
                 'name': self._bgg_unique_child_name(parent, project.name),
                 'parent_id': parent.id,
+                'x_company_id': project.company_id.id,
             })
             project.sudo().x_dms_directory_id = directory
 

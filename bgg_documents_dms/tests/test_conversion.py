@@ -178,3 +178,44 @@ class TestDocumentsToDms(TransactionCase):
         folder.with_context(lang='fr_BE').name = 'Projet - Client'
         self.env['bgg.documents.dms']._convert()
         self.assertTrue(self._dir('Projet - Client'))
+
+    def test_companies(self):
+        amss = self.env['res.company'].create({'name': 'AMSS MANAGEMENT SRL (test)'})
+        natur = self.env['res.company'].create({'name': 'NATUR’ISOL SRL (test)'})
+        finance = self.folder('Finance')
+        achats_amss = self.folder('Achats', finance, company_id=amss.id)
+        achats_natur = self.folder('Achats', finance, company_id=natur.id)
+        achats_shared = self.folder('Achats', finance)
+        self.file('facture amss.pdf', achats_amss, company_id=amss.id)
+        self.file('facture natur.pdf', achats_amss, company_id=natur.id)
+        self.file('facture sans société.pdf', achats_amss)
+        counts = self.env['bgg.documents.dms']._convert()
+        self.assertEqual(counts['dossiers renommés par société'], 2)
+
+        Directory, File = self.env['dms.directory'], self.env['dms.file']
+        root = self._dir('Finance')
+        self.assertFalse(root.company_id)
+        self.assertCountEqual(root.child_directory_ids.mapped('name'), [
+            'Achats - AMSS MANAGEMENT SRL (test)', 'Achats - NATUR’ISOL SRL (test)', 'Achats (3)'])
+        folder_amss = self._dir('Achats - AMSS MANAGEMENT SRL (test)', root)
+        self.assertEqual(folder_amss.company_id, amss)
+        self.assertEqual(self._dir('Achats - NATUR’ISOL SRL (test)', root).company_id, natur)
+        self.assertFalse(self._dir('Achats (3)', root).company_id, "no company: shared")
+        files = {f.name: f for f in File.search([('directory_id', '=', folder_amss.id)])}
+        self.assertEqual(files['facture amss.pdf'].company_id, amss)
+        self.assertEqual(files['facture natur.pdf'].company_id, natur, "its own company")
+        self.assertEqual(files['facture sans société.pdf'].company_id, amss, "the folder's company")
+        self.assertTrue(achats_shared)
+
+        # the company switcher: AMSS only
+        user = self.carl
+        user.write({'company_ids': [Command.link(amss.id), Command.link(natur.id)]})
+        names = Directory.with_user(user).with_context(allowed_company_ids=[amss.id, user.company_id.id]).search(
+            [('parent_id', '=', root.id)]).mapped('name')
+        self.assertCountEqual(names, ['Achats - AMSS MANAGEMENT SRL (test)', 'Achats (3)'])
+
+        # a new run renames nothing more and keeps a name changed by hand
+        folder_amss.name = 'Achats AMSS'
+        counts = self.env['bgg.documents.dms']._convert()
+        self.assertFalse(counts.get('dossiers renommés par société'))
+        self.assertEqual(folder_amss.name, 'Achats AMSS')

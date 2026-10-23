@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen - DMS projets',
-    'version': '19.0.1.0.2',
+    'version': '19.0.1.1.0',
     'category': 'Document Management',
     'summary': 'Each project has its DMS folder and a Documents button, as with Enterprise Documents',
     'description': """
@@ -24,7 +24,7 @@
     'author': 'BelGoGreen',
     'website': 'https://www.belgogreen.com',
     'license': 'LGPL-3',
-    'depends': ['dms', 'project'],
+    'depends': ['dms', 'bgg_dms', 'project'],
     'data': ['views/project_project_views.xml'],
     'post_init_hook': 'post_init',
     'installable': True,

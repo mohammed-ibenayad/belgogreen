@@ -4,6 +4,7 @@ import collections
 import logging
 import math
 import os
+import re
 
 from odoo import Command, api, models
 
@@ -70,7 +71,7 @@ class BggDocumentsDms(models.AbstractModel):
         cr = self.env.cr
         cr.execute("""
             SELECT d.id, d.name, d.type, d.folder_id, d.attachment_id, d.active, d.handler,
-                   d.shortcut_document_id, d.access_internal, d.owner_id,
+                   d.shortcut_document_id, d.access_internal, d.owner_id, d.company_id,
                    d.create_uid, d.create_date, d.write_uid, d.write_date, a.mimetype
               FROM documents_document d
               LEFT JOIN ir_attachment a ON a.id = d.attachment_id
@@ -311,6 +312,7 @@ class BggDocumentsDms(models.AbstractModel):
         self._refresh_images(checkpoint)
         self._grant_dms_rights()
         counts['dossiers employés regroupés sous RH'] = self._group_employee_folders(storage)
+        counts.update(self._apply_companies(docs))
         Project = self.env.get('project.project')
         if Project is not None and 'x_dms_directory_id' in Project._fields:
             counts['projets liés'] = Project._bgg_link_converted_directories()
@@ -347,6 +349,60 @@ class BggDocumentsDms(models.AbstractModel):
                             'inherit_group_ids': False, 'group_ids': [Command.set(employee.group_ids.ids)]})
         _logger.info("bgg_documents_dms: %s employee folder(s) grouped under %s", len(employees), HR_FOLDER_NAME)
         return len(employees)
+
+    def _apply_companies(self, docs):
+        """Each folder and file gets the company it had in Documents (empty:
+        the company of the folder above), so the company switcher filters
+        them like in Enterprise. Folders with the same name in the same
+        place ("Achats" of each company in Finance) are named after their
+        company: "Achats - AMSS MANAGEMENT SRL". Folders renamed by hand
+        since the conversion keep their name."""
+        counts = collections.Counter()
+        mapped = self._ensure_map_table()
+        Directory, File = self.env['dms.directory'], self.env['dms.file']
+        Company = self.env['res.company'].with_context(active_test=False)
+
+        def target(doc_id):
+            ids = mapped.get(doc_id) or (None, None)
+            return Directory.browse(ids[0]) if ids[0] else File.browse(ids[1]) if ids[1] else None
+
+        # folders first (files compare with the company of their folder)
+        for is_folder in (True, False):
+            by_company = collections.defaultdict(list)
+            for doc in docs.values():
+                record = (doc['type'] == 'folder') == is_folder and doc['company_id'] and target(doc['id'])
+                if not record or not record.exists() or record.x_company_id:
+                    continue
+                if is_folder or record.company_id.id != doc['company_id']:
+                    by_company[doc['company_id']].append(record.id)
+            for company_id, ids in by_company.items():
+                (Directory if is_folder else File).browse(ids).write({'x_company_id': company_id})
+                counts['dossiers avec société' if is_folder else 'fichiers avec leur propre société'] += len(ids)
+            self.env.flush_all()
+
+        siblings = collections.defaultdict(list)
+        for doc in docs.values():
+            if doc['type'] == 'folder':
+                siblings[(doc['folder_id'], clean_name(self._source_name(doc['name'])))].append(doc)
+        for (__, base), same_name in siblings.items():
+            if len(same_name) < 2:
+                continue
+            for doc in same_name:
+                directory = target(doc['id'])
+                if not doc['company_id'] or not directory or not directory.exists():
+                    continue
+                # only the conversion name ("Achats", "Achats (2)"): not renamed by hand since
+                if not re.fullmatch(re.escape(base) + r'( \(\d+\))?', directory.name):
+                    continue
+                name = clean_name(f"{base} - {Company.browse(doc['company_id']).name}")
+                if directory.name == name:
+                    continue
+                around = directory.parent_id.child_directory_ids if directory.parent_id \
+                    else self._root_directories(directory.storage_id)
+                directory.name = unique_name(name, set((around - directory).mapped('name')), is_file=False)
+                counts['dossiers renommés par société'] += 1
+        self.env.flush_all()
+        return counts
 
     def _failed(self, counts, key, doc, error):
         """Logged and counted; the document is not marked as done, so the

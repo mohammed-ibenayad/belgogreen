@@ -32,6 +32,13 @@ class TestProjectDirectory(TransactionCase):
         twin = self.env['project.project'].create({'name': 'S09999 - DUPONT Marie'})
         self.assertEqual(twin.x_dms_directory_id.name, 'S09999 - DUPONT Marie (2)')
 
+    def test_project_folder_takes_the_project_company(self):
+        company = self.env['res.company'].create({'name': 'NATUR (test projets)'})
+        project = self.env['project.project'].create({'name': 'S09998 - MARTIN Paul', 'company_id': company.id})
+        self.assertEqual(project.x_dms_directory_id.company_id, company)
+        no_company = self.env['project.project'].create({'name': 'S09997 - Sans société', 'company_id': False})
+        self.assertEqual(no_company.x_dms_directory_id.company_id, self.projects_dir.company_id)
+
     def test_template_subfolders_and_button(self):
         template = self.env['project.project'].create({'name': 'AMSS - Tâches Avant - Installation (test)'})
         admin = self.env['dms.directory'].create({'name': 'ADMIN', 'parent_id': template.x_dms_directory_id.id})

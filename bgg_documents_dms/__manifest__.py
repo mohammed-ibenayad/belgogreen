@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen - Documents vers DMS',
-    'version': '19.0.1.2.0',
+    'version': '19.0.1.3.0',
     'category': 'Customizations',
     'summary': 'One-off move of the Enterprise Documents into OCA dms before Documents is uninstalled',
     'description': """
@@ -31,6 +31,11 @@
           dms manager).
         - Employee folders (with a "Contrat" / "Fiche de paie" sub-folder) are
           grouped under one "RH" top folder, each keeping its own access.
+        - Company: each folder and file keeps its Documents company (empty:
+          the one of the folder above), so the company switcher filters them
+          like in Enterprise (bgg_dms). Folders with the same name in the
+          same place are named after their company ("Achats - AMSS
+          MANAGEMENT SRL").
         - Not moved: spreadsheets, link documents, shortcuts.
         - The dms "max upload size" is raised to the largest file (Documents
           had no limit). A document dms refuses is logged ("not moved") and
@@ -45,6 +50,7 @@
     'depends': [
         'documents',
         'dms',
+        'bgg_dms',
     ],
     'data': [
         'data/server_actions.xml',

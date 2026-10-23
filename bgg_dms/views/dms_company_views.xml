@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- The company of a folder or a file (empty: the one of the folder above). -->
+    <record id="view_dms_directory_form_company" model="ir.ui.view">
+        <field name="name">dms_directory.form.company</field>
+        <field name="model">dms.directory</field>
+        <field name="inherit_id" ref="dms.view_dms_directory_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='settings']/group[1]" position="inside">
+                <field name="x_company_id" groups="base.group_multi_company" options="{'no_create': True}"/>
+                <field name="company_id" groups="base.group_multi_company" invisible="x_company_id"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_dms_file_form_company" model="ir.ui.view">
+        <field name="name">dms_file.form.company</field>
+        <field name="model">dms.file</field>
+        <field name="inherit_id" ref="dms.view_dms_file_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='settings']/group[1]" position="inside">
+                <field name="x_company_id" groups="base.group_multi_company" options="{'no_create': True}"/>
+                <field name="company_id" groups="base.group_multi_company" invisible="x_company_id"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
