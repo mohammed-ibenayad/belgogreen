@@ -14,9 +14,11 @@ Data counts come from the read-only audit run on staging.
 | industry_fsm, industry_fsm_sale, industry_fsm_report, industry_fsm_sale_report, industry_fsm_sms, worksheet | "Field Service" flag on 894 projects | bgg_custom_dev `x_is_sss_project`, `x_sss_sale_order_id`; SSS tasks are plain project tasks |
 | sale_commission | 14 plans, 64 users, 56 targets | Not moved: replaced by belgogreen_sales_commission (own plans) |
 
-Field Service, before uninstall:
-- **7 tasks** marked done in Field Service are still open in Community
-  terms: the uninstall script closes them (state "done") first.
+Field Service:
+- The tasks stay as they are (project, stage, status, assignees,
+  deadlines). 7 tasks are "done" in Field Service but not in their status
+  (5 SSS tasks in "SSS: À faire", 2 time-off tasks): checked, they are open
+  work and show as open after the uninstall, which is right. Nothing to do.
 - Dropped (not used): 2 worksheets and their template, planned start dates
   of 5,106 tasks (deadlines stay), "under warranty" (1 task), "allow
   material" (10 projects).
@@ -40,14 +42,24 @@ Field Service, before uninstall:
 | whatsapp, whatsapp_account, whatsapp_account_followup, whatsapp_calendar, whatsapp_payment, whatsapp_sale, marketing_automation_whatsapp | 2 Meta accounts, 17 templates, 30 messages; **8 active "Welcome call" automation rules** (rules 20-27 on sale orders: one WhatsApp template per company and payment term when an order is confirmed) | Wait for OCA `mail_gateway_whatsapp` 19.0 (OCA/mail PR #203, open). See open decisions. |
 | knowledge, website_knowledge | 227 articles, 83 members, 59 favourites | Later: OCA document_page |
 
-## 4. Uninstall script: to include
+## 4. Uninstall script
 
-- Close the 7 Field Service tasks done but still open.
+`tools/ee_exit/ee_uninstall.py`, run from the Odoo shell:
+
+    exec(open('/home/odoo/src/user/tools/ee_exit/ee_uninstall.py').read())
+    ee_check(env)                               # read-only report
+    ee_uninstall(env, confirm=env.cr.dbname)    # rehearsal copy only
+
+It covers:
+
+- Records the Enterprise modules created and that are still used (a
+  project with tasks, a stage, an activity type...) are protected: Odoo
+  would delete them (and empty the links to them) otherwise.
 - Before WhatsApp goes: save the Meta account details (app, business
   account and phone number ids) and the 17 template definitions (name,
   language, body, variables) to a file, to set up WhatsApp again on
   Community. The welcome-call rules (20-27) lose their WhatsApp action:
-  archive them.
+  they are archived.
 - Inactive automation rules 1-19 (old versions of what was ported to
   bgg_custom_dev): the 5 on appointment answers go with Appointments; the
   others can be deleted.
