@@ -505,7 +505,8 @@ def ee_uninstall(env, confirm=None, keep=(), go_live=False):
         else:
             raise UserError("Batch %s could not run. Stopped; run ee_uninstall again later." % label)
 
-    # 5: compare
+    # 5: retry what a lock kept Odoo from removing, then compare
+    _ee_cleanup(dbname)
     with _ee_env(dbname) as env:
         left = _ee_module_names(env, keep)
         with open(before_path, encoding='utf-8') as f:
@@ -525,3 +526,66 @@ def ee_uninstall(env, confirm=None, keep=(), go_live=False):
             json.dump(after, f, ensure_ascii=False, indent=2)
         _ee_print("\nEnterprise modules still installed: %s" % (', '.join(left) or 'none ✅'))
         _ee_print("All counts kept ✅" if ok else "SOME COUNTS WENT DOWN ❌: check before going further")
+
+
+def ee_blockers(env):
+    """Other connections with a transaction open for more than 30 s: they
+    keep the uninstall from dropping columns ("lock timeout")."""
+    env.cr.execute("""
+        SELECT pid, state, application_name, client_addr,
+               date_trunc('second', now() - xact_start), left(regexp_replace(query, '\\s+', ' ', 'g'), 100)
+          FROM pg_stat_activity
+         WHERE datname = current_database() AND pid != pg_backend_pid()
+           AND xact_start < now() - interval '30 seconds'
+         ORDER BY xact_start""")
+    rows = env.cr.fetchall()
+    for row in rows:
+        _ee_print("  pid %s  %-20s %-15s %-15s open for %s  %s" % row)
+    if not rows:
+        _ee_print("  none ✅")
+    env.cr.rollback()
+    return rows
+
+
+def ee_cleanup(env, lock_wait='60s'):
+    """Retry removing what the uninstalled Enterprise modules left (columns,
+    indexes, fields a lock kept Odoo from dropping), and let go of NOT NULL
+    on columns no field uses any more (they would block new records)."""
+    env.cr.rollback()
+    _ee_cleanup(env.cr.dbname, lock_wait)
+
+
+def _ee_cleanup(dbname, lock_wait='60s'):
+    with _ee_env(dbname) as env:
+        env.cr.execute("SET lock_timeout = %s", [lock_wait])
+        env.cr.execute("""
+            SELECT d.module, d.model, count(*) FROM ir_model_data d
+              JOIN ir_module_module m ON m.name = d.module
+             WHERE m.state = 'uninstalled' AND (m.license LIKE 'OEEL%%' OR m.name = ANY(%s))
+             GROUP BY 1, 2 ORDER BY 1, 2""", [list(EE_EXIT_EXTRA_MODULES)])
+        left = env.cr.fetchall()
+        _ee_print("\n=== LEFT BY THE UNINSTALLED MODULES: %s"
+                  % (', '.join('%s %s %s' % row for row in left) or 'nothing ✅'))
+        if left:
+            env['ir.model.data']._module_data_uninstall(sorted({row[0] for row in left}))
+            env.cr.execute("""
+                SELECT count(*) FROM ir_model_data d JOIN ir_module_module m ON m.name = d.module
+                 WHERE m.state = 'uninstalled' AND (m.license LIKE 'OEEL%%' OR m.name = ANY(%s))""",
+                           [list(EE_EXIT_EXTRA_MODULES)])
+            _ee_print("    after retry: %s left" % env.cr.fetchone()[0])
+
+        # columns without a field that still require a value
+        fixed = []
+        for model in env.registry.values():
+            if model._abstract or not model._auto or model._table_query:
+                continue
+            stored = {name for name, field in model._fields.items() if field.store and field.column_type}
+            env.cr.execute("""
+                SELECT column_name FROM information_schema.columns
+                 WHERE table_schema = 'public' AND table_name = %s AND is_nullable = 'NO' AND column_default IS NULL""",
+                           [model._table])
+            for (column,) in env.cr.fetchall():
+                if column not in stored and column != 'id':
+                    env.cr.execute('ALTER TABLE "%s" ALTER COLUMN "%s" DROP NOT NULL' % (model._table, column))
+                    fixed.append('%s.%s' % (model._table, column))
+        _ee_print("    leftover required columns made optional: %s" % (', '.join(fixed) or 'none ✅'))
