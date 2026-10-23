@@ -33,10 +33,12 @@ Both take keep=('knowledge',) to leave modules (and the Enterprise modules
 they need) installed.
 """
 
+import ast
 import collections
 import contextlib
 import json
 import os
+import re
 import time
 
 from odoo import api
@@ -123,6 +125,14 @@ EE_EXIT_SURVIVAL = [
 # emptied first. {table: (link column, other columns emptied with it)}
 EE_EXIT_KEEP_LINKED = {
     'calendar_event': ('res_model_id', ('res_id', 'res_model')),
+}
+
+# Enterprise fields replaced by bgg_custom_dev's own (same values, same
+# ids: bgg.rdv.type kept the appointment.type ids). Conditions of access
+# rules, filters, menus and automation rules using them are renamed.
+EE_EXIT_FIELD_RENAMES = {
+    'calendar.event': {'appointment_type_id': 'x_rdv_type_id', 'appointment_status': 'x_rdv_status'},
+    'project.project': {'is_fsm': 'x_is_sss_project'},
 }
 
 # Records of these models are not detailed (menus, views, actions, rights...).
@@ -418,6 +428,71 @@ def _ee_keep_user_rights(env, analysis):
     return changed
 
 
+def _ee_domain_paths(domain):
+    """Field paths of the conditions of a stored domain: the first item of
+    each (path, operator, value) of the domain list (values are not
+    looked at). [] when the text is not a plain domain list."""
+    try:
+        node = ast.parse(domain.strip(), mode='eval').body
+    except SyntaxError:
+        return []
+    if not isinstance(node, (ast.List, ast.Tuple)):
+        return []
+    return [elt.elts[0].value for elt in node.elts
+            if isinstance(elt, (ast.List, ast.Tuple)) and len(elt.elts) == 3
+            and isinstance(elt.elts[0], ast.Constant) and isinstance(elt.elts[0].value, str)]
+
+
+def _ee_domains(env):
+    """(label, record, field name, model, domain text) of the conditions
+    stored in the database: access rules, filters, menus, automation rules."""
+    rows = []
+    for Model, fname, model_of in (
+            ('ir.rule', 'domain_force', lambda r: r.model_id.model),
+            ('ir.filters', 'domain', lambda r: r.model_id),
+            ('ir.actions.act_window', 'domain', lambda r: r.res_model),
+            ('base.automation', 'filter_domain', lambda r: r.model_id.model),
+            ('base.automation', 'filter_pre_domain', lambda r: r.model_id.model)):
+        if Model not in env or fname not in env[Model]._fields:
+            continue
+        for rec in env[Model].with_context(active_test=False).search([(fname, '!=', False)]):
+            rows.append((Model, rec, fname, model_of(rec), rec[fname]))
+    return rows
+
+
+def _ee_fix_domains(env, dropped_fields=None, dry_run=False):
+    """Rename the replaced Enterprise fields in stored conditions, and list
+    the conditions still using a field that is (or will be) removed.
+    dropped_fields: {(model, field)} before the uninstall; None after it
+    (then a field missing from the model is reported)."""
+    renamed, broken = [], []
+    for Model, rec, fname, model, domain in _ee_domains(env):
+        renames = EE_EXIT_FIELD_RENAMES.get(model, {})
+        new = domain
+        for old_name in {p.split('.')[0] for p in _ee_domain_paths(domain)} & set(renames):
+            new = re.sub(r"""(['"])%s(?=['".])""" % re.escape(old_name), r'\g<1>' + renames[old_name], new)
+        if new != domain:
+            if not dry_run:
+                try:
+                    with env.cr.savepoint():
+                        rec.write({fname: new})
+                except Exception:  # noqa: BLE001 - still invalid (another removed field): written as is
+                    env.cr.execute('UPDATE "%s" SET "%s" = %%s WHERE id = %%s' % (rec._table, fname), [new, rec.id])
+                    rec.invalidate_recordset([fname])
+            renamed.append('%s %s %r' % (Model, rec.id, rec.display_name))
+        if model not in env:
+            continue
+        for path in _ee_domain_paths(new):
+            first = path.split('.')[0]
+            gone = ((model, first) in dropped_fields if dropped_fields is not None
+                    else first not in env[model]._fields)
+            if gone:
+                broken.append('%s %s %r on %s: %s' % (Model, rec.id, rec.display_name, model, first))
+    _ee_print("    conditions %s to our fields: %s" % ('to rename' if dry_run else 'renamed', ', '.join(renamed) or 'none'))
+    _ee_print("    conditions still using a removed field: %s" % ('; '.join(broken) or 'none ✅'))
+    return renamed, broken
+
+
 def _ee_batches(names):
     names = set(names)
     batches, placed = [], set()
@@ -471,6 +546,9 @@ def ee_check(env, keep=()):
         _ee_print("  %s.%s: %s rows (%s)" % (table, column, count, fate))
     if not analysis['model_links']:
         _ee_print("  none ✅")
+
+    _ee_print("\n=== CONDITIONS (ACCESS RULES, FILTERS, MENUS, AUTOMATIONS) ON REMOVED FIELDS")
+    _ee_fix_domains(env, analysis['dropped_fields'], dry_run=True)
 
     _ee_print("\n=== VALUES THAT DISAPPEAR FROM KEPT FIELDS")
     for model, name, value, count, ondelete in analysis['selections']:
@@ -576,6 +654,7 @@ def ee_uninstall(env, confirm=None, keep=(), go_live=False):
             with open(losses_path, 'w', encoding='utf-8') as f:
                 json.dump(_ee_expected_losses(env, analysis), f, ensure_ascii=False, indent=2)
         _ee_keep_user_rights(env, analysis)
+        _ee_fix_domains(env, analysis['dropped_fields'])
         protected = 0
         Data = env['ir.model.data']
         for model, info in analysis['records'].items():
@@ -708,6 +787,8 @@ def _ee_cleanup(dbname, lock_wait='60s'):
                 env.cr.execute("UPDATE ir_act_window SET view_mode = %s WHERE id = %s", [','.join(keep), action_id])
                 actions.append('%s (%s -> %s)' % (action_id, view_mode, ','.join(keep)))
         _ee_print("    actions with removed view types fixed: %s" % (', '.join(actions) or 'none ✅'))
+
+        _ee_fix_domains(env)
 
         # app icons in Studio's format ("icon class,colour,background", drawn
         # by the Enterprise home menu): Community expects "module,path" and
