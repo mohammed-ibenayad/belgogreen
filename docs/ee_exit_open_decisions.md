@@ -10,6 +10,12 @@ ready answer to give to Claude.
 | 1 | ☐ Open | Archive the identical duplicate files? | The conversion copied every Enterprise document. The same file sometimes exists twice in one folder (e.g. a task attachment that was also filed in Documents), so DMS shows it twice. | **Archive the copies:** same folder and same content (checksum); the oldest stays, the others are archived, not deleted (they can be restored). **Keep as is.** |
 | 2 | ☐ Open | Limit the "RH" folder to HR users? | The employee folders (with a "Contrat" / "Fiche de paie" sub-folder) are grouped under "RH". Each employee folder keeps the access it had in Enterprise (the users who had access there); "RH" itself is open to the users of those folders. | **Limit to HR:** give the users or Odoo group who may see RH. **Keep as is:** Enterprise access, folder by folder. |
 
+## WhatsApp welcome messages
+
+| # | Status | Question | Context | Options |
+|---|--------|----------|---------|---------|
+| 3 | ☐ Waiting (decided 2026-10-23: wait for OCA) | How to send the welcome WhatsApp on Community? | 8 active automation rules (20-27) send an approved WhatsApp template when a sale order is confirmed, one per company (Belgogreen, Naturisol) and payment term. They use Enterprise WhatsApp and stop when it is uninstalled. OCA `mail_gateway_whatsapp` is not released for 19.0: migration in OCA/mail PR #203 (open, not reviewed, template sending untested). | **Check again before go-live.** If released: install it and rebuild the 8 rules on it. If not: a small own module sending the templates through Meta's WhatsApp Cloud API (outbound only, same Meta account and templates), or the unreleased OCA branch. Until then, no automatic welcome message after go-live. |
+
 ## Notes
 
 - "My Company" (not an active company) still owns 5 Finance sub-folders
