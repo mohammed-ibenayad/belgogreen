@@ -45,8 +45,12 @@ from odoo.modules.registry import Registry
 from odoo.tools import mute_logger
 
 # Not under an Enterprise licence, but go with Enterprise: the bridge of
-# bgg_custom_dev, the one-off Documents conversion, the Studio customizations.
-EE_EXIT_EXTRA_MODULES = ('bgg_custom_dev_ee', 'bgg_documents_dms', 'studio_customization')
+# bgg_custom_dev, the one-off Documents conversion, the Studio customizations
+# and Enterprise add-ons.
+EE_EXIT_EXTRA_MODULES = ('bgg_custom_dev_ee', 'bgg_documents_dms', 'studio_customization',
+                         # Enterprise add-ons without the Enterprise licence key
+                         'ai_fields', 'ai_server_actions', 'web_studio_ai_fields',
+                         'spreadsheet_dashboard_marketing_automation')
 
 # Uninstall order. Each batch takes the modules depending on it with it;
 # the Enterprise modules in no batch go in a last one.
@@ -185,6 +189,26 @@ def _ee_survival_counts(env):
     return {label: _ee_count(env, table, condition) for label, table, condition in EE_EXIT_SURVIVAL}
 
 
+def _ee_expected_losses(env, analysis):
+    """{survival label: rows expected to go}: the unused records the modules
+    created (e.g. an empty "Field Service" project) and their messages."""
+    unused = [(model, info['records'] - info['used']) for model, info in analysis['records'].items()
+              if not info['technical']]
+    unused = [(model, recs) for model, recs in unused if recs]
+    losses = {}
+    for label, table, condition in EE_EXIT_SURVIVAL:
+        loss = 0
+        for model, recs in unused:
+            ids = env.cr.mogrify('%s', [tuple(recs.ids)]).decode()
+            if table == env[model]._table:
+                loss += _ee_count(env, table, '%sid IN %s' % ('(%s) AND ' % condition if condition else '', ids)) or 0
+            elif table == 'mail_message':
+                loss += _ee_count(env, table, '(%s) AND model = %s AND res_id IN %s' % (
+                    condition or 'TRUE', env.cr.mogrify('%s', [model]).decode(), ids)) or 0
+        losses[label] = loss
+    return losses
+
+
 def _ee_analyse(env, names):
     """What Odoo would delete with the modules `names`."""
     owned = _ee_owned_only(env, names)
@@ -200,29 +224,77 @@ def _ee_analyse(env, names):
             continue
         Model = env[model].with_context(active_test=False)
         recs = Model.browse(ids).exists()
-        if not recs:
-            continue
-        technical = model.startswith('ir.') or model in EE_EXIT_TECHNICAL or not Model._auto
-        used, refs = set(), []
-        if not technical:
-            env.cr.execute("""
-                SELECT cl.relname, a.attname, c.confdeltype
-                  FROM pg_constraint c
-                  JOIN pg_class cl ON cl.oid = c.conrelid
-                  JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = c.conkey[1]
-                 WHERE c.contype = 'f' AND c.confrelid = %s::regclass
-            """, [Model._table])
-            for table, column, deltype in env.cr.fetchall():
-                if table in dropped_tables or table.startswith('ir_'):
-                    continue
-                env.cr.execute('SELECT "%s", count(*) FROM "%s" WHERE "%s" = ANY(%%s) GROUP BY 1'
-                               % (column, table, column), [recs.ids])
+        if recs:
+            technical = model.startswith('ir.') or model in EE_EXIT_TECHNICAL or not Model._auto
+            records[model] = {'records': recs, 'technical': technical, 'used': recs.browse(), 'refs': []}
+
+    def foreign_keys(sql, table):
+        env.cr.execute("""
+            SELECT cl.relname, a.attname, cf.relname, c.confdeltype
+              FROM pg_constraint c
+              JOIN pg_class cl ON cl.oid = c.conrelid
+              JOIN pg_class cf ON cf.oid = c.confrelid
+              JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = c.conkey[1]
+             WHERE c.contype = 'f' AND %s = %%s::regclass""" % sql, [table])
+        return env.cr.fetchall()
+
+    has_id = {}
+    referenced_by = {}
+    for model, info in records.items():
+        if not info['technical']:
+            table = env[model]._table
+            referenced_by[model] = [fk for fk in foreign_keys('c.confrelid', table)
+                                    if fk[0] not in dropped_tables and not fk[0].startswith('ir_')]
+            for fk in referenced_by[model]:
+                if fk[0] not in has_id:
+                    env.cr.execute("SELECT 1 FROM pg_attribute WHERE attrelid = %s::regclass AND attname = 'id'",
+                                   ['"%s"' % fk[0]])
+                    has_id[fk[0]] = bool(env.cr.fetchone())
+    links = {table: foreign_keys('c.conrelid', table) for table, with_id in has_id.items() if not with_id}
+
+    # A record is in use when a row that survives the uninstall points to it;
+    # rows deleted with the modules do not count. Repeated, as a kept record
+    # can keep others.
+    deleting = {}
+    for __ in range(10):
+        for model, info in records.items():
+            deleting.setdefault(env[model]._table, set()).update(info['records'].ids)
+        for model, info in records.items():
+            deleting[env[model]._table] -= set(info['used'].ids)
+        changed = False
+        for model, info in records.items():
+            if info['technical']:
+                continue
+            used, refs = set(), []
+            for table, column, __, deltype in referenced_by[model]:
+                where, params = ['"%s" = ANY(%%s)' % column], [info['records'].ids]
+                if has_id[table]:
+                    where.append('NOT (id = ANY(%s))')
+                    params.append(list(deleting.get(table, ())))
+                else:
+                    # a many2many link removed with the record is not a use
+                    # (a stage of a deleted project, a tax of a deleted
+                    # product); one that blocks the deletion is
+                    if deltype not in ('r', 'a'):
+                        continue
+                    others = [(c, t) for __, c, t, __ in links[table] if c != column]
+                    if any(t in dropped_tables for __, t in others):
+                        continue
+                    for other_column, other_table in others:
+                        where.append('NOT ("%s" = ANY(%%s))' % other_column)
+                        params.append(list(deleting.get(other_table, ())))
+                env.cr.execute('SELECT "%s", count(*) FROM "%s" WHERE %s GROUP BY 1'
+                               % (column, table, ' AND '.join(where)), params)
                 rows = env.cr.fetchall()
                 if rows:
                     used.update(r[0] for r in rows)
                     action = {'c': 'deleted with it', 'n': 'emptied', 'r': 'blocks', 'a': 'blocks'}.get(deltype, deltype)
                     refs.append('%s.%s: %s rows (%s)' % (table, column, sum(r[1] for r in rows), action))
-        records[model] = {'records': recs, 'technical': technical, 'used': recs.browse(sorted(used)), 'refs': refs}
+            if used != set(info['used'].ids):
+                changed = True
+            info['used'], info['refs'] = info['records'].browse(sorted(used)), refs
+        if not changed:
+            break
 
     selections = []
     env.cr.execute("""SELECT f.model, f.name, s.value FROM ir_model_fields_selection s
@@ -304,9 +376,11 @@ def ee_check(env, keep=()):
         _ee_print("  WhatsApp: %s active automation rules send WhatsApp: %s" % (len(rules), rules.mapped('name')))
         _ee_print("            (ee_uninstall archives them and saves the templates)")
 
-    _ee_print("\n=== WHAT MUST SURVIVE (now)")
+    _ee_print("\n=== WHAT MUST SURVIVE (now, and what goes on purpose: the unused records above)")
+    losses = _ee_expected_losses(env, analysis)
     for label, count in _ee_survival_counts(env).items():
-        _ee_print("  %-75s %s" % (label, '-' if count is None else count))
+        _ee_print("  %-75s %s%s" % (label, '-' if count is None else count,
+                                     '   (-%s expected)' % losses[label] if losses.get(label) else ''))
     env.cr.rollback()
 
 
@@ -378,6 +452,10 @@ def ee_uninstall(env, confirm=None, keep=(), go_live=False):
             rules.active = False
             _ee_print("Archived %s WhatsApp automation rules: %s" % (len(rules), rules.mapped('name')))
         analysis = _ee_analyse(env, names)
+        losses_path = os.path.join(folder, 'expected_losses.json')
+        if not os.path.exists(losses_path):
+            with open(losses_path, 'w', encoding='utf-8') as f:
+                json.dump(_ee_expected_losses(env, analysis), f, ensure_ascii=False, indent=2)
         protected = 0
         Data = env['ir.model.data']
         for model, info in analysis['records'].items():
@@ -413,14 +491,17 @@ def ee_uninstall(env, confirm=None, keep=(), go_live=False):
         left = _ee_module_names(env, keep)
         with open(before_path, encoding='utf-8') as f:
             before = json.load(f)
+        with open(os.path.join(folder, 'expected_losses.json'), encoding='utf-8') as f:
+            losses = json.load(f)
         after = _ee_survival_counts(env)
         _ee_print("\n=== WHAT MUST SURVIVE: before -> after")
         ok = True
         for label, count in after.items():
-            old = before.get(label)
-            good = old is None or (count is not None and count >= old)
+            old, loss = before.get(label), losses.get(label) or 0
+            good = old is None or (count is not None and count >= old - loss)
             ok = ok and good
-            _ee_print("  %s %-75s %s -> %s" % ('✅' if good else '❌', label, old, count))
+            _ee_print("  %s %-75s %s -> %s%s" % ('✅' if good else '❌', label, old, count,
+                                               '   (-%s expected)' % loss if loss else ''))
         with open(os.path.join(folder, 'counts_after.json'), 'w', encoding='utf-8') as f:
             json.dump(after, f, ensure_ascii=False, indent=2)
         _ee_print("\nEnterprise modules still installed: %s" % (', '.join(left) or 'none ✅'))
