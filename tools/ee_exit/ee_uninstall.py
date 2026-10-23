@@ -238,57 +238,76 @@ def _ee_analyse(env, names):
              WHERE c.contype = 'f' AND %s = %%s::regclass""" % sql, [table])
         return env.cr.fetchall()
 
-    has_id = {}
-    referenced_by = {}
-    for model, info in records.items():
-        if not info['technical']:
-            table = env[model]._table
-            referenced_by[model] = [fk for fk in foreign_keys('c.confrelid', table)
-                                    if fk[0] not in dropped_tables and not fk[0].startswith('ir_')]
-            for fk in referenced_by[model]:
-                if fk[0] not in has_id:
-                    env.cr.execute("SELECT 1 FROM pg_attribute WHERE attrelid = %s::regclass AND attname = 'id'",
-                                   ['"%s"' % fk[0]])
-                    has_id[fk[0]] = bool(env.cr.fetchone())
-    links = {table: foreign_keys('c.conrelid', table) for table, with_id in has_id.items() if not with_id}
+    has_id_cache, fk_cache = {}, {}
 
-    # A record is in use when a row that survives the uninstall points to it;
-    # rows deleted with the modules do not count. Repeated, as a kept record
-    # can keep others.
-    deleting = {}
+    def has_id(table):
+        if table not in has_id_cache:
+            env.cr.execute("SELECT 1 FROM pg_attribute WHERE attrelid = %s::regclass AND attname = 'id'",
+                           ['"%s"' % table])
+            has_id_cache[table] = bool(env.cr.fetchone())
+        return has_id_cache[table]
+
+    def referencing(table):
+        """Foreign keys pointing to `table` from tables that stay."""
+        if table not in fk_cache:
+            fk_cache[table] = [fk for fk in foreign_keys('c.confrelid', table)
+                               if fk[0] not in dropped_tables and not fk[0].startswith('ir_')]
+        return fk_cache[table]
+
+    def doomed():
+        """{table: ids} deleted: the records not kept, and the rows deleted
+        with them (ON DELETE CASCADE, e.g. the lines of a report), and so on."""
+        dies = collections.defaultdict(set)
+        todo = []
+        for model, info in records.items():
+            table = env[model]._table
+            ids = set(info['records'].ids) - set(info['used'].ids)
+            dies[table] |= ids
+            todo.append((table, ids))
+        while todo:
+            table, ids = todo.pop()
+            for child, column, __, deltype in referencing(table):
+                if deltype != 'c' or not has_id(child):
+                    continue
+                env.cr.execute('SELECT id FROM "%s" WHERE "%s" = ANY(%%s)' % (child, column), [list(ids)])
+                new = {r[0] for r in env.cr.fetchall()} - dies[child]
+                if new:
+                    dies[child] |= new
+                    todo.append((child, new))
+        return dies
+
+    # A record is kept when a row that stays points to it and would be
+    # emptied (set null) or would block the deletion (restrict). Rows deleted
+    # with it (cascade) are not a use. Repeated, as a kept record keeps the
+    # rows below it.
     for __ in range(10):
-        for model, info in records.items():
-            deleting.setdefault(env[model]._table, set()).update(info['records'].ids)
-        for model, info in records.items():
-            deleting[env[model]._table] -= set(info['used'].ids)
+        dies = doomed()
         changed = False
         for model, info in records.items():
             if info['technical']:
                 continue
             used, refs = set(), []
-            for table, column, __, deltype in referenced_by[model]:
+            for table, column, __, deltype in referencing(env[model]._table):
+                if deltype == 'c':
+                    continue
                 where, params = ['"%s" = ANY(%%s)' % column], [info['records'].ids]
-                if has_id[table]:
+                if has_id(table):
                     where.append('NOT (id = ANY(%s))')
-                    params.append(list(deleting.get(table, ())))
+                    params.append(list(dies.get(table, ())))
                 else:
-                    # a many2many link removed with the record is not a use
-                    # (a stage of a deleted project, a tax of a deleted
-                    # product); one that blocks the deletion is
-                    if deltype not in ('r', 'a'):
-                        continue
-                    others = [(c, t) for __, c, t, __ in links[table] if c != column]
+                    # many2many link: the other side must stay
+                    others = [(c, t) for __, c, t, __ in foreign_keys('c.conrelid', table) if c != column]
                     if any(t in dropped_tables for __, t in others):
                         continue
                     for other_column, other_table in others:
                         where.append('NOT ("%s" = ANY(%%s))' % other_column)
-                        params.append(list(deleting.get(other_table, ())))
+                        params.append(list(dies.get(other_table, ())))
                 env.cr.execute('SELECT "%s", count(*) FROM "%s" WHERE %s GROUP BY 1'
                                % (column, table, ' AND '.join(where)), params)
                 rows = env.cr.fetchall()
                 if rows:
                     used.update(r[0] for r in rows)
-                    action = {'c': 'deleted with it', 'n': 'emptied', 'r': 'blocks', 'a': 'blocks'}.get(deltype, deltype)
+                    action = {'n': 'emptied', 'r': 'blocks', 'a': 'blocks'}.get(deltype, deltype)
                     refs.append('%s.%s: %s rows (%s)' % (table, column, sum(r[1] for r in rows), action))
             if used != set(info['used'].ids):
                 changed = True
