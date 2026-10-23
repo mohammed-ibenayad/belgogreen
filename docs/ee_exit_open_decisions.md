@@ -27,6 +27,7 @@ ready answer to give to Claude.
 | # | Status | Point | Context | Next step |
 |---|--------|-------|---------|-----------|
 | 5 | ☐ Later | 6 calendar events (RDVs with a type) lost in the rehearsal | They were linked to a record of an Enterprise model; Odoo deletes such events with the model. Lost on bsi-staging only (production still has them). The script now empties the link first and keeps the events (commit "keep calendar events linked to a removed model"). | Find which model on production (`SELECT m.model, count(*) FROM calendar_event e JOIN ir_model m ON m.id = e.res_model_id GROUP BY 1`), then confirm in a fresh rehearsal that "Calendar events" stays ✅. |
+| 6 | ☐ Later | Users who lost Internal User (e.g. the call centre users) | Their rights came through Enterprise groups deleted at uninstall (Odoo 19 gives Internal User through other groups). On bsi-staging: restored by hand (Internal User). The script now gives users directly the rights they would lose, and counts active internal users. | In a fresh rehearsal: "Internal users (active)" stays ✅; check a call centre user and a commercial keep their menus. |
 
 ## Notes
 
