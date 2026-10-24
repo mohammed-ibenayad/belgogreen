@@ -83,9 +83,7 @@ class BggBookingWizard(models.TransientModel):
                                 string='Les clients sont-ils bien les propriétaires du bien ?')
     spouse_name = fields.Char(string='Nom du conjoint')
     spouse_phone = fields.Char(string='Numéro de téléphone du conjoint')
-    # one need (drop-down) or several (checkboxes), as the type allows
-    need_id = fields.Many2one('bgg.rdv.need', string='Besoin', domain="[('id', 'in', allowed_need_ids)]")
-    need_ids = fields.Many2many('bgg.rdv.need', string='Besoins',
+    need_ids = fields.Many2many('bgg.rdv.need', string='Besoin',
                                 domain="[('id', 'in', allowed_need_ids)]")
     comments = fields.Text(string='Commentaires')
     on_behalf_id = fields.Many2one('res.partner', string='Rendez-vous pris à la place de',
@@ -154,8 +152,6 @@ class BggBookingWizard(models.TransientModel):
     @api.onchange('type_id')
     def _onchange_type_id(self):
         self.need_ids = self.need_ids & self.type_id.x_need_ids
-        if self.need_id not in self.type_id.x_need_ids:
-            self.need_id = False
         if self.combination_id not in self.type_id.combination_rel_ids.combination_id:
             self.combination_id = False
 
@@ -353,25 +349,17 @@ class BggBookingWizard(models.TransientModel):
         not: the call centre had to type a fake one)."""
         self.ensure_one()
         labels = self._fields
-        missing = [labels[name].string for name in ('phone', 'street', 'zip', 'city', 'country_id', 'is_owner')
+        missing = [labels[name].string for name in ('phone', 'street', 'zip', 'city', 'country_id', 'is_owner',
+                                                    'need_ids')
                    if not self[name]]
-        if not self._needs():
-            missing.append(labels['need_id'].string)
         if self.ask_solar_since and not self.solar_since:
             missing.append(labels['solar_since'].string)
         if not self.partner_id and not self.partner_name:
             missing.insert(0, labels['partner_name'].string)
         if missing:
             raise UserError(self.env._("À compléter avant de réserver :\n- %s", "\n- ".join(missing)))
-        if not self.need_multiple and len(self._needs()) > 1:
+        if not self.need_multiple and len(self.need_ids) > 1:
             raise UserError(self.env._("Un seul besoin pour ce type de rendez-vous."))
-
-    def _needs(self):
-        """The needs answered: the drop-down for the one-need types (else the
-        list, as filled in by code), the checkboxes for the others."""
-        if self.need_multiple:
-            return self.need_ids
-        return self.need_id or self.need_ids
 
     def _book(self):
         self.ensure_one()
@@ -389,7 +377,7 @@ class BggBookingWizard(models.TransientModel):
             'x_country_id': self.country_id.id,
             'x_solar_since': self.ask_solar_since and self.solar_since or False,
             'x_is_owner': self.is_owner,
-            'x_need_ids': [Command.set(self._needs().ids)],
+            'x_need_ids': [Command.set(self.need_ids.ids)],
             'x_spouse_name': self.spouse_name,
             'x_spouse_phone': self.spouse_phone,
             'x_sms_confirmation': self.ask_sms_confirmation and self.sms_confirmation,

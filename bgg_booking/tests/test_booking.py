@@ -165,7 +165,7 @@ class TestCallCenterBooking(TransactionCase):
 
     def test_new_client(self):
         wizard = self._wizard(phone='0490 11 22 33', solar_since='1 an')
-        wizard.need_id = self.battery  # one-need type: the drop-down
+        wizard.need_ids = self.battery
         self.assertFalse(wizard.partner_id)
         self._choose(wizard)
         with self.assertRaisesRegex(UserError, 'Nom complet'):

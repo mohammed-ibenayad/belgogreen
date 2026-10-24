@@ -91,10 +91,14 @@
                                 <field name="is_owner" widget="radio" required="state == 'details'"/>
                                 <field name="spouse_name"/>
                                 <field name="spouse_phone" widget="phone"/>
-                                <field name="need_id" options="{'no_create': True, 'no_open': True}"
-                                       invisible="need_multiple" required="state == 'details' and not need_multiple"/>
-                                <field name="need_ids" widget="many2many_checkboxes" string="Besoin"
-                                       invisible="not need_multiple" required="state == 'details' and need_multiple"/>
+                                <label for="need_ids"/>
+                                <div>
+                                    <field name="need_ids" widget="many2many_tags" options="{'no_create': True}"
+                                           required="state == 'details'"/>
+                                    <div class="text-muted small" invisible="need_multiple">
+                                        Un seul besoin pour ce type de rendez-vous.
+                                    </div>
+                                </div>
                                 <field name="comments"/>
                                 <field name="on_behalf_id" options="{'no_create': True}" invisible="not ask_on_behalf"/>
                                 <field name="sms_confirmation" invisible="not ask_sms_confirmation"/>
