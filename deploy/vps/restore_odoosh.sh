@@ -11,8 +11,9 @@
 # default http://localhost:8077), FORCE=1 to replace an existing database
 # without asking.
 #
-# Disk: the filestore is unzipped straight into the Odoo volume (no second
-# copy); the free space is checked first.
+# Disk: dump.sql is read straight from the zip and the filestore unzipped
+# straight into the Odoo volume (no extra copy); the free space is checked
+# first.
 set -euo pipefail
 
 ZIP=${1:?usage: restore_odoosh.sh <dump.zip> [ee_exit.tgz]}
@@ -42,8 +43,8 @@ read -r sql_bytes fs_bytes fs_files < <(unzip -l "$ZIP" | awk '
     END { printf "%d %d %d\n", sql, fs, n }')
 [ "$sql_bytes" -gt 0 ] || { echo "No dump.sql in $ZIP" >&2; exit 1; }
 [ "$fs_files" -gt 0 ] || echo "  WARNING: no filestore in the zip (dump made without filestore?)"
-# dump.sql while loading, the database (about twice the SQL), the filestore, 2 GB margin
-need=$((sql_bytes * 3 + fs_bytes + 2000000000))
+# the database (about twice the SQL, read straight from the zip), the filestore, 2 GB margin
+need=$((sql_bytes * 2 + fs_bytes + 2000000000))
 avail=$(df -B1 --output=avail "$BASE" | tail -1)
 echo "  dump.sql $(gb "$sql_bytes"), filestore $(gb "$fs_bytes") ($fs_files files)"
 echo "  needed about $(gb "$need"), free $(gb "$avail")"
@@ -66,9 +67,7 @@ fi
 dc exec -T db createdb -U "$POSTGRES_USER" -O "$POSTGRES_USER" -E UTF8 -T template0 "$DB"
 
 echo "== 3/7 Load the database (several minutes)"
-unzip -q "$ZIP" dump.sql -d "$WORK"
-psql_db -d "$DB" -q -o /dev/null < "$WORK/dump.sql" 2> "$WORK/load_errors.log" || true
-rm -f "$WORK/dump.sql"
+unzip -p "$ZIP" dump.sql | psql_db -d "$DB" -q -o /dev/null 2> "$WORK/load_errors.log" || true
 errors=$(grep -c 'ERROR' "$WORK/load_errors.log" || true)
 if [ "$errors" != 0 ]; then
     echo "  $errors error(s) while loading (often harmless: roles or extensions of Odoo.sh):"
