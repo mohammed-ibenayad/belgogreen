@@ -169,8 +169,11 @@ class BggBookingWizard(models.TransientModel):
         tz = self._booking_tz()
         range_start = tz.localize(datetime.datetime.combine(first_day, datetime.time.min))
         range_end = range_start + datetime.timedelta(days=days)
-        Booking = self.env['resource.booking']
-        combinations = self.combination_id or self.type_id._get_combinations_priorized()
+        # With all rights, as the check made when the booking is saved: the
+        # call centre does not see all the commercials' events (e.g. RDV
+        # types hidden from it) but must not book over them.
+        Booking = self.env['resource.booking'].sudo()
+        combinations = (self.combination_id or self.type_id._get_combinations_priorized()).sudo()
         slots = []
         for combination in combinations:
             booking = Booking.new({

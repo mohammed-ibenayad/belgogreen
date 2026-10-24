@@ -197,6 +197,24 @@ class TestCallCenterBooking(TransactionCase):
         wizard = self._search(self._wizard())
         self.assertEqual(self._slots_local(wizard), ['09:00', '11:00'])
 
+    def test_busy_with_an_event_the_call_center_cannot_see(self):
+        """An RDV hidden from the call centre by an access rule still makes
+        the commercial busy (the check at saving sees it)."""
+        hidden_type = self.env['bgg.rdv.type'].create({'name': 'Type caché (test)'})
+        self.env['ir.rule'].create({
+            'name': 'Call center : types cachés (test)', 'model_id': self.env['ir.model']._get_id('calendar.event'),
+            'domain_force': "[('x_rdv_type_id', '!=', %s)] if user.id == %s else []" % (hidden_type.id, self.call_center.id),
+        })
+        event = self.env['calendar.event'].create({
+            'name': 'RDV caché', 'user_id': self.commercial.id, 'x_rdv_type_id': hidden_type.id,
+            'partner_ids': [Command.set(self.commercial.partner_id.ids)],
+            'start': datetime.datetime(2027, 3, 1, 9, 0), 'stop': datetime.datetime(2027, 3, 1, 10, 0),
+        })
+        self.assertFalse(self.env['calendar.event'].with_user(self.call_center).search([('id', '=', event.id)]))
+        wizard = self._search(self._wizard(solar_since='1 an', need_ids=self.panel))
+        self.assertEqual(self._slots_local(wizard), ['09:00', '11:00'], "10:00 is taken by the hidden RDV")
+        self.assertTrue(self._book(wizard, 0))
+
     def test_closed_day_and_next_free_day(self):
         wizard = self._search(self._wizard())
         self.assertEqual(wizard.date, DAY)
