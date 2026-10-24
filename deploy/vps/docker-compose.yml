@@ -1,0 +1,68 @@
+# BelGoGreen on Odoo 19 Community + OCA.
+# Same layout as the other instances in /opt: Odoo and its own PostgreSQL,
+# ports on 127.0.0.1 only (nginx in front), config and addons read-only.
+# Copied to /opt/odoo-belgogreen by setup.sh.
+services:
+  db:
+    image: postgres:16
+    container_name: odoo-belgogreen-db
+    restart: unless-stopped
+    command: >
+      postgres -c shared_buffers=512MB -c effective_cache_size=1536MB
+               -c work_mem=16MB -c maintenance_work_mem=256MB
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - odoo_db_data:/var/lib/postgresql/data/pgdata
+    shm_size: 256mb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 1536m
+
+  odoo:
+    # odoo:19.0 + the Python libraries of our modules (Dockerfile)
+    build: .
+    image: odoo-belgogreen:19.0
+    container_name: odoo-belgogreen
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8077:8069"
+      - "127.0.0.1:8078:8072"
+    environment:
+      HOST: db
+      USER: ${POSTGRES_USER}
+      PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./config:/etc/odoo:ro
+      - ./addons:/mnt/extra-addons:ro
+      - odoo_web_data:/var/lib/odoo
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          memory: 3g
+
+volumes:
+  odoo_db_data:
+  odoo_web_data:

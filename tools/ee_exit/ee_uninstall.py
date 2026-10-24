@@ -1016,6 +1016,9 @@ def ee_final_check(env):
     enterprise_code = [m.name for m in installed if '/enterprise/' in (get_module_path(m.name, display_warning=False) or '')]
     rows.append(_ee_zero('Installed modules from the Enterprise folder', len(enterprise_code),
                          hint=', '.join(enterprise_code)))
+    no_code = [m.name for m in installed if not get_module_path(m.name, display_warning=False)]
+    rows.append(_ee_zero('Installed modules whose code is not on this server', len(no_code),
+                         hint=', '.join(no_code)))
     env.cr.execute("""SELECT count(*) FROM ir_model_data d JOIN ir_module_module m ON m.name = d.module
                        WHERE m.state = 'uninstalled' AND (m.license LIKE 'OEEL%%' OR m.name = ANY(%s))""",
                    [list(EE_EXIT_EXTRA_MODULES)])
