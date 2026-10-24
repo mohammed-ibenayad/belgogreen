@@ -145,6 +145,7 @@ EE_EXIT_KEEP_LINKED = {
 EE_EXIT_FIELD_RENAMES = {
     'calendar.event': {'appointment_type_id': 'x_rdv_type_id', 'appointment_status': 'x_rdv_status'},
     'project.project': {'is_fsm': 'x_is_sss_project'},
+    'project.task': {'is_fsm': 'project_id.x_is_sss_project'},
 }
 
 # Records of these models are not detailed (menus, views, actions, rights...).
@@ -1046,7 +1047,10 @@ def ee_final_check(env):
                          hint=', '.join(no_type.mapped('login')[:10])))
     ok &= _ee_report("SCREENS AND USERS", rows)
     _ee_print("  conditions on removed fields:")
-    _ee_fix_domains(env, dry_run=True)
+    to_rename, broken = _ee_fix_domains(env, dry_run=True)
+    ok &= _ee_report("CONDITIONS", [
+        _ee_zero('Conditions still naming a replaced Enterprise field', len(to_rename), hint='run ee_cleanup(env)'),
+        _ee_zero('Conditions on a removed field', len(broken), hint='fix by hand (Settings > Technical)')])
 
     rows = []
     if 'resource.booking.type' in env:
