@@ -2,6 +2,8 @@
 
 import datetime
 
+from dateutil.relativedelta import relativedelta
+
 from odoo import Command, models
 from odoo.exceptions import UserError
 from odoo.tests import tagged
@@ -233,6 +235,29 @@ class TestCallCenterBooking(TransactionCase):
         # booking managers see all the types
         manager_wizard = self.env['bgg.booking.wizard'].create({})
         self.assertIn(self.isolation, manager_wizard.allowed_type_ids)
+
+    def test_month_calendar(self):
+        """The calendar gets the number of free times of each day of the
+        month; another month is computed when the arrows change it."""
+        wizard = self._search(self._wizard())
+        self.assertEqual(wizard.month, DAY.replace(day=1))
+        days = wizard.day_availability['days']
+        mondays = [(DAY + datetime.timedelta(days=7 * week)).isoformat() for week in range(5)
+                   if (DAY + datetime.timedelta(days=7 * week)).month == DAY.month]
+        self.assertEqual(sorted(days), mondays, "open on Mondays only")
+        self.assertEqual(days[DAY.isoformat()], 3)
+        # the commercial has an RDV: one time less that day
+        self._book(self._wizard(solar_since='1 an', need_ids=self.panel), 0)
+        wizard.day_availability = False
+        wizard._show_month(DAY)
+        self.assertEqual(wizard.day_availability['days'][DAY.isoformat()], 2)
+        # next month
+        wizard.month = DAY + relativedelta(months=1)
+        wizard._onchange_month()
+        self.assertEqual(wizard.day_availability['month'], (DAY + relativedelta(months=1)).replace(day=1).isoformat())
+        self.assertTrue(all(datetime.date.fromisoformat(d).weekday() == 0 for d in wizard.day_availability['days']))
+        # a slot shows its commercial when all the commercials are listed
+        self.assertEqual(wizard.slot_ids[:1].commercial_label, self.combination.display_name)
 
     def test_closed_day_and_next_free_day(self):
         wizard = self._search(self._wizard())

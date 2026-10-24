@@ -4,6 +4,7 @@ import datetime
 
 import babel.dates
 import pytz
+from dateutil.relativedelta import relativedelta
 
 from odoo import Command, api, fields, models
 from odoo.exceptions import UserError
@@ -61,9 +62,13 @@ class BggBookingWizard(models.TransientModel):
     date = fields.Date(string='Jour',
                        default=lambda self: fields.Date.context_today(self) + datetime.timedelta(days=1))
     slot_ids = fields.One2many('bgg.booking.wizard.slot', 'wizard_id', string='Heures libres')
-    start = fields.Datetime(string='Début du RDV', readonly=True)
-    slot_combination_id = fields.Many2one('resource.booking.combination', string='Commercial du RDV',
-                                          readonly=True)
+    # the month shown by the calendar, and its free times per day:
+    # {'month': 'YYYY-MM-01', 'days': {'YYYY-MM-DD': number of free times}}
+    month = fields.Date(string='Mois affiché')
+    day_availability = fields.Json(string='Disponibilités du mois')
+    # the chosen time (set by the time buttons of the form)
+    start = fields.Datetime(string='Début du RDV')
+    slot_combination_id = fields.Many2one('resource.booking.combination', string='Commercial du RDV')
     start_label = fields.Char(string='Date et heure', compute='_compute_start_label')
     date_label = fields.Char(compute='_compute_date_label')
 
@@ -208,9 +213,32 @@ class BggBookingWizard(models.TransientModel):
         if self.state == 'slot' and self.type_id and self.date:
             self._show_day(self.date)
 
+    @api.onchange('month')
+    def _onchange_month(self):
+        if self.state == 'slot' and self.type_id and self.month:
+            self._show_month(self.month)
+
+    def _show_month(self, month):
+        """The number of free times of each day of `month` (from today on),
+        for the calendar."""
+        first = month.replace(day=1)
+        if (self.day_availability or {}).get('month') == first.isoformat():
+            self.month = first
+            return
+        start = max(first, fields.Date.context_today(self))
+        end = first + relativedelta(months=1)
+        days = {}
+        if start < end:
+            for slot_start, __ in self._available_slots(start, (end - start).days):
+                key = self._local_day(slot_start).isoformat()
+                days[key] = days.get(key, 0) + 1
+        self.month = first
+        self.day_availability = {'month': first.isoformat(), 'days': days}
+
     def _show_day(self, day):
-        """The free times of `day`."""
+        """The free times of `day` (and its month in the calendar)."""
         self.date = day
+        self._show_month(day)
         self.slot_ids = [Command.clear()] + [
             Command.create({'start': start, 'combination_id': combination.id})
             for start, combination in self._available_slots(day)]
@@ -258,6 +286,7 @@ class BggBookingWizard(models.TransientModel):
         return self._goto_slots()
 
     def _goto_slots(self):
+        self.day_availability = False
         self._show_next_free_day(max(self.date or fields.Date.context_today(self), fields.Date.context_today(self)))
         self.state = 'slot'
         return self._reopen()
@@ -285,6 +314,15 @@ class BggBookingWizard(models.TransientModel):
     def _choose_slot(self, slot):
         self.ensure_one()
         self.write({'start': slot.start, 'slot_combination_id': slot.combination_id.id, 'state': 'details'})
+        return self._reopen()
+
+    def action_details(self):
+        """To the details, once a time is chosen (the time buttons of the
+        form set it)."""
+        self.ensure_one()
+        if not self.start or not self.slot_combination_id:
+            raise UserError(self.env._("Choisissez d'abord une heure."))
+        self.state = 'details'
         return self._reopen()
 
     def action_back(self):
@@ -395,6 +433,13 @@ class BggBookingWizardSlot(models.TransientModel):
     start = fields.Datetime(string='Début', required=True)
     combination_id = fields.Many2one('resource.booking.combination', string='Commercial', required=True)
     time_label = fields.Char(string='Heure', compute='_compute_time_label')
+    commercial_label = fields.Char(string='Nom du commercial', compute='_compute_commercial_label')
+
+    @api.depends('combination_id', 'wizard_id.combination_id')
+    def _compute_commercial_label(self):
+        """The commercial under the time, when all their times are shown."""
+        for slot in self:
+            slot.commercial_label = '' if slot.wizard_id.combination_id else slot.combination_id.display_name
 
     @api.depends('start')
     def _compute_time_label(self):

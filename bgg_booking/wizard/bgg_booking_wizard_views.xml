@@ -36,39 +36,38 @@
                             string="Voir toutes les disponibilités" icon="fa-arrow-right"/>
                 </div>
 
-                <!-- 3. Date & time -->
-                <div invisible="state != 'slot'">
-                    <h3>Choisissez le jour et l'heure</h3>
-                    <group>
-                        <group>
-                            <field name="type_id" readonly="1"/>
-                            <field name="combination_id" readonly="1" string="Commercial"
-                                   placeholder="Tous les commerciaux"/>
-                        </group>
-                        <group>
-                            <field name="date" options="{'min_date': 'today'}"/>
-                        </group>
-                    </group>
-                    <div class="d-flex gap-2 mb-3">
-                        <button name="action_previous_day" type="object" class="btn-secondary"
-                                string="Jour précédent" icon="fa-chevron-left"/>
-                        <button name="action_next_day" type="object" class="btn-secondary"
-                                string="Jour suivant" icon="fa-chevron-right"/>
-                        <button name="action_next_free_day" type="object" class="btn-secondary"
-                                string="Prochain jour disponible" icon="fa-forward"/>
+                <!-- 3. Date & time: the month calendar, the free times of the
+                     chosen day, the RDV (as the Appointments booking page) -->
+                <div class="row g-4" invisible="state != 'slot'">
+                    <div class="col-lg-5">
+                        <h3>Choisissez une date et une heure</h3>
+                        <field name="month" invisible="1"/>
+                        <field name="day_availability" invisible="1"/>
+                        <field name="date" widget="bgg_booking_month_calendar" nolabel="1" class="w-100"/>
                     </div>
-                    <h4 class="mb-2"><field name="date_label" readonly="1"/></h4>
-                    <div class="alert alert-info" role="status" invisible="slot_ids">
-                        Aucune heure libre ce jour-là : choisissez un autre jour.
+                    <div class="col-lg-4">
+                        <div class="text-muted mt-2"><field name="date_label" readonly="1"/></div>
+                        <h4 class="mb-3">Choisissez une heure</h4>
+                        <div class="alert alert-info" role="status" invisible="slot_ids">
+                            Aucune heure libre ce jour-là : choisissez un autre jour.
+                        </div>
+                        <field name="start" invisible="1"/>
+                        <field name="slot_combination_id" invisible="1"/>
+                        <field name="slot_ids" widget="bgg_booking_slot_buttons" invisible="not slot_ids" readonly="1" nolabel="1"
+                               class="w-100"/>
                     </div>
-                    <field name="slot_ids" invisible="not slot_ids" readonly="1" nolabel="1">
-                        <list create="0" delete="0">
-                            <field name="time_label" string="Heure"/>
-                            <field name="combination_id" string="Commercial" column_invisible="parent.combination_id"/>
-                            <button name="action_choose" type="object" string="Choisir" icon="fa-check"
-                                    class="btn-primary"/>
-                        </list>
-                    </field>
+                    <div class="col-lg-3 border-start">
+                        <h4 class="mt-2"><field name="type_id" readonly="1" options="{'no_open': True}"/></h4>
+                        <div class="text-muted small text-uppercase mb-2">Détails</div>
+                        <div class="d-flex flex-column gap-2">
+                            <span><i class="fa fa-clock-o me-2 text-muted" aria-hidden="true"/><field name="duration" widget="float_time" class="d-inline"/> heure(s)</span>
+                            <span><i class="fa fa-user me-2 text-muted" aria-hidden="true"/>
+                                <field name="combination_id" readonly="1" options="{'no_open': True}" class="d-inline"
+                                       invisible="not combination_id"/>
+                                <span invisible="combination_id">Tous les commerciaux</span>
+                            </span>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- 4. Details -->
@@ -108,7 +107,7 @@
                             <h3>Rendez-vous</h3>
                             <group>
                                 <field name="type_id" readonly="1" string="Type"/>
-                                <field name="slot_combination_id" string="Commercial"/>
+                                <field name="slot_combination_id" string="Commercial" readonly="1" options="{'no_open': True}"/>
                                 <field name="start_label"/>
                                 <field name="duration" widget="float_time"/>
                             </group>
@@ -124,7 +123,7 @@
                     <group>
                         <field name="meeting_id" readonly="1"/>
                         <field name="type_id" readonly="1" string="Type"/>
-                        <field name="slot_combination_id" string="Commercial"/>
+                        <field name="slot_combination_id" string="Commercial" readonly="1" options="{'no_open': True}"/>
                         <field name="start_label"/>
                         <field name="partner_id" readonly="1" string="Client"/>
                     </group>

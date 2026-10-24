@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen - Prise de RDV call center',
-    'version': '19.0.1.2.0',
+    'version': '19.0.1.3.0',
     'category': 'Customizations',
     'summary': 'Call-centre appointment booking on OCA Resource Booking (replaces Enterprise Appointments)',
     'description': """
@@ -13,8 +13,8 @@
 
         - "Prise de RDV" form, in the steps of the Appointments booking pages
           the call centre used: RDV type, commercial (or all their
-          availabilities), day and time (free times of the day, next free
-          day), the client's details and the questionnaire of the type in the
+          availabilities), day and time (month calendar of the free days,
+          then the free times of the day as buttons), the client's details and the questionnaire of the type in the
           same order (client found by phone or created; besoin - one or
           several -, propriétaires, panneaux depuis, conjoint, commentaires,
           RDV pris à la place de, confirmation SMS), then booked.
@@ -63,6 +63,11 @@
         'wizard/bgg_booking_wizard_views.xml',
         'views/menu_views.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'bgg_booking/static/src/month_calendar/*',
+        ],
+    },
     'post_init_hook': 'post_init',
     'installable': True,
     'application': False,
