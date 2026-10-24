@@ -10,6 +10,9 @@
 # Environment: DB (default belgogreen), BASE_URL (e.g. https://odoo.example.com,
 # default http://localhost:8077), FORCE=1 to replace an existing database
 # without asking.
+#
+# Disk: the filestore is unzipped straight into the Odoo volume (no second
+# copy); the free space is checked first.
 set -euo pipefail
 
 ZIP=${1:?usage: restore_odoosh.sh <dump.zip> [ee_exit.tgz]}
@@ -27,18 +30,27 @@ dc() { docker compose "$@"; }
 psql_db() { dc exec -T db psql -U "$POSTGRES_USER" "$@"; }
 # a one-off Odoo container on the instance's volumes and config
 odoo_run() { dc run --rm --no-deps -T "$@"; }
+gb() { awk -v b="$1" 'BEGIN { printf "%.1f GB", b / 1e9 }'; }
 
 WORK=$(mktemp -d "$BASE/restore/work.XXXXXX")
 trap 'rm -rf "$WORK"' EXIT
 
-echo "== 1/7 Unzip $ZIP"
-unzip -q "$ZIP" -d "$WORK/dump"
-[ -f "$WORK/dump/dump.sql" ] || { echo "No dump.sql in $ZIP" >&2; exit 1; }
-[ -d "$WORK/dump/filestore" ] || echo "WARNING: no filestore in the zip (dump made without filestore?)"
-if [ -n "$EE_TGZ" ]; then
-    mkdir -p "$WORK/ee" && tar xzf "$EE_TGZ" -C "$WORK/ee"
+echo "== 1/7 Check the dump and the disk"
+read -r sql_bytes fs_bytes fs_files < <(unzip -l "$ZIP" | awk '
+    $4 == "dump.sql" { sql = $1 }
+    $4 ~ /^filestore\/./ && $1 > 0 { fs += $1; n++ }
+    END { printf "%d %d %d\n", sql, fs, n }')
+[ "$sql_bytes" -gt 0 ] || { echo "No dump.sql in $ZIP" >&2; exit 1; }
+[ "$fs_files" -gt 0 ] || echo "  WARNING: no filestore in the zip (dump made without filestore?)"
+# dump.sql while loading, the database (about twice the SQL), the filestore, 2 GB margin
+need=$((sql_bytes * 3 + fs_bytes + 2000000000))
+avail=$(df -B1 --output=avail "$BASE" | tail -1)
+echo "  dump.sql $(gb "$sql_bytes"), filestore $(gb "$fs_bytes") ($fs_files files)"
+echo "  needed about $(gb "$need"), free $(gb "$avail")"
+if [ "$need" -gt "$avail" ]; then
+    echo "Not enough free space: free some (old images: docker image prune) and run again." >&2
+    exit 1
 fi
-chmod -R a+rX "$WORK"    # read by the odoo user of the container
 
 echo "== 2/7 Database server"
 dc up -d db
@@ -54,7 +66,9 @@ fi
 dc exec -T db createdb -U "$POSTGRES_USER" -O "$POSTGRES_USER" -E UTF8 -T template0 "$DB"
 
 echo "== 3/7 Load the database (several minutes)"
-psql_db -d "$DB" -q -o /dev/null < "$WORK/dump/dump.sql" 2> "$WORK/load_errors.log" || true
+unzip -q "$ZIP" dump.sql -d "$WORK"
+psql_db -d "$DB" -q -o /dev/null < "$WORK/dump.sql" 2> "$WORK/load_errors.log" || true
+rm -f "$WORK/dump.sql"
 errors=$(grep -c 'ERROR' "$WORK/load_errors.log" || true)
 if [ "$errors" != 0 ]; then
     echo "  $errors error(s) while loading (often harmless: roles or extensions of Odoo.sh):"
@@ -64,18 +78,26 @@ fi
 modules=$(psql_db -d "$DB" -tAc "SELECT count(*) FROM ir_module_module WHERE state = 'installed'")
 echo "  $modules modules installed in the dump"
 
-echo "== 4/7 Filestore"
-odoo_run -v "$WORK:/restore:ro" --entrypoint bash odoo -c "
-    set -e
-    rm -rf /var/lib/odoo/filestore/$DB && mkdir -p /var/lib/odoo/filestore
-    if [ -d /restore/dump/filestore ]; then cp -r /restore/dump/filestore /var/lib/odoo/filestore/$DB; fi
-    echo \"  \$(find /var/lib/odoo/filestore/$DB -type f 2>/dev/null | wc -l) files\"
-    if [ -d /restore/ee/ee_exit ]; then
-        src=\$(ls /restore/ee/ee_exit | head -1)
-        rm -rf /var/lib/odoo/ee_exit/$DB && mkdir -p /var/lib/odoo/ee_exit
-        cp -r /restore/ee/ee_exit/\$src /var/lib/odoo/ee_exit/$DB
-        echo \"  counts of the Enterprise exit: \$(ls /var/lib/odoo/ee_exit/$DB | tr '\n' ' ')\"
-    fi"
+echo "== 4/7 Filestore (straight into the Odoo volume)"
+dc create odoo >/dev/null 2>&1    # creates the volume the first time
+volume=$(docker volume inspect -f '{{.Mountpoint}}' "$(basename "$BASE")_odoo_web_data")
+owner=$(odoo_run --entrypoint stat odoo -c '%u:%g' /var/lib/odoo)    # the odoo user of the image
+rm -rf "$volume/filestore/$DB" "$volume/.restore"
+mkdir -p "$volume/filestore" "$volume/.restore"
+if [ "$fs_files" -gt 0 ]; then
+    unzip -q "$ZIP" 'filestore/*' -d "$volume/.restore"
+    mv "$volume/.restore/filestore" "$volume/filestore/$DB"
+fi
+rm -rf "$volume/.restore"
+if [ -n "$EE_TGZ" ]; then
+    mkdir -p "$WORK/ee" && tar xzf "$EE_TGZ" -C "$WORK/ee"
+    src=$(ls "$WORK/ee/ee_exit" | head -1)
+    rm -rf "$volume/ee_exit/$DB" && mkdir -p "$volume/ee_exit"
+    cp -r "$WORK/ee/ee_exit/$src" "$volume/ee_exit/$DB"
+    echo "  counts of the Enterprise exit: $(ls "$volume/ee_exit/$DB" | tr '\n' ' ')"
+fi
+chown -R "$owner" "$volume/filestore" "$volume/ee_exit" 2>/dev/null || chown -R "$owner" "$volume/filestore"
+echo "  $(find "$volume/filestore/$DB" -type f 2>/dev/null | wc -l) files, $(du -sh "$volume/filestore/$DB" 2>/dev/null | cut -f1)"
 
 echo "== 5/7 Settings for this server"
 psql_db -d "$DB" -q <<SQL
@@ -105,3 +127,4 @@ PY
 dc up -d odoo
 echo
 echo "Odoo started: http://127.0.0.1:8077 on the server (SSH tunnel: ssh -L 8077:127.0.0.1:8077 <server>)"
+echo "Once it is checked, the zip can go to free $(gb "$(stat -c %s "$ZIP")"): rm $ZIP"
