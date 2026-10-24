@@ -33,6 +33,13 @@ class ResourceBookingType(models.Model):
         string='Question « pris à la place de »',
         help="Types call center : agent pour qui le RDV est pris.",
     )
+    x_group_ids = fields.Many2many(
+        'res.groups', 'bgg_booking_type_group_rel', 'type_id', 'group_id',
+        string='Réservable par',
+        help="Groupes qui voient ce type dans « Prise de RDV » (vide : tous). "
+             "Types call center : « Call Center » ; types par commercial : « Commercial ». "
+             "Les responsables des réservations voient tous les types.",
+    )
     x_create_opportunity = fields.Boolean(
         string='Créer une opportunité',
         default=True,

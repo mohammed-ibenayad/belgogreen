@@ -28,6 +28,9 @@ BOOKING_TYPES = {
                       'multiple': True, 'solar': False, 'sms': True, 'on_behalf': False},
 }
 BOOKING_DURATION = 2.0
+# Who books each type in "Prise de RDV" (as the Appointments pages showed
+# the call centre its CNT types only): code suffix -> role (found by name).
+BOOKING_TYPE_ROLES = {'-CNT': 'Call Center', '-COM': 'Commercial'}
 
 
 def link_booking_groups(env):
@@ -109,6 +112,22 @@ def setup_booking_types(env):
         _logger.info("bgg_booking: booking type '%s' created with %s commercial(s)", rdv_type.name, len(commercials))
 
 
+def set_booking_type_roles(env):
+    """"Réservable par" of the study types without one: the call centre for
+    the CNT types, the commercials for the COM types."""
+    types = env['resource.booking.type'].with_context(active_test=False).search(
+        [('x_rdv_type_id.code', '!=', False), ('x_group_ids', '=', False)])
+    for booking_type in types:
+        for suffix, name in BOOKING_TYPE_ROLES.items():
+            if booking_type.x_rdv_type_id.code.endswith(suffix):
+                group = env['calendar.event']._find_group_by_name(name)
+                if group:
+                    booking_type.x_group_ids = group
+                else:
+                    _logger.warning("bgg_booking: group '%s' not found, set 'Réservable par' of '%s' by hand",
+                                    name, booking_type.name)
+
+
 def share_booking_records(env):
     """The booking types, their calendar and the commercials' resources are
     shared by all companies (the call centre books for AMSS and Natur'Isol):
@@ -125,3 +144,4 @@ def post_init(env):
     link_booking_groups(env)
     setup_booking_types(env)
     share_booking_records(env)
+    set_booking_type_roles(env)

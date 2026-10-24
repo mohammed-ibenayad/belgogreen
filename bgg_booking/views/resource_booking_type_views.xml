@@ -8,6 +8,7 @@
             <group name="event_defaults" position="after">
                 <group name="bgg_rdv" string="Prise de RDV (call center)">
                     <field name="x_rdv_type_id" options="{'no_create': True}"/>
+                    <field name="x_group_ids" widget="many2many_tags" options="{'no_create': True}"/>
                     <field name="x_create_opportunity"/>
                     <field name="x_need_ids" widget="many2many_tags" options="{'no_create': True}"/>
                     <field name="x_need_multiple"/>

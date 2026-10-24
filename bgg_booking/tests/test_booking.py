@@ -7,7 +7,8 @@ from odoo.exceptions import UserError
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
-from odoo.addons.bgg_booking.hooks import BOOKING_CALENDAR_NAME, setup_booking_types, share_booking_records
+from odoo.addons.bgg_booking.hooks import (BOOKING_CALENDAR_NAME, set_booking_type_roles, setup_booking_types,
+                                           share_booking_records)
 
 # A Monday far enough in the future: no booking deadline involved.
 DAY = datetime.date(2027, 3, 1)
@@ -215,6 +216,23 @@ class TestCallCenterBooking(TransactionCase):
         self.assertEqual(self._slots_local(wizard), ['09:00', '11:00'], "10:00 is taken by the hidden RDV")
         self.assertTrue(self._book(wizard, 0))
 
+    def test_types_booked_by_role(self):
+        """The call centre sees only the types it books ("Réservable par")."""
+        role = self.env['res.groups'].create({'name': 'Call Center (test)'})
+        other_role = self.env['res.groups'].create({'name': 'Commercial (test)'})
+        self.call_center.group_ids = [Command.link(role.id)]
+        self.energy.x_group_ids = role
+        self.isolation.x_group_ids = other_role
+        wizard = self._wizard()
+        self.assertIn(self.energy, wizard.allowed_type_ids)
+        self.assertNotIn(self.isolation, wizard.allowed_type_ids)
+        wizard.type_id = self.isolation
+        with self.assertRaisesRegex(UserError, 'pas réservable par vous'):
+            wizard.action_choose_type()
+        # booking managers see all the types
+        manager_wizard = self.env['bgg.booking.wizard'].create({})
+        self.assertIn(self.isolation, manager_wizard.allowed_type_ids)
+
     def test_closed_day_and_next_free_day(self):
         wizard = self._search(self._wizard())
         self.assertEqual(wizard.date, DAY)
@@ -282,6 +300,21 @@ class TestBookingSetup(TransactionCase):
 
         setup_booking_types(self.env)
         self.assertEqual(self.env['resource.booking.type'].search_count([('x_rdv_type_id', '=', rdv_type.id)]), 1)
+
+    def test_roles_of_the_study_types(self):
+        roles = {name: self.env['calendar.event']._find_group_by_name(name)
+                 or self.env['res.groups'].create({'name': name}) for name in ('Call Center', 'Commercial')}
+        RdvType = self.env['bgg.rdv.type']
+        types = {}
+        for code in ('APT-ENERG-CNT', 'APT-ENERG-COM'):
+            rdv_type = RdvType.search([('code', '=', code)]) or RdvType.create({'name': code, 'code': code})
+            btype = self.env['resource.booking.type'].search([('x_rdv_type_id', '=', rdv_type.id)], limit=1) \
+                or self.env['resource.booking.type'].create({'name': code, 'x_rdv_type_id': rdv_type.id})
+            btype.x_group_ids = False
+            types[code] = btype
+        set_booking_type_roles(self.env)
+        self.assertEqual(types['APT-ENERG-CNT'].x_group_ids, roles['Call Center'])
+        self.assertEqual(types['APT-ENERG-COM'].x_group_ids, roles['Commercial'])
 
     def test_types_shared_by_companies(self):
         """The call centre books for every company: types, calendar and

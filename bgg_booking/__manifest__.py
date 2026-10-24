@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen - Prise de RDV call center',
-    'version': '19.0.1.1.0',
+    'version': '19.0.1.2.0',
     'category': 'Customizations',
     'summary': 'Call-centre appointment booking on OCA Resource Booking (replaces Enterprise Appointments)',
     'description': """
@@ -20,6 +20,10 @@
           RDV pris à la place de, confirmation SMS), then booked.
         - Booking types, their calendar and the commercials' resources are
           shared by all companies.
+        - "Réservable par" on each booking type: the call centre sees the
+          call-centre types (CNT), the commercials the "par commercial" ones
+          (COM), as the Appointments pages showed them; booking managers see
+          all.
         - A CRM opportunity is created for each RDV and linked to it (sale
           order attribution, organizer of the RDV).
         - Each booking type is linked to a bgg_custom_dev RDV type. The

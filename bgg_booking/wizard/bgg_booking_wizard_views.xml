@@ -12,6 +12,7 @@
                 </header>
                 <field name="allowed_need_ids" invisible="1"/>
                 <field name="allowed_combination_ids" invisible="1"/>
+                <field name="allowed_type_ids" invisible="1"/>
                 <field name="need_multiple" invisible="1"/>
                 <field name="ask_solar_since" invisible="1"/>
                 <field name="ask_sms_confirmation" invisible="1"/>

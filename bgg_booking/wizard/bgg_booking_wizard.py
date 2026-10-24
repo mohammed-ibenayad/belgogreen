@@ -41,8 +41,9 @@ class BggBookingWizard(models.TransientModel):
     state = fields.Selection(STEPS, string='Étape', default='type', required=True)
 
     # 1. Type
+    allowed_type_ids = fields.Many2many('resource.booking.type', compute='_compute_allowed_type_ids')
     type_id = fields.Many2one('resource.booking.type', string='Type de RDV',
-                              domain="[('x_rdv_type_id', '!=', False)]")
+                              domain="[('id', 'in', allowed_type_ids)]")
     allowed_need_ids = fields.Many2many(related='type_id.x_need_ids')
     need_multiple = fields.Boolean(related='type_id.x_need_multiple')
     ask_solar_since = fields.Boolean(related='type_id.x_ask_solar_since')
@@ -108,6 +109,17 @@ class BggBookingWizard(models.TransientModel):
         for wizard in self:
             wizard.date_label = wizard.date and babel.dates.format_date(
                 wizard.date, "EEEE d MMMM yyyy", locale=wizard._locale()).capitalize() or False
+
+    @api.depends_context('uid')
+    def _compute_allowed_type_ids(self):
+        """The types the user books ("Réservable par"); all for the booking
+        managers."""
+        types = self.env['resource.booking.type'].search([('x_rdv_type_id', '!=', False)])
+        if not self.env.user.has_group('resource_booking.group_manager'):
+            groups = self.env.user.all_group_ids
+            types = types.filtered(lambda t: not t.x_group_ids or t.x_group_ids & groups)
+        for wizard in self:
+            wizard.allowed_type_ids = types
 
     @api.depends('type_id')
     def _compute_allowed_combination_ids(self):
@@ -227,6 +239,8 @@ class BggBookingWizard(models.TransientModel):
         self.ensure_one()
         if not self.type_id:
             raise UserError(self.env._("Choisissez le type de rendez-vous."))
+        if self.type_id not in self.allowed_type_ids:
+            raise UserError(self.env._("Ce type de rendez-vous n'est pas réservable par vous."))
         if not self.type_id.combination_rel_ids:
             raise UserError(self.env._("Aucun commercial pour ce type de rendez-vous."))
         self.state = 'operator'
