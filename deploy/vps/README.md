@@ -10,25 +10,38 @@ and its own PostgreSQL 16, ports on 127.0.0.1 behind nginx, certbot):
   .env                    database user and password (generated)
   config/odoo.conf        generated from odoo.conf.template (master password generated)
   addons/belgogreen/      this repository (git clone), mounted read-only
-  backups/                nightly database dumps + filestore mirror
+  backups/                nightly database dumps
   restore/                where to upload the Odoo.sh dumps
 ```
 
 Volumes: `odoo-belgogreen_odoo_db_data` (database), `odoo-belgogreen_odoo_web_data`
-(filestore, sessions). Database name: `belgogreen`.
+(filestore, sessions). Database name: `belgogreen`. Test address:
+https://bgg.qadrin.com.
+
+## Sizes (bsi-staging dump, October 2026)
+
+| | |
+|---|---|
+| Odoo.sh dump (zip with filestore) | 27 GB; upload about 50 min at 10 MB/s |
+| `dump.sql` in it | 1.0 GB → database about 2–3 GB |
+| Filestore unzipped | 31.2 GB, 47,541 files |
+| Docker image | about 4 GB |
+| Disk for the restore | zip + filestore + database: about 62 GB at the peak, 35 GB once the zip is deleted |
+| Restore time | about 10 minutes (database 1 min, filestore 5 min, update and checks) |
 
 ## 0. Server
 
-- Memory: the server has 7.8 GB, 2 vCPU and **no swap**, shared with the
-  other instances. BelGoGreen is limited to 3 GB (Odoo) + 1.5 GB
-  (PostgreSQL). Add swap so a peak does not kill a container:
+- Memory: the server has 7.8 GB, 2 vCPU, shared with the other instances.
+  BelGoGreen is limited to 3 GB (Odoo) + 1.5 GB (PostgreSQL). Add swap so a
+  peak does not kill a container:
 
   ```bash
   fallocate -l 4G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
   echo '/swapfile none swap sw 0 0' >> /etc/fstab
   ```
 
-- Tools: `apt install -y git unzip rsync` (code, restore, backups).
+- Tools: `apt install -y git unzip rsync tmux` (code, restore, backups, long
+  commands that survive a dropped SSH session).
 
 ## 1. Code
 
@@ -73,46 +86,109 @@ bash /opt/odoo-belgogreen/addons/belgogreen/deploy/vps/setup.sh
 ```
 
 Creates the layout, generates `.env` and `config/odoo.conf`, builds the
-image (a few minutes the first time), starts the database. Safe to run
-again (keeps `.env` and `odoo.conf`).
+image (2–3 minutes the first time), starts the database. Safe to run
+again (keeps `.env` and `odoo.conf`). "No services to build" is a harmless
+message of Docker Compose.
 
 ## 3. Restore the Odoo.sh dump
 
-From your computer, upload the dump (zip **with filestore**) and the
-`ee_exit.tgz` of the Odoo.sh branch:
+Odoo.sh → the branch → Backups → **Create Backup**, then download the new
+row of that branch (not the `main` rows: production) as a **neutralized**
+dump **with filestore**.
+
+From your computer, upload it under a fixed name (and, if you have it, the
+`ee_exit.tgz` of the Odoo.sh branch: the counts saved before the uninstall):
 
 ```bash
-scp belgogreen-bsi-staging-*.zip ee_exit.tgz root@<server>:/opt/odoo-belgogreen/restore/
+scp belgogreen-bsi-staging-*.zip root@<server>:/opt/odoo-belgogreen/restore/staging.zip
 ```
 
-On the server:
+On the server, check it arrived whole and the free space (see Sizes):
 
 ```bash
 cd /opt/odoo-belgogreen
-BASE_URL=https://bgg.qadrin.com bash addons/belgogreen/deploy/vps/restore_odoosh.sh restore/<dump>.zip restore/ee_exit.tgz
+ls -lh restore/staging.zip
+unzip -l restore/staging.zip dump.sql
+df -h /
 ```
 
-It loads the database, copies the filestore, sets the URL and a new
-database identity, updates our modules (this server's code), runs
-`ee_cleanup` and `ee_final_check` of the Enterprise exit (see
-`docs/ee_exit_runbook.md`, Phase 6), then starts Odoo. Read the final
-check: it must end with "Ready for the dump ✅" (⚠️ lines are known points; the wording comes from the Odoo.sh steps).
+Then, inside `tmux new -s restore`:
 
-Options: `BASE_URL`, the address used in emails and links
-(`https://bgg.qadrin.com` for now),
-`FORCE=1` to replace the database without asking. Running it again
-replaces the database with the dump.
+```bash
+BASE_URL=https://bgg.qadrin.com bash addons/belgogreen/deploy/vps/restore_odoosh.sh restore/staging.zip 2>&1 | tee restore/restore.log
+```
 
-## 4. Look at it before the domain
+(Add `restore/ee_exit.tgz` after the zip if you have it.) It:
 
-Through an SSH tunnel from your computer:
+1. checks the dump and the free space, and stops before changing anything
+   if it does not fit;
+2. replaces the database (asks first; `FORCE=1` does not ask);
+3. loads `dump.sql` straight from the zip;
+4. unzips the filestore straight into the Odoo volume;
+5. sets the address (`BASE_URL`), the reports' address and a new database
+   identity;
+6. updates our modules (this server's code);
+7. runs `ee_cleanup` and `ee_final_check` of the Enterprise exit
+   (`docs/ee_exit_runbook.md`, Phase 6), then starts Odoo.
+
+Known messages:
+- `ERROR: extension "vector" is not available` (2 lines while loading):
+  harmless, the extension of the Enterprise AI modules (uninstalled).
+- `(ERROR/3) Unexpected indentation` during the update: the text of a
+  module description, harmless.
+- Final check: "Counts before the uninstall: not found" without
+  `ee_exit.tgz`, "Database IS neutralized" for a staging copy.
+
+The final check must end with "Ready for the dump ✅".
+
+## 4. After the restore
+
+Look at it before the domain, through an SSH tunnel from your computer:
 
 ```bash
 ssh -L 8077:127.0.0.1:8077 root@<server>
 ```
 
-Then open http://localhost:8077 and log in with your Odoo.sh login and
-password. (Without nginx the "real-time connection lost" note is normal.)
+then http://localhost:8077 (the "real-time connection lost" note is normal
+without nginx). Open a few DMS documents and invoice PDFs: they prove the
+filestore. Then free the zip:
+
+```bash
+rm /opt/odoo-belgogreen/restore/staging.zip
+```
+
+**Apps screen at login** (instead of Discuss): `web_responsive`'s "Redirect
+to Home", per user (Settings → Users → Preferences; hidden when a Home
+Action is set). For all internal users without a Home Action:
+
+```bash
+cd /opt/odoo-belgogreen
+docker compose run --rm --no-deps -T odoo odoo shell -d belgogreen --no-http --log-level=error <<'PY'
+users = env['res.users'].with_context(active_test=False).search([('share', '=', False), ('action_id', '=', False)])
+users.write({'is_redirect_home': True})
+env.cr.commit()
+print("Apps screen at login: %s users" % len(users))
+PY
+```
+
+**An administrator** (the rights of the main administrator, all companies,
+a generated password printed once):
+
+```bash
+docker compose run --rm --no-deps -T odoo odoo shell -d belgogreen --no-http --log-level=error <<'PY'
+import secrets
+login, password = 'someone@example.com', secrets.token_urlsafe(12)
+Users = env['res.users'].with_context(active_test=False, no_reset_password=True)
+admin = env.ref('base.user_admin')
+vals = {'name': 'Someone', 'login': login, 'email': login, 'password': password, 'active': True,
+        'group_ids': [(6, 0, admin.group_ids.ids)],
+        'company_ids': [(6, 0, env['res.company'].search([]).ids)], 'company_id': admin.company_id.id}
+user = Users.search([('login', '=', login)], limit=1)
+user.write(vals) if user else Users.create(vals)
+env.cr.commit()
+print("PASSWORD:", password)
+PY
+```
 
 ## 5. Domain and HTTPS (bgg.qadrin.com)
 
@@ -142,39 +218,47 @@ echo '30 2 * * * root bash /opt/odoo-belgogreen/addons/belgogreen/deploy/vps/bac
     > /etc/cron.d/odoo-belgogreen-backup
 ```
 
-Every night: a database dump (kept 14 days) and the filestore mirrored in
-`backups/`. They are on the same disk as the server: also copy `backups/`
-off the server (Hostinger backups / snapshots, or rclone to cloud storage).
+Every night a database dump in `backups/` (kept 14 days, a few hundred MB
+each). The **filestore** (31 GB) is not copied to the server's own disk: it
+would take the space the server does not have and not survive a disk
+failure. Copy it off the server: set `FILESTORE_BACKUP_DIR` in the cron line
+to a mounted remote (rclone mount, another disk) and the script mirrors it
+there, or use Hostinger's VPS backups. Where: open decision #9.
 
-Restore a backup: `pg_restore` the dump into a new database and copy
-`backups/filestore/belgogreen` into the volume's `filestore/`.
+Restore a backup: `pg_restore` the dump into a new database and copy the
+filestore back into the volume's `filestore/belgogreen`.
 
 ## 7. Updating the code
 
 ```bash
 cd /opt/odoo-belgogreen/addons/belgogreen && git pull
 cd /opt/odoo-belgogreen
-docker compose run --rm odoo odoo -d belgogreen -u <modules changed> --stop-after-init --no-http
+docker compose run --rm --no-deps -T odoo odoo -d belgogreen -u <modules changed> --stop-after-init --no-http --log-level=warn
 docker compose restart odoo
 ```
 
-A new Odoo 19 image (security fixes): `docker compose build --pull && docker compose up -d`.
+Then Ctrl+F5 in the browser. A new Odoo 19 image (security fixes):
+`docker compose build --pull && docker compose up -d`.
+
+Do not restart the Docker service for BelGoGreen (Ubuntu suggests it after
+updates): it stops every instance on the server.
 
 ## Everyday commands
 
 ```bash
 cd /opt/odoo-belgogreen
-docker compose ps                     # state
+docker compose ps                       # state
 docker compose logs -f --tail 100 odoo  # Odoo log
 docker compose restart odoo
-docker compose run --rm odoo odoo shell -d belgogreen --no-http   # Odoo shell
+docker compose run --rm --no-deps odoo odoo shell -d belgogreen --no-http   # Odoo shell
 ```
 
 ## At go-live
 
-- Restore the final dump the same way (production copy, see the open
-  decision #8 in `docs/ee_exit_open_decisions.md`).
+- Restore the final dump the same way (production copy, see open decision
+  #8 in `docs/ee_exit_open_decisions.md`), with `ee_exit.tgz` this time.
 - A neutralized dump (staging copy): switch the outgoing mail server
   (Settings → Technical → Outgoing Mail Servers) and the scheduled jobs
   back on.
 - Outgoing email: configure the company's SMTP server.
+- Server size: see open decision #10.

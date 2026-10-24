@@ -29,12 +29,19 @@ ready answer to give to Claude.
 | 7 | ☐ Open | Do customers book themselves (public booking page)? | Enterprise Appointments has public pages (`/appointment/...`) anyone can open from the website, an ad or a signature. OCA `resource_booking` has none: a booking is started by a staff member, the customer then picks the time through a personal link. "Prise de RDV" covers the call centre and the commercials. | **Not used:** nothing to do. **Used:** a public page in bgg_booking (e.g. `/rendez-vous/<type>`) with the same free times, calendar and questionnaire, reCAPTCHA, duplicate check, choice of the public types; to build before go-live so the links keep working. |
 | 8 | ☐ Open | Where to run the final pass at go-live? | `ee_uninstall` refuses a database that is not neutralized unless `go_live=True`. A staging copy is neutralized (no emails, no scheduled jobs). | **Staging copy:** production stays untouched as a fallback; on the Community server, switch the outgoing mail server and scheduled jobs back on after the restore. **Production itself** after a manual Odoo.sh backup (fallback: that backup), with `go_live=True`. |
 
+## Community server
+
+| # | Status | Question | Context | Options |
+|---|--------|----------|---------|---------|
+| 9 | ☐ Open | Where does the off-server backup of the filestore go? | The filestore is 31 GB (47,541 files, October 2026). `backup.sh` keeps nightly database dumps on the server; a copy of the filestore on the same disk would need another 31 GB the server does not have and would not survive a disk failure. None of the other instances on the server is backed up either. | **Hostinger VPS backups / snapshots** (whole server, nothing to set up). **Cloud storage** (Google Drive, S3, Backblaze B2) through rclone: `FILESTORE_BACKUP_DIR` in the cron line, and the database dumps copied there too. |
+| 10 | ☐ Open | Which server for production? | Test server: 2 vCPU, 7.8 GB RAM (+4 GB swap), 96 GB disk, shared with three other Odoo instances and other apps. BelGoGreen alone: 34 GB of data (31 GB of files, growing), about 60 internal users, heavy dashboards. After the restore and the zip removed: about 35 GB free. | **Bigger plan** for this server (more disk and vCPU). **A dedicated VPS** for BelGoGreen (e.g. 4 vCPU, 16 GB, 200 GB), same Docker setup. |
+
 ## Uninstall rehearsal on bsi-staging (2026-10-23)
 
 | # | Status | Point | Context | Next step |
 |---|--------|-------|---------|-----------|
 | 5 | ☐ Later | 6 calendar events (RDVs with a type) lost in the rehearsal | They were linked to a record of an Enterprise model; Odoo deletes such events with the model. Lost on bsi-staging only (production still has them). The script now empties the link first and keeps the events (commit "keep calendar events linked to a removed model"). | Find which model on production (`SELECT m.model, count(*) FROM calendar_event e JOIN ir_model m ON m.id = e.res_model_id GROUP BY 1`), then confirm in a fresh rehearsal that "Calendar events" stays ✅. |
-| 6 | ☐ Later | Users who lost Internal User (e.g. the call centre users) | Their rights came through Enterprise groups deleted at uninstall (Odoo 19 gives Internal User through other groups). On bsi-staging: restored by hand (Internal User). The script now gives users directly the rights they would lose, and counts active internal users. | In a fresh rehearsal: "Internal users (active)" stays ✅; check a call centre user and a commercial keep their menus. |
+| 6 | ☐ Later | Users who lost Internal User (e.g. the call centre users) | Their rights came through Enterprise groups deleted at uninstall (Odoo 19 gives Internal User through other groups). On bsi-staging: restored by hand (Internal User). The script now gives users directly the rights they would lose, and counts active internal users. | In a fresh rehearsal: "Internal users (active)" stays ✅; check a call centre user and a commercial keep their menus. (Restore of 2026-10-24 on the server: all 44 active users can log in, after the fix by hand on staging.) |
 
 ## Notes
 
