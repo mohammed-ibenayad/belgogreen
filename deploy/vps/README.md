@@ -28,11 +28,22 @@ Volumes: `odoo-belgogreen_odoo_db_data` (database), `odoo-belgogreen_odoo_web_da
   echo '/swapfile none swap sw 0 0' >> /etc/fstab
   ```
 
-- Tools: `apt install -y unzip rsync` (restore and backups).
+- Tools: `apt install -y git unzip rsync` (code, restore, backups).
 
 ## 1. Code
 
-The repository is private: give the server read access with a deploy key.
+**Public repository** (HTTPS, nothing to set up):
+
+```bash
+mkdir -p /opt/odoo-belgogreen/addons
+git clone -b bgg_ee_exit https://github.com/mohammed-ibenayad/belgogreen.git /opt/odoo-belgogreen/addons/belgogreen
+```
+
+A clone made while the repository is public keeps working once it is made
+private again, except `git pull`: then switch to a deploy key (below) and
+`git -C /opt/odoo-belgogreen/addons/belgogreen remote set-url origin github-belgogreen:mohammed-ibenayad/belgogreen.git`.
+
+**Private repository**: give the server read access with a deploy key.
 
 ```bash
 ssh-keygen -t ed25519 -N '' -f ~/.ssh/belgogreen_deploy -C "vps belgogreen (read only)"
@@ -78,7 +89,7 @@ On the server:
 
 ```bash
 cd /opt/odoo-belgogreen
-bash addons/belgogreen/deploy/vps/restore_odoosh.sh restore/<dump>.zip restore/ee_exit.tgz
+BASE_URL=https://bgg.qadrin.com bash addons/belgogreen/deploy/vps/restore_odoosh.sh restore/<dump>.zip restore/ee_exit.tgz
 ```
 
 It loads the database, copies the filestore, sets the URL and a new
@@ -87,7 +98,8 @@ database identity, updates our modules (this server's code), runs
 `docs/ee_exit_runbook.md`, Phase 6), then starts Odoo. Read the final
 check: it must end with "Ready for the dump ✅" (⚠️ lines are known points; the wording comes from the Odoo.sh steps).
 
-Options: `BASE_URL=https://<domain>` (once the domain is set),
+Options: `BASE_URL`, the address used in emails and links
+(`https://bgg.qadrin.com` for now),
 `FORCE=1` to replace the database without asking. Running it again
 replaces the database with the dump.
 
@@ -102,18 +114,25 @@ ssh -L 8077:127.0.0.1:8077 root@<server>
 Then open http://localhost:8077 and log in with your Odoo.sh login and
 password. (Without nginx the "real-time connection lost" note is normal.)
 
-## 5. Domain and HTTPS
+## 5. Domain and HTTPS (bgg.qadrin.com)
 
-DNS: an A record for the domain to the server's IP. Then:
+DNS of qadrin.com: an **A record** `bgg` → the server's IP (as for
+`three60group` and `odoo`). `dig +short bgg.qadrin.com` must answer the
+server's IP before certbot. Then:
 
 ```bash
-sed 's/__DOMAIN__/<domain>/' /opt/odoo-belgogreen/addons/belgogreen/deploy/vps/nginx-belgogreen.conf \
+sed 's/__DOMAIN__/bgg.qadrin.com/' /opt/odoo-belgogreen/addons/belgogreen/deploy/vps/nginx-belgogreen.conf \
     > /etc/nginx/sites-available/belgogreen
 ln -s /etc/nginx/sites-available/belgogreen /etc/nginx/sites-enabled/belgogreen
 nginx -t && systemctl reload nginx
-certbot --nginx -d <domain>
+certbot --nginx -d bgg.qadrin.com
+```
+
+Restored with another `BASE_URL`? Set the address:
+
+```bash
 docker exec odoo-belgogreen-db psql -U odoo_belgogreen -d belgogreen -c \
-    "UPDATE ir_config_parameter SET value = 'https://<domain>' WHERE key = 'web.base.url'"
+    "UPDATE ir_config_parameter SET value = 'https://bgg.qadrin.com' WHERE key = 'web.base.url'"
 ```
 
 ## 6. Backups
