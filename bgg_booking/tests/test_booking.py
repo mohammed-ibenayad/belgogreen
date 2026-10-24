@@ -2,12 +2,12 @@
 
 import datetime
 
-from odoo import Command
+from odoo import Command, models
 from odoo.exceptions import UserError
-from odoo.tests import Form, tagged
+from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
-from odoo.addons.bgg_booking.hooks import BOOKING_CALENDAR_NAME, setup_booking_types
+from odoo.addons.bgg_booking.hooks import BOOKING_CALENDAR_NAME, setup_booking_types, share_booking_records
 
 # A Monday far enough in the future: no booking deadline involved.
 DAY = datetime.date(2027, 3, 1)
@@ -65,30 +65,54 @@ class TestCallCenterBooking(TransactionCase):
     def _wizard(self, booking_type=None, **values):
         values = dict({'phone': '0470123456', 'street': 'Rue Neuve 1', 'zip': '1000', 'city': 'Bruxelles',
                        'is_owner': 'yes'}, **values)
-        form = Form(self.env['bgg.booking.wizard'].with_user(self.call_center))
-        form.type_id = booking_type or self.energy
-        form.date = DAY
-        for name, value in values.items():
-            setattr(form, name, value)
-        return form.save()
+        need_ids = values.pop('need_ids', None)
+        wizard = self.env['bgg.booking.wizard'].with_user(self.call_center).create(dict(
+            {'type_id': (booking_type or self.energy).id, 'date': DAY}, **{
+                name: value.id if isinstance(value, models.BaseModel) else value for name, value in values.items()}))
+        if need_ids:
+            wizard.need_ids = need_ids
+        # what the form does when the phone is typed
+        wizard._onchange_phone()
+        wizard._onchange_partner_id()
+        return wizard
 
     def _slots_local(self, wizard):
-        return [(s.start + datetime.timedelta(hours=1)).strftime('%H:%M') for s in wizard.slot_ids]
+        return wizard.slot_ids.mapped('time_label')
+
+    def _search(self, wizard, combination=None):
+        """Steps 1-2: the type, then a commercial or all availabilities."""
+        if wizard.state == 'type':
+            wizard.action_choose_type()
+        if combination:
+            wizard.combination_id = combination
+            wizard.action_choose_operator()
+        else:
+            wizard.action_all_availabilities()
+        return wizard
+
+    def _choose(self, wizard, index=0):
+        """Step 3: a time (steps 1-2 first if needed)."""
+        if wizard.state in ('type', 'operator'):
+            self._search(wizard)
+        wizard.slot_ids[index].action_choose()
+        return wizard
 
     def _book(self, wizard, index=0):
-        wizard.action_search_slots()
-        return self.env['calendar.event'].browse(wizard.slot_ids[index].action_book()['res_id'])
+        self._choose(wizard, index).action_confirm()
+        return wizard.meeting_id
 
     def test_book_energy_study_existing_client(self):
         wizard = self._wizard(phone='0470/123456', solar_since='3 ans', spouse_name='Paul Dupont',
                               spouse_phone='0470 99 88 77', on_behalf_id=self.agency, comments='Rappeler le soir')
         self.assertEqual(wizard.partner_id, self.client, "client found by the last digits of the phone")
         wizard.need_ids = self.panel
-        wizard.action_search_slots()
+        self._search(wizard)
+        self.assertEqual(wizard.state, 'slot')
         self.assertEqual(self._slots_local(wizard), ['09:00', '10:00', '11:00'])
         self.assertEqual(wizard.slot_ids.combination_id, self.combination)
 
-        meeting = self.env['calendar.event'].browse(wizard.slot_ids[1].action_book()['res_id'])
+        meeting = self._book(wizard, 1)
+        self.assertEqual(wizard.state, 'done')
         booking = meeting.resource_booking_ids
         self.assertEqual(booking.create_uid, self.call_center)
         self.assertEqual(meeting.user_id, self.commercial, "organizer = booked commercial, as with Appointments")
@@ -116,7 +140,7 @@ class TestCallCenterBooking(TransactionCase):
         self.assertEqual(order.x_studio_organisateur_du_rendez_vous, self.call_center)
         self.assertEqual(order.x_studio_rendez_vous_pris_la_place_de, self.agency)
         # the slot is taken
-        wizard.action_search_slots()
+        wizard.action_show_day()
         self.assertEqual(self._slots_local(wizard), ['09:00', '11:00'])
 
     def test_isolation_study_several_needs_and_sms(self):
@@ -128,24 +152,26 @@ class TestCallCenterBooking(TransactionCase):
         self.assertNotIn('panneaux solaires', meeting.x_rdv_answers)
 
     def test_questionnaire_checks(self):
-        wizard = self._wizard(street=False, is_owner=False)
-        wizard.action_search_slots()
+        wizard = self._choose(self._wizard(street=False, is_owner=False))
+        self.assertEqual(wizard.state, 'details')
         with self.assertRaisesRegex(UserError, 'Adresse(.|\n)*propriétaires(.|\n)*Besoin(.|\n)*panneaux solaires'):
-            wizard.slot_ids[0].action_book()
+            wizard.action_confirm()
         wizard.write({'street': 'Rue Neuve 1', 'is_owner': 'no', 'solar_since': '2 ans',
                       'need_ids': [Command.set((self.panel | self.battery).ids)]})
         with self.assertRaisesRegex(UserError, 'Un seul besoin'):
-            wizard.slot_ids[0].action_book()
+            wizard.action_confirm()
+        self.assertEqual(wizard.state, 'details')
 
     def test_new_client(self):
         wizard = self._wizard(phone='0490 11 22 33', solar_since='1 an')
         wizard.need_ids = self.battery
         self.assertFalse(wizard.partner_id)
-        wizard.action_search_slots()
-        with self.assertRaisesRegex(UserError, 'Nom du client'):
-            wizard.slot_ids[0].action_book()
+        self._choose(wizard)
+        with self.assertRaisesRegex(UserError, 'Nom complet'):
+            wizard.action_confirm()
         wizard.partner_name = 'Nouveau Client'
-        meeting = self.env['calendar.event'].browse(wizard.slot_ids[0].action_book()['res_id'])
+        wizard.action_confirm()
+        meeting = wizard.meeting_id
         client = meeting.resource_booking_ids.partner_id
         self.assertEqual((client.name, client.phone, client.street), ('Nouveau Client', '0490 11 22 33', 'Rue Neuve 1'))
         self.assertTrue(meeting.name.startswith('Nouveau Client/1000/'))
@@ -159,7 +185,7 @@ class TestCallCenterBooking(TransactionCase):
         self.assertEqual(booking.state, 'canceled')
         self.assertTrue(meeting.exists(), "the RDV stays in the history")
         self.assertEqual(meeting.x_rdv_status, 'cancelled')
-        wizard.action_search_slots()
+        wizard.action_show_day()
         self.assertEqual(self._slots_local(wizard), ['09:00', '10:00', '11:00'])
 
     def test_commercial_busy_with_another_event(self):
@@ -168,15 +194,47 @@ class TestCallCenterBooking(TransactionCase):
             'partner_ids': [Command.set(self.commercial.partner_id.ids)],
             'start': datetime.datetime(2027, 3, 1, 9, 0), 'stop': datetime.datetime(2027, 3, 1, 10, 0),
         })
-        wizard = self._wizard()
-        wizard.action_search_slots()
+        wizard = self._search(self._wizard())
         self.assertEqual(self._slots_local(wizard), ['09:00', '11:00'])
 
-    def test_no_slot_on_a_closed_day(self):
-        wizard = self._wizard(date=DAY + datetime.timedelta(days=1))
-        wizard.action_search_slots()
-        self.assertTrue(wizard.slots_searched)
-        self.assertFalse(wizard.slot_ids)
+    def test_closed_day_and_next_free_day(self):
+        wizard = self._search(self._wizard())
+        self.assertEqual(wizard.date, DAY)
+        wizard.action_next_day()
+        self.assertEqual(wizard.date, DAY + datetime.timedelta(days=1))
+        self.assertFalse(wizard.slot_ids, "closed on Tuesdays")
+        wizard.action_next_free_day()
+        self.assertEqual(wizard.date, DAY + datetime.timedelta(days=7), "next Monday")
+        self.assertEqual(self._slots_local(wizard), ['09:00', '10:00', '11:00'])
+        # from an earlier closed day, the search goes to the first free day
+        wizard = self._search(self._wizard(date=DAY - datetime.timedelta(days=2)))
+        self.assertEqual(wizard.date, DAY)
+
+    def test_steps_and_chosen_commercial(self):
+        other = self.env['res.users'].create({'name': 'Sophie Commerciale', 'login': 'sophie_booking',
+                                              'group_ids': [Command.set(self.env.ref('base.group_user').ids)]})
+        resource = self.env['resource.resource'].create({
+            'name': other.name, 'resource_type': 'user', 'user_id': other.id,
+            'calendar_id': self.calendar.id, 'tz': 'Europe/Brussels'})
+        combination = self.env['resource.booking.combination'].create({'resource_ids': [Command.set(resource.ids)]})
+        self.energy.combination_rel_ids = [Command.create({'combination_id': combination.id})]
+        wizard = self._wizard(solar_since='1 an', need_ids=self.panel)
+        wizard.action_choose_type()
+        with self.assertRaisesRegex(UserError, 'Choisissez un commercial'):
+            wizard.action_choose_operator()
+        self.assertEqual(wizard.state, 'operator')
+        self.assertEqual(wizard.allowed_combination_ids, self.combination | combination)
+        # all availabilities: both commercials
+        wizard.action_all_availabilities()
+        self.assertEqual(len(wizard.slot_ids), 6)
+        # one commercial: only his times; back and forth keeps the answers
+        wizard.action_back()
+        self.assertEqual(wizard.state, 'operator')
+        self._search(wizard, combination)
+        self.assertEqual(wizard.slot_ids.combination_id, combination)
+        meeting = self._book(wizard, 2)
+        self.assertEqual(meeting.user_id, other)
+        self.assertEqual(wizard.slot_combination_id, combination)
 
 
 @tagged('post_install', '-at_install')
@@ -206,3 +264,27 @@ class TestBookingSetup(TransactionCase):
 
         setup_booking_types(self.env)
         self.assertEqual(self.env['resource.booking.type'].search_count([('x_rdv_type_id', '=', rdv_type.id)]), 1)
+
+    def test_types_shared_by_companies(self):
+        """The call centre books for every company: types, calendar and
+        commercials' resources have no company."""
+        other_company = self.env['res.company'].create({'name': "Natur'Isol (test)"})
+        agent = self.env['res.users'].create({
+            'name': 'Agent Natur', 'login': 'agent_natur', 'company_id': other_company.id,
+            'company_ids': [Command.set(other_company.ids)],
+            'group_ids': [Command.set((self.env.ref('base.group_user') | self.env.ref('bgg_booking.group_booking_agent')).ids)]})
+        commercial = self.env['res.users'].create({'name': 'Commercial partagé', 'login': 'shared_setup'})
+        RdvType = self.env['bgg.rdv.type']
+        rdv_type = RdvType.search([('code', '=', 'APT-ENERG-COM')]) or RdvType.create(
+            {'name': 'Etude énergétique (par commercial)', 'code': 'APT-ENERG-COM'})
+        rdv_type.user_ids = commercial
+        btypes = self.env['resource.booking.type'].with_context(active_test=False)
+        btypes.search([('x_rdv_type_id', '=', rdv_type.id)]).unlink()
+        setup_booking_types(self.env)
+        btype = btypes.search([('x_rdv_type_id', '=', rdv_type.id)])
+        btype.company_id = self.env.company  # as created before the fix
+        share_booking_records(self.env)
+        self.assertFalse(btype.company_id)
+        self.assertFalse(btype.resource_calendar_id.company_id)
+        self.assertFalse(btype.combination_rel_ids.combination_id.resource_ids.company_id)
+        self.assertIn(btype, btypes.with_user(agent).search([]))

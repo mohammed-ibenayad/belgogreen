@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen - Prise de RDV call center',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'category': 'Customizations',
     'summary': 'Call-centre appointment booking on OCA Resource Booking (replaces Enterprise Appointments)',
     'description': """
@@ -11,11 +11,15 @@
         Replaces the Enterprise Appointments booking form used by the call
         centre, on top of OCA resource_booking (Odoo Community):
 
-        - "Prise de RDV" form: client found by phone (or created), address,
-          questionnaire of the booking type (as the Appointments types:
-          besoin - one or several -, propriétaires, panneaux depuis, conjoint,
-          confirmation SMS, RDV pris à la place de, commentaires), free slots
-          of the day per commercial, booking in one click.
+        - "Prise de RDV" form, in the steps of the Appointments booking pages
+          the call centre used: RDV type, commercial (or all their
+          availabilities), day and time (free times of the day, next free
+          day), the client's details and the questionnaire of the type in the
+          same order (client found by phone or created; besoin - one or
+          several -, propriétaires, panneaux depuis, conjoint, commentaires,
+          RDV pris à la place de, confirmation SMS), then booked.
+        - Booking types, their calendar and the commercials' resources are
+          shared by all companies.
         - A CRM opportunity is created for each RDV and linked to it (sale
           order attribution, organizer of the RDV).
         - Each booking type is linked to a bgg_custom_dev RDV type. The

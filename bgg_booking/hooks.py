@@ -51,6 +51,7 @@ def _booking_calendar(env):
         calendar = Calendar.create({
             'name': BOOKING_CALENDAR_NAME,
             'tz': BOOKING_TZ,
+            'company_id': False,
             'attendance_ids': [Command.clear()] + [Command.create({
                 'name': f'RDV {day}', 'dayofweek': day, 'day_period': 'morning',
                 'hour_from': BOOKING_HOURS[0], 'hour_to': BOOKING_HOURS[1],
@@ -67,7 +68,7 @@ def _commercial_combination(env, user, calendar):
     if not resource:
         resource = env['resource.resource'].create({
             'name': user.name, 'resource_type': 'user', 'user_id': user.id,
-            'calendar_id': calendar.id, 'tz': BOOKING_TZ,
+            'calendar_id': calendar.id, 'tz': BOOKING_TZ, 'company_id': False,
         })
     combination = env['resource.booking.combination'].search(
         [('resource_ids', '=', resource.id)]).filtered(lambda c: c.resource_ids == resource)[:1]
@@ -91,6 +92,7 @@ def setup_booking_types(env):
         BookingType.create({
             'name': rdv_type.name,
             'x_rdv_type_id': rdv_type.id,
+            'company_id': False,
             'resource_calendar_id': calendar.id,
             'duration': BOOKING_DURATION,
             'slot_duration': BOOKING_DURATION,
@@ -107,6 +109,19 @@ def setup_booking_types(env):
         _logger.info("bgg_booking: booking type '%s' created with %s commercial(s)", rdv_type.name, len(commercials))
 
 
+def share_booking_records(env):
+    """The booking types, their calendar and the commercials' resources are
+    shared by all companies (the call centre books for AMSS and Natur'Isol):
+    created without company, else the multi-company rules hide them from the
+    users working in another company."""
+    types = env['resource.booking.type'].with_context(active_test=False).search([('x_rdv_type_id', '!=', False)])
+    resources = types.combination_rel_ids.combination_id.resource_ids
+    calendars = types.resource_calendar_id | resources.calendar_id
+    for records in (types, resources, calendars):
+        records.filtered('company_id').write({'company_id': False})
+
+
 def post_init(env):
     link_booking_groups(env)
     setup_booking_types(env)
+    share_booking_records(env)
