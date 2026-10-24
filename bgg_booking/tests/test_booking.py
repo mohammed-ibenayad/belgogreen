@@ -165,7 +165,7 @@ class TestCallCenterBooking(TransactionCase):
 
     def test_new_client(self):
         wizard = self._wizard(phone='0490 11 22 33', solar_since='1 an')
-        wizard.need_ids = self.battery
+        wizard.need_id = self.battery  # one-need type: the drop-down
         self.assertFalse(wizard.partner_id)
         self._choose(wizard)
         with self.assertRaisesRegex(UserError, 'Nom complet'):
@@ -173,6 +173,7 @@ class TestCallCenterBooking(TransactionCase):
         wizard.partner_name = 'Nouveau Client'
         wizard.action_confirm()
         meeting = wizard.meeting_id
+        self.assertEqual(meeting.resource_booking_ids.x_need_ids, self.battery)
         client = meeting.resource_booking_ids.partner_id
         self.assertEqual((client.name, client.phone, client.street), ('Nouveau Client', '0490 11 22 33', 'Rue Neuve 1'))
         self.assertTrue(meeting.name.startswith('Nouveau Client/1000/'))
