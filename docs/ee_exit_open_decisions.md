@@ -22,6 +22,13 @@ ready answer to give to Claude.
 |---|--------|----------|---------|---------|
 | 4 | ☐ Open | Show the SSS project on its order, and the order on the SSS project? | On Community the SSS project is linked to its order by our own field (`x_sss_sale_order_id`, set by "Créer Tâches SSS"). The order's "Tâches" button already opens the tasks of both projects (admin and SSS), but the standard "Projets" button only finds the admin project (linked through the order line), and the SSS project form does not show its order. | **Add both** (small change in bgg_custom_dev): the SSS project in the order's "Projets" button, and a "Bon de commande" field with a link on the SSS project. **Keep as is:** reach the SSS tasks through "Tâches". |
 
+## Booking and go-live
+
+| # | Status | Question | Context | Options |
+|---|--------|----------|---------|---------|
+| 7 | ☐ Open | Do customers book themselves (public booking page)? | Enterprise Appointments has public pages (`/appointment/...`) anyone can open from the website, an ad or a signature. OCA `resource_booking` has none: a booking is started by a staff member, the customer then picks the time through a personal link. "Prise de RDV" covers the call centre and the commercials. | **Not used:** nothing to do. **Used:** a public page in bgg_booking (e.g. `/rendez-vous/<type>`) with the same free times, calendar and questionnaire, reCAPTCHA, duplicate check, choice of the public types; to build before go-live so the links keep working. |
+| 8 | ☐ Open | Where to run the final pass at go-live? | `ee_uninstall` refuses a database that is not neutralized unless `go_live=True`. A staging copy is neutralized (no emails, no scheduled jobs). | **Staging copy:** production stays untouched as a fallback; on the Community server, switch the outgoing mail server and scheduled jobs back on after the restore. **Production itself** after a manual Odoo.sh backup (fallback: that backup), with `go_live=True`. |
+
 ## Uninstall rehearsal on bsi-staging (2026-10-23)
 
 | # | Status | Point | Context | Next step |

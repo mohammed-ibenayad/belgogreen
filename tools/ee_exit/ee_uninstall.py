@@ -6,6 +6,18 @@ Odoo shell script (not a module). On Odoo.sh, in the shell of the branch:
     odoo-bin shell --no-http
     exec(open('/home/odoo/src/user/tools/ee_exit/ee_uninstall.py').read())
 
+    ee_preflight(env)
+        Read-only gate before the uninstall: the build migrated our modules,
+        and what we keep from Enterprise is in our own fields and modules
+        (RDV type / status / answers, RDV type commercials, SSS projects,
+        commission plans, Documents copied to DMS); lists the Studio fields,
+        models and actions that go with Studio. ✅ / ⚠️ / ❌ per line.
+
+    ee_final_check(env)
+        Read-only gate before the dump: no Enterprise module or leftover,
+        the Community modules installed, app icons, view types, users who
+        can log in, booking set up, counts still those before the uninstall.
+
     ee_check(env)
         Read-only. What the uninstall would remove: the modules (in batches),
         the non-Enterprise modules that would go with them, the records the
@@ -802,3 +814,276 @@ def _ee_cleanup(dbname, lock_wait='60s'):
         _ee_print("    app icons in Studio's format reset: %s" % (', '.join('%s (%s)' % m for m in menus) or 'none ✅'))
     # the running Odoo workers drop their cached menus and actions
     Registry(dbname).signal_changes()
+
+
+# ----------------------------------------------------------------------
+# Gates: read-only checks before the uninstall and before the dump
+# ----------------------------------------------------------------------
+
+# Our modules, moved off Enterprise by their migrations at the build
+EE_EXIT_MOVED_MODULES = ('bgg_custom_dev', 'belgogreen_sales_commission')
+# Installed before the uninstall (the Documents copy)
+EE_EXIT_DMS_MODULES = ('dms', 'bgg_dms', 'bgg_dms_project', 'bgg_documents_dms')
+# Installed on the database that is restored on the Community server
+EE_EXIT_TARGET_MODULES = ('bgg_custom_dev', 'belgogreen_sales_commission', 'dms', 'bgg_dms', 'bgg_dms_project',
+                          'web_responsive', 'resource_booking', 'web_calendar_slot_duration', 'bgg_booking')
+# Not taken to the Community server
+EE_EXIT_NOT_TAKEN = ('bgg_staging_rebuild',)
+
+
+def _ee_report(title, rows):
+    """Print (status, label, detail) rows; status: ok / bad / warn / na.
+    Returns True when no row is bad."""
+    marks = {'ok': '✅', 'bad': '❌', 'warn': '⚠️ ', 'na': '– '}
+    _ee_print("\n=== %s" % title)
+    for status, label, detail in rows:
+        _ee_print("  %s %-62s %s" % (marks[status], label, detail if detail is not None else ''))
+    return not any(status == 'bad' for status, __, __ in rows)
+
+
+def _ee_has_column(env, table, column):
+    env.cr.execute("SELECT 1 FROM information_schema.columns WHERE table_name = %s AND column_name = %s",
+                   [table, column])
+    return bool(env.cr.fetchone())
+
+
+def _ee_zero(label, count, total=None, hint=''):
+    """A row that is good when `count` is 0 (None: table not there)."""
+    if count is None:
+        return ('na', label, 'not on this database')
+    detail = '%s%s%s' % (count, ' of %s' % total if total is not None else '', '   ' + hint if count and hint else '')
+    return ('ok' if not count else 'bad', label, detail)
+
+
+def _ee_module_rows(env, names, need=True):
+    rows = []
+    for module in env['ir.module.module'].search([('name', 'in', list(names))], order='name'):
+        if module.state != 'installed':
+            rows.append(('bad' if need else 'ok', 'Module %s' % module.name, module.state))
+        elif module.latest_version != module.installed_version:
+            rows.append(('bad', 'Module %s' % module.name, 'installed %s, code %s: update it'
+                         % (module.latest_version, module.installed_version)))
+        else:
+            rows.append(('ok', 'Module %s' % module.name, module.latest_version))
+    missing = set(names) - set(env['ir.module.module'].search([('name', 'in', list(names))]).mapped('name'))
+    rows += [('bad' if need else 'ok', 'Module %s' % name, 'not in the addons path') for name in sorted(missing)]
+    return rows
+
+
+def _ee_pending_modules(env):
+    pending = env['ir.module.module'].search([('state', 'in', ('to install', 'to upgrade', 'to remove'))])
+    return ('bad' if pending else 'ok', 'Modules left half-way (to install / upgrade / remove)',
+            ', '.join('%s (%s)' % (m.name, m.state) for m in pending) or 'none')
+
+
+def ee_preflight(env):
+    """Read-only. Before the uninstall: is everything the Enterprise apps
+    hold that we keep already in our own fields and modules?"""
+    ok = True
+    Module = env['ir.module.module']
+    has_appointment = bool(Module.search_count([('name', '=', 'appointment'), ('state', '=', 'installed')]))
+
+    rows = _ee_module_rows(env, EE_EXIT_MOVED_MODULES) + _ee_module_rows(env, EE_EXIT_DMS_MODULES)
+    if has_appointment:
+        rows += _ee_module_rows(env, ('bgg_custom_dev_ee',))
+    rows.append(_ee_pending_modules(env))
+    ok &= _ee_report("MODULES (build done, DMS installed)", rows)
+
+    # RDVs: Appointments -> bgg_custom_dev (migration 19.0.2.0.0 / 19.0.2.2.0, kept in sync by the bridge)
+    rows = []
+    if _ee_has_column(env, 'calendar_event', 'appointment_type_id'):
+        total = _ee_count(env, 'calendar_event', 'appointment_type_id IS NOT NULL')
+        rows.append(_ee_zero('RDVs whose RDV type is missing or different',
+                             _ee_count(env, 'calendar_event', 'appointment_type_id IS NOT NULL AND '
+                                       'x_rdv_type_id IS DISTINCT FROM appointment_type_id'), total))
+        rows.append(_ee_zero('RDVs whose RDV status is different',
+                             _ee_count(env, 'calendar_event', 'appointment_type_id IS NOT NULL AND '
+                                       'x_rdv_status IS DISTINCT FROM appointment_status'), total))
+    else:
+        rows.append(('na', 'RDV type and status', 'Appointments not on this database'))
+    if _ee_count(env, 'appointment_answer_input') is not None:
+        answered = _ee_count(env, 'calendar_event', 'id IN (SELECT calendar_event_id FROM appointment_answer_input)')
+        rows.append(_ee_zero('RDVs with answers but no questionnaire summary',
+                             _ee_count(env, 'calendar_event', 'x_rdv_answers IS NULL AND '
+                                       'id IN (SELECT calendar_event_id FROM appointment_answer_input)'), answered))
+    if _ee_count(env, 'appointment_type') is not None:
+        rows.append(_ee_zero('Appointment types without their RDV type (same id)',
+                             _ee_count(env, 'appointment_type', 'id NOT IN (SELECT id FROM bgg_rdv_type)'),
+                             _ee_count(env, 'appointment_type')))
+        env.cr.execute("""SELECT relation_table, column1, column2 FROM ir_model_fields
+                           WHERE model = 'appointment.type' AND name = 'staff_user_ids'""")
+        staff = env.cr.fetchone()
+        if staff and all(staff) and _ee_count(env, staff[0]) is not None:
+            table, type_col, user_col = staff
+            rows.append(_ee_zero('Appointment staff missing from the RDV type commercials', _ee_count(
+                env, table, 'NOT EXISTS (SELECT 1 FROM bgg_rdv_type_res_users_rel b WHERE b.rdv_type_id = '
+                '"%s"."%s" AND b.user_id = "%s"."%s")' % (table, type_col, table, user_col)), _ee_count(env, table)))
+    ok &= _ee_report("RDVs (Appointments -> bgg_custom_dev)", rows)
+
+    # SSS projects: Field Service -> bgg_custom_dev
+    rows = []
+    if _ee_has_column(env, 'project_project', 'is_fsm'):
+        rows.append(_ee_zero('Field Service projects not flagged SSS',
+                             _ee_count(env, 'project_project', 'is_fsm AND x_is_sss_project IS NOT TRUE'),
+                             _ee_count(env, 'project_project', 'is_fsm')))
+    else:
+        rows.append(('na', 'Field Service projects', 'Field Service not on this database'))
+    no_order = _ee_count(env, 'project_project', 'x_is_sss_project AND x_sss_sale_order_id IS NULL')
+    rows.append(('na' if no_order is None else 'ok' if not no_order else 'warn', 'SSS projects without their sale order',
+                 '%s (open decisions #4: their tasks are not under the order\'s "Tâches")' % no_order
+                 if no_order else 'not on this database' if no_order is None else 0))
+    ok &= _ee_report("SSS PROJECTS (Field Service -> bgg_custom_dev)", rows)
+
+    # Commission plans: Enterprise sale_commission -> belgogreen_sales_commission
+    rows = []
+    for table in ('sale_commission', 'hr_commission_role_config', 'bgg_commission_plan_user'):
+        if _ee_has_column(env, table, 'plan_id'):
+            rows.append(_ee_zero('%s rows on a plan that is not ours' % table, _ee_count(
+                env, table, 'plan_id IS NOT NULL AND plan_id NOT IN (SELECT id FROM bgg_commission_plan)'),
+                _ee_count(env, table, 'plan_id IS NOT NULL')))
+    ok &= _ee_report("COMMISSIONS (sale_commission -> belgogreen_sales_commission)", rows)
+
+    # Documents -> DMS (bgg_documents_dms)
+    rows = []
+    if _ee_count(env, 'documents_document') is None:
+        rows.append(('na', 'Documents', 'Documents not on this database'))
+    elif _ee_count(env, 'bgg_documents_dms_map') is None:
+        rows.append(('bad', 'Documents copied to DMS', 'never: run step 2 (the copy)'))
+    else:
+        moved = "id NOT IN (SELECT document_id FROM bgg_documents_dms_map) AND shortcut_document_id IS NULL"
+        rows.append(_ee_zero('Folders not copied', _ee_count(env, 'documents_document', "type = 'folder' AND " + moved),
+                             _ee_count(env, 'documents_document', "type = 'folder'"), hint='run step 2 again'))
+        rows.append(_ee_zero('Files not copied', _ee_count(
+            env, 'documents_document', "type = 'binary' AND attachment_id IS NOT NULL AND " + moved + " AND "
+            "attachment_id NOT IN (SELECT id FROM ir_attachment WHERE mimetype = 'application/o-spreadsheet')"),
+            _ee_count(env, 'documents_document', "type = 'binary' AND attachment_id IS NOT NULL"),
+            hint='run step 2 again; still there: see the log of the copy'))
+        skipped = _ee_count(env, 'documents_document', "type = 'url' OR shortcut_document_id IS NOT NULL OR "
+                            "attachment_id IN (SELECT id FROM ir_attachment WHERE mimetype = 'application/o-spreadsheet')")
+        rows.append(('ok', 'Not moved on purpose (links, shortcuts, spreadsheets)', skipped))
+        if _ee_has_column(env, 'project_project', 'documents_folder_id'):
+            rows.append(_ee_zero('Projects with a Documents folder but no DMS folder', _ee_count(
+                env, 'project_project', 'documents_folder_id IS NOT NULL AND x_dms_directory_id IS NULL '
+                'AND documents_folder_id IN (SELECT document_id FROM bgg_documents_dms_map)'),
+                _ee_count(env, 'project_project', 'documents_folder_id IS NOT NULL')))
+    ok &= _ee_report("DOCUMENTS (Documents -> OCA dms)", rows)
+
+    # Studio: what goes with studio_customization (the port is in bgg_custom_dev 19.0.2.1.0)
+    rows = []
+    owned = _ee_owned_only(env, ('studio_customization',))
+    env.cr.execute("SELECT model FROM ir_model WHERE id = ANY(%s)", [owned.get('ir.model', [])])
+    studio_models = [model for (model,) in env.cr.fetchall()]
+    env.cr.execute("SELECT model, name FROM ir_model_fields WHERE id = ANY(%s) AND store ORDER BY 1, 2",
+                   [owned.get('ir.model.fields', [])])
+    lost = []
+    for model, name in env.cr.fetchall():
+        # fields of a Studio model go with it (listed below)
+        if model not in studio_models and model in env and env[model]._auto and name in env[model]._fields:
+            filled = _ee_count(env, env[model]._table, '"%s" IS NOT NULL' % name)
+            if filled:
+                lost.append('%s.%s (%s rows)' % (model, name, filled))
+    rows.append(('warn' if lost else 'ok', 'Studio fields with data, not taken over (deleted)',
+                 '; '.join(lost) or 'none'))
+    rows.append(('warn' if studio_models else 'ok', 'Studio models (deleted)', ', '.join(
+        '%s (%s rows)' % (m, _ee_count(env, env[m]._table) if m in env else '?') for m in studio_models) or 'none'))
+    for model, label in (('ir.actions.server', 'Studio server actions (deleted)'),
+                         ('base.automation', 'Studio automation rules (deleted)')):
+        recs = env[model].with_context(active_test=False).browse(owned.get(model, [])).exists() \
+            if model in env else []
+        active = [r for r in recs if 'active' not in r._fields or r.active]
+        rows.append(('warn' if active else 'ok', label,
+                     ', '.join(r.display_name for r in active) or 'none (or only inactive ones)'))
+    views = env['ir.ui.view'].with_context(active_test=False).browse(owned.get('ir.ui.view', [])).exists()
+    rows.append(('ok', 'Studio views (deleted; the ones we use are rebuilt in bgg_custom_dev)',
+                 '%s, %s active' % (len(views), len(views.filtered('active')))))
+    ok &= _ee_report("STUDIO (studio_customization goes with Enterprise)", rows)
+
+    _ee_print("\n%s" % ("Ready for the uninstall ✅ (⚠️ : known, look at them once)" if ok else
+                        "NOT READY ❌: fix the lines above before ee_uninstall"))
+    env.cr.rollback()
+    return ok
+
+
+def ee_final_check(env):
+    """Read-only. Before the dump: no Enterprise left, the Community
+    modules installed, nothing that breaks the screens, counts kept."""
+    from odoo.modules.module import get_module_path
+    ok = True
+    Module = env['ir.module.module']
+    installed = Module.search([('state', '=', 'installed')])
+
+    rows = [_ee_zero('Enterprise modules installed', len(_ee_module_names(env)), hint=', '.join(_ee_module_names(env)))]
+    enterprise_code = [m.name for m in installed if '/enterprise/' in (get_module_path(m.name, display_warning=False) or '')]
+    rows.append(_ee_zero('Installed modules from the Enterprise folder', len(enterprise_code),
+                         hint=', '.join(enterprise_code)))
+    env.cr.execute("""SELECT count(*) FROM ir_model_data d JOIN ir_module_module m ON m.name = d.module
+                       WHERE m.state = 'uninstalled' AND (m.license LIKE 'OEEL%%' OR m.name = ANY(%s))""",
+                   [list(EE_EXIT_EXTRA_MODULES)])
+    rows.append(_ee_zero('Records left by the uninstalled modules', env.cr.fetchone()[0], hint='run ee_cleanup(env)'))
+    rows.append(_ee_pending_modules(env))
+    rows += _ee_module_rows(env, EE_EXIT_TARGET_MODULES)
+    for name in EE_EXIT_NOT_TAKEN:
+        rows.append(('bad' if name in installed.mapped('name') else 'ok', 'Module %s (not taken)' % name,
+                     'installed: uninstall it' if name in installed.mapped('name') else 'not installed'))
+    ok &= _ee_report("MODULES", rows)
+
+    rows = []
+    env.cr.execute("""SELECT count(*) FROM ir_ui_menu WHERE web_icon IS NOT NULL
+                       AND array_length(string_to_array(web_icon, ','), 1) <> 2""")
+    rows.append(_ee_zero('App icons in Studio\'s format (black app menu)', env.cr.fetchone()[0],
+                         hint='run ee_cleanup(env)'))
+    valid = {value for value, __ in env['ir.ui.view']._fields['type'].selection}
+    env.cr.execute("SELECT view_mode FROM ir_act_window WHERE view_mode IS NOT NULL")
+    bad_modes = sum(1 for (mode,) in env.cr.fetchall() if any(m.strip() not in valid for m in mode.split(',') if m.strip()))
+    rows.append(_ee_zero('Actions with a removed view type (gantt, map...)', bad_modes, hint='run ee_cleanup(env)'))
+    types = env.ref('base.group_user') | env.ref('base.group_portal') | env.ref('base.group_public')
+    users = env['res.users'].search([('active', '=', True)])
+    no_type = users.filtered(lambda u: not (u.all_group_ids & types))
+    rows.append(_ee_zero('Active users without a user type (cannot log in)', len(no_type), len(users),
+                         hint=', '.join(no_type.mapped('login')[:10])))
+    ok &= _ee_report("SCREENS AND USERS", rows)
+    _ee_print("  conditions on removed fields:")
+    _ee_fix_domains(env, dry_run=True)
+
+    rows = []
+    if 'resource.booking.type' in env:
+        booking_types = env['resource.booking.type'].search([])
+        rows.append(('ok' if booking_types else 'bad', 'Booking types', len(booking_types)))
+        if 'x_group_ids' in env['resource.booking.type']._fields:
+            nobody = booking_types.filtered(lambda t: not t.x_group_ids)
+            rows.append(('warn' if nobody else 'ok', 'Booking types without "Réservable par"',
+                         ', '.join(nobody.mapped('name')) or 'none'))
+        group = env.ref('bgg_booking.group_booking_agent', raise_if_not_found=False)
+        if group:
+            bookers = env['res.users'].search([('active', '=', True), ('share', '=', False),
+                                               ('all_group_ids', 'in', group.ids)])
+            rows.append(('ok' if bookers else 'bad', 'Users who can book ("Prise de RDV")', len(bookers)))
+    else:
+        rows.append(('bad', 'Booking', 'bgg_booking not installed'))
+    ok &= _ee_report("BOOKING (bgg_booking)", rows)
+
+    folder = _ee_folder(env.cr.dbname)
+    before_path = os.path.join(folder, 'counts_before.json')
+    rows = []
+    if os.path.exists(before_path):
+        with open(before_path, encoding='utf-8') as f:
+            before = json.load(f)
+        losses = {}
+        if os.path.exists(os.path.join(folder, 'expected_losses.json')):
+            with open(os.path.join(folder, 'expected_losses.json'), encoding='utf-8') as f:
+                losses = json.load(f)
+        for label, count in _ee_survival_counts(env).items():
+            old, loss = before.get(label), losses.get(label) or 0
+            good = old is None or (count is not None and count >= old - loss)
+            rows.append(('ok' if good else 'bad', label, '%s -> %s%s' % (old, count, '   (-%s expected)' % loss
+                                                                           if loss else '')))
+    else:
+        rows.append(('warn', 'Counts before the uninstall', 'not found in %s' % folder))
+    ok &= _ee_report("WHAT MUST SURVIVE: before the uninstall -> now", rows)
+
+    neutralized = env['ir.config_parameter'].sudo().get_param('database.is_neutralized')
+    _ee_print("\n  Database %s neutralized (%s)" % ('IS' if neutralized else 'is NOT',
+              'rehearsal copy: emails and scheduled jobs off' if neutralized else 'production copy'))
+    _ee_print("\n%s" % ("Ready for the dump ✅" if ok else "NOT READY ❌: fix the lines above before the dump"))
+    env.cr.rollback()
+    return ok

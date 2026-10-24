@@ -47,8 +47,13 @@ Field Service:
 `tools/ee_exit/ee_uninstall.py`, run from the Odoo shell:
 
     exec(open('/home/odoo/src/user/tools/ee_exit/ee_uninstall.py').read())
+    ee_preflight(env)                           # read-only gate: everything moved?
     ee_check(env)                               # read-only report
     ee_uninstall(env, confirm=env.cr.dbname)    # rehearsal copy only
+    ee_final_check(env)                         # read-only gate: ready for the dump?
+
+The order and the gates are in ee_exit_runbook.md; what each module took
+from Enterprise is in ee_exit_inventory.md.
 
 It covers:
 
