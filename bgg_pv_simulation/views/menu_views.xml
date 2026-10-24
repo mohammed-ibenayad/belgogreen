@@ -4,6 +4,7 @@
     <!-- Main Menu -->
     <menuitem id="menu_pv_simulation_root"
               name="Simulation PV"
+              web_icon="bgg_pv_simulation,static/description/icon.svg"
               sequence="50"/>
 
     <!-- Simulations Submenu -->
