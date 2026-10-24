@@ -60,7 +60,7 @@ class BggBookingWizard(models.TransientModel):
     date = fields.Date(string='Jour',
                        default=lambda self: fields.Date.context_today(self) + datetime.timedelta(days=1))
     slot_ids = fields.One2many('bgg.booking.wizard.slot', 'wizard_id', string='Heures libres')
-    start = fields.Datetime(string='Date et heure', readonly=True)
+    start = fields.Datetime(string='Début du RDV', readonly=True)
     slot_combination_id = fields.Many2one('resource.booking.combination', string='Commercial du RDV',
                                           readonly=True)
     start_label = fields.Char(string='Date et heure', compute='_compute_start_label')
@@ -375,7 +375,7 @@ class BggBookingWizardSlot(models.TransientModel):
     _order = 'start, id'
 
     wizard_id = fields.Many2one('bgg.booking.wizard', required=True, ondelete='cascade')
-    start = fields.Datetime(string='Heure', required=True)
+    start = fields.Datetime(string='Début', required=True)
     combination_id = fields.Many2one('resource.booking.combination', string='Commercial', required=True)
     time_label = fields.Char(string='Heure', compute='_compute_time_label')
 
