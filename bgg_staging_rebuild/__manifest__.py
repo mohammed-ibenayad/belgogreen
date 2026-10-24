@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen — Reconstruction Staging',
-    'version': '19.0.1.3.0',
+    'version': '19.0.1.3.1',
     'category': 'Customizations',
     'summary': 'Permet aux administrateurs de reconstruire l\'environnement Staging depuis Odoo',
     'description': """

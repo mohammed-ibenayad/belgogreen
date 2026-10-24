@@ -32,7 +32,7 @@ else:
         <!-- Main Menu (Single entry point for all users) -->
         <menuitem id="menu_commission_root"
                   name="Commissions"
-                  web_icon="fa-wallet"
+                  web_icon="belgogreen_sales_commission,static/description/icon.svg"
                   action="action_commission_smart_entry"
                   sequence="75"
                   groups="belgogreen_sales_commission.group_commission_user,belgogreen_sales_commission.group_commission_manager"/>
