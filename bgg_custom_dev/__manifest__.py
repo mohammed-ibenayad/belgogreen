@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen Custom Development',
-    'version': '19.0.1.10.0',
+    'version': '19.0.1.34.0',
     'category': 'Customizations',
     'summary': 'Custom business logic and automation for BelGoGreen',
     'description': """
@@ -30,15 +30,26 @@
         **Project Management (project.project, project.task)**:
         - Document folder naming from sales orders
         - Admin project deadlines: project start = order confirmation date,
-          project end = start + delay from the payment term x product
-          category rules (bgg.admin_project_deadline_rules system
-          parameter), task deadlines = project end date
+          project end = field service (SSS) reference end date + end_offset
+          (10 business days), the SSS reference dates coming from the
+          payment term x product category rules
+          (bgg.admin_project_deadline_rules system parameter); task
+          deadlines = project end date
         - Admin template tasks listed in bgg.admin_task_deadline_rules
           (Réclamation du solde, Création des commissions, Chargement
           schéma unifilaire, Envoi Belgotest) take their dates from the
-          field service (SSS) reference dates computed from the same rules
+          SSS reference dates computed from the same rules
         - Admin projects: project manager and planned dates are computed
           from the order and locked against manual edits
+        - "Bloqué" project status (status updates), admin projects only, set
+          or removed by the Responsable Dossier group
+        - "Bloqué" task state (admin projects, Responsable Dossier group),
+          kept when the stage or the dependencies change: a blocked task sets
+          its project to Bloqué; once no task is blocked the project gets its
+          previous status back
+        - Admin projects become Terminé once all their tasks are closed (done
+          or cancelled), and get their previous status back if a task is
+          reopened or added
 
         **Sales Orders (sale.order)**:
         - Call Center (Sale Owner) attribution and RDV smart button
@@ -46,12 +57,34 @@
           of the sale), restricted to the "Responsable Dossier" group
         - The Responsable is propagated to the projects of the order as
           project manager and as assignee of their open tasks
+        - "Confirmée au moins une fois" flag (x_was_confirmed): the dashboards
+          (Suivi Commercial, Call Center, AMSS) count a cancelled order as a
+          cancelled sale only if it was confirmed before; cancelled quotes are
+          left out (existing orders filled from the status history)
         - Form warnings: Responsable not assigned on a confirmed order,
           installation product (project-creating service) missing
-        - Only the "Responsable Dossier Admin" group (and administrators)
-          may set or change the Responsable of an order
+        - Only the "Responsable Dossier Admin" group may set or change the
+          Responsable of an order
         - The "Créer tâches SSS" server action stays in Odoo Studio; it reads
           the bgg.sss_project_manager_login parameter (SSS manager email)
+
+        **AMSS Management dashboard (Direction group)**:
+        - Direction tab: CA NET, Ventes Confirmées (+ annulées), TX Conversion
+          (lists the RDV présents) (same formulas as Suivi Commercial, all
+          orders and appointments),
+          Chantiers en retard, Dossiers bloqués, CA signé / facturé /
+          encaissé (reste à facturer / à encaisser clickable in the bars),
+          Reste à facturer / Reste à encaisser / Reste à encaisser – chantiers SSS
+          terminés cards (à ce jour), Carnet de commandes (À planifier / Planifiés / En cours /
+          Bloqués, today); comparison with the previous period; Excel export
+        - Métiers tab: same filters and KPI cards, CA signé par métier (each
+          order in one métier: Photovoltaïque = Panneaux / Onduleurs /
+          Batteries, Chauffage / PAC = PAC / Boilers, Isolation, Autres
+          métiers; Mixte when several)
+        - Commercial tab (salesperson filter): BC signés par commercial,
+          entonnoir de conversion (RDV posés / tenus / BC signés), qualité
+          commerciale (panier moyen global and per métier, annulation après
+          signature)
 
         All business logic includes comprehensive logging for debugging and monitoring.
     """,
@@ -84,6 +117,8 @@
         'views/call_center_dashboard_views.xml',
         'views/sale_order_views.xml',
         'views/project_project_views.xml',
+        'views/project_task_views.xml',
+        'views/amss_dashboard_views.xml',
 
         # Reports (action must be loaded before menu that references it)
         'report/avis_count_report_views.xml',
@@ -103,6 +138,11 @@
             'bgg_custom_dev/static/src/js/call_center_dashboard.js',
             'bgg_custom_dev/static/src/xml/call_center_dashboard.xml',
             'bgg_custom_dev/static/src/scss/call_center_dashboard.scss',
+            'bgg_custom_dev/static/src/js/amss_dashboard.js',
+            'bgg_custom_dev/static/src/xml/amss_dashboard.xml',
+            'bgg_custom_dev/static/src/scss/amss_dashboard.scss',
+            'bgg_custom_dev/static/src/js/project_status_blocked.js',
+            'bgg_custom_dev/static/src/js/project_task_state_blocked.js',
         ],
     },
     'post_init_hook': 'link_external_groups',
