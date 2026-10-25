@@ -6,6 +6,8 @@ import logging
 from odoo import api, fields, models
 from dateutil.relativedelta import relativedelta
 
+from .sale_order import dashboard_states_domain
+
 _logger = logging.getLogger(__name__)
 
 QUARTER_NAMES_FR = {1: '1er', 2: '2ème', 3: '3ème', 4: '4ème'}
@@ -97,7 +99,8 @@ class CallCenterDashboard(models.TransientModel):
         so_domain = [
             ('date_order', '>=', fields.Datetime.to_string(date_start)),
             ('date_order', '<', fields.Datetime.to_string(date_end)),
-            ('state', 'in', ['sale', 'done', 'cancel']),
+            # cancelled orders: only those confirmed before (not cancelled quotes)
+            *dashboard_states_domain(['sale', 'done', 'cancel']),
             ('x_call_center_sale_owner_id', '!=', False),
         ]
         if call_center_id:
@@ -161,7 +164,7 @@ class CallCenterDashboard(models.TransientModel):
             so_domain = [
                 ('date_order', '>=', fields.Datetime.to_string(date_start)),
                 ('date_order', '<', fields.Datetime.to_string(date_end)),
-                ('state', 'in', ['sale', 'done', 'cancel']),
+                *dashboard_states_domain(['sale', 'done', 'cancel']),
                 ('x_call_center_sale_owner_id', '!=', False),
             ]
             if call_center_id:
@@ -386,11 +389,11 @@ class CallCenterDashboard(models.TransientModel):
              'Σ amount_untaxed des commandes confirmées attribuées au call center',
              "Chiffre d'affaires HT généré par le call center sur la période (hors annulations)."),
             (red_fmt, 'VENTES ANNULÉES',
-             "Count(sale.order) où state = cancel et x_call_center_sale_owner_id renseigné",
-             "Nombre de commandes annulées attribuées au call center sur la période."),
+             "Count(sale.order) où state = cancel, confirmée au moins une fois et x_call_center_sale_owner_id renseigné",
+             "Nombre de commandes annulées après confirmation attribuées au call center sur la période (les devis annulés avant signature ne comptent pas)."),
             (red_fmt, 'MONTANT ANNULÉ (HT)',
-             'Σ amount_untaxed des commandes annulées attribuées au call center',
-             "Montant HT des commandes annulées attribuées au call center sur la période."),
+             'Σ amount_untaxed des commandes annulées après confirmation attribuées au call center',
+             "Montant HT des commandes annulées après confirmation attribuées au call center sur la période."),
         ]
         for r, (fmt, name, formula, description) in enumerate(calc_rows, start=1):
             calc.write(r, 0, name, fmt)

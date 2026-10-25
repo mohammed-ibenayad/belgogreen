@@ -233,9 +233,9 @@
 
                             <!-- Ventes Annulées -->
                             <tr class="cd_highlight_row cd_annule_row">
-                                <td class="cd_section_label cd_section_red" colspan="1" title="Nombre de commandes dont l'état est 'Annulé' (state cancel)">VENTES ANNULÉES</td>
+                                <td class="cd_section_label cd_section_red" colspan="1" title="Nombre de commandes annulées après confirmation (les devis annulés avant signature ne comptent pas)">VENTES ANNULÉES</td>
                                 <td class="cd_row_label">
-                                    <i class="fa fa-info-circle cd_info_icon" title="Ventes Annulées = nombre de commandes à l'état Annulé (state = cancel)."/>
+                                    <i class="fa fa-info-circle cd_info_icon" title="Ventes Annulées = nombre de commandes annulées après avoir été confirmées. Un devis annulé avant signature ne compte pas."/>
                                 </td>
                                 <t t-foreach="state.data.users" t-as="user" t-key="user.id">
                                     <td class="cd_cell cd_bold"><t t-esc="getUserDerived(user.id).ventes_annulees || 0"/></td>
@@ -268,9 +268,9 @@
                                 <td class="cd_cell cd_total_cell cd_currency"><t t-esc="formatCurrency(state.data.derived_total.ca_net)"/></td>
                             </tr>
                             <tr class="cd_financial_row cd_annule_row">
-                                <td class="cd_section_label cd_section_red" colspan="1" title="Somme HT des commandes annulées">ANNULÉ</td>
+                                <td class="cd_section_label cd_section_red" colspan="1" title="Somme HT des commandes annulées après confirmation">ANNULÉ</td>
                                 <td class="cd_row_label">
-                                    <i class="fa fa-info-circle cd_info_icon" title="ANNULÉ = somme HT des commandes annulées."/>
+                                    <i class="fa fa-info-circle cd_info_icon" title="ANNULÉ = somme HT des commandes annulées après confirmation (devis annulés exclus)."/>
                                 </td>
                                 <t t-foreach="state.data.users" t-as="user" t-key="user.id">
                                     <td class="cd_cell cd_currency"><t t-esc="formatCurrency(getUserDerived(user.id).ca_annule)"/></td>

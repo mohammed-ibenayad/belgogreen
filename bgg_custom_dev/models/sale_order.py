@@ -13,6 +13,19 @@ from .calendar_event import CALL_CENTER_APPOINTMENT_REFS
 _logger = logging.getLogger(__name__)
 
 DASHBOARD_GROUP = 'bgg_custom_dev.group_bgg_dashboard'
+
+# Order states that mean "confirmed" (x_was_confirmed is set on them).
+CONFIRMED_STATES = ('sale', 'done')
+
+
+def dashboard_states_domain(states):
+    """Domain on the order state for the dashboards (Suivi Commercial, Call
+    Center, AMSS): a cancelled order counts only if it was confirmed before
+    (x_was_confirmed); a quote cancelled before signature is not a sale."""
+    domain = [('state', 'in', list(states))]
+    if 'cancel' in states:
+        domain += ['|', ('state', '!=', 'cancel'), ('x_was_confirmed', '=', True)]
+    return domain
 RESPONSABLE_DOSSIER_GROUP = 'bgg_custom_dev.group_responsable_dossier'
 # Only members of this group may set or change the Responsable of an order
 # (no administrator exception). Automations (sudo) are not restricted.
@@ -25,12 +38,15 @@ BGG_TZ = 'Europe/Brussels'
 # defaults below are used when a parameter is missing or not valid JSON.
 #
 # bgg.admin_project_deadline_rules: payment term name -> rule
-#   - 'day_type': 'business' (Monday to Friday) or 'calendar' (every day),
-#   - '<product category name>': delay in days for the admin project end date
-#     (the product's category or one of its parents; longest delay wins),
 #   - 'sss': reference dates of the field service (SSS) project, computed in
 #     memory only, never written: 'start_offset' (+ 'start_day_type') from the
-#     confirmation date, then 'day_type' and '<category>': duration.
+#     confirmation date, then 'day_type' and '<product category name>':
+#     duration (the product's category or one of its parents; the longest
+#     duration on the order wins). The category names listed here are also
+#     the products that need an installation (form warning).
+#   - 'end_offset' and 'day_type': admin project end date = SSS reference end
+#     date + 'end_offset' days, counted as 'business' (Monday to Friday) or
+#     'calendar' (every day) days.
 # bgg.admin_task_deadline_rules: admin template tasks whose dates follow the
 #   SSS reference end date: 'day_type' and 'tasks': {task name: offset days}.
 #   Task names are matched ignoring case, accents and extra spaces. Start of
@@ -38,11 +54,13 @@ BGG_TZ = 'Europe/Brussels'
 ADMIN_DEADLINE_RULES_PARAM = 'bgg.admin_project_deadline_rules'
 ADMIN_TASK_RULES_PARAM = 'bgg.admin_task_deadline_rules'
 # Keys of a rule that are not product category names.
-RULE_RESERVED_KEYS = {'day_type', 'sss', 'start_offset', 'start_day_type'}
+RULE_RESERVED_KEYS = {'day_type', 'sss', 'start_offset', 'start_day_type', 'end_offset'}
+# Admin project end = SSS end + this many days when a rule has no 'end_offset'.
+ADMIN_END_OFFSET_DEFAULT = 10
 
 _IMMEDIATE_RULE = {
     'day_type': 'business',
-    'Panneaux': 10, 'Onduleurs': 10, 'Batteries': 10, 'PAC': 15, 'Isolation': 20,
+    'end_offset': ADMIN_END_OFFSET_DEFAULT,
     'sss': {
         'start_offset': 5, 'start_day_type': 'business', 'day_type': 'business',
         'Panneaux': 5, 'Onduleurs': 5, 'Batteries': 5, 'PAC': 10, 'Isolation': 15,
@@ -50,7 +68,7 @@ _IMMEDIATE_RULE = {
 }
 _FINANCING_RULE = {
     'day_type': 'business',
-    'Panneaux': 15, 'Onduleurs': 15, 'Batteries': 15, 'PAC': 20, 'Isolation': 25,
+    'end_offset': ADMIN_END_OFFSET_DEFAULT,
     'sss': {
         'start_offset': 10, 'start_day_type': 'business', 'day_type': 'business',
         'Panneaux': 25, 'Onduleurs': 25, 'Batteries': 25, 'PAC': 30, 'Isolation': 35,
@@ -108,9 +126,27 @@ class SaleOrder(models.Model):
         ),
     )
 
+    # Set when the order is confirmed, kept when it is cancelled: tells a sale
+    # cancelled after signature from a quote cancelled before (dashboards).
+    # Existing orders are filled from the status history by the 19.0.1.28.0
+    # migration.
+    x_was_confirmed = fields.Boolean(
+        string='Confirmée au moins une fois',
+        readonly=True,
+        copy=False,
+        index=True,
+        help=(
+            "Cochée dès que la commande est confirmée et conservée si elle est "
+            "annulée ensuite. Les tableaux de bord ne comptent une commande "
+            "annulée comme vente annulée que si elle a été confirmée."
+        ),
+    )
+
     def write(self, vals):
         """Propagate to the order's projects: a Responsable change (manager /
         assignees) and a payment term change (admin project deadlines)."""
+        if vals.get('state') in CONFIRMED_STATES:
+            vals = dict(vals, x_was_confirmed=True)
         watched = ('x_responsable_dossier_id', 'payment_term_id')
         previous = {
             fname: {order.id: order[fname] for order in self}
@@ -218,12 +254,14 @@ class SaleOrder(models.Model):
 
     @api.model
     def _admin_deadline_all_category_names(self):
-        """Lowercased product category names listed in any deadline rule:
-        the categories that require an admin project (installation)."""
+        """Lowercased product category names listed in the 'sss' block of any
+        deadline rule: the categories that require an admin project
+        (installation)."""
         names = set()
         for rule in self._admin_deadline_rules().values():
-            if isinstance(rule, dict):
-                names.update(str(k).strip().lower() for k in rule
+            sss = rule.get('sss') if isinstance(rule, dict) else None
+            if isinstance(sss, dict):
+                names.update(str(k).strip().lower() for k in sss
                              if k not in RULE_RESERVED_KEYS)
         return names
 
@@ -338,17 +376,21 @@ class SaleOrder(models.Model):
     def _compute_admin_project_dates(self):
         """(date_start, date_end) for the admin project of this order, or None
         when no rule applies: no rule for the payment term, or no product of a
-        category listed in the rule. With several categories on the order the
-        longest delay wins."""
+        category listed in its 'sss' block. Start = confirmation date, end =
+        SSS reference end date + the rule's 'end_offset' (the SSS end already
+        follows the longest category duration on the order)."""
         self.ensure_one()
         start = self._admin_deadline_start_date()
+        sss_dates = self._compute_sss_reference_dates()
+        if not start or not sss_dates:
+            return None
         rule = self._admin_deadline_rule()
-        if not start or not rule:
-            return None
-        delays = self._admin_deadline_delays(rule)
-        if not delays:
-            return None
-        end = self._add_days(start, max(delays), rule.get('day_type'))
+        try:
+            end_offset = int(rule.get('end_offset', ADMIN_END_OFFSET_DEFAULT))
+        except (TypeError, ValueError):
+            end_offset = ADMIN_END_OFFSET_DEFAULT
+        _sss_start, sss_end = sss_dates
+        end = self._add_days(sss_end, end_offset, rule.get('day_type'))
         return start, end
 
     def _sync_admin_project_dates(self):
@@ -427,6 +469,8 @@ class SaleOrder(models.Model):
     def create(self, vals_list):
         if any(vals.get('x_responsable_dossier_id') for vals in vals_list):
             self._check_responsable_dossier_edit_allowed()
+        vals_list = [dict(vals, x_was_confirmed=True) if vals.get('state') in CONFIRMED_STATES
+                     else vals for vals in vals_list]
         return super().create(vals_list)
 
     @api.constrains('x_responsable_dossier_id')
