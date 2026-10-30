@@ -200,7 +200,7 @@ app. No business data is in them. On the copy of 2026-10-30:
 | SSS projects | -1 | The same "Field Service" project: as a Field Service project it got the SSS flag in the migration. |
 | Products | -2 | "Field Service" and "Booking Fees", the products of Field Service and of paid appointments; on no order or invoice. |
 | Messages | -3 | The chatter messages of the records above (e.g. "Project created"). |
-| Automation rules | -5 | The rules on appointment answers ("Add conjoint as Contact", "Update Contact Info", "Update Appointment Title", "Set Partner On Behalf", …): they work on the Appointments questionnaire, which goes; the questionnaire is now kept on the RDV itself (`x_rdv_answers`) and "pris à la place de" is set by bgg_custom_dev. |
+| Automation rules | -5 | The 5 rules on appointment answers: 1 "Add conjoint as Contact", 2 "Update Contact Info", 9 "Update Appointment Title", 13 "Set Clickable Customer Phone", 15 "Set Partner On Behalf", **all already inactive on production** (checked 2026-10-30). They work on the Appointments questionnaire, which goes; the questionnaire is now kept on the RDV itself (`x_rdv_answers`) and "pris à la place de" is set by bgg_custom_dev. |
 
 Everything else (users, orders, invoices, payments, RDVs, tasks, DMS,
 commissions…) must keep exactly its count: the line shows ❌ otherwise. The
