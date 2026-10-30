@@ -100,7 +100,7 @@ In **GitHub**:
    | bgg_custom_dev | 19.0.2.0.0 | Appointments → own RDV fields (type, status, answers), Field Service flag → SSS flag; installs the bridge `bgg_custom_dev_ee` |
    | bgg_custom_dev | 19.0.2.1.0 | Studio → module (fields kept, views rebuilt, Studio views switched off, filters repointed, SSS projects linked to their orders, AMSS ADMIN group adopted) |
    | bgg_custom_dev | 19.0.2.2.0 | Appointment staff → RDV type commercials |
-   | bgg_custom_dev | 19.0.2.3.0 | Studio → module: the sellable products list (Studio view switched off) |
+   | bgg_custom_dev | 19.0.2.3.0 | Studio → module: the sellable products list (Studio view switched off); roles made by hand adopted as module groups (Administrateur, Directeur Commercial, Responsable Equipe Commercial, Technicien) |
    | belgogreen_sales_commission | 19.0.1.0.0 | Enterprise commission plans → own plans (same ids) |
 
 3. **Gate.** The build is green. In its log (Odoo.sh → build → Logs →
@@ -111,6 +111,9 @@ In **GitHub**:
    - `bgg_custom_dev: … commercial(s) copied to the RDV types from the appointment types`
    - `bgg_custom_dev: 1 Studio view(s) switched off` a second time (19.0.2.3.0,
      the products list; absent on a database where Studio is already gone)
+   - `bgg_custom_dev: group 'Administrateur' (id 57) adopted as group_administrateur`,
+     and the same for Directeur Commercial, Responsable Equipe Commercial,
+     Technicien (19.0.2.3.0)
    - `belgogreen_sales_commission: copied … commission plan(s) and … plan assignment(s)`
 
    The counts are checked exactly in Phase 3 (`ee_preflight`).
@@ -152,7 +155,7 @@ Must end with **"Ready for the uninstall ✅"**. What it checks:
 
 | Section | ❌ when |
 |---|---|
-| Modules | `bgg_custom_dev`, `belgogreen_sales_commission`, the bridge or the DMS modules not installed, or installed at an older version than the code (migration not run); a module left half-way |
+| Modules | `bgg_custom_dev`, `belgogreen_sales_commission`, the bridge or the DMS modules not installed, or installed at an older version than the code (migration not run); a module left half-way. ⚠️: a group made by hand that no module declares (add it to `bgg_custom_dev/security/groups.xml` and its adoption to a migration) |
 | RDVs | an RDV whose own type or status differs from the Appointments one; answers without the questionnaire summary; an appointment type without its RDV type; staff missing from the RDV type commercials |
 | SSS projects | a Field Service project not flagged SSS (⚠️: SSS projects without their order, open decision #4) |
 | Commissions | a commission, role or plan assignment on a plan that is not ours |

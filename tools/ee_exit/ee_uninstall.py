@@ -897,6 +897,16 @@ def ee_preflight(env):
     if has_appointment:
         rows += _ee_module_rows(env, ('bgg_custom_dev_ee',))
     rows.append(_ee_pending_modules(env))
+    # roles made by hand (no module xmlid): kept by the restore, but not in
+    # the code; bgg_custom_dev adopts the known ones (security/groups.xml)
+    env.cr.execute("""SELECT g.id, COALESCE(g.name->>'fr_BE', g.name->>'en_US')
+                      FROM res_groups g
+                     WHERE NOT EXISTS (SELECT 1 FROM ir_model_data d WHERE d.model = 'res.groups'
+                                          AND d.res_id = g.id AND d.module NOT IN ('__custom__', '__export__'))
+                     ORDER BY g.id""")
+    hand_made = env.cr.fetchall()
+    rows.append(('warn' if hand_made else 'ok', 'Groups made by hand, not in a module',
+                 ', '.join('%s %s' % row for row in hand_made) or 'none'))
     ok &= _ee_report("MODULES (build done, DMS installed)", rows)
 
     # RDVs: Appointments -> bgg_custom_dev (migration 19.0.2.0.0 / 19.0.2.2.0, kept in sync by the bridge)

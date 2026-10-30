@@ -144,27 +144,33 @@ as `bgg_custom_dev.group_amss_admin` (same group, same members). Saved
 filters made in Studio are detached from Studio (kept) and repointed to
 our fields.
 
-**Groups** (production, 2026-10-30). Created by our modules: BGG Dashboard,
-Direction, Responsable Dossier, Responsable Dossier Admin (bgg_custom_dev),
-Commission User / Manager (belgogreen_sales_commission), PV Simulation User
-/ Administrator (bgg_pv_simulation), "Prise de RDV (call center)"
-(bgg_booking, new), Reconstruction Staging (bgg_staging_rebuild, not
-taken). Created by hand, kept in the database (the restore carries them):
+**Groups** (production, 2026-10-30). All the roles are now declared in the
+code. Created by our modules from the start: BGG Dashboard, Direction,
+Responsable Dossier, Responsable Dossier Admin (bgg_custom_dev), Commission
+User / Manager (belgogreen_sales_commission), PV Simulation User /
+Administrator (bgg_pv_simulation), "Prise de RDV (call center)" (bgg_booking,
+new), Reconstruction Staging (bgg_staging_rebuild, not taken). Created by
+hand or in Studio, **adopted** by bgg_custom_dev (`security/groups.xml`,
+noupdate; the migration gives the existing group the xmlid, so members,
+menus and rules stay as they are):
 
-| Group | id | Members | Created | In the code |
-|---|---|---|---|---|
-| Commercial | 59 | 44 | by hand | found by name, xmlid `bgg_custom_dev.group_commercial` given by the module's hook; RDV commercial, dashboards, avis report, booking rights |
-| Call Center | 56 | 6 | by hand | found by name, xmlid `bgg_custom_dev.group_call_center`; call-centre attribution, no-shows, booking rights |
-| AMSS ADMIN ("Admin" in French) | 58 | 12 | Studio (`__custom__.group_58`) | adopted as `bgg_custom_dev.group_amss_admin` (migration 19.0.2.1.0) |
-| Administrateur | 57 | 12 | Studio (`__custom__.group_57`) | not used |
-| Directeur Commercial | 60 | 2 | by hand | not used |
-| Responsable Equipe Commercial | 61 | 2 | by hand | not used |
-| Technicien | 76 | 11 | by hand | not used |
+| Group | id | Members | Created | xmlid | Adopted by |
+|---|---|---|---|---|---|
+| Commercial | 59 | 44 | by hand | `bgg_custom_dev.group_commercial` | the module's hook (already on production), declared in 19.0.2.3.0 |
+| Call Center | 56 | 6 | by hand | `bgg_custom_dev.group_call_center` | the module's hook (already on production), declared in 19.0.2.3.0 |
+| AMSS ADMIN ("Admin" in French) | 58 | 12 | Studio (`__custom__.group_58`) | `bgg_custom_dev.group_amss_admin` | migration 19.0.2.1.0 |
+| Administrateur | 57 | 12 | Studio (`__custom__.group_57`) | `bgg_custom_dev.group_administrateur` | migration 19.0.2.3.0 |
+| Directeur Commercial | 60 | 2 | by hand | `bgg_custom_dev.group_directeur_commercial` | migration 19.0.2.3.0 |
+| Responsable Equipe Commercial | 61 | 2 | by hand | `bgg_custom_dev.group_responsable_equipe_commercial` | migration 19.0.2.3.0 |
+| Technicien | 76 | 11 | by hand | `bgg_custom_dev.group_technicien` | migration 19.0.2.3.0 |
 
-The `__custom__` groups are not owned by Studio's module, so they should
-stay when it is uninstalled (to confirm on the staging copy after the
-uninstall). On a new database (not a restore) Commercial and Call
-Center would be missing: the module only warns.
+On production they give: Call Center 1 menu and 3 record rules, Commercial
+1 menu and 1 record rule, each of the other five 1 record rule; no access
+rights, no implied groups. Those menus and rules were set in Odoo and stay
+in the database (not yet in the code). All 7 groups were still there with
+the same members after the uninstall on bsi-staging (2026-10-30).
+`ee_preflight` warns about any other group made by hand ("Groups made by
+hand, not in a module").
 
 **Automation rules.** Inactive rules 1–19 are old versions of what is now
 in bgg_custom_dev; the 5 on appointment answers go with Appointments. The

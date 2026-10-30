@@ -26,6 +26,12 @@ class TestStudioFields(TransactionCase):
         self.assertIn('name="create_uid"', arch)
         self.assertIn('name="create_date"', arch)
 
+    def test_hand_made_groups_declared(self):
+        # adopted groups keep the names they had (any casing): only their xmlids are checked
+        for xmlid in ('group_amss_admin', 'group_commercial', 'group_call_center', 'group_administrateur',
+                      'group_directeur_commercial', 'group_responsable_equipe_commercial', 'group_technicien'):
+            self.assertTrue(self.env.ref('bgg_custom_dev.%s' % xmlid, raise_if_not_found=False), xmlid)
+
     def test_vendeur_associes_link_table(self):
         field = self.env['sale.order']._fields['x_studio_vendeur_associes']
         self.assertEqual((field.relation, field.column1, field.column2),

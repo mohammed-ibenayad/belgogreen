@@ -5,9 +5,10 @@ import logging
 _logger = logging.getLogger(__name__)
 
 # The "Commercial" and "Call Center" roles were created manually outside the
-# custom modules and never transferred into them, so they have no xmlid. We
-# resolve them by name (same pattern already used in sale_order.py and
-# avis_count_report.py) and map them to module xmlids for reuse.
+# custom modules. They are declared in security/groups.xml since 19.0.2.3.0
+# (existing groups adopted); this hook still resolves them by name (same
+# pattern as sale_order.py and avis_count_report.py) and maps them to the
+# module xmlids, for databases where the adoption did not run.
 EXTERNAL_GROUPS = {
     'group_commercial': 'Commercial',
     'group_call_center': 'Call Center',
