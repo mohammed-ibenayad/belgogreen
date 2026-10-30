@@ -117,10 +117,14 @@ In **GitHub**:
    - `bgg_custom_dev: access rule '[ADD] …' (id …) adopted as rule_calendar_event_…`
      (4 rules), and `access rule rule_calendar_event_call_center_types now …`,
      `… call_center_public now …` (19.0.2.3.0)
+   - `bgg_custom_dev: … SSS stage(s) created on the SSS projects that missed them`
+     (older SSS projects made in Field Service had no "SSS: À faire"),
    - `bgg_custom_dev: … SSS task(s) moved from a 'Nouveau' stage to 'SSS: À faire'`,
      `… stage(s) taken off the SSS projects`, `… unused stage(s) deleted`
-     (19.0.2.3.0; on the copy of 2026-10-30: about 200 tasks, 18 "Nouveau"
-     and 36 Planifié / En cours / Terminé / Annulé stages). A warning
+     (19.0.2.3.0 and 19.0.2.3.1; on the copy of 2026-10-30: about 200
+     tasks, 18 "Nouveau" and 36 Planifié / En cours / Terminé / Annulé
+     stages; 19.0.2.3.0 alone left 190 tasks in projects without
+     "SSS: À faire"). A warning
      `stage … still holds … SSS task(s)` names a stage left as is: look at it.
    - `belgogreen_sales_commission: copied … commission plan(s) and … plan assignment(s)`
 

@@ -307,3 +307,24 @@ class TestCloseProjects(TransactionCase):
 
         result = done.action_close_projects()
         self.assertEqual(result['params']['title'], 'Rien à faire')
+
+
+@tagged('post_install', '-at_install')
+class TestSssStages(TransactionCase):
+    """Stages added by mistake to the SSS projects (migrations 19.0.2.3.x)."""
+
+    def test_nouveau_tasks_move_and_extra_stages_go(self):
+        from odoo.addons.bgg_custom_dev.hooks import fix_sss_stages
+        Stage = self.env['project.task.type']
+        old_project = self.env['project.project'].create({'name': 'S00001 - SSS - Ancien', 'x_is_sss_project': True})
+        nouveau = Stage.create({'name': 'Nouveau', 'project_ids': [(4, old_project.id)]})
+        planned = Stage.create({'name': 'Planifié', 'project_ids': [(4, old_project.id)]})
+        task = self.env['project.task'].create({'name': 'PAC', 'project_id': old_project.id, 'stage_id': nouveau.id})
+
+        fix_sss_stages(self.env)
+        self.env.invalidate_all()
+
+        self.assertEqual(task.stage_id.name, 'SSS: À faire')
+        self.assertEqual(sorted(old_project.type_ids.mapped('name')), ['SSS: Encours/Fait', 'SSS: À faire'])
+        self.assertFalse(nouveau.exists())
+        self.assertFalse(planned.exists())
