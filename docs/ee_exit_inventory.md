@@ -94,7 +94,7 @@ Field Service was only used for the SSS projects and their tasks.
 (2025-12 to 2026-10) created stages linked to every SSS project: 18
 "Nouveau" (about 200 tasks in them) and 9 each of Planifié, En cours,
 Terminé, Annulé (no task). Migration 19.0.2.3.0 (post) moves the tasks of
-"Nouveau" to their project's "SSS: À faire", takes the other stages off the
+"Nouveau" to their project's "SSS: À faire" (confirmed 2026-10-30), takes the other stages off the
 SSS projects and deletes them when nothing uses them.
 
 Dropped (not used): worksheets, "under warranty", "allow material".
