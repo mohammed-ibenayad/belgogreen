@@ -188,6 +188,26 @@ tail -f ~/ee_exit_uninstall.log
 - "Enterprise modules still installed: none ✅",
 - "All counts kept ✅".
 
+**The "(-N expected)" in the counts.** A count may go down by the number
+shown, and only by it: these are records the Enterprise apps created for
+themselves, that no order, invoice, RDV or task uses, deleted with their
+app. No business data is in them. On the copy of 2026-10-30:
+
+| Count | Expected | What goes, and why it does not matter |
+|---|---|---|
+| Contacts | -1 | "VAT Revenue Services", a tax-office contact an Enterprise accounting module created; never used on an invoice or payment ("Collection Center - Advance Payment Service" is used: kept). |
+| Projects | -1 | The empty "Field Service" project Field Service creates when installed (no task); the SSS projects are separate projects, all kept. |
+| SSS projects | -1 | The same "Field Service" project: as a Field Service project it got the SSS flag in the migration. |
+| Products | -2 | "Field Service" and "Booking Fees", the products of Field Service and of paid appointments; on no order or invoice. |
+| Messages | -3 | The chatter messages of the records above (e.g. "Project created"). |
+| Automation rules | -5 | The 5 rules on appointment answers: 1 "Add conjoint as Contact", 2 "Update Contact Info", 9 "Update Appointment Title", 13 "Set Clickable Customer Phone", 15 "Set Partner On Behalf", **all already inactive on production** (checked 2026-10-30). They work on the Appointments questionnaire, which goes; the questionnaire is now kept on the RDV itself (`x_rdv_answers`) and "pris à la place de" is set by bgg_custom_dev. |
+
+Everything else (users, orders, invoices, payments, RDVs, tasks, DMS,
+commissions…) must keep exactly its count: the line shows ❌ otherwise. The
+numbers come from `ee_check` (Phase 3), which lists each record by name
+under "RECORDS THE MODULES CREATED"; they are saved in
+`expected_losses.json` and checked again after the restore.
+
 Lock timeouts in the log ("could not obtain lock")? Run `ee_blockers(env)`
 to see who holds them, then `ee_cleanup(env)` in a new shell.
 
@@ -332,4 +352,5 @@ domain, backups.
 |---|---|---|
 | 2026-10-23 | bsi-staging | All counts kept except 6 calendar events (fixed since: links emptied first, open decision #5); users who lost "Internal User" (fixed since: rights kept, #6); 4 leftovers of lock timeouts removed by `ee_cleanup`; no Enterprise code left, 141 modules. After it: app icons in Studio's format (black app menu) and an access rule on `appointment_type_id`, both fixed in the script. |
 | 2026-10-24 | bsi-staging dump → VPS (Docker) | Restore of the 2026-10-23 database: 27 GB zip, 144 modules, 31.2 GB / 47,541 files, about 10 minutes. `ee_final_check`: no Enterprise, all our modules at their code version, 44 users can log in, 4 booking types, 28 users can book; "Ready for the dump ✅". Found: automation rule 16 "Subscribe Admins to FSM Tasks" still filtered on the task's `is_fsm` (renamed since, and the final check now fails on such conditions); `ee_exit.tgz` not available (branch rebuilt since the uninstall). Two harmless load errors (`vector` extension of the Enterprise AI). |
-| next | fresh copy | First full run of this guide with both gates, then the restore on the server. |
+| 2026-10-30 | bsi-staging (fresh copy of production, client repository) | First full run of this guide, Phases 1–6, both gates passed. Migrations: 14 commission plans, 7 RDV types (34,255 RDVs, 9,963 with answers), 907 SSS projects (897 with their order), 12 Studio views off, 301 RDV type commercials. DMS: 2,913 folders, 6,102 files, 2,421 projects linked, no error. Uninstall: no Enterprise left, all counts kept (expected losses only: open decision #13); two foreign-key errors on Documents rows during the uninstall, harmless (tables dropped right after, DMS counts unchanged). Booking: 4 types, 28 users can book. 44 users with the apps screen at login. `ee_final_check`: "Ready for the dump ✅". |
+| next | 2026-10-30 dump → VPS | Phases 7–9: look at it, dump with filestore and `ee_exit.tgz`, restore on the server. |
