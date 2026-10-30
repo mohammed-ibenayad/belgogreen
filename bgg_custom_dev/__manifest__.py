@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen Custom Development',
-    'version': '19.0.1.34.0',
+    'version': '19.0.2.2.1',
     'category': 'Customizations',
     'summary': 'Custom business logic and automation for BelGoGreen',
     'description': """
@@ -12,7 +12,15 @@
 
         Model Extensions:
 
-        **Appointment Management (appointment.answer.input)**:
+        **No Enterprise dependency (19.0.2.0.0)**: the rules use the module's
+        own fields: RDV type (bgg.rdv.type, with its reference code) and RDV
+        status on calendar events, questionnaire answers summary on the event,
+        SSS project flag (x_is_sss_project). While Odoo Enterprise is
+        installed, the bridge module bgg_custom_dev_ee keeps them in sync with
+        Appointments / Field Service and holds the Enterprise-only automations
+        listed below (appointment answers, documents folder name).
+
+        **Appointment Management (appointment.answer.input, in bgg_custom_dev_ee)**:
         - Automatic spouse contact creation/update
         - Partner address information updates
         - Dynamic appointment title building
@@ -28,7 +36,7 @@
         - Customer deduplication by phone number
 
         **Project Management (project.project, project.task)**:
-        - Document folder naming from sales orders
+        - Document folder naming from sales orders (bgg_custom_dev_ee)
         - Admin project deadlines: project start = order confirmation date,
           project end = field service (SSS) reference end date + end_offset
           (10 business days), the SSS reference dates coming from the
@@ -65,8 +73,13 @@
           installation product (project-creating service) missing
         - Only the "Responsable Dossier Admin" group may set or change the
           Responsable of an order
-        - The "Créer tâches SSS" server action stays in Odoo Studio; it reads
-          the bgg.sss_project_manager_login parameter (SSS manager email)
+        - "Créer tâches SSS" (button for AMSS ADMIN, Action menu): for each
+          confirmed order with a (partly) paid invoice, a project flagged SSS
+          "<order> - SSS - <client>" linked to the order (manager from the
+          bgg.sss_project_manager_login parameter, stages "SSS: À faire" /
+          "SSS: Encours/Fait") with one task "<qty> x <product>" per
+          consumable product of the "All / Saleable" category; "Tâches" smart
+          button; "Recalculate Project deadline" action
 
         **AMSS Management dashboard (Direction group)**:
         - Direction tab: CA NET, Ventes Confirmées (+ annulées), TX Conversion
@@ -86,6 +99,19 @@
           commerciale (panier moyen global and per métier, annulation après
           signature)
 
+        **Former Odoo Studio customizations (19.0.2.1.0)**: fields (same
+        names and tables, data kept), view changes (calendar, sale order,
+        contacts, projects, tasks, SMS, logs, payment terms), saved filters,
+        "Clôturer les projets Admin/SSS" (projects), "Rappel pour statuer les
+        rendez-vous énergétique" (events, Action menu + daily job, inactive)
+        and "Créer tâches SSS" now live in this module; the Enterprise parts
+        are in bgg_custom_dev_ee.
+
+        **Commercials per RDV type (19.0.2.2.0)**: the staff of each Enterprise
+        appointment type is copied to its RDV type (Commerciaux) and kept in
+        sync by bgg_custom_dev_ee, so the Community booking can be set up from
+        it.
+
         All business logic includes comprehensive logging for debugging and monitoring.
     """,
     'author': 'BelGoGreen',
@@ -95,12 +121,12 @@
         'base',
         'mail',
         'calendar',
-        'appointment',
         'crm',
         'project',
-        'documents',
         'sale_project',
         'sale',
+        'sms',
+        'spreadsheet_dashboard',
     ],
     'data': [
         # Security
@@ -112,6 +138,7 @@
         'data/admin_project_deadline_params.xml',
 
         # Views
+        'views/bgg_rdv_type_views.xml',
         'views/calendar_event_views.xml',
         'views/commercial_dashboard_views.xml',
         'views/call_center_dashboard_views.xml',
@@ -126,6 +153,7 @@
         # Menus
         'views/menu_views.xml',
         'views/res_partner_views.xml',
+        'views/studio_views.xml',
 
         # Server actions
         'data/sale_order_server_actions.xml',

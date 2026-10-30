@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- "Prise de RDV": the steps of the Appointments booking pages the call
+         centre used (type, commercial, date & time, details, booked). -->
+    <record id="bgg_booking_wizard_view_form" model="ir.ui.view">
+        <field name="name">bgg.booking.wizard.form</field>
+        <field name="model">bgg.booking.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Prise de RDV">
+                <header>
+                    <field name="state" widget="statusbar" statusbar_visible="type,operator,slot,details,done"/>
+                </header>
+                <field name="allowed_need_ids" invisible="1"/>
+                <field name="allowed_combination_ids" invisible="1"/>
+                <field name="allowed_type_ids" invisible="1"/>
+                <field name="need_multiple" invisible="1"/>
+                <field name="ask_solar_since" invisible="1"/>
+                <field name="ask_sms_confirmation" invisible="1"/>
+                <field name="ask_on_behalf" invisible="1"/>
+
+                <!-- 1. Type -->
+                <div invisible="state != 'type'">
+                    <h3>Choisissez le type de rendez-vous</h3>
+                    <field name="type_id" widget="radio" nolabel="1" options="{'no_create': True}"/>
+                </div>
+
+                <!-- 2. Commercial -->
+                <div invisible="state != 'operator'">
+                    <h3>Avec quel commercial ?</h3>
+                    <group>
+                        <field name="type_id" readonly="1"/>
+                        <field name="combination_id" options="{'no_create': True, 'no_open': True}"
+                               placeholder="Rechercher un commercial…"/>
+                    </group>
+                    <button name="action_all_availabilities" type="object" class="btn-link ps-0"
+                            string="Voir toutes les disponibilités" icon="fa-arrow-right"/>
+                </div>
+
+                <!-- 3. Date & time: the month calendar, the free times of the
+                     chosen day, the RDV (as the Appointments booking page) -->
+                <div class="row g-4" invisible="state != 'slot'">
+                    <div class="col-lg-5">
+                        <h3>Choisissez une date et une heure</h3>
+                        <field name="month" invisible="1"/>
+                        <field name="day_availability" invisible="1"/>
+                        <field name="date" widget="bgg_booking_month_calendar" nolabel="1" class="w-100"/>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="text-muted mt-2"><field name="date_label" readonly="1"/></div>
+                        <h4 class="mb-3">Choisissez une heure</h4>
+                        <div class="alert alert-info" role="status" invisible="slot_ids">
+                            Aucune heure libre ce jour-là : choisissez un autre jour.
+                        </div>
+                        <field name="start" invisible="1"/>
+                        <field name="slot_combination_id" invisible="1"/>
+                        <field name="slot_ids" widget="bgg_booking_slot_buttons" invisible="not slot_ids" readonly="1" nolabel="1"
+                               class="w-100"/>
+                    </div>
+                    <div class="col-lg-3 border-start">
+                        <h4 class="mt-2"><field name="type_id" readonly="1" options="{'no_open': True}"/></h4>
+                        <div class="text-muted small text-uppercase mb-2">Détails</div>
+                        <div class="d-flex flex-column gap-2">
+                            <span><i class="fa fa-clock-o me-2 text-muted" title="Durée" aria-hidden="true"/><field name="duration" widget="float_time" class="d-inline"/> heure(s)</span>
+                            <span><i class="fa fa-user me-2 text-muted" title="Commercial" aria-hidden="true"/>
+                                <field name="combination_id" readonly="1" options="{'no_open': True}" class="d-inline"
+                                       invisible="not combination_id"/>
+                                <span invisible="combination_id">Tous les commerciaux</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Details -->
+                <div invisible="state != 'details'">
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <h3>Coordonnées du client</h3>
+                            <group>
+                                <field name="partner_name" required="state == 'details' and not partner_id"/>
+                                <field name="email" widget="email"/>
+                                <field name="phone" widget="phone" required="state == 'details'"
+                                       placeholder="Le client existant est retrouvé par son téléphone"/>
+                                <field name="partner_id" options="{'no_create': True}"/>
+                                <field name="street" required="state == 'details'"/>
+                                <field name="zip" required="state == 'details'"/>
+                                <field name="city" required="state == 'details'"/>
+                                <field name="country_id" required="state == 'details'" options="{'no_create': True}"/>
+                                <field name="solar_since" invisible="not ask_solar_since"
+                                       required="state == 'details' and ask_solar_since"/>
+                                <field name="is_owner" widget="radio" required="state == 'details'"/>
+                                <field name="spouse_name"/>
+                                <field name="spouse_phone" widget="phone"/>
+                                <label for="need_ids"/>
+                                <div>
+                                    <field name="need_ids" widget="many2many_tags" options="{'no_create': True}"
+                                           required="state == 'details'"/>
+                                    <div class="text-muted small" invisible="need_multiple">
+                                        Un seul besoin pour ce type de rendez-vous.
+                                    </div>
+                                </div>
+                                <field name="comments"/>
+                                <field name="on_behalf_id" options="{'no_create': True}" invisible="not ask_on_behalf"/>
+                                <field name="sms_confirmation" invisible="not ask_sms_confirmation"/>
+                            </group>
+                        </div>
+                        <div class="col-lg-4">
+                            <h3>Rendez-vous</h3>
+                            <group>
+                                <field name="type_id" readonly="1" string="Type"/>
+                                <field name="slot_combination_id" string="Commercial" readonly="1" options="{'no_open': True}"/>
+                                <field name="start_label"/>
+                                <field name="duration" widget="float_time"/>
+                            </group>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. Booked -->
+                <div invisible="state != 'done'">
+                    <div class="alert alert-success" role="status">
+                        <i class="fa fa-check-circle me-2"/>Le rendez-vous est réservé.
+                    </div>
+                    <group>
+                        <field name="meeting_id" readonly="1"/>
+                        <field name="type_id" readonly="1" string="Type"/>
+                        <field name="slot_combination_id" string="Commercial" readonly="1" options="{'no_open': True}"/>
+                        <field name="start_label"/>
+                        <field name="partner_id" readonly="1" string="Client"/>
+                    </group>
+                </div>
+
+                <footer>
+                    <button name="action_choose_type" type="object" string="Suivant" class="btn-primary"
+                            invisible="state != 'type'"/>
+                    <button name="action_choose_operator" type="object" string="Suivant" class="btn-primary"
+                            invisible="state != 'operator'"/>
+                    <button name="action_confirm" type="object" string="Confirmer le rendez-vous" class="btn-primary"
+                            invisible="state != 'details'"/>
+                    <button name="action_open_meeting" type="object" string="Ouvrir le RDV" class="btn-primary"
+                            invisible="state != 'done'"/>
+                    <button name="action_new_booking" type="object" string="Nouveau RDV" class="btn-secondary"
+                            invisible="state != 'done'"/>
+                    <button name="action_back" type="object" string="Retour" class="btn-secondary"
+                            invisible="state in ('type', 'done')"/>
+                    <button string="Fermer" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="bgg_booking_wizard_action" model="ir.actions.act_window">
+        <field name="name">Prise de RDV</field>
+        <field name="res_model">bgg.booking.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'dialog_size': 'extra-large'}</field>
+    </record>
+</odoo>

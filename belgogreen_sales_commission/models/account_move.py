@@ -6,6 +6,8 @@ from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
 
+IN_PAYMENT_AS_PAID_PARAM = 'belgogreen_sales_commission.count_in_payment_as_paid'
+
 
 class AccountMove(models.Model):
     _inherit = 'account.move'
@@ -29,8 +31,32 @@ class AccountMove(models.Model):
         for move in self:
             move.commission_count = len(move.sudo().commission_ids)
 
+    @api.model
+    def _get_commission_paid_states(self):
+        """Payment states that count as paid for commissions.
+
+        'paid' always counts. 'in_payment' (payment registered but not yet
+        matched with a bank statement line, the usual result of a payment
+        entered by hand on Community) counts too unless the system parameter
+        belgogreen_sales_commission.count_in_payment_as_paid is set to False.
+        """
+        value = self.env['ir.config_parameter'].sudo().get_param(
+            IN_PAYMENT_AS_PAID_PARAM, 'True')
+        if str(value).strip().lower() in ('false', '0', ''):
+            return ('paid',)
+        return ('paid', 'in_payment')
+
+    def _is_paid_for_commission(self):
+        """True if this invoice / bill counts as paid for commissions."""
+        self.ensure_one()
+        return self.payment_state in self._get_commission_paid_states()
+
     def _compute_payment_state(self):
-        """Override compute to mark commissions paid when vendor bill transitions to 'paid'.
+        """Override compute to mark commissions paid when vendor bill becomes paid.
+
+        "Paid" follows _get_commission_paid_states(): with the default setting a
+        bill going to 'in_payment' (payment entered by hand) already counts, and
+        its later move to 'paid' (bank reconciliation) does not trigger again.
 
         In Odoo 19, payment_state is a stored computed field. Reconciliation updates it
         via the ORM's internal _write() path (not the public write()), so overriding
@@ -46,16 +72,17 @@ class AccountMove(models.Model):
 
         super()._compute_payment_state()
 
-        # Detect transitions to 'paid' and trigger the hook
+        # Detect transitions to a paid state and trigger the hook
+        paid_states = self._get_commission_paid_states() if previous_states else ()
         for move in self:
             if move.id not in previous_states:
                 continue
             previous = previous_states[move.id]
             current = move.payment_state
-            if previous != 'paid' and current == 'paid':
+            if previous not in paid_states and current in paid_states:
                 _logger.info(
-                    "Commission Payment: ✅ _compute_payment_state transitioned %s from %s to paid; triggering _mark_commissions_paid",
-                    move.name, previous,
+                    "Commission Payment: ✅ _compute_payment_state transitioned %s from %s to %s; triggering _mark_commissions_paid",
+                    move.name, previous, current,
                 )
                 try:
                     move._mark_commissions_paid()

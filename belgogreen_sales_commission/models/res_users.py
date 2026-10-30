@@ -16,7 +16,7 @@ class ResUsers(models.Model):
 
     # Commission plan assignments (NEW - replaces global role)
     commission_plan_assignments = fields.One2many(
-        'sale.commission.plan.user',
+        'bgg.commission.plan.user',
         'user_id',
         string='Commission Plan Assignments',
         groups='belgogreen_sales_commission.group_commission_user',
@@ -101,7 +101,7 @@ class ResUsers(models.Model):
         return {
             'name': _('My Commission Plans'),
             'type': 'ir.actions.act_window',
-            'res_model': 'sale.commission.plan',
+            'res_model': 'bgg.commission.plan',
             'view_mode': 'list,form',
             'domain': [('user_ids.user_id', '=', self.id)],
         }

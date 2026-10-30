@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- While Enterprise Appointments is installed, its own type and status
+         widgets are used: hide the bgg_custom_dev RDV fields (still loaded,
+         the visibility rules of the form use them). -->
+    <record id="view_calendar_event_form_hide_bgg_rdv" model="ir.ui.view">
+        <field name="name">calendar.event.form.hide.bgg.rdv</field>
+        <field name="model">calendar.event</field>
+        <field name="inherit_id" ref="bgg_custom_dev.view_calendar_event_form_inherit_bgg"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='bgg_rdv']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

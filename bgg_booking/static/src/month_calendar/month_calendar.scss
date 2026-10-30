@@ -1,0 +1,26 @@
+// "Prise de RDV": month calendar and free time buttons (Odoo's own colours).
+.o_bgg_month_grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 6px;
+}
+
+.o_bgg_day {
+    height: 44px;
+    padding: 0;
+}
+
+.o_bgg_legend {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    vertical-align: middle;
+}
+
+// the free times of the day: buttons, two per row
+.o_bgg_slot_grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}

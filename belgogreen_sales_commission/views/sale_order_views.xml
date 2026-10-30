@@ -60,6 +60,24 @@
             </field>
         </record>
 
+        <!-- Quotations list: legacy "commission paid" flags (formerly an Odoo
+             Studio view) -->
+        <record id="view_quotation_tree_commission_paid_flags" model="ir.ui.view">
+            <field name="name">sale.order.quotation.list.commission.paid.flags</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.view_quotation_tree_with_onboarding"/>
+            <field name="arch" type="xml">
+                <field name="state" position="after">
+                    <field name="x_studio_payee_commercial" optional="show" readonly="True"
+                           groups="belgogreen_sales_commission.group_commission_manager"/>
+                    <field name="x_studio_payee_responsable_commercial" optional="show" readonly="True"
+                           groups="belgogreen_sales_commission.group_commission_manager"/>
+                    <field name="x_studio_payee_directeur_commercial" optional="show" readonly="True"
+                           groups="belgogreen_sales_commission.group_commission_manager"/>
+                </field>
+            </field>
+        </record>
+
         <!-- Server Action for Bulk Commission Generation -->
         <record id="action_server_generate_commissions_bulk" model="ir.actions.server">
             <field name="name">Générer les commissions</field>

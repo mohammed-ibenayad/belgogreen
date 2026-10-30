@@ -101,6 +101,19 @@
             <field name="perm_unlink" eval="False"/>
         </record>
 
+        <!-- Commission plans and assignments: multi-company isolation -->
+        <record id="bgg_commission_plan_company_rule" model="ir.rule">
+            <field name="name">Commission plan: multi-company</field>
+            <field name="model_id" ref="model_bgg_commission_plan"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        </record>
+
+        <record id="bgg_commission_plan_user_company_rule" model="ir.rule">
+            <field name="name">Commission plan assignment: multi-company</field>
+            <field name="model_id" ref="model_bgg_commission_plan_user"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        </record>
+
         <!-- Role Config: Only managers can access -->
         <record id="hr_commission_role_config_manager_rule" model="ir.rule">
             <field name="name">Manager can manage role configs</field>

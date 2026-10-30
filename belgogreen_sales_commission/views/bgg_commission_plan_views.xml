@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Commission plan form (standalone: no longer inherits the Enterprise form) -->
+        <record id="view_bgg_commission_plan_form" model="ir.ui.view">
+            <field name="name">bgg.commission.plan.form</field>
+            <field name="model">bgg.commission.plan</field>
+            <field name="arch" type="xml">
+                <form string="Plan de commission">
+                    <header>
+                        <button name="action_approve" type="object" string="Approuver"
+                                class="oe_highlight" invisible="state != 'draft'"/>
+                        <button name="action_draft" type="object" string="Remettre en brouillon"
+                                invisible="state not in ['approved', 'cancel']"/>
+                        <button name="action_cancel" type="object" string="Annuler"
+                                invisible="state not in ['draft', 'approved']"/>
+                        <field name="state" widget="statusbar" statusbar_visible="draft,approved"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_button_box" name="button_box">
+                            <button name="action_view_commissions"
+                                    type="object"
+                                    class="oe_stat_button"
+                                    icon="fa-money"
+                                    groups="belgogreen_sales_commission.group_commission_user">
+                                <field name="commission_count" widget="statinfo" string="Commissions"/>
+                            </button>
+                        </div>
+                        <widget name="web_ribbon" title="Archivé" bg_color="text-bg-danger" invisible="active"/>
+                        <field name="active" invisible="1"/>
+                        <div class="oe_title">
+                            <label for="name"/>
+                            <h1><field name="name" placeholder="ex. Plan Standard (5-3-12)" readonly="state != 'draft'"/></h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="company_id" groups="base.group_multi_company" readonly="state != 'draft'"/>
+                                <field name="company_id" invisible="1" groups="!base.group_multi_company"/>
+                            </group>
+                            <group>
+                                <label for="date_from" string="Période d'application"/>
+                                <div class="o_row">
+                                    <field name="date_from" placeholder="Début"/>
+                                    <span>→</span>
+                                    <field name="date_to" placeholder="Fin"/>
+                                </div>
+                            </group>
+                        </group>
+                        <notebook name="main_book">
+
+                            <!-- Role Percentages Tab -->
+                            <page string="Pourcentages par Rôle" name="role_config">
+                                <field name="role_config_ids">
+                                    <list editable="bottom">
+                                        <field name="role_id" string="Rôle"/>
+                                        <field name="direct_sale_percentage" string="Vente Directe %"/>
+                                        <field name="override_percentage" string="Comm. Supervision %"/>
+                                        <field name="active" string="Actif"/>
+                                    </list>
+                                </field>
+                                <group>
+                                    <div class="alert alert-info" role="alert">
+                                        <strong>Note :</strong> Définissez DEUX pourcentages de commission pour chaque rôle :
+                                        <ul>
+                                            <li><strong>Vente Directe % :</strong> Lorsque l'utilisateur réalise sa propre vente</li>
+                                            <li><strong>Commission de Supervision % :</strong> Lorsque l'utilisateur reçoit une commission sur la vente d'un subordonné</li>
+                                        </ul>
+                                        <br/>
+                                        <strong>Exemple de configuration :</strong>
+                                        <ul>
+                                            <li>Vendeur : Direct : 5%, Supervision : 0% (rôle de base, pas d'équipe)</li>
+                                            <li>Chef d'équipe : Direct : 5%, Supervision : 2% (réalise ses propres ventes + supervision équipe)</li>
+                                            <li>Directeur Commercial : Direct : 5%, Supervision : 1% (réalise ses propres ventes + supervision toute équipe)</li>
+                                        </ul>
+                                    </div>
+                                </group>
+                            </page>
+
+                            <!-- Users & Hierarchy Tab -->
+                            <page string="Vendeurs et Hiérarchie" name="users_hierarchy">
+                                <field name="user_ids">
+                                    <list editable="bottom">
+                                        <field name="user_id" string="Vendeur" domain="[('company_id', '=', parent.company_id)]"/>
+                                        <field name="role_id" string="Rôle" domain="[('company_id', '=', parent.company_id)]"/>
+                                        <field name="role_sequence" string="Niveau" readonly="1"/>
+                                        <field name="manager_id" string="Manager"/>
+                                        <field name="direct_sale_percentage_display" string="Vente Directe %" readonly="1" optional="show"/>
+                                        <field name="override_percentage_display" string="Supervision %" readonly="1" optional="show"/>
+                                        <field name="date_from" string="Date Début" optional="show"/>
+                                        <field name="date_to" string="Date Fin" optional="show"/>
+                                    </list>
+                                </field>
+                                <group>
+                                    <div class="alert alert-info" role="alert">
+                                        <strong>Attribution de Rôle Basée sur le Plan :</strong>
+                                        <ul>
+                                            <li>Assignez chaque utilisateur à ce plan avec son rôle</li>
+                                            <li>Définissez son manager dans la hiérarchie de ce plan</li>
+                                            <li>Les utilisateurs peuvent avoir différents rôles dans différents plans</li>
+                                            <li>Les utilisateurs de niveau supérieur (Directeur) ne doivent PAS avoir de manager</li>
+                                            <li><strong>Date Début/Fin :</strong> Période de validité optionnelle pour cette affectation (laissez vide pour une affectation permanente)</li>
+                                        </ul>
+                                        <br/>
+                                        <strong>Exemple de Hiérarchie :</strong>
+                                        <ul>
+                                            <li>Frederic Adam : Directeur de Sales, Manager : (aucun), Dates : (permanent)</li>
+                                            <li>Corine Detilleux : Chef d'équipe, Manager : Frederic Adam, Dates : (permanent)</li>
+                                            <li>John Doe : Vendeur, Manager : Corine Detilleux, Dates : 2025-01-01 à 2025-12-31 (saisonnier)</li>
+                                        </ul>
+                                        <br/>
+                                        <strong>💡 Astuce :</strong> Les pourcentages affichés sont automatiquement récupérés de la configuration du rôle sélectionné.
+                                    </div>
+                                </group>
+                            </page>
+
+                            <!-- Configuration Tab -->
+                            <page string="Configuration" name="hierarchical_config">
+                                <group>
+                                    <group string="Exigences de Paiement">
+                                        <field name="require_invoice_paid" string="Facture Payée Requise"/>
+                                        <div class="text-muted" style="margin-left: 20px;">
+                                            Si activé, les commissions ne seront générées que lorsque la facture client est payée
+                                            (statut « Payé », ou « En paiement » pour un paiement encodé à la main).
+                                            Si désactivé, les commissions seront créées dès que la facture est validée/confirmée,
+                                            quel que soit le statut de paiement.
+                                        </div>
+                                    </group>
+                                </group>
+                            </page>
+                        </notebook>
+                    </sheet>
+                    <chatter/>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_bgg_commission_plan_list" model="ir.ui.view">
+            <field name="name">bgg.commission.plan.list</field>
+            <field name="model">bgg.commission.plan</field>
+            <field name="arch" type="xml">
+                <list string="Plans de commission">
+                    <field name="name" string="Nom"/>
+                    <field name="date_from" string="Début" optional="show"/>
+                    <field name="date_to" string="Fin" optional="show"/>
+                    <field name="user_count" string="Vendeurs" optional="show"/>
+                    <field name="state" string="Statut"
+                           widget="badge"
+                           decoration-success="state == 'approved'"
+                           decoration-info="state == 'draft'"
+                           decoration-muted="state in ['done', 'cancel']"/>
+                    <field name="company_id" string="Société" groups="base.group_multi_company" optional="show"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_bgg_commission_plan_search" model="ir.ui.view">
+            <field name="name">bgg.commission.plan.search</field>
+            <field name="model">bgg.commission.plan</field>
+            <field name="arch" type="xml">
+                <search string="Plans de commission">
+                    <field name="name"/>
+                    <field name="user_ids" string="Vendeur" filter_domain="[('user_ids.user_id', 'ilike', self)]"/>
+                    <field name="company_id" groups="base.group_multi_company"/>
+
+                    <filter string="Brouillon" name="draft" domain="[('state', '=', 'draft')]"/>
+                    <filter string="Approuvé" name="approved" domain="[('state', '=', 'approved')]"/>
+                    <filter string="Annulé" name="cancelled" domain="[('state', '=', 'cancel')]"/>
+                    <separator/>
+                    <filter string="Archivé" name="inactive" domain="[('active', '=', False)]"/>
+
+                    <group>
+                        <filter string="Statut" name="group_by_state" context="{'group_by': 'state'}"/>
+                        <filter string="Société" name="group_by_company" context="{'group_by': 'company_id'}" groups="base.group_multi_company"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <record id="action_bgg_commission_plan" model="ir.actions.act_window">
+            <field name="name">Plans de commission</field>
+            <field name="res_model">bgg.commission.plan</field>
+            <field name="view_mode">list,form</field>
+            <field name="search_view_id" ref="view_bgg_commission_plan_search"/>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Créer un plan de commission
+                </p>
+                <p>
+                    Un plan définit les pourcentages par rôle (vente directe et supervision)
+                    et la hiérarchie des vendeurs (rôle et manager de chacun).
+                </p>
+            </field>
+        </record>
+
+    </data>
+</odoo>

@@ -12,6 +12,8 @@ _logger = logging.getLogger(__name__)
 # from the order (Responsable du dossier, payment term x product categories)
 # and therefore locked against manual edits.
 ADMIN_PROJECT_LOCKED_FIELDS = ('user_id', 'date_start', 'date')
+# Project stage of the closed projects ("Clôturer les projets Admin/SSS").
+CLOSED_PROJECT_STAGE_NAME = 'Terminé'
 
 
 class ProjectProject(models.Model):
@@ -33,6 +35,24 @@ class ProjectProject(models.Model):
     # "Bloqué" status (admin projects only, see project_update.py). Setting
     # the status from the project creates a status update, where the checks
     # are made.
+    # Field service (SSS) project of an order. Own flag replacing the
+    # Enterprise Field Service 'is_fsm' (kept in sync by the bridge module
+    # bgg_custom_dev_ee while Enterprise is installed).
+    x_is_sss_project = fields.Boolean(
+        string='Projet SSS (service sur site)',
+        index=True,
+        copy=False,
+    )
+    # Order of an SSS project, set by "Créer tâches SSS". The standard
+    # sale_order_id of a project comes from an order line, which an SSS
+    # project does not have.
+    x_sss_sale_order_id = fields.Many2one(
+        'sale.order',
+        string='Commande (SSS)',
+        index='btree_not_null',
+        copy=False,
+    )
+
     last_update_status = fields.Selection(
         selection_add=[('on_hold',), (BLOCKED_STATUS, 'Bloqué')],
         ondelete={BLOCKED_STATUS: 'set default'},
@@ -134,7 +154,6 @@ class ProjectProject(models.Model):
         records = super(ProjectProject, self).create(vals_list)
 
         for record in records:
-            self._update_project_folder_name(record)
             # Dossier: a project created for an order that already has a
             # Responsable gets them as project manager. Its tasks do not exist
             # yet at this point (template tasks are copied after the project
@@ -240,74 +259,81 @@ class ProjectProject(models.Model):
         ])
         open_tasks._apply_responsable_dossier(responsable, previous_user)
 
-    def write(self, vals):
-        """Override write to handle folder creation after project creation"""
-        self._check_admin_project_locked_fields(vals)
-        result = super(ProjectProject, self).write(vals)
+    # ------------------------------------------------------------------
+    # "Clôturer les projets Admin/SSS" (Action menu, formerly in Studio)
+    # ------------------------------------------------------------------
 
-        # If a documents folder is being added to the project, try to rename it
-        if 'documents_folder_id' in vals and vals['documents_folder_id']:
-            _logger.info("[FOLDER RENAME] documents_folder_id added via write(), triggering rename")
-            for record in self:
-                # Force the rename since this might be adding the folder after creation
-                self._update_project_folder_name(record, force=True)
+    def action_close_projects(self):
+        """Move the selected projects whose tasks are all closed to the
+        "Terminé" project stage, with the "Terminé" status. Projects without
+        task or with an open task are left as they are."""
+        Stage = self.env['project.project.stage']
+        closed_stage = (Stage.search([('name', '=', CLOSED_PROJECT_STAGE_NAME)], limit=1)
+                        or self.env.ref('project.project_project_stage_2', raise_if_not_found=False))
+        if not closed_stage:
+            return self._notification(
+                'Étape introuvable',
+                f"L'étape de projet « {CLOSED_PROJECT_STAGE_NAME} » est introuvable. "
+                "Aucun projet n'a été modifié.", 'danger', sticky=True)
 
-        return result
-
-    def _update_project_folder_name(self, record, force=False):
-        """
-        Update Project Folder Name - Automation Rule
-        Renames the project's documents folder based on sales order and customer name
-        Format: SO Name - Projet - Customer Name
-
-        Args:
-            record: project.project record
-            force: if True, skip the timestamp check (useful for manual triggers)
-        """
-        try:
-            _logger.info("[FOLDER RENAME] Checking project (ID %s): %s", record.id, record.name)
-            _logger.info("[FOLDER RENAME]   create_date: %s, write_date: %s",
-                        record.create_date, record.write_date)
-
-            # Only process if this is a new record (newly created project from template)
-            # Skip this check if force=True (for manual triggers)
-            if not force and not (record.create_date == record.write_date):
-                _logger.info("[FOLDER RENAME]   Skipping - not a new record (create_date != write_date)")
-                return
-
-            # Check if project has an associated sale order line
-            if not record.sale_line_id:
-                _logger.info("[FOLDER RENAME]   Skipping - no sale_line_id")
-                return
-
-            # Get the sales order and client information
-            sale_order = record.sale_line_id.order_id
-            customer = sale_order.partner_id
-
-            _logger.info("[FOLDER RENAME]   Sale Order: %s, Customer: %s",
-                        sale_order.name, customer.name)
-
-            # Check if we have a documents folder created
-            if not record.documents_folder_id:
-                _logger.info("[FOLDER RENAME]   Skipping - no documents folder yet for project ID %s", record.id)
-                return
-
-            # Create new folder name with SO reference and client name
-            new_folder_name = f"{sale_order.name} - Projet - {customer.name}"
-            current_folder_name = record.documents_folder_id.name
-
-            _logger.info("[FOLDER RENAME]   Current folder: '%s'", current_folder_name)
-            _logger.info("[FOLDER RENAME]   Target folder: '%s'", new_folder_name)
-
-            if current_folder_name != new_folder_name:
-                record.documents_folder_id.write({
-                    'name': new_folder_name
-                })
-                _logger.info("[FOLDER RENAME]   ✓ Updated folder name to: '%s' for project ID %s",
-                           new_folder_name, record.id)
+        projects = self.exists()
+        tasks_by_project = self.env['project.task'].search(
+            [('project_id', 'in', projects.ids)]).grouped('project_id')
+        Project = self.browse()
+        already_closed, no_tasks, with_open_tasks, to_close = Project, Project, Project, Project
+        for project in projects:
+            tasks = tasks_by_project.get(project, self.env['project.task'])
+            if project.stage_id == closed_stage:
+                already_closed |= project
+            elif not tasks:
+                no_tasks |= project
+            elif any(not task.is_closed for task in tasks):
+                with_open_tasks |= project
             else:
-                _logger.info("[FOLDER RENAME]   Folder name already correct for project ID %s", record.id)
+                to_close |= project
+        if to_close:
+            to_close.write({'stage_id': closed_stage.id, 'last_update_status': 'done'})
+            _logger.info("Close projects: %s moved to %s", to_close.ids, closed_stage.name)
+        status_aligned = already_closed.filtered(lambda p: p.last_update_status != 'done')
+        if status_aligned:
+            status_aligned.write({'last_update_status': 'done'})
 
-        except Exception as e:
-            _logger.error("[FOLDER RENAME] Error processing project ID %s: %s",
-                        record.id, str(e), exc_info=True)
+        parts = [f'{len(projects)} projet(s) sélectionné(s)']
+        if to_close:
+            parts.append(f'{len(to_close)} clôturé(s) → « {closed_stage.name} »')
+        if with_open_tasks:
+            parts.append(f'{len(with_open_tasks)} ignoré(s), tâches encore ouvertes')
+        if no_tasks:
+            parts.append(f'{len(no_tasks)} ignoré(s), sans tâche')
+        if already_closed:
+            parts.append(f'{len(already_closed)} déjà dans « {closed_stage.name} »'
+                         + (f' (dont {len(status_aligned)} statut mis à jour)' if status_aligned else ''))
+        skipped = with_open_tasks or no_tasks
+        if (to_close or status_aligned) and not skipped:
+            title, notif_type, sticky = 'Projets clôturés', 'success', False
+        elif to_close:
+            title, notif_type, sticky = 'Projets partiellement clôturés', 'warning', True
+        elif skipped:
+            title, notif_type, sticky = 'Aucun projet clôturé', 'warning', True
+        else:
+            title, notif_type, sticky = 'Rien à faire', 'info', False
+        return self._notification(title, ' | '.join(parts), notif_type, sticky=sticky)
+
+    @api.model
+    def _notification(self, title, message, notif_type, sticky=False):
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': title,
+                'message': message,
+                'type': notif_type,
+                'sticky': sticky,
+                'next': {'type': 'ir.actions.client', 'tag': 'soft_reload'},
+            },
+        }
+
+    def write(self, vals):
+        """Block manual edits of the locked admin project fields"""
+        self._check_admin_project_locked_fields(vals)
+        return super(ProjectProject, self).write(vals)

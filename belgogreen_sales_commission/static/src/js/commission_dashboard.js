@@ -3,7 +3,8 @@
 import { registry } from "@web/core/registry";
 import { Component, onWillStart, onMounted, useState, useRef } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
-import { loadJS } from "@web/core/assets";
+import { loadBundle } from "@web/core/assets";
+import { rpc } from "@web/core/network/rpc";
 
 export class CommissionDashboard extends Component {
     static template = "commission.dashboard";
@@ -13,17 +14,11 @@ export class CommissionDashboard extends Component {
         // Use refs for DOM access
         this.root = useRef("root");
 
-        // Try to access services safely
-        try {
-            this.rpc = useService("rpc");
-            this.orm = useService("orm");
-            this.actionService = useService("action");
-            this.notification = useService("notification");
-        } catch (e) {
-            console.log("Services not available, will use fallback:", e.message);
-            // Services might not be available yet, we'll use fallback
-            this.rpc = null;
-        }
+        // Odoo 19: rpc is a plain function (there is no "rpc" service anymore)
+        this.rpc = rpc;
+        this.orm = useService("orm");
+        this.actionService = useService("action");
+        this.notification = useService("notification");
 
         this.state = useState({
             data: null,
@@ -147,9 +142,9 @@ export class CommissionDashboard extends Component {
 
     async loadChartJS() {
         try {
-            // Load Chart.js from CDN
+            // Chart.js bundled with Odoo (no external CDN)
             if (typeof Chart === 'undefined') {
-                await loadJS("https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js");
+                await loadBundle("web.chartjs_lib");
             }
             this.state.chartLoaded = true;
         } catch (error) {

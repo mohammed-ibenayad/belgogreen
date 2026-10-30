@@ -258,7 +258,7 @@ class AmssManagementDashboard(models.TransientModel):
         fin_all = commercial._compute_financial_kpis(all_orders) if payment_term_id else fin
 
         events = self._appointment_events(date_start, date_end, company_ids, user_id)
-        present = commercial._count_appointment_statuses(events)['attended']
+        present = commercial._count_x_rdv_statuses(events)['attended']
         ventes_signees = fin_all['nbre_vies'] + fin_all['ventes_annulees']
         return {
             'ca_net': round(fin['ca_brut'] - fin['ca_annule'], 2),
@@ -271,13 +271,13 @@ class AmssManagementDashboard(models.TransientModel):
     def _appointment_events(self, date_start, date_end, company_ids, user_id=None):
         """Call center + commercial appointments of the period, archived
         included (as in Suivi Commercial), all statuses."""
-        appointment_types = self.env['appointment.type'].sudo().search([
-            ('x_appointment_ref', 'in', CALL_CENTER_APPOINTMENT_REFS + COMMERCIAL_APPOINTMENT_REFS),
+        appointment_types = self.env['bgg.rdv.type'].sudo().search([
+            ('code', 'in', CALL_CENTER_APPOINTMENT_REFS + COMMERCIAL_APPOINTMENT_REFS),
         ])
         domain = [
             ('start', '>=', fields.Datetime.to_string(date_start)),
             ('start', '<', fields.Datetime.to_string(date_end)),
-            ('appointment_type_id', 'in', appointment_types.ids),
+            ('x_rdv_type_id', 'in', appointment_types.ids),
             ('user_id.company_id', 'in', company_ids),
         ]
         if user_id:
@@ -497,17 +497,17 @@ class AmssManagementDashboard(models.TransientModel):
     @api.model
     def _sss_projects_by_order(self, orders):
         """{order id: field service (SSS) projects} for `orders`. The SSS
-        project is created by the "Créer tâches SSS" server action (Studio):
-        a field service project linked to the order (sale_order_id) and named
-        "<order> - SSS - <client>"."""
+        project is created by the "Créer tâches SSS" action: a project
+        flagged x_is_sss_project, linked to the order (x_sss_sale_order_id) and
+        named "<order> - SSS - <client>" (name used for older projects)."""
         Project = self.env['project.project'].sudo()
-        if 'is_fsm' not in Project._fields or not orders:
+        if not orders:
             return {}
         by_name = {order.name: order.id for order in orders}
-        projects = Project.search([('is_fsm', '=', True), ('is_template', '=', False)])
+        projects = Project.search([('x_is_sss_project', '=', True), ('is_template', '=', False)])
         result = {}
         for project in projects:
-            order_id = (project.sale_order_id.id if 'sale_order_id' in Project._fields else False)
+            order_id = project.x_sss_sale_order_id.id or project.sale_order_id.id
             if order_id not in orders.ids:
                 order_id = by_name.get((project.name or '').split(' - SSS - ')[0].strip())
             if order_id:
@@ -650,15 +650,15 @@ class AmssManagementDashboard(models.TransientModel):
     def _commercial_events(self, f):
         """Call center + commercial appointments of the period (archived
         included, as in Suivi Commercial), of the selected salesperson."""
-        types = self.env['appointment.type'].sudo().search([
-            ('x_appointment_ref', 'in', CALL_CENTER_APPOINTMENT_REFS + COMMERCIAL_APPOINTMENT_REFS),
+        types = self.env['bgg.rdv.type'].sudo().search([
+            ('code', 'in', CALL_CENTER_APPOINTMENT_REFS + COMMERCIAL_APPOINTMENT_REFS),
         ])
         domain = [
             ('start', '>=', fields.Datetime.to_string(f['date_start'])),
             ('start', '<', fields.Datetime.to_string(f['date_end'])),
-            ('appointment_type_id', 'in', types.ids),
+            ('x_rdv_type_id', 'in', types.ids),
             ('user_id.company_id', 'in', f['company_ids']),
-            ('appointment_status', 'in', ['attended', 'no_show', 'cancelled', 'booked']),
+            ('x_rdv_status', 'in', ['attended', 'no_show', 'cancelled', 'booked']),
         ]
         if f.get('user_id'):
             domain.append(('user_id', '=', f['user_id']))
@@ -701,7 +701,7 @@ class AmssManagementDashboard(models.TransientModel):
             'bc_par_commercial': bars,
             'funnel': {
                 'rdv_poses': len(events),
-                'rdv_tenus': len(events.filtered(lambda e: e.appointment_status == 'attended')),
+                'rdv_tenus': len(events.filtered(lambda e: e.x_rdv_status == 'attended')),
                 'bc_signes': signed,
             },
             'qualite': {
@@ -734,7 +734,7 @@ class AmssManagementDashboard(models.TransientModel):
             # the denominator: RDV Présents
             return self._appointment_events(
                 f['date_start'], f['date_end'], f['company_ids'], f.get('user_id'),
-            ).filtered(lambda e: e.appointment_status == 'attended')
+            ).filtered(lambda e: e.x_rdv_status == 'attended')
         if card in ('ca_net', 'ventes_confirmees', 'signe', 'facture', 'encaisse',
                     'reste_a_facturer', 'reste_a_encaisser'):
             orders = self._period_orders(f['date_start'], f['date_end'], f['company_ids'],
@@ -763,7 +763,7 @@ class AmssManagementDashboard(models.TransientModel):
         if card in ('funnel_rdv_poses', 'funnel_rdv_tenus'):
             events = self._commercial_events(f)
             if card == 'funnel_rdv_tenus':
-                events = events.filtered(lambda e: e.appointment_status == 'attended')
+                events = events.filtered(lambda e: e.x_rdv_status == 'attended')
             return events
         if card.startswith('recouvrement_'):
             return self._recouvrement(f['company_ids'], f['payment_term_id'])[card][0]

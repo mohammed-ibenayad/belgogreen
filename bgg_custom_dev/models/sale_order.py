@@ -505,7 +505,7 @@ class SaleOrder(models.Model):
             "Candidates are every RDV related to the sale (linked to its "
             "opportunity, or matching seller + client) whose start is at or "
             "before date_order — regardless of appointment type. "
-            "If multiple candidates exist, the ones with appointment_status "
+            "If multiple candidates exist, the ones with x_rdv_status "
             "= 'attended' are preferred; among those, the one whose start is "
             "closest to date_order wins. "
             "From the winning RDV: x_studio_rendez_vous_pris_la_place_de "
@@ -585,8 +585,8 @@ class SaleOrder(models.Model):
         'opportunity_id',
         'opportunity_id.calendar_event_ids',
         'opportunity_id.calendar_event_ids.create_uid',
-        'opportunity_id.calendar_event_ids.appointment_type_id',
-        'opportunity_id.calendar_event_ids.appointment_status',
+        'opportunity_id.calendar_event_ids.x_rdv_type_id',
+        'opportunity_id.calendar_event_ids.x_rdv_status',
         'opportunity_id.calendar_event_ids.start',
         'opportunity_id.calendar_event_ids.x_studio_rendez_vous_pris_la_place_de',
         'user_id',
@@ -595,8 +595,8 @@ class SaleOrder(models.Model):
     )
     def _compute_call_center_attribution(self):
         """Compute both the owner partner and the winning event together."""
-        call_center_type_ids = self.env['appointment.type'].search([
-            ('x_appointment_ref', 'in', CALL_CENTER_APPOINTMENT_REFS),
+        call_center_type_ids = self.env['bgg.rdv.type'].search([
+            ('code', 'in', CALL_CENTER_APPOINTMENT_REFS),
         ]).ids
         call_center_group = self.env['res.groups'].search([
             ('name', '=', 'Call Center'),
@@ -617,7 +617,7 @@ class SaleOrder(models.Model):
                 #    call-center appointment type AND was created by a user in
                 #    the "Call Center" group. This is what voids attribution
                 #    when the salesperson took over with a commercial RDV.
-                elif (event.appointment_type_id.id in call_center_type_ids
+                elif (event.x_rdv_type_id.id in call_center_type_ids
                       and event.create_uid
                       and call_center_group_id
                       and call_center_group_id in event.create_uid.group_ids.ids):
@@ -654,7 +654,7 @@ class SaleOrder(models.Model):
 
         - 0 candidates → return empty.
         - 1 candidate → it wins, status-blind.
-        - 2+ candidates → prefer those with appointment_status = 'attended';
+        - 2+ candidates → prefer those with x_rdv_status = 'attended';
           if any qualify, restrict to that subset. Then pick the one whose
           start is closest to date_order.
         """
@@ -663,7 +663,7 @@ class SaleOrder(models.Model):
         if len(events) == 1 or not date_order:
             return events[:1]
 
-        attended = events.filtered(lambda e: e.appointment_status == 'attended')
+        attended = events.filtered(lambda e: e.x_rdv_status == 'attended')
         if attended:
             events = attended
 

@@ -31,7 +31,7 @@ class CommissionDashboard(models.TransientModel):
 
         # Get team commissions (if user is a manager in any plan)
         # In plan-based architecture, find users that report to this user in any plan
-        subordinate_assignments = self.env['sale.commission.plan.user'].search([
+        subordinate_assignments = self.env['bgg.commission.plan.user'].search([
             ('manager_id', '=', user.id)
         ])
         subordinate_user_ids = subordinate_assignments.mapped('user_id').ids
@@ -63,7 +63,7 @@ class CommissionDashboard(models.TransientModel):
         }
 
         # Get user's primary plan assignment (first active one)
-        user_assignment = self.env['sale.commission.plan.user'].search([
+        user_assignment = self.env['bgg.commission.plan.user'].search([
             ('user_id', '=', user.id),
             ('plan_id.state', '=', 'approved')
         ], limit=1)
@@ -84,7 +84,7 @@ class CommissionDashboard(models.TransientModel):
     def _user_has_active_commission_plan(self, user):
         """Check if user is assigned to an active commission plan"""
         # Check if user has any plan assignments in approved plans
-        user_assignments = self.env['sale.commission.plan.user'].search([
+        user_assignments = self.env['bgg.commission.plan.user'].search([
             ('user_id', '=', user.id),
             ('plan_id.state', '=', 'approved'),
         ], limit=1)
@@ -117,7 +117,7 @@ class CommissionDashboard(models.TransientModel):
 
         # Pending actions (claims to approve from subordinates in any plan)
         # Get subordinate user IDs from plan assignments
-        subordinate_assignments = self.env['sale.commission.plan.user'].search([
+        subordinate_assignments = self.env['bgg.commission.plan.user'].search([
             ('manager_id', '=', self.env.user.id)
         ])
         subordinate_user_ids = subordinate_assignments.mapped('user_id').ids

@@ -20,7 +20,7 @@ def backfill_noshow_dates(env):
     appointment time (we have no record of when they were originally flagged).
     """
     events = env['calendar.event'].search([
-        ('appointment_status', '=', 'no_show'),
+        ('x_rdv_status', '=', 'no_show'),
         ('x_noshow_date', '=', False),
     ])
     count = 0

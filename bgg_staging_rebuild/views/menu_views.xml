@@ -3,7 +3,7 @@
     <menuitem id="menu_bgg_staging_rebuild_root"
               name="Staging"
               groups="bgg_staging_rebuild.group_bgg_staging_rebuild_user"
-              web_icon="fa-refresh,#017e84,#ffffff"
+              web_icon="bgg_staging_rebuild,static/description/icon.svg"
               sequence="105"/>
 
     <menuitem id="menu_bgg_staging_rebuild_action"

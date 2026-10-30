@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_bgg_rdv_need_user,bgg.rdv.need user,model_bgg_rdv_need,base.group_user,1,0,0,0
+access_bgg_rdv_need_manager,bgg.rdv.need manager,model_bgg_rdv_need,resource_booking.group_manager,1,1,1,1
+access_bgg_booking_wizard,bgg.booking.wizard,model_bgg_booking_wizard,group_booking_agent,1,1,1,1
+access_bgg_booking_wizard_slot,bgg.booking.wizard.slot,model_bgg_booking_wizard_slot,group_booking_agent,1,1,1,1

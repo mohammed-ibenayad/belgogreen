@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="resource_booking_type_view_form_bgg" model="ir.ui.view">
+        <field name="name">resource.booking.type.form.bgg</field>
+        <field name="model">resource.booking.type</field>
+        <field name="inherit_id" ref="resource_booking.resource_booking_type_view_form"/>
+        <field name="arch" type="xml">
+            <group name="event_defaults" position="after">
+                <group name="bgg_rdv" string="Prise de RDV (call center)">
+                    <field name="x_rdv_type_id" options="{'no_create': True}"/>
+                    <field name="x_group_ids" widget="many2many_tags" options="{'no_create': True}"/>
+                    <field name="x_create_opportunity"/>
+                    <field name="x_need_ids" widget="many2many_tags" options="{'no_create': True}"/>
+                    <field name="x_need_multiple"/>
+                    <field name="x_ask_solar_since"/>
+                    <field name="x_ask_sms_confirmation"/>
+                    <field name="x_ask_on_behalf"/>
+                </group>
+            </group>
+        </field>
+    </record>
+</odoo>

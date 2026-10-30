@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="edit_project_dms" model="ir.ui.view">
+        <field name="name">project.project.form.dms</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.edit_project"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_open_dms_files" type="object" class="oe_stat_button" icon="fa-folder-open"
+                        groups="dms.group_dms_user">
+                    <field name="x_dms_file_count" widget="statinfo" string="Documents"/>
+                </button>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Documents" name="bgg_dms" groups="dms.group_dms_manager">
+                    <group>
+                        <field name="x_dms_directory_id"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

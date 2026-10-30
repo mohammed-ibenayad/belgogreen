@@ -32,10 +32,69 @@ action = {
         </field>
     </record>
 
-    <!--
-        "Créer tâches SSS" (field service project + tasks for paid orders) is
-        deliberately NOT in this module: it is a server action maintained in
-        Odoo Studio. It reads the bgg.sss_project_manager_login system
-        parameter (email of the SSS project manager).
-    -->
+    <!-- Formerly Odoo Studio server actions, now methods of this module -->
+    <record id="action_create_sss_tasks" model="ir.actions.server">
+        <field name="name">Créer tâches SSS</field>
+        <field name="model_id" ref="sale.model_sale_order"/>
+        <field name="binding_model_id" ref="sale.model_sale_order"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_create_sss_tasks()</field>
+    </record>
+
+    <record id="action_recompute_admin_project_dates" model="ir.actions.server">
+        <field name="name">Recalculate Project deadline</field>
+        <field name="model_id" ref="sale.model_sale_order"/>
+        <field name="binding_model_id" ref="sale.model_sale_order"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">
+orders = records or env['sale.order'].search([('state', '=', 'sale')])
+orders = orders.filtered(lambda o: o.state == 'sale')
+orders._sync_admin_project_dates()
+action = {
+    'type': 'ir.actions.client',
+    'tag': 'display_notification',
+    'params': {
+        'title': 'Dates du dossier',
+        'message': '%d commande(s) recalculée(s).' % len(orders),
+        'type': 'success',
+        'sticky': False,
+    },
+}
+        </field>
+    </record>
+
+    <record id="action_close_projects" model="ir.actions.server">
+        <field name="name">Clôturer les projets Admin/SSS</field>
+        <field name="model_id" ref="project.model_project_project"/>
+        <field name="binding_model_id" ref="project.model_project_project"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_close_projects()</field>
+    </record>
+
+    <record id="action_send_status_reminders" model="ir.actions.server">
+        <field name="name">(CA) Rappel pour statuer les rendez-vous énergétique</field>
+        <field name="model_id" ref="calendar.model_calendar_event"/>
+        <field name="binding_model_id" ref="calendar.model_calendar_event"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_send_status_reminders()</field>
+    </record>
+
+    <!-- Daily job, inactive like the Studio one it replaces: activate it in
+         Settings > Technical > Scheduled Actions to send the reminders every
+         day. -->
+    <data noupdate="1">
+        <record id="ir_cron_send_status_reminders" model="ir.cron">
+            <field name="name">(JOB) Rappel pour statuer les rendez-vous énergétique</field>
+            <field name="model_id" ref="calendar.model_calendar_event"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_send_status_reminders()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active" eval="False"/>
+        </record>
+    </data>
 </odoo>

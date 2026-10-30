@@ -4,7 +4,7 @@
     <menuitem id="menu_bgg_custom_dev_root"
               name="BGG Dashboards"
               groups="bgg_custom_dev.group_bgg_dashboard,bgg_custom_dev.group_direction"
-              web_icon="fa-line-chart,#875A7B,#ffffff"
+              web_icon="bgg_custom_dev,static/description/icon.svg"
               sequence="100"/>
 
     <!-- AMSS Management (Direction group) -->

@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 
+from psycopg2 import IntegrityError
+
 from odoo.tests.common import TransactionCase
 from odoo.tests import tagged
 from odoo.exceptions import ValidationError
+from odoo.tools import mute_logger
 
 
 @tagged('post_install', '-at_install')
@@ -57,9 +60,8 @@ class TestCommissionPlan(TransactionCase):
         })
 
         # Create hierarchical plan
-        cls.plan = cls.env['sale.commission.plan'].create({
+        cls.plan = cls.env['bgg.commission.plan'].create({
             'name': 'Test Hierarchical Plan',
-            'type': 'hierarchical',
             'company_id': cls.company.id,
         })
 
@@ -87,11 +89,30 @@ class TestCommissionPlan(TransactionCase):
     # Test 1: Plan creation defaults
     # ---------------------------------------------------------------
 
-    def test_hierarchical_plan_auto_periodicity(self):
-        """Test that hierarchical plan gets 'month' periodicity automatically"""
-        self.assertEqual(self.plan.type, 'hierarchical')
-        self.assertEqual(self.plan.periodicity, 'month')
-        self.assertTrue(self.plan.is_hierarchical)
+    def test_plan_defaults(self):
+        """Test that a new plan starts in draft for the current company"""
+        self.assertEqual(self.plan.state, 'draft')
+        self.assertEqual(self.plan.company_id, self.company)
+        self.assertTrue(self.plan.active)
+
+    def test_plan_dates_order(self):
+        """Test that a plan cannot end before it starts"""
+        with self.assertRaises(ValidationError):
+            self.plan.write({'date_from': '2026-02-01', 'date_to': '2026-01-01'})
+
+    def test_plan_user_unique(self):
+        """Test that a user cannot be assigned twice to the same plan"""
+        self.env['bgg.commission.plan.user'].create({
+            'plan_id': self.plan.id,
+            'user_id': self.user_sp.id,
+            'role_id': self.role_sp.id,
+        })
+        with self.assertRaises(IntegrityError), mute_logger('odoo.sql_db'):
+            self.env['bgg.commission.plan.user'].create({
+                'plan_id': self.plan.id,
+                'user_id': self.user_sp.id,
+                'role_id': self.role_sp.id,
+            })
 
     def test_plan_require_invoice_paid_default(self):
         """Test that require_invoice_paid defaults to True"""
@@ -154,14 +175,14 @@ class TestCommissionPlan(TransactionCase):
     def test_plan_user_assignment(self):
         """Test creating user assignments with hierarchy"""
         # Director (no manager)
-        pu_dir = self.env['sale.commission.plan.user'].create({
+        pu_dir = self.env['bgg.commission.plan.user'].create({
             'plan_id': self.plan.id,
             'user_id': self.user_dir.id,
             'role_id': self.role_dir.id,
         })
 
         # Team Leader (manager = Director)
-        pu_tl = self.env['sale.commission.plan.user'].create({
+        pu_tl = self.env['bgg.commission.plan.user'].create({
             'plan_id': self.plan.id,
             'user_id': self.user_tl.id,
             'role_id': self.role_tl.id,
@@ -169,7 +190,7 @@ class TestCommissionPlan(TransactionCase):
         })
 
         # Salesperson (manager = Team Leader)
-        pu_sp = self.env['sale.commission.plan.user'].create({
+        pu_sp = self.env['bgg.commission.plan.user'].create({
             'plan_id': self.plan.id,
             'user_id': self.user_sp.id,
             'role_id': self.role_sp.id,
@@ -188,7 +209,7 @@ class TestCommissionPlan(TransactionCase):
     def test_self_management_raises(self):
         """Test that user cannot be their own manager"""
         with self.assertRaises(ValidationError):
-            self.env['sale.commission.plan.user'].create({
+            self.env['bgg.commission.plan.user'].create({
                 'plan_id': self.plan.id,
                 'user_id': self.user_sp.id,
                 'role_id': self.role_sp.id,
@@ -202,14 +223,14 @@ class TestCommissionPlan(TransactionCase):
     def test_manager_must_have_higher_level(self):
         """Test that manager must have higher hierarchy level"""
         # Create director first
-        self.env['sale.commission.plan.user'].create({
+        self.env['bgg.commission.plan.user'].create({
             'plan_id': self.plan.id,
             'user_id': self.user_dir.id,
             'role_id': self.role_dir.id,
         })
 
         # Create team leader
-        self.env['sale.commission.plan.user'].create({
+        self.env['bgg.commission.plan.user'].create({
             'plan_id': self.plan.id,
             'user_id': self.user_tl.id,
             'role_id': self.role_tl.id,
@@ -223,7 +244,7 @@ class TestCommissionPlan(TransactionCase):
             'company_id': self.company.id,
             'company_ids': [(6, 0, [self.company.id])],
         })
-        self.env['sale.commission.plan.user'].create({
+        self.env['bgg.commission.plan.user'].create({
             'plan_id': self.plan.id,
             'user_id': user_sp2.id,
             'role_id': self.role_sp.id,
@@ -238,7 +259,7 @@ class TestCommissionPlan(TransactionCase):
             'company_ids': [(6, 0, [self.company.id])],
         })
         with self.assertRaises(ValidationError):
-            self.env['sale.commission.plan.user'].create({
+            self.env['bgg.commission.plan.user'].create({
                 'plan_id': self.plan.id,
                 'user_id': user_sp3.id,
                 'role_id': self.role_sp.id,
@@ -251,7 +272,7 @@ class TestCommissionPlan(TransactionCase):
 
     def test_role_percentage_computed(self):
         """Test that plan user gets percentages from role config"""
-        pu = self.env['sale.commission.plan.user'].create({
+        pu = self.env['bgg.commission.plan.user'].create({
             'plan_id': self.plan.id,
             'user_id': self.user_dir.id,
             'role_id': self.role_tl.id,
@@ -267,9 +288,8 @@ class TestCommissionPlan(TransactionCase):
 
     def test_approve_plan_without_role_configs_raises(self):
         """Test that approving plan without role configs raises error"""
-        empty_plan = self.env['sale.commission.plan'].create({
+        empty_plan = self.env['bgg.commission.plan'].create({
             'name': 'Empty Plan',
-            'type': 'hierarchical',
             'company_id': self.company.id,
         })
         with self.assertRaises(ValidationError):
@@ -277,9 +297,8 @@ class TestCommissionPlan(TransactionCase):
 
     def test_approve_plan_without_users_raises(self):
         """Test that approving plan without users raises error"""
-        plan = self.env['sale.commission.plan'].create({
+        plan = self.env['bgg.commission.plan'].create({
             'name': 'Plan No Users',
-            'type': 'hierarchical',
             'company_id': self.company.id,
         })
         self.env['hr.commission.role.config'].create({
@@ -293,9 +312,8 @@ class TestCommissionPlan(TransactionCase):
 
     def test_approve_plan_without_top_level_user_raises(self):
         """Test that plan must have at least one user without manager"""
-        plan = self.env['sale.commission.plan'].create({
+        plan = self.env['bgg.commission.plan'].create({
             'name': 'Plan No Top',
-            'type': 'hierarchical',
             'company_id': self.company.id,
         })
         self.env['hr.commission.role.config'].create({
@@ -321,12 +339,12 @@ class TestCommissionPlan(TransactionCase):
             'company_id': self.company.id,
             'company_ids': [(6, 0, [self.company.id])],
         })
-        self.env['sale.commission.plan.user'].create({
+        self.env['bgg.commission.plan.user'].create({
             'plan_id': plan.id,
             'user_id': user_y.id,
             'role_id': self.role_tl.id,
         })
-        self.env['sale.commission.plan.user'].create({
+        self.env['bgg.commission.plan.user'].create({
             'plan_id': plan.id,
             'user_id': user_x.id,
             'role_id': self.role_sp.id,
@@ -346,24 +364,23 @@ class TestCommissionPlan(TransactionCase):
     def test_hierarchy_chain(self):
         """Test _get_hierarchy_chain returns correct chain"""
         # Fresh plan with hierarchy
-        plan = self.env['sale.commission.plan'].create({
+        plan = self.env['bgg.commission.plan'].create({
             'name': 'Chain Test Plan',
-            'type': 'hierarchical',
             'company_id': self.company.id,
         })
 
-        pu_dir = self.env['sale.commission.plan.user'].create({
+        pu_dir = self.env['bgg.commission.plan.user'].create({
             'plan_id': plan.id,
             'user_id': self.user_dir.id,
             'role_id': self.role_dir.id,
         })
-        pu_tl = self.env['sale.commission.plan.user'].create({
+        pu_tl = self.env['bgg.commission.plan.user'].create({
             'plan_id': plan.id,
             'user_id': self.user_tl.id,
             'role_id': self.role_tl.id,
             'manager_id': self.user_dir.id,
         })
-        pu_sp = self.env['sale.commission.plan.user'].create({
+        pu_sp = self.env['bgg.commission.plan.user'].create({
             'plan_id': plan.id,
             'user_id': self.user_sp.id,
             'role_id': self.role_sp.id,

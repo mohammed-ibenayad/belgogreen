@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="bgg_rdv_need_view_list" model="ir.ui.view">
+        <field name="name">bgg.rdv.need.list</field>
+        <field name="model">bgg.rdv.need</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="bgg_rdv_need_action" model="ir.actions.act_window">
+        <field name="name">Besoins (prise de RDV)</field>
+        <field name="res_model">bgg.rdv.need</field>
+        <field name="view_mode">list</field>
+        <field name="context">{'active_test': False}</field>
+    </record>
+</odoo>

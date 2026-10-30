@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_bgg_rdv_type_list" model="ir.ui.view">
+        <field name="name">bgg.rdv.type.list</field>
+        <field name="model">bgg.rdv.type</field>
+        <field name="arch" type="xml">
+            <list string="Types de rendez-vous" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="user_ids" widget="many2many_tags" optional="show"/>
+                <field name="active" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_bgg_rdv_type_search" model="ir.ui.view">
+        <field name="name">bgg.rdv.type.search</field>
+        <field name="model">bgg.rdv.type</field>
+        <field name="arch" type="xml">
+            <search string="Types de rendez-vous">
+                <field name="name"/>
+                <field name="code"/>
+                <filter name="inactive" string="Archivé" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_bgg_rdv_type" model="ir.actions.act_window">
+        <field name="name">Types de rendez-vous</field>
+        <field name="res_model">bgg.rdv.type</field>
+        <field name="view_mode">list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Créer un type de rendez-vous</p>
+            <p>La référence (ex. APT-ENERG-CNT) pilote les règles call center et commercial.</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_bgg_rdv_type"
+              name="Types de rendez-vous"
+              parent="calendar.calendar_menu_config"
+              action="action_bgg_rdv_type"
+              groups="base.group_system"
+              sequence="20"/>
+
+</odoo>
