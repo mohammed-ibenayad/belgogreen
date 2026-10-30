@@ -117,6 +117,11 @@ In **GitHub**:
    - `bgg_custom_dev: access rule '[ADD] …' (id …) adopted as rule_calendar_event_…`
      (4 rules), and `access rule rule_calendar_event_call_center_types now …`,
      `… call_center_public now …` (19.0.2.3.0)
+   - `bgg_custom_dev: … SSS task(s) moved from a 'Nouveau' stage to 'SSS: À faire'`,
+     `… stage(s) taken off the SSS projects`, `… unused stage(s) deleted`
+     (19.0.2.3.0; on the copy of 2026-10-30: about 200 tasks, 18 "Nouveau"
+     and 36 Planifié / En cours / Terminé / Annulé stages). A warning
+     `stage … still holds … SSS task(s)` names a stage left as is: look at it.
    - `belgogreen_sales_commission: copied … commission plan(s) and … plan assignment(s)`
 
    The counts are checked exactly in Phase 3 (`ee_preflight`).

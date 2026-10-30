@@ -89,6 +89,14 @@ Field Service was only used for the SSS projects and their tasks.
 | Field Service task form: client with address and "Voir l'itinéraire", contact number, planned dates, allocated time | Standard task form plus, on SSS tasks only, the client (`partner_id`, with its address), "Voir l'itinéraire" (Google Maps route, `action_bgg_open_itinerary`), the contact number (`partner_phone`, Community), the planned dates (`planned_date_begin` → `date_deadline`) and the allocated time (`allocated_hours`, Community); `view_task_form2_inherit_sss` |
 | `project.task.planned_date_begin` (Enterprise Planning) | declared in bgg_custom_dev under the same name, so its column and values stay at the uninstall (lost in the rehearsal of 2026-10-30, before this) |
 
+**Stages of the SSS projects.** Each SSS project has "SSS: À faire" and
+"SSS: Encours/Fait". Columns added by hand in the Field Service kanban
+(2025-12 to 2026-10) created stages linked to every SSS project: 18
+"Nouveau" (about 200 tasks in them) and 9 each of Planifié, En cours,
+Terminé, Annulé (no task). Migration 19.0.2.3.0 (post) moves the tasks of
+"Nouveau" to their project's "SSS: À faire", takes the other stages off the
+SSS projects and deletes them when nothing uses them.
+
 Dropped (not used): worksheets, "under warranty", "allow material".
 
 ## 4. Odoo Studio → code
