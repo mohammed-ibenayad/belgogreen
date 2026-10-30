@@ -93,7 +93,7 @@ Field Service was only used for the SSS projects and their tasks.
 "SSS: Encours/Fait". Columns added by hand in the Field Service kanban
 (2025-12 to 2026-10) created stages linked to every SSS project: 18
 "Nouveau" (about 200 tasks in them) and 9 each of Planifié, En cours,
-Terminé, Annulé (no task). About 270 older SSS projects (made in Field Service) had no SSS stage at
+Terminé, Annulé (no task). Some older SSS projects (made in Field Service) had no SSS stage at
 all. Migrations 19.0.2.3.0 and 19.0.2.3.1 (post) first give those projects
 their two SSS stages, then move the tasks of
 "Nouveau" to their project's "SSS: À faire" (confirmed 2026-10-30), takes the other stages off the
