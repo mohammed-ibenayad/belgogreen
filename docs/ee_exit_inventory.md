@@ -192,7 +192,15 @@ adopted in `bgg_custom_dev/security/calendar_rules.xml` by migration
 | Call Center manage "public user" Organized Events (428) | Call Center | the RDVs booked online | all | was `create_uid in [4, 46]` (the public users of the two websites); now any public user (`create_uid.share`) |
 
 The migration writes the new conditions of 253 and 428 on the existing
-rules. Rule 428 is unchanged in practice: on production only the two public users
+rules.
+
+**Activities** (record rules on `mail.activity`, made by hand, adopted in
+`bgg_custom_dev/security/activity_rules.xml` by migration 19.0.2.3.2,
+condition kept): "Manage Own Activities or Assigned to Others" (249,
+Internal User: activities assigned to or created by the user, or assigned
+to a user whose contact's parent has the user's id — `user_id.parent_id`
+compares a contact with a user id, as written on production) and
+"Administrators can access all activities" (250, Settings: all). Rule 428 is unchanged in practice: on production only the two public users
 (4: 6 RDVs, 46: 30 RDVs) are users with `share` who created RDVs.
 
 **Menus made by hand**: "Call Center" (322, group Call Center) and "RDV

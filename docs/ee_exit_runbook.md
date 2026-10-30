@@ -115,7 +115,7 @@ In **GitHub**:
      and the same for Directeur Commercial, Responsable Equipe Commercial,
      Technicien (19.0.2.3.0)
    - `bgg_custom_dev: access rule '[ADD] …' (id …) adopted as rule_calendar_event_…`
-     (4 rules), and `access rule rule_calendar_event_call_center_types now …`,
+     (4 rules; 2 more on activities in 19.0.2.3.2), and `access rule rule_calendar_event_call_center_types now …`,
      `… call_center_public now …` (19.0.2.3.0)
    - `bgg_custom_dev: … SSS stage(s) created on the SSS projects that missed them`
      (older SSS projects made in Field Service had no "SSS: À faire"),

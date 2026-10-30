@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Who manages which activity. Made by hand in Odoo before they were in
+        this module ("[ADD] ..." rules 249 and 250 on production); the
+        19.0.2.3.2 migration gives the existing rules these xmlids, so they
+        are adopted, not created twice (their condition stays as it is).
+    -->
+    <data noupdate="1">
+        <!-- Activities assigned to the user, created by the user, or
+             assigned to a user whose contact's parent is the user's id (as
+             written on production: user_id.parent_id is a contact, compared
+             to the user's id). -->
+        <record id="rule_mail_activity_own_or_assigned" model="ir.rule">
+            <field name="name">[ADD] Manage Own Activities or Assigned to Others</field>
+            <field name="model_id" ref="mail.model_mail_activity"/>
+            <field name="groups" eval="[(6, 0, [ref('base.group_user')])]"/>
+            <field name="domain_force">['|', '|', ('user_id', '=', user.id), ('user_id.parent_id', '=', user.id), ('create_uid', '=', user.id)]</field>
+        </record>
+
+        <record id="rule_mail_activity_administrators_all" model="ir.rule">
+            <field name="name">[ADD] Administrators can access all activities.</field>
+            <field name="model_id" ref="mail.model_mail_activity"/>
+            <field name="groups" eval="[(6, 0, [ref('base.group_system')])]"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+        </record>
+    </data>
+</odoo>

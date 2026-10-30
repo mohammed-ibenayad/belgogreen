@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen Custom Development',
-    'version': '19.0.2.3.1',
+    'version': '19.0.2.3.2',
     'category': 'Customizations',
     'summary': 'Custom business logic and automation for BelGoGreen',
     'description': """
@@ -132,6 +132,7 @@
         # Security
         'security/groups.xml',
         'security/calendar_rules.xml',
+        'security/activity_rules.xml',
         'security/ir.model.access.csv',
 
         # Configuration data

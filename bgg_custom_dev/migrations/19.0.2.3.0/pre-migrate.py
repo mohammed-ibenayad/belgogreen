@@ -19,6 +19,8 @@ Safe to run several times.
 """
 import logging
 
+from odoo.addons.bgg_custom_dev.hooks import adopt_rules
+
 _logger = logging.getLogger(__name__)
 
 STUDIO_VIEWS = [
@@ -85,32 +87,10 @@ def _adopt_groups(cr):
         _logger.info("bgg_custom_dev: group %r (id %s) adopted as %s", name, row[0], xmlid)
 
 
-def _adopt_rules(cr):
-    for xmlid, (name, domain) in HAND_MADE_RULES.items():
-        cr.execute("SELECT res_id FROM ir_model_data WHERE module = 'bgg_custom_dev' AND name = %s", [xmlid])
-        row = cr.fetchone()
-        if not row:
-            cr.execute("""SELECT r.id FROM ir_rule r
-                          WHERE r.name = %s
-                            AND NOT EXISTS (SELECT 1 FROM ir_model_data d WHERE d.model = 'ir.rule' AND d.res_id = r.id
-                                               AND d.module NOT IN ('__custom__', '__export__'))
-                          ORDER BY r.id LIMIT 1""", [name])
-            row = cr.fetchone()
-            if not row:
-                continue
-            cr.execute("""INSERT INTO ir_model_data (module, name, model, res_id, noupdate)
-                          VALUES ('bgg_custom_dev', %s, 'ir.rule', %s, true)""", [xmlid, row[0]])
-            _logger.info("bgg_custom_dev: access rule %r (id %s) adopted as %s", name, row[0], xmlid)
-        if domain:
-            cr.execute("UPDATE ir_rule SET domain_force = %s WHERE id = %s AND domain_force IS DISTINCT FROM %s",
-                       [domain, row[0], domain])
-            if cr.rowcount:
-                _logger.info("bgg_custom_dev: access rule %s now %s", xmlid, domain)
-
 
 def migrate(cr, version):
     if not version:
         return
     _deactivate_studio_views(cr)
     _adopt_groups(cr)
-    _adopt_rules(cr)
+    adopt_rules(cr, HAND_MADE_RULES)

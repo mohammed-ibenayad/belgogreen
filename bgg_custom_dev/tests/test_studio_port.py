@@ -38,6 +38,10 @@ class TestStudioFields(TransactionCase):
             rule = self.env.ref('bgg_custom_dev.%s' % xmlid, raise_if_not_found=False)
             self.assertTrue(rule, xmlid)
             self.assertEqual(rule.model_id.model, 'calendar.event', xmlid)
+        for xmlid in ('rule_mail_activity_own_or_assigned', 'rule_mail_activity_administrators_all'):
+            rule = self.env.ref('bgg_custom_dev.%s' % xmlid, raise_if_not_found=False)
+            self.assertTrue(rule, xmlid)
+            self.assertEqual(rule.model_id.model, 'mail.activity', xmlid)
         types_rule = self.env.ref('bgg_custom_dev.rule_calendar_event_call_center_types')
         self.assertEqual((types_rule.perm_read, types_rule.perm_write, types_rule.perm_create, types_rule.perm_unlink),
                          (True, False, False, False))
