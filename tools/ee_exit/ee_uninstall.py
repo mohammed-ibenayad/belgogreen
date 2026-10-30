@@ -550,6 +550,8 @@ def ee_check(env, keep=()):
     # must be declared in bgg_custom_dev under the same name (column kept).
     filled = []
     for model, name in sorted(analysis['dropped_fields']):
+        if model in analysis['dropped_models']:
+            continue  # the whole model goes: its records are counted above
         field = env[model]._fields.get(name) if model in env else None
         if not field or not field.store or field.type in ('one2many', 'many2many') or not env[model]._auto:
             continue
