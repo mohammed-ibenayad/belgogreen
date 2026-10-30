@@ -20,6 +20,12 @@ class TestStudioFields(TransactionCase):
             self.assertEqual(field.state, 'base', name)
             self.assertIn('bgg_custom_dev', field._get_external_ids()[field.id][0], name)
 
+    def test_sellable_products_list(self):
+        arch = self.env['product.template'].get_view(
+            self.env.ref('product.product_template_list_view_sellable').id, 'list')['arch']
+        self.assertIn('name="create_uid"', arch)
+        self.assertIn('name="create_date"', arch)
+
     def test_vendeur_associes_link_table(self):
         field = self.env['sale.order']._fields['x_studio_vendeur_associes']
         self.assertEqual((field.relation, field.column1, field.column2),

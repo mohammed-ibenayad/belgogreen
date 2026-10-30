@@ -56,6 +56,20 @@ On **production** (the data carries over with the copy):
       (call-centre contacts, bookable staff, booking rights).
 - [ ] Open decisions answered, or knowingly left for later
       (duplicates, RH access, SSS links, Knowledge, WhatsApp).
+- [ ] **No new Studio change left out.** Studio changes are lost with
+      Studio unless `bgg_custom_dev` rebuilds them. On production (read
+      only), list the Studio views still active:
+
+      ```bash
+      psql -c "SELECT v.id, p.name AS screen, v.model, v.write_date::date, u.login FROM ir_ui_view v JOIN ir_model_data d ON d.model = 'ir.ui.view' AND d.res_id = v.id LEFT JOIN ir_ui_view p ON p.id = v.inherit_id LEFT JOIN res_users u ON u.id = v.write_uid WHERE d.module = 'studio_customization' AND v.active ORDER BY v.write_date DESC;"
+      ```
+
+      Each one must be in the inventory (section 4: rebuilt, or left on
+      purpose). A new one (e.g. the sellable products list made on
+      2026-10-21, found in the rehearsal of 2026-10-30): rebuild it in
+      `bgg_custom_dev` with a migration that switches it off, before the
+      copy. Phase 3 fails on it otherwise. Same for new Studio fields,
+      server actions and automation rules (Phase 3, Studio section).
 - [ ] Knowledge: decided. Its 227 articles are **deleted** by the uninstall
       unless they were moved first.
 
@@ -86,6 +100,7 @@ In **GitHub**:
    | bgg_custom_dev | 19.0.2.0.0 | Appointments → own RDV fields (type, status, answers), Field Service flag → SSS flag; installs the bridge `bgg_custom_dev_ee` |
    | bgg_custom_dev | 19.0.2.1.0 | Studio → module (fields kept, views rebuilt, Studio views switched off, filters repointed, SSS projects linked to their orders, AMSS ADMIN group adopted) |
    | bgg_custom_dev | 19.0.2.2.0 | Appointment staff → RDV type commercials |
+   | bgg_custom_dev | 19.0.2.3.0 | Studio → module: the sellable products list (Studio view switched off) |
    | belgogreen_sales_commission | 19.0.1.0.0 | Enterprise commission plans → own plans (same ids) |
 
 3. **Gate.** The build is green. In its log (Odoo.sh → build → Logs →
@@ -94,6 +109,8 @@ In **GitHub**:
    - `bgg_custom_dev: Enterprise bridge bgg_custom_dev_ee marked for installation`
    - `bgg_custom_dev: … Studio view(s) switched off`, `… SSS project(s) linked to their sale order`
    - `bgg_custom_dev: … commercial(s) copied to the RDV types from the appointment types`
+   - `bgg_custom_dev: 1 Studio view(s) switched off` a second time (19.0.2.3.0,
+     the products list; absent on a database where Studio is already gone)
    - `belgogreen_sales_commission: copied … commission plan(s) and … plan assignment(s)`
 
    The counts are checked exactly in Phase 3 (`ee_preflight`).
@@ -140,7 +157,7 @@ Must end with **"Ready for the uninstall ✅"**. What it checks:
 | SSS projects | a Field Service project not flagged SSS (⚠️: SSS projects without their order, open decision #4) |
 | Commissions | a commission, role or plan assignment on a plan that is not ours |
 | Documents | a folder or file not copied to DMS (links, shortcuts and spreadsheets are not copied on purpose); a project with a Documents folder but no DMS folder |
-| Studio | ⚠️ only: Studio fields with data, Studio models, active Studio actions and automation rules that go with Studio |
+| Studio | an active Studio view not rebuilt in `bgg_custom_dev` and not left on purpose ("Active Studio views not rebuilt": a screen change lost with Studio; it names the screen, the date and who made it). ⚠️ only: Studio fields with data, Studio models, active Studio actions and automation rules that go with Studio |
 
 Then:
 
@@ -352,5 +369,5 @@ domain, backups.
 |---|---|---|
 | 2026-10-23 | bsi-staging | All counts kept except 6 calendar events (fixed since: links emptied first, open decision #5); users who lost "Internal User" (fixed since: rights kept, #6); 4 leftovers of lock timeouts removed by `ee_cleanup`; no Enterprise code left, 141 modules. After it: app icons in Studio's format (black app menu) and an access rule on `appointment_type_id`, both fixed in the script. |
 | 2026-10-24 | bsi-staging dump → VPS (Docker) | Restore of the 2026-10-23 database: 27 GB zip, 144 modules, 31.2 GB / 47,541 files, about 10 minutes. `ee_final_check`: no Enterprise, all our modules at their code version, 44 users can log in, 4 booking types, 28 users can book; "Ready for the dump ✅". Found: automation rule 16 "Subscribe Admins to FSM Tasks" still filtered on the task's `is_fsm` (renamed since, and the final check now fails on such conditions); `ee_exit.tgz` not available (branch rebuilt since the uninstall). Two harmless load errors (`vector` extension of the Enterprise AI). |
-| 2026-10-30 | bsi-staging (fresh copy of production, client repository) | First full run of this guide, Phases 1–6, both gates passed. Migrations: 14 commission plans, 7 RDV types (34,255 RDVs, 9,963 with answers), 907 SSS projects (897 with their order), 12 Studio views off, 301 RDV type commercials. DMS: 2,913 folders, 6,102 files, 2,421 projects linked, no error. Uninstall: no Enterprise left, all counts kept (expected losses only: open decision #13); two foreign-key errors on Documents rows during the uninstall, harmless (tables dropped right after, DMS counts unchanged). Booking: 4 types, 28 users can book. 44 users with the apps screen at login. `ee_final_check`: "Ready for the dump ✅". |
+| 2026-10-30 | bsi-staging (fresh copy of production, client repository) | First full run of this guide, Phases 1–6, both gates passed. Migrations: 14 commission plans, 7 RDV types (34,255 RDVs, 9,963 with answers), 907 SSS projects (897 with their order), 12 Studio views off, 301 RDV type commercials. DMS: 2,913 folders, 6,102 files, 2,421 projects linked, no error. Uninstall: no Enterprise left, all counts kept (expected losses only: open decision #13); two foreign-key errors on Documents rows during the uninstall, harmless (tables dropped right after, DMS counts unchanged). Booking: 4 types, 28 users can book. 44 users with the apps screen at login. `ee_final_check`: "Ready for the dump ✅". Found after it: the Studio view of the sellable products list (made 2026-10-21, active, not rebuilt; lost on this copy): rebuilt in `bgg_custom_dev` 19.0.2.3.0, and `ee_preflight` now fails on such a view. |
 | next | 2026-10-30 dump → VPS | Phases 7–9: look at it, dump with filestore and `ee_exit.tgz`, restore on the server. |

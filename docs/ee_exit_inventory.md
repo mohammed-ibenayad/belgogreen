@@ -111,9 +111,16 @@ Migration 19.0.2.1.0 moves Studio into the modules, data kept.
 | Contact form, contacts list | `view_partner_form_bgg_studio`, `view_partner_tree_bgg_studio` |
 | Projects list, all tasks list | `view_project_bgg_studio`, `open_view_all_tasks_list_view_bgg_studio` |
 | Payment term form | `view_payment_term_form_bgg_studio` |
+| Sellable products list ("Created by", "Created on" columns, category shown; made in Studio on 2026-10-21) | `product_template_list_view_sellable_bgg_studio` (migration 19.0.2.3.0) |
 | SMS list, logs list | `sms_sms_view_tree_bgg_studio`, `ir_logging_tree_view_bgg_studio` |
 | "Tâches" button action on orders | `action_sale_order_tasks` (tasks of the admin and SSS projects) |
 | Appointment buttons and columns, appointment type form (Enterprise screens) | in `bgg_custom_dev_ee`, go with Enterprise |
+
+The 13 Studio views are switched off by migrations 19.0.2.1.0 and
+19.0.2.3.0. Left active on purpose, deleted with Studio
+(`EE_EXIT_STUDIO_VIEWS_LEFT` in the script): the "all tasks" list and
+Field Service's "My tasks" list. Any other active Studio view makes
+`ee_preflight` fail.
 
 Lost with Studio on purpose: the timesheet columns of the "all tasks" and
 Field Service task lists (Enterprise timesheets).

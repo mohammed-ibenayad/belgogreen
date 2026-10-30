@@ -92,6 +92,15 @@ EE_EXIT_BATCHES = [
     ('Enterprise base', ['website_enterprise', 'web_enterprise']),
 ]
 
+# Studio views still active on purpose (by the name of the view they change):
+# what they add needs Enterprise. Every other active Studio view is a screen
+# change not rebuilt in bgg_custom_dev, lost with Studio: ee_preflight fails
+# until it is rebuilt (and switched off by a migration) or added here.
+EE_EXIT_STUDIO_VIEWS_LEFT = {
+    'open.view.all.tasks.list.view': 'timesheet columns (Enterprise timesheets), the rest is in bgg_custom_dev',
+    'project.task.list.fsm.my.task': 'Field Service "My tasks" list, goes with Field Service',
+}
+
 # What must survive: (label, table, condition). Counted in SQL, archived
 # records included.
 EE_EXIT_SURVIVAL = [
@@ -997,6 +1006,14 @@ def ee_preflight(env):
     views = env['ir.ui.view'].with_context(active_test=False).browse(owned.get('ir.ui.view', [])).exists()
     rows.append(('ok', 'Studio views (deleted; the ones we use are rebuilt in bgg_custom_dev)',
                  '%s, %s active' % (len(views), len(views.filtered('active')))))
+    active = views.filtered('active')
+    left = active.filtered(lambda v: v.inherit_id.name in EE_EXIT_STUDIO_VIEWS_LEFT)
+    rows.append(('ok', 'Studio views left on purpose (need Enterprise)', '; '.join(
+        '%s %s: %s' % (v.id, v.inherit_id.name, EE_EXIT_STUDIO_VIEWS_LEFT[v.inherit_id.name]) for v in left)
+        or 'none'))
+    rows.append(('bad' if active - left else 'ok', 'Active Studio views not rebuilt (screen changes lost)', '; '.join(
+        '%s %r on %s (changed %s by %s)' % (v.id, v.inherit_id.name, v.model, v.write_date.date(), v.write_uid.login)
+        for v in active - left) or 'none'))
     ok &= _ee_report("STUDIO (studio_customization goes with Enterprise)", rows)
 
     _ee_print("\n%s" % ("Ready for the uninstall ✅ (⚠️ : known, look at them once)" if ok else

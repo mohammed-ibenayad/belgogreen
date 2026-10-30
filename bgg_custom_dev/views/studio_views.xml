@@ -240,6 +240,24 @@
         </field>
     </record>
 
+    <!-- Sellable products list (Studio view of 2026-10-21, switched off by
+         the 19.0.2.3.0 migration) -->
+    <record id="product_template_list_view_sellable_bgg_studio" model="ir.ui.view">
+        <field name="name">product.template.list.sellable.bgg.studio</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_list_view_sellable"/>
+        <field name="arch" type="xml">
+            <xpath expr="/list//field[@name='activity_exception_decoration']" position="after">
+                <field name="create_uid" optional="show"/>
+                <field name="create_date" optional="show"/>
+            </xpath>
+            <xpath expr="/list//field[@name='categ_id']" position="attributes">
+                <attribute name="column_invisible">False</attribute>
+                <attribute name="invisible">False</attribute>
+            </xpath>
+        </field>
+    </record>
+
     <!-- Logs list -->
     <record id="ir_logging_tree_view_bgg_studio" model="ir.ui.view">
         <field name="name">ir.logging.list.bgg.studio</field>
