@@ -188,6 +188,26 @@ tail -f ~/ee_exit_uninstall.log
 - "Enterprise modules still installed: none ✅",
 - "All counts kept ✅".
 
+**The "(-N expected)" in the counts.** A count may go down by the number
+shown, and only by it: these are records the Enterprise apps created for
+themselves, that no order, invoice, RDV or task uses, deleted with their
+app. No business data is in them. On the copy of 2026-10-30:
+
+| Count | Expected | What goes, and why it does not matter |
+|---|---|---|
+| Contacts | -1 | "VAT Revenue Services", a tax-office contact an Enterprise accounting module created; never used on an invoice or payment ("Collection Center - Advance Payment Service" is used: kept). |
+| Projects | -1 | The empty "Field Service" project Field Service creates when installed (no task); the SSS projects are separate projects, all kept. |
+| SSS projects | -1 | The same "Field Service" project: as a Field Service project it got the SSS flag in the migration. |
+| Products | -2 | "Field Service" and "Booking Fees", the products of Field Service and of paid appointments; on no order or invoice. |
+| Messages | -3 | The chatter messages of the records above (e.g. "Project created"). |
+| Automation rules | -5 | The rules on appointment answers ("Add conjoint as Contact", "Update Contact Info", "Update Appointment Title", "Set Partner On Behalf", …): they work on the Appointments questionnaire, which goes; the questionnaire is now kept on the RDV itself (`x_rdv_answers`) and "pris à la place de" is set by bgg_custom_dev. |
+
+Everything else (users, orders, invoices, payments, RDVs, tasks, DMS,
+commissions…) must keep exactly its count: the line shows ❌ otherwise. The
+numbers come from `ee_check` (Phase 3), which lists each record by name
+under "RECORDS THE MODULES CREATED"; they are saved in
+`expected_losses.json` and checked again after the restore.
+
 Lock timeouts in the log ("could not obtain lock")? Run `ee_blockers(env)`
 to see who holds them, then `ee_cleanup(env)` in a new shell.
 
