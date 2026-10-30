@@ -907,6 +907,15 @@ def ee_preflight(env):
     hand_made = env.cr.fetchall()
     rows.append(('warn' if hand_made else 'ok', 'Groups made by hand, not in a module',
                  ', '.join('%s %s' % row for row in hand_made) or 'none'))
+    for table, model, label in (('ir_rule', 'ir.rule', 'Access rules made by hand, not in a module'),
+                                ('ir_ui_menu', 'ir.ui.menu', 'Menus made by hand, not in a module')):
+        env.cr.execute("""SELECT t.id, %s FROM %s t
+                         WHERE t.active AND NOT EXISTS (SELECT 1 FROM ir_model_data d WHERE d.model = %%s
+                                  AND d.res_id = t.id AND d.module NOT IN ('__custom__', '__export__'))
+                         ORDER BY t.id""" % ("t.name" if table == 'ir_rule' else
+                                               "COALESCE(t.name->>'fr_BE', t.name->>'en_US')", table), [model])
+        found = env.cr.fetchall()
+        rows.append(('warn' if found else 'ok', label, ', '.join('%s %s' % row for row in found) or 'none'))
     ok &= _ee_report("MODULES (build done, DMS installed)", rows)
 
     # RDVs: Appointments -> bgg_custom_dev (migration 19.0.2.0.0 / 19.0.2.2.0, kept in sync by the bridge)

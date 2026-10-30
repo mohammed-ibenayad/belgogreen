@@ -32,6 +32,16 @@ class TestStudioFields(TransactionCase):
                       'group_directeur_commercial', 'group_responsable_equipe_commercial', 'group_technicien'):
             self.assertTrue(self.env.ref('bgg_custom_dev.%s' % xmlid, raise_if_not_found=False), xmlid)
 
+    def test_rdv_access_rules_declared(self):
+        for xmlid in ('rule_calendar_event_employees_all', 'rule_calendar_event_call_center_own',
+                      'rule_calendar_event_call_center_types', 'rule_calendar_event_call_center_public'):
+            rule = self.env.ref('bgg_custom_dev.%s' % xmlid, raise_if_not_found=False)
+            self.assertTrue(rule, xmlid)
+            self.assertEqual(rule.model_id.model, 'calendar.event', xmlid)
+        types_rule = self.env.ref('bgg_custom_dev.rule_calendar_event_call_center_types')
+        self.assertEqual((types_rule.perm_read, types_rule.perm_write, types_rule.perm_create, types_rule.perm_unlink),
+                         (True, False, False, False))
+
     def test_vendeur_associes_link_table(self):
         field = self.env['sale.order']._fields['x_studio_vendeur_associes']
         self.assertEqual((field.relation, field.column1, field.column2),

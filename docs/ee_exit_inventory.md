@@ -166,8 +166,24 @@ menus and rules stay as they are):
 
 On production they give: Call Center 1 menu and 3 record rules, Commercial
 1 menu and 1 record rule, each of the other five 1 record rule; no access
-rights, no implied groups. Those menus and rules were set in Odoo and stay
-in the database (not yet in the code). All 7 groups were still there with
+rights, no implied groups.
+
+**Who sees which RDV** (record rules on calendar events, made by hand,
+adopted in `bgg_custom_dev/security/calendar_rules.xml` by migration
+19.0.2.3.0; rules of a user's groups add up):
+
+| Rule (production id) | Groups | Sees | Rights | In the code |
+|---|---|---|---|---|
+| All Calendar Event for employees (252) | AMSS ADMIN, Administrateur, Commercial, Directeur Commercial, Responsable Equipe Commercial, Technicien | all RDVs | all | same |
+| Call Center manage Own Organized Events (251) | Call Center | the RDVs they created | all | same |
+| Call Center see Events Only specific appointment type (253) | Call Center | the RDVs of the other types (not the call-centre types) | read only | was `appointment_type_id not in [2, 19]`; now the RDV type codes: not `APT-ENERG-CNT` / `APT-NISOL-CNT`, or no type |
+| Call Center manage "public user" Organized Events (428) | Call Center | the RDVs booked online | all | was `create_uid in [4, 46]` (the public users of the two websites); now any public user (`create_uid.share`) |
+
+The migration writes the new conditions of 253 and 428 on the existing
+rules. Menus made by hand: "Call Center" (322, Call Center) and "RDV
+Commercial" (324, Commercial), top-level links (URL actions 524 and 537):
+to see. `ee_preflight` warns about other access rules and menus made by
+hand. All 7 groups were still there with
 the same members after the uninstall on bsi-staging (2026-10-30).
 `ee_preflight` warns about any other group made by hand ("Groups made by
 hand, not in a module").

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Sellable products list and roles made by hand (19.0.2.3.0).
+"""Sellable products list, roles and RDV access rules made by hand (19.0.2.3.0).
 
 Before the module loads, this script:
 
@@ -9,7 +9,11 @@ Before the module loads, this script:
   Studio is still installed;
 - gives the roles created by hand in Odoo or in Studio the xmlids of the
   module's groups (security/groups.xml), so the existing groups are
-  adopted with their members, not created twice.
+  adopted with their members, not created twice;
+- does the same for the RDV access rules made by hand (security/
+  calendar_rules.xml, found by name) and writes the two that named records
+  by id with the module's conditions: RDV type codes instead of appointment
+  types 2 and 19, public users instead of users 4 and 46.
 
 Safe to run several times.
 """
@@ -29,6 +33,18 @@ HAND_MADE_GROUPS = {
     'group_directeur_commercial': (None, 'Directeur Commercial'),
     'group_responsable_equipe_commercial': (None, 'Responsable Equipe Commercial'),
     'group_technicien': (None, 'Technicien'),
+}
+
+
+# module xmlid: (name of the rule made by hand, condition written by the module or None)
+HAND_MADE_RULES = {
+    'rule_calendar_event_employees_all': ('[ADD] All Calendar Event for employees (except Call Center)', None),
+    'rule_calendar_event_call_center_own': ('[ADD] Call Center manage Own Organized Events Only', None),
+    'rule_calendar_event_call_center_types': (
+        '[ADD] Call Center see Events Only specific appointment type',
+        "['|', ('x_rdv_type_id', '=', False), ('x_rdv_type_id.code', 'not in', ['APT-ENERG-CNT', 'APT-NISOL-CNT'])]"),
+    'rule_calendar_event_call_center_public': (
+        '[ADD] Call Center manage "public user" Organized Events Only', "[('create_uid.share', '=', True)]"),
 }
 
 
@@ -69,8 +85,32 @@ def _adopt_groups(cr):
         _logger.info("bgg_custom_dev: group %r (id %s) adopted as %s", name, row[0], xmlid)
 
 
+def _adopt_rules(cr):
+    for xmlid, (name, domain) in HAND_MADE_RULES.items():
+        cr.execute("SELECT res_id FROM ir_model_data WHERE module = 'bgg_custom_dev' AND name = %s", [xmlid])
+        row = cr.fetchone()
+        if not row:
+            cr.execute("""SELECT r.id FROM ir_rule r
+                          WHERE r.name = %s
+                            AND NOT EXISTS (SELECT 1 FROM ir_model_data d WHERE d.model = 'ir.rule' AND d.res_id = r.id
+                                               AND d.module NOT IN ('__custom__', '__export__'))
+                          ORDER BY r.id LIMIT 1""", [name])
+            row = cr.fetchone()
+            if not row:
+                continue
+            cr.execute("""INSERT INTO ir_model_data (module, name, model, res_id, noupdate)
+                          VALUES ('bgg_custom_dev', %s, 'ir.rule', %s, true)""", [xmlid, row[0]])
+            _logger.info("bgg_custom_dev: access rule %r (id %s) adopted as %s", name, row[0], xmlid)
+        if domain:
+            cr.execute("UPDATE ir_rule SET domain_force = %s WHERE id = %s AND domain_force IS DISTINCT FROM %s",
+                       [domain, row[0], domain])
+            if cr.rowcount:
+                _logger.info("bgg_custom_dev: access rule %s now %s", xmlid, domain)
+
+
 def migrate(cr, version):
     if not version:
         return
     _deactivate_studio_views(cr)
     _adopt_groups(cr)
+    _adopt_rules(cr)

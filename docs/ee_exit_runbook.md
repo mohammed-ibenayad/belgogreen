@@ -100,7 +100,7 @@ In **GitHub**:
    | bgg_custom_dev | 19.0.2.0.0 | Appointments → own RDV fields (type, status, answers), Field Service flag → SSS flag; installs the bridge `bgg_custom_dev_ee` |
    | bgg_custom_dev | 19.0.2.1.0 | Studio → module (fields kept, views rebuilt, Studio views switched off, filters repointed, SSS projects linked to their orders, AMSS ADMIN group adopted) |
    | bgg_custom_dev | 19.0.2.2.0 | Appointment staff → RDV type commercials |
-   | bgg_custom_dev | 19.0.2.3.0 | Studio → module: the sellable products list (Studio view switched off); roles made by hand adopted as module groups (Administrateur, Directeur Commercial, Responsable Equipe Commercial, Technicien) |
+   | bgg_custom_dev | 19.0.2.3.0 | Studio → module: the sellable products list (Studio view switched off); roles made by hand adopted as module groups (Administrateur, Directeur Commercial, Responsable Equipe Commercial, Technicien); the 4 RDV access rules made by hand adopted, two rewritten without ids |
    | belgogreen_sales_commission | 19.0.1.0.0 | Enterprise commission plans → own plans (same ids) |
 
 3. **Gate.** The build is green. In its log (Odoo.sh → build → Logs →
@@ -114,6 +114,9 @@ In **GitHub**:
    - `bgg_custom_dev: group 'Administrateur' (id 57) adopted as group_administrateur`,
      and the same for Directeur Commercial, Responsable Equipe Commercial,
      Technicien (19.0.2.3.0)
+   - `bgg_custom_dev: access rule '[ADD] …' (id …) adopted as rule_calendar_event_…`
+     (4 rules), and `access rule rule_calendar_event_call_center_types now …`,
+     `… call_center_public now …` (19.0.2.3.0)
    - `belgogreen_sales_commission: copied … commission plan(s) and … plan assignment(s)`
 
    The counts are checked exactly in Phase 3 (`ee_preflight`).

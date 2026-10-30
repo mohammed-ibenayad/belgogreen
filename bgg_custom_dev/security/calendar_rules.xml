@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Who sees which RDV (calendar events). Made by hand in Odoo before
+        they were in this module ("[ADD] ..." rules 251, 252, 253, 428 on
+        production); the 19.0.2.3.0 migration gives the existing rules these
+        xmlids, so they are adopted, not created twice. Rules of a user's
+        groups add up: a call-centre agent sees the RDVs they created, the
+        RDVs of the types that are not call-centre types (read only) and the
+        RDVs booked online; the other roles see all RDVs.
+    -->
+    <data noupdate="1">
+        <record id="rule_calendar_event_employees_all" model="ir.rule">
+            <field name="name">[ADD] All Calendar Event for employees (except Call Center)</field>
+            <field name="model_id" ref="calendar.model_calendar_event"/>
+            <field name="groups" eval="[(6, 0, [ref('group_amss_admin'), ref('group_administrateur'),
+                                                ref('group_commercial'), ref('group_directeur_commercial'),
+                                                ref('group_responsable_equipe_commercial'), ref('group_technicien')])]"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+        </record>
+
+        <record id="rule_calendar_event_call_center_own" model="ir.rule">
+            <field name="name">[ADD] Call Center manage Own Organized Events Only</field>
+            <field name="model_id" ref="calendar.model_calendar_event"/>
+            <field name="groups" eval="[(6, 0, [ref('group_call_center')])]"/>
+            <field name="domain_force">[('create_uid', '=', user.id)]</field>
+        </record>
+
+        <!-- Call-centre types (APT-ENERG-CNT, APT-NISOL-CNT): only through
+             the rule above, so an agent does not see the other call
+             centres' RDVs. Formerly appointment types 2 and 19 by id. -->
+        <record id="rule_calendar_event_call_center_types" model="ir.rule">
+            <field name="name">[ADD] Call Center see Events Only specific appointment type</field>
+            <field name="model_id" ref="calendar.model_calendar_event"/>
+            <field name="groups" eval="[(6, 0, [ref('group_call_center')])]"/>
+            <field name="domain_force">['|', ('x_rdv_type_id', '=', False), ('x_rdv_type_id.code', 'not in', ['APT-ENERG-CNT', 'APT-NISOL-CNT'])]</field>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- RDVs booked online (created by a public user). Formerly users 4
+             and 46 by id, the public users of the two websites. -->
+        <record id="rule_calendar_event_call_center_public" model="ir.rule">
+            <field name="name">[ADD] Call Center manage "public user" Organized Events Only</field>
+            <field name="model_id" ref="calendar.model_calendar_event"/>
+            <field name="groups" eval="[(6, 0, [ref('group_call_center')])]"/>
+            <field name="domain_force">[('create_uid.share', '=', True)]</field>
+        </record>
+    </data>
+</odoo>

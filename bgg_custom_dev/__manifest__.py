@@ -131,6 +131,7 @@
     'data': [
         # Security
         'security/groups.xml',
+        'security/calendar_rules.xml',
         'security/ir.model.access.csv',
 
         # Configuration data
