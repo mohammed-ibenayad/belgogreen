@@ -21,7 +21,8 @@ What each step moves, and which module does it, is in
 | 5 | Community modules (look, booking) | Apps / shell | installs without error |
 | 6 | Gate B: ready for the dump? | shell | `ee_final_check(env)`: no ❌ |
 | 7 | Look at it, as each kind of user | browser | checklist below |
-| 8 | Dump with filestore | Odoo.sh | file downloaded |
+| 8 | Dump with filestore, and `ee_exit.tgz` | Odoo.sh | files downloaded |
+| 9 | Restore on the Community server | VPS | `ee_final_check(env)` again: no ❌ |
 
 **The script.** All the checks are in `tools/ee_exit/ee_uninstall.py`, an
 Odoo shell script (not a module). Load it in each new shell with:
@@ -187,6 +188,26 @@ tail -f ~/ee_exit_uninstall.log
 - "Enterprise modules still installed: none ✅",
 - "All counts kept ✅".
 
+**The "(-N expected)" in the counts.** A count may go down by the number
+shown, and only by it: these are records the Enterprise apps created for
+themselves, that no order, invoice, RDV or task uses, deleted with their
+app. No business data is in them. On the copy of 2026-10-30:
+
+| Count | Expected | What goes, and why it does not matter |
+|---|---|---|
+| Contacts | -1 | "VAT Revenue Services", a tax-office contact an Enterprise accounting module created; never used on an invoice or payment ("Collection Center - Advance Payment Service" is used: kept). |
+| Projects | -1 | The empty "Field Service" project Field Service creates when installed (no task); the SSS projects are separate projects, all kept. |
+| SSS projects | -1 | The same "Field Service" project: as a Field Service project it got the SSS flag in the migration. |
+| Products | -2 | "Field Service" and "Booking Fees", the products of Field Service and of paid appointments; on no order or invoice. |
+| Messages | -3 | The chatter messages of the records above (e.g. "Project created"). |
+| Automation rules | -5 | The 5 rules on appointment answers: 1 "Add conjoint as Contact", 2 "Update Contact Info", 9 "Update Appointment Title", 13 "Set Clickable Customer Phone", 15 "Set Partner On Behalf", **all already inactive on production** (checked 2026-10-30). They work on the Appointments questionnaire, which goes; the questionnaire is now kept on the RDV itself (`x_rdv_answers`) and "pris à la place de" is set by bgg_custom_dev. |
+
+Everything else (users, orders, invoices, payments, RDVs, tasks, DMS,
+commissions…) must keep exactly its count: the line shows ❌ otherwise. The
+numbers come from `ee_check` (Phase 3), which lists each record by name
+under "RECORDS THE MODULES CREATED"; they are saved in
+`expected_losses.json` and checked again after the restore.
+
 Lock timeouts in the log ("could not obtain lock")? Run `ee_blockers(env)`
 to see who holds them, then `ee_cleanup(env)` in a new shell.
 
@@ -221,6 +242,16 @@ Files in `~/ee_exit/<database>/`: `counts_before.json`,
 3. Users who book but are in neither role (data issue #4): give them the
    "Prise de RDV (call center)" group (Settings → Users).
 
+4. Apps screen at login instead of Discuss (`web_responsive`'s "Redirect to
+   Home"), for the internal users without a Home Action:
+
+   ```python
+   env['res.users'].search([('share', '=', False), ('action_id', '=', False)]).write({'is_redirect_home': True})
+   env.cr.commit()
+   ```
+
+   (Can also be done on the Community server after the restore.)
+
 ⚠️ On Odoo.sh the Apps screen still offers the Enterprise apps (their code
 is always there). **Never click "Activer" on them.** On the Community
 server they do not exist.
@@ -238,13 +269,15 @@ Must end with **"Ready for the dump ✅"**. What it checks:
 
 | Section | ❌ when |
 |---|---|
-| Modules | an Enterprise module installed, or a module from the Enterprise folder; records left by uninstalled modules; a module half-way; one of `bgg_custom_dev`, `belgogreen_sales_commission`, `dms`, `bgg_dms`, `bgg_dms_project`, `web_responsive`, `resource_booking`, `web_calendar_slot_duration`, `bgg_booking` missing or not at its code version; `bgg_staging_rebuild` installed |
-| Screens and users | an app icon in Studio's format (black app menu); an action with a removed view type (gantt, map...); an active user who cannot log in (no user type); a condition on a removed field |
+| Modules | an Enterprise module installed, or a module from the Enterprise folder; an installed module whose code is not on the server (e.g. an Odoo.sh theme, once restored elsewhere); records left by uninstalled modules; a module half-way; one of `bgg_custom_dev`, `belgogreen_sales_commission`, `dms`, `bgg_dms`, `bgg_dms_project`, `web_responsive`, `resource_booking`, `web_calendar_slot_duration`, `bgg_booking` missing or not at its code version; `bgg_staging_rebuild` installed |
+| Screens and users | an app icon in Studio's format (black app menu); an action with a removed view type (gantt, map...); an active user who cannot log in (no user type) |
+| Conditions | an access rule, filter, menu or automation rule still naming a replaced Enterprise field (`ee_cleanup` renames it) or a removed one (fix by hand) |
 | Booking | no booking type, nobody can book (⚠️: a type without "Réservable par") |
 | What must survive | a count lower than before the uninstall (minus the expected losses) |
 
-Most ❌ of the "Screens" section are fixed by `ee_cleanup(env)`; run
-`ee_final_check(env)` again after it.
+Most ❌ of the "Screens" and "Conditions" sections are fixed by
+`ee_cleanup(env)`; run `ee_final_check(env)` again after it. The same check
+runs again on the Community server after the restore.
 
 ## Phase 7. Look at it
 
@@ -277,8 +310,24 @@ As a **commercial**:
 
 ## Phase 8. Dump
 
-Odoo.sh → the branch → **Backups** → download a dump **with filestore**.
-This is what is restored on the Community server.
+1. Odoo.sh → the branch → **Backups** → **Create Backup**. A row of the
+   branch appears (the `main` rows are production's backups: not those).
+2. Its download icon → **Neutralized** (rehearsal; "Exact" at go-live, see
+   below) and **With filestore**. Odoo.sh notifies when it is ready.
+3. Also download `~/ee_exit/` from the branch's shell
+   (`tar czf ~/ee_exit.tgz -C ~ ee_exit`, then Editor → right-click →
+   Download): the counts before the uninstall, for the check after the
+   restore, and the WhatsApp templates. It is gone when Odoo.sh rebuilds
+   the branch: take it right after the uninstall.
+
+October 2026: a 27 GB zip (1 GB of SQL, 31 GB of files), about 50 minutes
+to upload at 10 MB/s.
+
+## Phase 9. Restore on the Community server
+
+[deploy/vps/README.md](../deploy/vps/README.md): upload, `restore_odoosh.sh`
+(loads, updates our modules, runs `ee_cleanup` and `ee_final_check` again),
+domain, backups.
 
 ## Go-live: what changes
 
@@ -292,12 +341,16 @@ This is what is restored on the Community server.
   - **on production itself** after a manual Odoo.sh backup (the fallback is
     that backup): run with `ee_uninstall(env, confirm=..., go_live=True)`.
 - WhatsApp and Knowledge as decided in Phase 0.
-- The restore on the server, the domain, emails and backups are in the
-  server guide (to write once the server is known).
+- Download `ee_exit.tgz` (Phase 8) before anything rebuilds the branch.
+- The restore, the domain, emails and backups:
+  [deploy/vps/README.md](../deploy/vps/README.md) (server size: open
+  decision #10).
 
 ## Rehearsals
 
 | Date | Database | Result |
 |---|---|---|
 | 2026-10-23 | bsi-staging | All counts kept except 6 calendar events (fixed since: links emptied first, open decision #5); users who lost "Internal User" (fixed since: rights kept, #6); 4 leftovers of lock timeouts removed by `ee_cleanup`; no Enterprise code left, 141 modules. After it: app icons in Studio's format (black app menu) and an access rule on `appointment_type_id`, both fixed in the script. |
-| next | fresh copy | First full run of this guide with both gates. |
+| 2026-10-24 | bsi-staging dump → VPS (Docker) | Restore of the 2026-10-23 database: 27 GB zip, 144 modules, 31.2 GB / 47,541 files, about 10 minutes. `ee_final_check`: no Enterprise, all our modules at their code version, 44 users can log in, 4 booking types, 28 users can book; "Ready for the dump ✅". Found: automation rule 16 "Subscribe Admins to FSM Tasks" still filtered on the task's `is_fsm` (renamed since, and the final check now fails on such conditions); `ee_exit.tgz` not available (branch rebuilt since the uninstall). Two harmless load errors (`vector` extension of the Enterprise AI). |
+| 2026-10-30 | bsi-staging (fresh copy of production, client repository) | First full run of this guide, Phases 1–6, both gates passed. Migrations: 14 commission plans, 7 RDV types (34,255 RDVs, 9,963 with answers), 907 SSS projects (897 with their order), 12 Studio views off, 301 RDV type commercials. DMS: 2,913 folders, 6,102 files, 2,421 projects linked, no error. Uninstall: no Enterprise left, all counts kept (expected losses only: open decision #13); two foreign-key errors on Documents rows during the uninstall, harmless (tables dropped right after, DMS counts unchanged). Booking: 4 types, 28 users can book. 44 users with the apps screen at login. `ee_final_check`: "Ready for the dump ✅". |
+| next | 2026-10-30 dump → VPS | Phases 7–9: look at it, dump with filestore and `ee_exit.tgz`, restore on the server. |

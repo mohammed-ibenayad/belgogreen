@@ -140,7 +140,10 @@ our fields.
 **Automation rules.** Inactive rules 1–19 are old versions of what is now
 in bgg_custom_dev; the 5 on appointment answers go with Appointments. The
 8 active WhatsApp welcome rules (20–27) wait for WhatsApp on Community
-(archived by the uninstall, templates saved in `whatsapp.json`).
+(archived by the uninstall, templates saved in `whatsapp.json`). Rule 16
+"Subscribe Admins to FSM Tasks" filters tasks on Field Service's `is_fsm`:
+renamed to `project_id.x_is_sss_project` (found in the restore of
+2026-10-24).
 
 Checked by `ee_preflight` (Studio section): what is still owned only by
 Studio and goes with it.
@@ -183,8 +186,14 @@ Checked by `ee_preflight` (Documents section) and counted by
 
 Full-screen app menu with all apps and search, like the Enterprise home
 screen, and a better phone layout. It needs app icons as files: our app
-menus (BGG Dashboards, Commissions, Staging) ship an SVG icon, and
-`ee_cleanup` resets the icons Studio set in its own format.
+menus (BGG Dashboards, Commissions, Simulation PV, Staging) ship an SVG
+icon, and `ee_cleanup` resets the icons Studio set in its own format.
+
+Opening on the apps screen after login, as Enterprise did, is
+`web_responsive`'s per-user "Redirect to Home" (Settings → Users →
+Preferences; only without a Home Action). Off by default: switched on for
+the internal users in the migration guide (Phase 5); new users start
+without it.
 
 ## 8. The uninstall itself
 
@@ -196,7 +205,7 @@ plain uninstall gets wrong for this database:
 | Records Enterprise created but we use (a project with tasks, a stage, an activity type) are deleted, and the links to them emptied | Protected (extra external id) |
 | Calendar events linked to an Enterprise model are deleted with the model | Link emptied first, events kept |
 | Users get "Internal User" through Enterprise groups that are deleted: they cannot log in | Rights given directly |
-| Access rules, filters, menus, automations naming `appointment_type_id`, `appointment_status`, `is_fsm` break | Renamed to our fields |
+| Access rules, filters, menus, automations naming `appointment_type_id`, `appointment_status`, `is_fsm` (projects and tasks) break | Renamed to our fields; `ee_final_check` fails while one is left |
 | Uninstalling 129 modules at once runs out of memory and time | Batches, each committed; can resume |
 | Locks leave columns and records behind | Retried (`ee_cleanup`) |
 | Actions keep gantt/map view types; Studio-format icons break the app menu | Fixed (`ee_cleanup`) |
@@ -215,6 +224,15 @@ Copied unchanged from OCA (update by copying a newer commit):
 | `web_responsive` | OCA/web 19.0, 521be37 | app menu |
 
 Python package added to `requirements.txt`: `cssselect` (resource_booking).
+
+## 9b. Community server
+
+`deploy/vps/` (README there): Docker instance laid out like the other Odoo
+instances of the server (Odoo 19 Community image + the Python libraries of
+our modules, its own PostgreSQL 16, nginx, certbot), the restore of an
+Odoo.sh dump with the final check, nightly database backups. Not on
+Odoo.sh any more: the `vector` PostgreSQL extension of the Enterprise AI
+(not needed), the Odoo.sh mail server (own SMTP to configure).
 
 ## 10. Not replaced yet
 
