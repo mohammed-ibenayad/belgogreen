@@ -180,9 +180,17 @@ adopted in `bgg_custom_dev/security/calendar_rules.xml` by migration
 | Call Center manage "public user" Organized Events (428) | Call Center | the RDVs booked online | all | was `create_uid in [4, 46]` (the public users of the two websites); now any public user (`create_uid.share`) |
 
 The migration writes the new conditions of 253 and 428 on the existing
-rules. Menus made by hand: "Call Center" (322, Call Center) and "RDV
-Commercial" (324, Commercial), top-level links (URL actions 524 and 537):
-to see. `ee_preflight` warns about other access rules and menus made by
+rules. Rule 428 is unchanged in practice: on production only the two public users
+(4: 6 RDVs, 46: 30 RDVs) are users with `share` who created RDVs.
+
+**Menus made by hand**: "Call Center" (322, group Call Center) and "RDV
+Commercial" (324, group Commercial), top-level menus opening the
+Enterprise booking pages (URL actions 524 `https://belgogreen.odoo.com/book/callcenter`
+and 537 `…/book/commercial`), gone without Appointments. Adopted by
+bgg_booking (pre-install hook, migration 19.0.1.4.0 where it is already
+installed; `views/menu_views.xml`): same names, groups and place, an app
+icon, and they open "Prise de RDV" (each user sees the types they may
+book). `ee_preflight` warns about other access rules and menus made by
 hand. All 7 groups were still there with
 the same members after the uninstall on bsi-staging (2026-10-30).
 `ee_preflight` warns about any other group made by hand ("Groups made by

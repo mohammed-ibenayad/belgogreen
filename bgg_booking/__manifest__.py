@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen - Prise de RDV call center',
-    'version': '19.0.1.3.0',
+    'version': '19.0.1.4.0',
     'category': 'Customizations',
     'summary': 'Call-centre appointment booking on OCA Resource Booking (replaces Enterprise Appointments)',
     'description': """
@@ -68,6 +68,7 @@
             'bgg_booking/static/src/month_calendar/*',
         ],
     },
+    'pre_init_hook': 'pre_init',
     'post_init_hook': 'post_init',
     'installable': True,
     'application': False,

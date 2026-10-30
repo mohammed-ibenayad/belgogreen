@@ -33,6 +33,38 @@ BOOKING_DURATION = 2.0
 BOOKING_TYPE_ROLES = {'-CNT': 'Call Center', '-COM': 'Commercial'}
 
 
+# Top-level menus made by hand on production to open the Enterprise booking
+# pages: module xmlid -> end of the URL they opened. Adopted before the
+# module's data loads, so menu_views.xml repoints them to "Prise de RDV".
+HAND_MADE_MENUS = {
+    'menu_call_center_booking': '/book/callcenter',
+    'menu_commercial_booking': '/book/commercial',
+}
+
+
+def adopt_booking_menus(cr):
+    for xmlid, url in HAND_MADE_MENUS.items():
+        cr.execute("SELECT 1 FROM ir_model_data WHERE module = 'bgg_booking' AND name = %s", [xmlid])
+        if cr.fetchone():
+            continue
+        cr.execute("""SELECT m.id FROM ir_ui_menu m
+                        JOIN ir_act_url a ON m.action = 'ir.actions.act_url,' || a.id
+                       WHERE m.parent_id IS NULL AND a.url LIKE %s
+                         AND NOT EXISTS (SELECT 1 FROM ir_model_data d WHERE d.model = 'ir.ui.menu' AND d.res_id = m.id
+                                            AND d.module NOT IN ('__custom__', '__export__'))
+                       ORDER BY m.id LIMIT 1""", ['%' + url])
+        row = cr.fetchone()
+        if row:
+            cr.execute("""INSERT INTO ir_model_data (module, name, model, res_id, noupdate)
+                          VALUES ('bgg_booking', %s, 'ir.ui.menu', %s, false)""", [xmlid, row[0]])
+            _logger.info("bgg_booking: menu %s (id %s, link to %s) adopted, now opens Prise de RDV",
+                         xmlid, row[0], url)
+
+
+def pre_init(env):
+    adopt_booking_menus(env.cr)
+
+
 def link_booking_groups(env):
     """The "Call Center" and "Commercial" roles (created by hand, found by
     name) get the booking right: the call centre books the CNT types, the

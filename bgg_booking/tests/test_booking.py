@@ -365,3 +365,13 @@ class TestBookingSetup(TransactionCase):
         self.assertFalse(btype.resource_calendar_id.company_id)
         self.assertFalse(btype.combination_rel_ids.combination_id.resource_ids.company_id)
         self.assertIn(btype, btypes.with_user(agent).search([]))
+
+    def test_role_menus_open_prise_de_rdv(self):
+        action = self.env.ref('bgg_booking.bgg_booking_wizard_action')
+        for xmlid, group in (('menu_call_center_booking', 'bgg_custom_dev.group_call_center'),
+                             ('menu_commercial_booking', 'bgg_custom_dev.group_commercial')):
+            menu = self.env.ref('bgg_booking.%s' % xmlid)
+            self.assertEqual(menu.action, action, xmlid)
+            groups = menu['group_ids' if 'group_ids' in menu._fields else 'groups_id']
+            self.assertEqual(groups, self.env.ref(group), xmlid)
+            self.assertFalse(menu.parent_id, xmlid)

@@ -257,7 +257,10 @@ Files in `~/ee_exit/<database>/`: `counts_before.json`,
    ```
 
    `resource_booking` and `web_calendar_slot_duration` install with
-   `bgg_booking`. Its installation creates the booking types from the RDV
+   `bgg_booking`. The installation also adopts the top-level menus
+   "Call Center" and "RDV Commercial" made by hand (they opened the
+   Enterprise booking pages): log `bgg_booking: menu … adopted, now opens
+   Prise de RDV`; they now open "Prise de RDV". Its installation creates the booking types from the RDV
    types (Mon–Sat 9:00–21:00, 2 h, one resource per commercial), sets
    "Réservable par" (call-centre types for "Call Center", "par commercial"
    types for "Commercial") and gives "Prise de RDV" to those two roles.

@@ -7,6 +7,25 @@
               action="bgg_booking_wizard_action"
               groups="bgg_booking.group_booking_agent"
               sequence="1"/>
+    <!-- Top-level "Call Center" and "RDV Commercial" menus, made by hand
+         on production (menus 322 and 324) to open the Enterprise booking
+         pages (https://belgogreen.odoo.com/book/callcenter and
+         /book/commercial), which are gone without Appointments. The
+         pre-install hook gives the existing menus these xmlids, so they are
+         adopted and now open "Prise de RDV" (each user sees the types they
+         may book). -->
+    <menuitem id="menu_call_center_booking"
+              name="Call Center"
+              action="bgg_booking_wizard_action"
+              groups="bgg_custom_dev.group_call_center"
+              web_icon="bgg_booking,static/description/icon.svg"
+              sequence="10"/>
+    <menuitem id="menu_commercial_booking"
+              name="RDV Commercial"
+              action="bgg_booking_wizard_action"
+              groups="bgg_custom_dev.group_commercial"
+              web_icon="bgg_booking,static/description/icon.svg"
+              sequence="10"/>
     <menuitem id="menu_bgg_rdv_need"
               name="Besoins (prise de RDV)"
               parent="resource_booking.resource_booking_type_configuration_menu"

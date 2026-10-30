@@ -2,4 +2,4 @@
 
 from . import models
 from . import wizard
-from .hooks import post_init
+from .hooks import post_init, pre_init
