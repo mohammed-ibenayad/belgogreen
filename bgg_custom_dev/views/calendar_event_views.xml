@@ -8,10 +8,11 @@
         <field name="inherit_id" ref="calendar.view_calendar_event_form"/>
         <field name="arch" type="xml">
 
-            <!-- Alert banner prompting user to fill in KPI tab after status change -->
+            <!-- Alert banner prompting user to fill in KPI tab after status
+                 change; hidden once a number of reviews or referrals is set -->
             <xpath expr="//sheet" position="before">
                 <div class="alert alert-warning text-center" role="alert"
-                     invisible="x_rdv_status not in ('attended', 'no_show') or not x_rdv_type_id">
+                     invisible="x_rdv_status not in ('attended', 'no_show') or not x_rdv_type_id or x_avis_count or x_recommandation_count">
                     Pensez à renseigner les informations dans l'onglet
                     <strong>Avis &amp; Recommandations</strong>.
                 </div>
