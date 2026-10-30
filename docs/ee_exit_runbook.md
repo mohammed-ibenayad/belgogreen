@@ -193,6 +193,19 @@ Compare with the reviewed check of 2026-10-23:
   column then stays), as done for the planned start of tasks
   (`planned_date_begin`, lost in the rehearsal of 2026-10-30).
 
+  Two of them are open decisions (#14, #15); check them on each new copy,
+  before the uninstall (read only):
+
+  ```bash
+  # 14: tasks marked done in Field Service but still open
+  psql -c "SELECT t.id, t.name, COALESCE(p.name->>'fr_BE', p.name->>'en_US') AS project, p.x_is_sss_project AS sss, t.state, COALESCE(s.name->>'fr_BE', s.name->>'en_US') AS stage, t.write_date::date AS last_change FROM project_task t LEFT JOIN project_project p ON p.id = t.project_id LEFT JOIN project_task_type s ON s.id = t.stage_id WHERE t.fsm_done AND t.state NOT IN ('1_done', '1_canceled') ORDER BY t.id;"
+  # 15: the RDV booker, compared with what is kept (creator, attendees, pris à la place de)
+  psql -c "SELECT count(*) AS with_booker, count(*) FILTER (WHERE e.appointment_booker_id = u.partner_id) AS booker_is_the_creator, count(*) FILTER (WHERE e.appointment_booker_id = e.x_studio_rendez_vous_pris_la_place_de) AS booker_is_pris_a_la_place_de, count(*) FILTER (WHERE e.appointment_booker_id IN (SELECT r.res_partner_id FROM calendar_event_res_partner_rel r WHERE r.calendar_event_id = e.id)) AS booker_is_an_attendee FROM calendar_event e LEFT JOIN res_users u ON u.id = e.create_uid WHERE e.appointment_booker_id IS NOT NULL;"
+  ```
+
+  2026-10-30: 5 tasks (2 leave counters without project, 3 recent SSS
+  after-sales tasks); booker an attendee on 9,133 of 9,161 RDVs.
+
 ## Phase 4. Uninstall Enterprise
 
 Tens of minutes. Run it in the background:
