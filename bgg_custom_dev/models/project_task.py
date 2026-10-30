@@ -2,6 +2,7 @@
 
 import datetime
 import logging
+import urllib.parse
 
 import pytz
 
@@ -37,6 +38,27 @@ class ProjectTask(models.Model):
     )
     # View helper for the state widget: "Bloqué" is offered on admin projects only.
     x_is_admin_dossier_project = fields.Boolean(related='project_id.x_is_admin_dossier_project')
+    x_is_sss_task = fields.Boolean(related='project_id.x_is_sss_project')
+    # Planned start of a task, from Enterprise Planning (project_enterprise).
+    # Declared here under the same name so its column and values stay when
+    # Enterprise is uninstalled (with date_deadline as the end).
+    planned_date_begin = fields.Datetime(string='Date de début', copy=False)
+
+    def action_bgg_open_itinerary(self):
+        """Route to the client's address in Google Maps (as Field Service's
+        "Voir l'itinéraire")."""
+        self.ensure_one()
+        partner = self.partner_id
+        address = ', '.join(part for part in (
+            partner.street, partner.street2, ' '.join(filter(None, (partner.zip, partner.city))),
+            partner.country_id.name) if part)
+        if not address:
+            raise ValidationError(_("Le client n'a pas d'adresse."))
+        return {
+            'type': 'ir.actions.act_url',
+            'url': 'https://www.google.com/maps/dir/?api=1&destination=%s' % urllib.parse.quote(address),
+            'target': 'new',
+        }
 
     @api.depends('stage_id', 'depend_on_ids.state')
     def _compute_state(self):

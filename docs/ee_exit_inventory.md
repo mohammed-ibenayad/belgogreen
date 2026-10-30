@@ -86,8 +86,10 @@ Field Service was only used for the SSS projects and their tasks.
 | SSS project found by its tasks / name | `x_sss_sale_order_id` (link to its order), set by "Créer tâches SSS" and by migration 19.0.2.1.0 for the existing ones |
 | "(CA) Create FSM Project and Tasks" (Studio action) | "Créer tâches SSS" (`action_create_sss_tasks`): plain project flagged SSS, one task per product to install, confirmed and (partly) paid orders only; project manager from the system parameter `bgg.sss_project_manager_login` |
 
-Dropped (not used): worksheets, planned start dates of tasks (deadlines
-stay), "under warranty", "allow material".
+| Field Service task form: client with address and "Voir l'itinéraire", contact number, planned dates, allocated time | Standard task form plus, on SSS tasks only, the client (`partner_id`, with its address), "Voir l'itinéraire" (Google Maps route, `action_bgg_open_itinerary`), the contact number (`partner_phone`, Community), the planned dates (`planned_date_begin` → `date_deadline`) and the allocated time (`allocated_hours`, Community); `view_task_form2_inherit_sss` |
+| `project.task.planned_date_begin` (Enterprise Planning) | declared in bgg_custom_dev under the same name, so its column and values stay at the uninstall (lost in the rehearsal of 2026-10-30, before this) |
+
+Dropped (not used): worksheets, "under warranty", "allow material".
 
 ## 4. Odoo Studio → code
 

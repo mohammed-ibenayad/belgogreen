@@ -18,6 +18,40 @@
         </field>
     </record>
 
+    <!--
+        SSS tasks: what the Field Service task form showed (client with
+        address and itinerary, contact number, planned dates, allocated
+        time). Community hides the client when the project is not billable
+        and has no planned start: shown here for SSS tasks only.
+    -->
+    <record id="view_task_form2_inherit_sss" model="ir.ui.view">
+        <field name="name">project.task.form.inherit.sss</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group/field[@name='tag_ids']" position="after">
+                <field name="x_is_sss_task" invisible="1"/>
+                <field name="partner_id" string="Client" widget="res_partner_many2one"
+                       context="{'show_address': 1}" options="{'always_reload': True}"
+                       invisible="not x_is_sss_task"/>
+                <div colspan="2" invisible="not x_is_sss_task or not partner_id">
+                    <button name="action_bgg_open_itinerary" type="object" class="btn-link ps-0"
+                            icon="fa-arrow-right" string="Voir l'itinéraire"/>
+                </div>
+                <field name="partner_phone" string="Numéro de contact" widget="phone"
+                       invisible="not x_is_sss_task"/>
+                <label for="planned_date_begin" string="Date prévue" invisible="not x_is_sss_task"/>
+                <div class="o_row" invisible="not x_is_sss_task">
+                    <field name="planned_date_begin" widget="daterange"
+                           options="{'end_date_field': 'date_deadline'}"/>
+                    <field name="date_deadline" invisible="1"/>
+                </div>
+                <field name="allocated_hours" string="Temps alloué" widget="float_time"
+                       invisible="not x_is_sss_task"/>
+            </xpath>
+        </field>
+    </record>
+
     <record id="project_task_view_tree_base_inherit_blocked" model="ir.ui.view">
         <field name="name">project.task.list.inherit.blocked</field>
         <field name="model">project.task</field>

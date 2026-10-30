@@ -177,6 +177,12 @@ Compare with the reviewed check of 2026-10-23:
 - the same records kept as still in use,
 - "ROWS LINKED TO A REMOVED MODEL": the calendar events are "KEPT",
 - "NOT MOVED YET": Knowledge and WhatsApp as decided in Phase 0.
+- "VALUES IN THE REMOVED FIELDS OF KEPT MODELS": every Enterprise field of
+  a kept model (tasks, orders, invoices…) that holds data, with its count.
+  These values are lost. Go through the list once: a field still used must
+  be declared in `bgg_custom_dev` under the same name before the copy (its
+  column then stays), as done for the planned start of tasks
+  (`planned_date_begin`, lost in the rehearsal of 2026-10-30).
 
 ## Phase 4. Uninstall Enterprise
 
@@ -317,6 +323,9 @@ Reload with **Ctrl+F5** first. As **admin**:
       place de"; list columns.
 - [ ] Project: an admin project and an SSS project, their tasks, the
       "Documents" button.
+- [ ] An SSS task: client with its address and "Voir l'itinéraire" (opens
+      the route in Google Maps), contact number, planned dates, allocated
+      time, description.
 - [ ] Documents (DMS): Finance per company (company switcher), project
       folders, search "S00466".
 - [ ] Invoicing: invoices, payments.

@@ -125,6 +125,7 @@ EE_EXIT_SURVIVAL = [
     ('SSS projects linked to an order', 'project_project', 'x_sss_sale_order_id IS NOT NULL'),
     ('Projects with a DMS folder', 'project_project', 'x_dms_directory_id IS NOT NULL'),
     ('Tasks', 'project_task', None),
+    ('Tasks with a planned start', 'project_task', 'planned_date_begin IS NOT NULL'),
     ('Task stages in use', 'project_task_type', 'id IN (SELECT stage_id FROM project_task)'),
     ('Timesheet / analytic lines', 'account_analytic_line', None),
     ('Products', 'product_template', None),
@@ -543,6 +544,24 @@ def ee_check(env, keep=()):
     analysis = _ee_analyse(env, names)
     _ee_print("\n=== %s Enterprise tables dropped, %s Enterprise fields removed from kept models"
               % (len(analysis['dropped_models']), len(analysis['dropped_fields'])))
+
+    # Values lost with the fields: a field of a kept model that only an
+    # Enterprise module declares is dropped with its column. What is used
+    # must be declared in bgg_custom_dev under the same name (column kept).
+    filled = []
+    for model, name in sorted(analysis['dropped_fields']):
+        field = env[model]._fields.get(name) if model in env else None
+        if not field or not field.store or field.type in ('one2many', 'many2many') or not env[model]._auto:
+            continue
+        count = _ee_count(env, env[model]._table, ('"%s"' if field.type == 'boolean' else '"%s" IS NOT NULL') % name)
+        if count:
+            filled.append((count, model, name, field.string))
+    _ee_print("\n=== VALUES IN THE REMOVED FIELDS OF KEPT MODELS (lost; keep what is used by declaring it "
+              "in bgg_custom_dev)")
+    for count, model, name, label in sorted(filled, key=lambda row: (row[1], -row[0])):
+        _ee_print("  ⚠️  %-55s %8s rows   %s" % ('%s.%s' % (model, name), count, label))
+    if not filled:
+        _ee_print("  none ✅")
 
     _ee_print("\n=== RECORDS THE MODULES CREATED, DELETED WITH THEM (business data)")
     for model, info in analysis['records'].items():

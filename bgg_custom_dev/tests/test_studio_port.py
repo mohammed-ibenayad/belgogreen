@@ -42,6 +42,19 @@ class TestStudioFields(TransactionCase):
         self.assertEqual((types_rule.perm_read, types_rule.perm_write, types_rule.perm_create, types_rule.perm_unlink),
                          (True, False, False, False))
 
+    def test_planned_start_owned_by_module(self):
+        # kept when Enterprise Planning is uninstalled
+        field = self.env['ir.model.fields']._get('project.task', 'planned_date_begin')
+        self.assertIn('bgg_custom_dev', field.modules)
+
+    def test_task_itinerary(self):
+        partner = self.env['res.partner'].create({
+            'name': 'Client SSS', 'street': 'Rue de la chapelle 65', 'zip': '6887', 'city': 'Herbeumont'})
+        task = self.env['project.task'].create({'name': 'PAC', 'partner_id': partner.id})
+        action = task.action_bgg_open_itinerary()
+        self.assertEqual(action['type'], 'ir.actions.act_url')
+        self.assertIn('destination=Rue%20de%20la%20chapelle%2065%2C%206887%20Herbeumont', action['url'])
+
     def test_vendeur_associes_link_table(self):
         field = self.env['sale.order']._fields['x_studio_vendeur_associes']
         self.assertEqual((field.relation, field.column1, field.column2),
