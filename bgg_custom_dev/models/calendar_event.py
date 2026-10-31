@@ -231,6 +231,15 @@ class CalendarEvent(models.Model):
 
         return result
 
+    def action_bgg_set_rdv_status(self):
+        """Header buttons of the RDV form: set the RDV status given in the
+        button's context (rdv_status), as the Appointments status buttons."""
+        status = self.env.context.get('rdv_status')
+        if status not in dict(RDV_STATUS_SELECTION):
+            raise UserError("Statut de RDV inconnu : %s" % status)
+        self.write({'x_rdv_status': status})
+        return True
+
     def _vals_change_dates(self, vals):
         """True when `vals` actually changes one of this event's date fields
         (normalises the incoming values so a re-sent, unchanged value is ignored)."""

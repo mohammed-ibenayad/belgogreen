@@ -94,6 +94,23 @@
                 <field name="x_rdv_status" string="Statut du rendez-vous"/>
             </xpath>
 
+            <!-- status buttons in the header, as in Appointments (RDVs with a
+                 type; the current status has no button) -->
+            <xpath expr="//header" position="inside">
+                <button name="action_bgg_set_rdv_status" type="object" string="Présent"
+                        context="{'rdv_status': 'attended'}"
+                        invisible="not x_rdv_type_id or x_rdv_status == 'attended'"/>
+                <button name="action_bgg_set_rdv_status" type="object" string="No-show"
+                        context="{'rdv_status': 'no_show'}"
+                        invisible="not x_rdv_type_id or x_rdv_status == 'no_show'"/>
+                <button name="action_bgg_set_rdv_status" type="object" string="Annulé"
+                        context="{'rdv_status': 'cancelled'}"
+                        invisible="not x_rdv_type_id or x_rdv_status == 'cancelled'"/>
+                <button name="action_bgg_set_rdv_status" type="object" string="Réservé"
+                        context="{'rdv_status': 'booked'}"
+                        invisible="not x_rdv_type_id or x_rdv_status in ('booked', False)"/>
+            </xpath>
+
             <!-- the RDV status as a ribbon, as in Appointments -->
             <xpath expr="//sheet" position="inside">
                 <widget name="web_ribbon" title="Présent" bg_color="text-bg-success"

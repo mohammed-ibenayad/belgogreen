@@ -119,7 +119,7 @@ Migration 19.0.2.1.0 moves Studio into the modules, data kept.
 | Studio view | Module view |
 |---|---|
 | Calendar list, calendar form | `view_calendar_event_tree_bgg`, `view_calendar_event_form_bgg_layout`, `view_calendar_event_form_bgg_rdv_required` |
-| RDV form as in Appointments (business tests, 2026-10-31) | RDV type and status in the Options tab under Tags ("Rendez-vous", "Statut du rendez-vous"), the status as a ribbon (Présent, No-show, Annulé), the questionnaire as the "Questions" tab right after Notes; `view_calendar_event_form_inherit_bgg` |
+| RDV form as in Appointments (business tests, 2026-10-31) | RDV type and status in the Options tab under Tags ("Rendez-vous", "Statut du rendez-vous"), the status as a ribbon (Présent, No-show, Annulé), the questionnaire as the "Questions" tab right after Notes; status buttons in the header (Présent, No-show, Annulé, Réservé; the current one hidden; `action_bgg_set_rdv_status`); `view_calendar_event_form_inherit_bgg` |
 | Sale order form | `view_order_form_bgg_studio` |
 | Quotations list, sales list | `view_quotation_tree_bgg_studio`, `sale_order_list_upload_bgg_studio` |
 | Contact form, contacts list | `view_partner_form_bgg_studio`, `view_partner_tree_bgg_studio` |

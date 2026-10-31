@@ -367,6 +367,20 @@ class TestCalendarEvent(TransactionCase):
         self.assertEqual(customer_with_internal_email.email, 'rdvcallbgg@gmail.com',
                         "Internal email should be replaced with call center email")
 
+    def test_status_buttons(self):
+        """The header buttons of the RDV form set the RDV status."""
+        event = self.env['calendar.event'].create({
+            'name': 'RDV boutons',
+            'start': datetime.datetime.now(),
+            'stop': datetime.datetime.now() + datetime.timedelta(hours=1),
+            'x_rdv_type_id': self.appointment_type_commercial.id,
+            'x_rdv_status': 'booked',
+        })
+        event.with_context(rdv_status='attended').action_bgg_set_rdv_status()
+        self.assertEqual(event.x_rdv_status, 'attended')
+        with self.assertRaises(UserError):
+            event.with_context(rdv_status='nope').action_bgg_set_rdv_status()
+
     def test_preserve_real_customer_emails(self):
         """Test that real customer emails are preserved"""
         original_email = self.customer_partner.email
