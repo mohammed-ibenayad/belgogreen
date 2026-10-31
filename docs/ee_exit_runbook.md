@@ -388,6 +388,8 @@ domain, backups.
 
 ## Go-live: what changes
 
+The full plan (settings, communication, timeline): [ee_exit_golive.md](ee_exit_golive.md).
+
 - Production is frozen (users out) from the final copy to the switch.
 - **Links and emails.** Production sends everything from
   `belgogreen.odoo.com` (`web.base.url`, the website's domain, the email

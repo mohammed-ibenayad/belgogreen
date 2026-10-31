@@ -9,7 +9,9 @@
 # before the uninstall), so the final check can compare them.
 # Environment: DB (default belgogreen), BASE_URL (e.g. https://odoo.example.com,
 # default http://localhost:8077), FORCE=1 to replace an existing database
-# without asking.
+# without asking, MAIL_DOMAINS to rename the Odoo.sh email domains (e.g.
+# "belgogreen.odoo.com=belgogreen.be naturisol.odoo.com=naturisol.be"; the
+# aliases, catchall and bounce addresses follow).
 #
 # Disk: dump.sql is read straight from the zip and the filestore unzipped
 # straight into the Odoo volume (no extra copy); the free space is checked
@@ -101,8 +103,10 @@ echo "  $(find "$volume/filestore/$DB" -type f 2>/dev/null | wc -l) files, $(du 
 echo "== 5/7 Settings for this server"
 psql_db -d "$DB" -q <<SQL
 -- links in emails and the reports' assets (PDFs are rendered inside the container)
+-- (frozen: Odoo would otherwise take the address of the first admin login)
 INSERT INTO ir_config_parameter (key, value, create_date, write_date)
-VALUES ('web.base.url', '$BASE_URL', now(), now()), ('report.url', 'http://127.0.0.1:8069', now(), now())
+VALUES ('web.base.url', '$BASE_URL', now(), now()), ('report.url', 'http://127.0.0.1:8069', now(), now()),
+       ('web.base.url.freeze', 'True', now(), now())
 ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, write_date = now();
 -- a new identity: this database is not the Odoo.sh one
 UPDATE ir_config_parameter SET value = gen_random_uuid()::text WHERE key = 'database.uuid';
@@ -115,6 +119,13 @@ SQL
 neutralized=$(psql_db -d "$DB" -tAc "SELECT value FROM ir_config_parameter WHERE key = 'database.is_neutralized'")
 echo "  web.base.url = $BASE_URL; neutralized: ${neutralized:-no}"
 echo "  websites: $(psql_db -d "$DB" -tAc "SELECT string_agg(name || ' ' || COALESCE(domain, '-'), ', ') FROM website")"
+for pair in ${MAIL_DOMAINS:-}; do
+    old_domain=${pair%%=*}; new_domain=${pair#*=}
+    psql_db -d "$DB" -q -c "UPDATE mail_alias_domain SET name = '$new_domain' WHERE name = '$old_domain'"
+    psql_db -d "$DB" -q -c "UPDATE ir_config_parameter SET value = '$new_domain' WHERE key = 'mail.catchall.domain' AND value = '$old_domain'"
+    echo "  email domain $old_domain -> $new_domain"
+done
+echo "  email domains: $(psql_db -d "$DB" -tAc "SELECT string_agg(name || ' (from ' || default_from || '@)', ', ') FROM mail_alias_domain")"
 odoo_domains=$(psql_db -d "$DB" -tAc "SELECT string_agg(name, ', ') FROM mail_alias_domain WHERE name LIKE '%.odoo.com'")
 if [ -n "$odoo_domains" ]; then
     echo "  ⚠️  email domains still on Odoo.sh: $odoo_domains (replies to Odoo's emails go to the old Odoo):"
