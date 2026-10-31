@@ -389,6 +389,23 @@ domain, backups.
 ## Go-live: what changes
 
 - Production is frozen (users out) from the final copy to the switch.
+- **Links and emails.** Production sends everything from
+  `belgogreen.odoo.com` (`web.base.url`, the website's domain, the email
+  domains `belgogreen.odoo.com` and `naturisol.odoo.com` for replies).
+  - Customer links (quotes, invoices) carry their access token, which the
+    restore keeps: only the address changes. `restore_odoosh.sh` sets
+    `web.base.url` and the website's domain to `BASE_URL`, so new links go
+    to the new server.
+  - Links sent before go-live still name `belgogreen.odoo.com`: resend the
+    open quotes and unpaid invoices from the new Odoo, or redirect them from
+    the old one (open decision #16).
+  - Email domains: set the companies' own domains in Settings → Technical →
+    Email Domains, with the provider's SPF/DKIM records (#17). Until then,
+    replies to Odoo's emails go to the old Odoo.
+- **The old Odoo.sh after go-live** (kept one year, one or two users): an
+  archive. Switch off its outgoing mail and scheduled jobs (reminders,
+  follow-ups, WhatsApp) the day of the switch, so customers get nothing
+  from it, and record nothing new there.
 - `ee_uninstall` refuses a database that is not neutralized unless
   `go_live=True`. Where to run the final pass is decided with the go-live
   window:

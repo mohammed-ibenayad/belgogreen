@@ -108,9 +108,18 @@ ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, write_date = now();
 UPDATE ir_config_parameter SET value = gen_random_uuid()::text WHERE key = 'database.uuid';
 DELETE FROM ir_config_parameter WHERE key IN ('database.enterprise_code', 'database.expiration_date',
                                               'database.expiration_reason');
+-- the website's address is the one of the links sent with a website
+-- (quotes, invoices): the Odoo.sh one would send customers to the old Odoo
+UPDATE website SET domain = '$BASE_URL' WHERE domain LIKE '%.odoo.com%';
 SQL
 neutralized=$(psql_db -d "$DB" -tAc "SELECT value FROM ir_config_parameter WHERE key = 'database.is_neutralized'")
 echo "  web.base.url = $BASE_URL; neutralized: ${neutralized:-no}"
+echo "  websites: $(psql_db -d "$DB" -tAc "SELECT string_agg(name || ' ' || COALESCE(domain, '-'), ', ') FROM website")"
+odoo_domains=$(psql_db -d "$DB" -tAc "SELECT string_agg(name, ', ') FROM mail_alias_domain WHERE name LIKE '%.odoo.com'")
+if [ -n "$odoo_domains" ]; then
+    echo "  ⚠️  email domains still on Odoo.sh: $odoo_domains (replies to Odoo's emails go to the old Odoo):"
+    echo "     set your own domains in Settings > Technical > Email Domains (docs/ee_exit_runbook.md, Go-live)"
+fi
 
 echo "== 6/7 Update our modules (code of this server)"
 odoo_run odoo odoo -d "$DB" -u bgg_custom_dev,belgogreen_sales_commission --stop-after-init --no-http \

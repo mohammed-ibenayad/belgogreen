@@ -54,6 +54,20 @@ ready answer to give to Claude.
 | 5 | ☐ Later | 6 calendar events (RDVs with a type) lost in the rehearsal | They were linked to a record of an Enterprise model; Odoo deletes such events with the model. Lost on bsi-staging only (production still has them). The script now empties the link first and keeps the events (commit "keep calendar events linked to a removed model"). | Find which model on production (`SELECT m.model, count(*) FROM calendar_event e JOIN ir_model m ON m.id = e.res_model_id GROUP BY 1`), then confirm in a fresh rehearsal that "Calendar events" stays ✅. |
 | 6 | ☐ Later | Users who lost Internal User (e.g. the call centre users) | Their rights came through Enterprise groups deleted at uninstall (Odoo 19 gives Internal User through other groups). On bsi-staging: restored by hand (Internal User). The script now gives users directly the rights they would lose, and counts active internal users. | In a fresh rehearsal: "Internal users (active)" stays ✅; check a call centre user and a commercial keep their menus. (Restore of 2026-10-24 on the server: all 44 active users can log in, after the fix by hand on staging.) |
 
+## Go-live: addresses, emails, the old Odoo (2026-10-31)
+
+Production today: `web.base.url` = `https://belgogreen.odoo.com`, one
+website "BelGoGreen" on `https://belgogreen.odoo.com` (company AMSS
+MANAGEMENT SRL), email domains `belgogreen.odoo.com` and
+`naturisol.odoo.com` (catchall, bounce, notifications). 64 unpaid customer
+invoices. Odoo.sh and Enterprise are kept one year with one or two users.
+
+| # | Status | Question | Context | Options |
+|---|--------|----------|---------|---------|
+| 16 | ☐ Open | What happens to the links sent before go-live (open quotes, unpaid invoices)? | Every link sent so far is `https://belgogreen.odoo.com/my/...?access_token=...`. The token is in the restored database, so the same path works on the new address. `belgogreen.odoo.com` belongs to Odoo: it cannot point to the new server, but the old Odoo stays one year. A customer signing or paying on the old Odoo after go-live would be lost to the new one. | **Redirect from the old Odoo** (recommended): a small module installed on the old Odoo.sh at go-live sends customer pages (`/my`, `/mail/view`, `/payment`, documents with a token, the old booking pages) to the same address on the new server; internal users keep the old back office. **Resend** the open quotes and unpaid invoices from the new Odoo (bulk "Envoyer par email"). Both can be combined. |
+| 17 | ☐ Open | Which email domains on the new server (the "3 domains")? | On Odoo.sh, Odoo's mail server sends and receives for `belgogreen.odoo.com` and `naturisol.odoo.com`. On the new server: an email provider (Brevo, Mailgun, Microsoft 365 / Google…) for sending, the companies' own domains as email domains (one per company, e.g. belgogreen.be, naturisol.be, AMSS), each validated with SPF / DKIM / DMARC records, and replies (catchall) delivered to Odoo (forward to a mailbox read by Odoo). | To give: the 3 domains, the provider, who manages their DNS. |
+| 18 | ☐ Open | Which address for the new Odoo? | One name, e.g. `erp.belgogreen.be`: an A record at the registrar to the VPS's IP, then nginx and the HTTPS certificate on the server (deploy/vps/README.md, section 5). | To give: the name, who has access to the DNS. |
+
 ## Notes
 
 - "My Company" (not an active company) still owns 5 Finance sub-folders
