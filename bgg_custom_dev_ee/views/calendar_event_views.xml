@@ -12,6 +12,12 @@
             <xpath expr="//group[@name='bgg_rdv']" position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
+            <xpath expr="//page//field[@name='x_rdv_type_id']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//page//field[@name='x_rdv_status']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
         </field>
     </record>
 
