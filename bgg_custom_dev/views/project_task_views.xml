@@ -22,9 +22,10 @@
         SSS tasks laid out as the Field Service task form: left, Assignés
         then Date prévue (planned start -> deadline, the end of the range)
         and Temps alloué; right, Étiquettes, the client with its address and
-        "Voir l'itinéraire", the contact number. The standard client field
-        and "Date limite" (the deadline, shown as the end of Date prévue) are
-        hidden on SSS tasks only; other tasks keep the standard form.
+        "Voir l'itinéraire", the contact number (the standard client field,
+        with its address on SSS tasks). "Date limite" (the deadline, shown as
+        the end of Date prévue) is hidden on SSS tasks only; other tasks keep
+        the standard form.
     -->
     <record id="view_task_form2_inherit_sss" model="ir.ui.view">
         <field name="name">project.task.form.inherit.sss</field>
@@ -42,10 +43,12 @@
                 <field name="allocated_hours" string="Temps alloué" widget="float_time"
                        invisible="not x_is_sss_task"/>
             </xpath>
-            <xpath expr="//group/field[@name='tag_ids']" position="after">
-                <field name="partner_id" string="Client" widget="res_partner_many2one"
-                       context="{'show_address': 1}" options="{'always_reload': True}"
-                       invisible="not x_is_sss_task"/>
+            <!-- the standard client field (under Étiquettes): with its address on
+                 SSS tasks, then the route and the contact number -->
+            <xpath expr="//field[@name='partner_id'][hasclass('o_task_customer_field')]" position="attributes">
+                <attribute name="context">{'res_partner_search_mode': 'customer', 'show_address': x_is_sss_task}</attribute>
+            </xpath>
+            <xpath expr="//field[@name='partner_id'][hasclass('o_task_customer_field')]" position="after">
                 <div colspan="2" invisible="not x_is_sss_task or not partner_id">
                     <button name="action_bgg_open_itinerary" type="object" class="btn-link ps-0"
                             icon="fa-arrow-right" string="Voir l'itinéraire"/>
@@ -53,10 +56,7 @@
                 <field name="partner_phone" string="Numéro de contact" widget="phone"
                        invisible="not x_is_sss_task"/>
             </xpath>
-            <!-- the standard client and "Date limite": not on SSS tasks -->
-            <xpath expr="//field[@name='partner_id'][hasclass('o_task_customer_field')]" position="attributes">
-                <attribute name="invisible" add="x_is_sss_task" separator=" or "/>
-            </xpath>
+            <!-- "Date limite" is the end of Date prévue: not on SSS tasks -->
             <xpath expr="//label[@for='date_deadline']" position="attributes">
                 <attribute name="invisible" add="x_is_sss_task" separator=" or "/>
             </xpath>
