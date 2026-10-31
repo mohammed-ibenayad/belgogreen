@@ -36,7 +36,7 @@
                 <label for="planned_date_begin" string="Date prévue" invisible="not x_is_sss_task"/>
                 <div class="o_row" invisible="not x_is_sss_task">
                     <field name="planned_date_begin" widget="daterange"
-                           options="{'end_date_field': 'date_deadline'}"/>
+                           options="{'end_date_field': 'date_deadline', 'always_range': True, 'show_seconds': False}"/>
                     <field name="date_deadline" invisible="1"/>
                 </div>
                 <field name="allocated_hours" string="Temps alloué" widget="float_time"
