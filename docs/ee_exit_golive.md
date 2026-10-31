@@ -98,7 +98,7 @@ psql -c "SELECT name, smtp_host, from_filter, active FROM ir_mail_server; SELECT
 
 | Who | What |
 |---|---|
-| Team | "Odoo is closed from … to …" at the start; "Odoo is open at <new address>" at the end. |
+| Team | "Odoo is closed from … to …" at the start; "Odoo is open at https://erp.belgogreen.be" at the end. |
 
 **After (first week)**
 
