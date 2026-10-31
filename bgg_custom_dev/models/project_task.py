@@ -39,6 +39,9 @@ class ProjectTask(models.Model):
     # View helper for the state widget: "Bloqué" is offered on admin projects only.
     x_is_admin_dossier_project = fields.Boolean(related='project_id.x_is_admin_dossier_project')
     x_is_sss_task = fields.Boolean(related='project_id.x_is_sss_project')
+    # The task's client as shown on SSS tasks (with its address): Community
+    # hides the standard client field on projects that are not billable.
+    x_sss_partner_id = fields.Many2one(related='partner_id', string='Client', readonly=False)
     # Planned start of a task, from Enterprise Planning (project_enterprise).
     # Declared here under the same name so its column and values stay when
     # Enterprise is uninstalled (with date_deadline as the end).

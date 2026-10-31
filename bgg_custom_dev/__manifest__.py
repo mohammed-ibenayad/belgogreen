@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'BelGoGreen Custom Development',
-    'version': '19.0.2.3.6',
+    'version': '19.0.2.3.7',
     'category': 'Customizations',
     'summary': 'Custom business logic and automation for BelGoGreen',
     'description': """
