@@ -36,7 +36,7 @@ Every link and reply address sent so far names `belgogreen.odoo.com`.
 Restore command at go-live:
 
 ```bash
-BASE_URL=https://<new address> MAIL_DOMAINS="belgogreen.odoo.com=<domain> naturisol.odoo.com=<domain>" \
+BASE_URL=https://erp.belgogreen.be MAIL_DOMAINS="belgogreen.odoo.com=belgogreen.be naturisol.odoo.com=naturisol.be" \
     bash addons/belgogreen/deploy/vps/restore_odoosh.sh restore/production.zip restore/ee_exit.tgz
 ```
 
@@ -67,7 +67,7 @@ psql -c "SELECT name, smtp_host, from_filter, active FROM ir_mail_server; SELECT
 
 | Record | For |
 |---|---|
-| A `<new address>` → the VPS's IP | the Odoo address (#18); then nginx and HTTPS on the server |
+| A `erp`, `staging.erp`, `bsi.erp` (or `erp` + wildcard `*.erp`) → the VPS's IP | the three environments (#18); HTTPS by Traefik on the server |
 | SPF, DKIM, DMARC for belgogreen.be, belgogreen.fr, naturisol.be | emails from Odoo not taken for spam; given by the email provider; can take a day to spread: do it early |
 
 **On the old Odoo.sh** (the day of the switch):
@@ -112,7 +112,7 @@ psql -c "SELECT name, smtp_host, from_filter, active FROM ir_mail_server; SELECT
 
 | When | What | Who |
 |---|---|---|
-| Now | Order the VPS (4 vCPU, 16 GB, 200 GB, #10); choose the new address (#18), the email provider and the domains (#17); off-server backups (#9) | business |
+| Now | Order the VPS (Hostinger KVM 4, Docker + Traefik, #10); DNS access for erp.belgogreen.be (#18); the email provider and the domains (#17); off-server backups (#9) | business |
 | T-3 days | Server installed, trial restore of a fresh copy, checks | IT |
 | T-2 days | DNS: A record, SPF/DKIM/DMARC; email provider set up; redirect module tested on a staging copy | IT, whoever holds the DNS |
 | T-1 day | Business sign-off of the staging copy (Phase 7); open decisions answered (Knowledge, WhatsApp, #14, #15) | business |

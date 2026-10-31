@@ -18,6 +18,89 @@ Volumes: `odoo-belgogreen_odoo_db_data` (database), `odoo-belgogreen_odoo_web_da
 (filestore, sessions). Database name: `belgogreen`. Test address:
 https://bgg.qadrin.com.
 
+Sections 0–7 below are the **test server** setup (nginx + certbot), tested
+with the restore of 2026-10-24. Production goes on its own VPS with Docker +
+Traefik: next section.
+
+## Production server (Hostinger KVM 4, Docker + Traefik)
+
+Decided 2026-10-31. Hostinger KVM 4: 4 vCPU, 16 GB RAM, 200 GB NVMe, with
+Hostinger's ready-made Docker + Traefik template. One VPS, three
+environments, each its own Odoo container and PostgreSQL database:
+
+| Environment | Address | Running | Data | Odoo workers | Memory limit (Odoo + database) |
+|---|---|---|---|---|---|
+| Production | erp.belgogreen.be | always | real | 4 + 1 cron | about 6 + 4 GB |
+| Client staging | staging.erp.belgogreen.be | always | copy of production, neutralized | 2 | about 2 + 1 GB |
+| BSI staging | bsi.erp.belgogreen.be | started and stopped when needed | copy of production, neutralized | 2 | about 2 + 1 GB |
+
+- **Memory:** production + client staging about 13 GB; with the BSI staging
+  running, tight but fine for short periods, with 4 GB of swap (section 0).
+  Hard memory limits per container: a staging never takes production's.
+- **Disk:** a staging's filestore links to production's files (hard links:
+  Odoo never changes a stored file, it only adds new ones), so a staging
+  costs its database (about 3 GB) and the files of its tests, not 31 GB.
+  Estimate: production 34 GB, stagings about 8 GB, database backups about
+  5 GB, images about 6 GB, system about 10 GB: about 65 GB of 200.
+- **Isolation:** per environment its own folder, `.env`, `odoo.conf`
+  (database name, `dbfilter`, `list_db = False`, its own master password),
+  database and volumes.
+- **Stagings neutralized** at every refresh from production
+  (`odoo neutralize`: no outgoing mail server, no scheduled jobs, no payment
+  provider), so a test never reaches a customer. The refresh replaces the
+  "Reconstruire le Staging" button of Odoo.sh (`bgg_staging_rebuild` is
+  not taken).
+- **Backups:** production only (section 6), files off the server (open
+  decision #9). The stagings are rebuilt from production.
+
+**DNS of belgogreen.be:** A records `erp`, `staging.erp`, `bsi.erp` to the
+VPS's IP, or `erp` + a wildcard `*.erp`.
+
+**Traefik for Odoo** (what the template's defaults miss):
+
+| Setting | Why |
+|---|---|
+| Route `/websocket` to the container's port 8072, the rest to 8069 | live updates (chat, notifications); otherwise "real-time connection lost" |
+| Entry point `readTimeout` raised to about 600 s | Traefik v3 cuts requests after 60 s: big imports, large reports, DMS uploads |
+| `proxy_mode = True` in `odoo.conf` | links built with https and the right address |
+| Docker socket mounted read-only (or a socket proxy); dashboard off or protected | Traefik's access to Docker is access to the server |
+| Compression and security headers middlewares | faster pages, safer site |
+
+**The template's settings, to read on the VPS once ordered** (read only):
+the Traefik version, the Docker network it watches, the entry point names,
+the certificate resolver name, whether the dashboard is exposed.
+
+```bash
+docker ps --format '{{.Names}}\t{{.Image}}\t{{.Ports}}'
+docker network ls
+docker inspect $(docker ps -qf 'ancestor=traefik' | head -1) --format '{{json .Args}}{{json .Config.Labels}}'
+find / -xdev \( -name 'traefik*.yml' -o -name 'traefik*.yaml' -o -name 'traefik*.toml' -o -name 'docker-compose.yml' \) -not -path '*/proc/*' 2>/dev/null | head
+```
+
+**Still to do** (to decide): the files of this folder target the test
+server (nginx, one environment). For production they are adapted to the
+template's Traefik (labels instead of nginx and certbot) and to the three
+environments (one setup per environment, a staging refresh from
+production); `restore_odoosh.sh` and `backup.sh` keep their role on the
+production environment.
+
+**Emails** (open decision #17): the companies' own domains as Odoo email
+domains, one email provider sending for the three, each domain validated
+with SPF, DKIM and DMARC, the outgoing mail server limited to those
+domains ("FROM filtering"), `catchall@` of each domain delivered to Odoo.
+
+| Company | Email domain today (Odoo.sh) | On production |
+|---|---|---|
+| AMSS MANAGEMENT SRL | belgogreen.odoo.com | belgogreen.be |
+| BelGoGreen SASU | belgogreen.odoo.com (shared with AMSS) | belgogreen.fr (to confirm) |
+| NATUR'ISOL SRL | naturisol.odoo.com | naturisol.be |
+
+Users send from their own address when it is on one of the three domains
+(22 @belgogreen.be, 6 @naturisol.be, 3 @belgogreen.fr); the others
+(10 @gmail.com, 3 other domains) send as "Name" <notifications@company
+domain>. Customer links use the one address erp.belgogreen.be for the
+three companies.
+
 ## Sizes (bsi-staging dump, October 2026)
 
 | | |
@@ -255,8 +338,15 @@ docker compose run --rm --no-deps odoo odoo shell -d belgogreen --no-http   # Od
 
 ## At go-live
 
-- Restore the final dump the same way (production copy, see open decision
-  #8 in `docs/ee_exit_open_decisions.md`), with `ee_exit.tgz` this time.
+- On the production server (section "Production server"): restore the final
+  dump into the production environment (production copy, see open decision
+  #8 in `docs/ee_exit_open_decisions.md`), with `ee_exit.tgz` this time:
+  `BASE_URL=https://erp.belgogreen.be MAIL_DOMAINS="belgogreen.odoo.com=belgogreen.be naturisol.odoo.com=naturisol.be"`;
+  then belgogreen.fr for BelGoGreen SASU if confirmed (Settings → Technical →
+  Email Domains). The final check's "GO-LIVE: TO DO BY HAND" lists what is
+  left.
+- The client staging, then the BSI staging when needed: refreshed from
+  production, neutralized.
 - A neutralized dump (staging copy): switch the outgoing mail server
   (Settings → Technical → Outgoing Mail Servers) and the scheduled jobs
   back on.
