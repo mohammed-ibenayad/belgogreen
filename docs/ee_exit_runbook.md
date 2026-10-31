@@ -328,6 +328,7 @@ Must end with **"Ready for the dump ✅"**. What it checks:
 | Conditions | an access rule, filter, menu or automation rule still naming a replaced Enterprise field (`ee_cleanup` renames it) or a removed one (fix by hand) |
 | Booking | no booking type, nobody can book (⚠️: a type without "Réservable par") |
 | What must survive | a count lower than before the uninstall (minus the expected losses) |
+| Go-live: to do by hand | ⚠️ only, never blocks: Odoo address still on `.odoo.com`, email domains still on Odoo.sh, quotes still signable with a link from the old address (resend them at go-live, see "Go-live") |
 
 Most ❌ of the "Screens" and "Conditions" sections are fixed by
 `ee_cleanup(env)`; run `ee_final_check(env)` again after it. The same check
@@ -398,16 +399,41 @@ The full plan (settings, communication, timeline): [ee_exit_golive.md](ee_exit_g
     restore keeps: only the address changes. `restore_odoosh.sh` sets
     `web.base.url` and the website's domain to `BASE_URL`, so new links go
     to the new server.
-  - Links sent before go-live still name `belgogreen.odoo.com`: resend the
-    open quotes and unpaid invoices from the new Odoo, or redirect them from
-    the old one (open decision #16).
+  - Links sent before go-live still name `belgogreen.odoo.com` and keep
+    opening the **old** Odoo (kept one year). **No redirect** (open decision
+    #16), and why:
+    - online payment is not used (no payment provider, 0 online payments in
+      90 days): unpaid invoices are paid by transfer, recorded from the bank
+      statements in the new Odoo, whatever link the customer has;
+    - online signature is used (286 quotes signed online in 90 days), but only
+      the quotes still signable at go-live matter: 5 on 2026-10-31, none
+      without a validity date. An expired quote cannot be signed;
+    - a redirect module on the old Odoo.sh would be custom code on production
+      for a handful of quotes.
+    So, at go-live:
+    1. **On the old Odoo, before the final copy:** list the quotes still
+       signable (the number changes until the freeze), and switch off
+       Online Signature (Sales → Settings, each company) as soon as the
+       freeze starts, so nothing is signed there any more:
+       ```bash
+       psql -c "SELECT id, name, partner_id, validity_date FROM sale_order WHERE state IN ('draft','sent') AND require_signature AND signed_on IS NULL AND (validity_date IS NULL OR validity_date >= current_date) ORDER BY name;"
+       ```
+    2. **On the new Odoo, after the restore:** the final check lists the same
+       quotes under "GO-LIVE: TO DO BY HAND" (⚠️ "Quotes still signable");
+       resend each one (Send by email): the customer gets a link to the new
+       Odoo.
+    3. **The business** tells those customers, if needed, that the new email
+       replaces the previous one.
+    4. A customer who opens an old link still sees the old Odoo, read only:
+       any message or reply there is copied into the new Odoo by the admin
+       who checks the old Odoo daily (first weeks).
   - Email domains: set the companies' own domains in Settings → Technical →
     Email Domains, with the provider's SPF/DKIM records (#17). Until then,
     replies to Odoo's emails go to the old Odoo.
 - **The old Odoo.sh after go-live** (kept one year, one or two users): an
-  archive. Switch off its outgoing mail and scheduled jobs (reminders,
-  follow-ups, WhatsApp) the day of the switch, so customers get nothing
-  from it, and record nothing new there.
+  archive. Switch off its Online Signature, outgoing mail and scheduled jobs
+  (reminders, follow-ups, WhatsApp) the day of the switch, so customers can
+  sign nothing and get nothing from it, and record nothing new there.
 - `ee_uninstall` refuses a database that is not neutralized unless
   `go_live=True`. Where to run the final pass is decided with the go-live
   window:

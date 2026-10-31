@@ -1062,6 +1062,31 @@ def ee_preflight(env):
     return ok
 
 
+def _ee_golive_reminders(env):
+    """What the switch leaves to people (docs/ee_exit_golive.md): the links
+    sent from the old address, the email domains. Warnings only: they do
+    not block the dump."""
+    rows = []
+    base_url = env['ir.config_parameter'].sudo().get_param('web.base.url')
+    rows.append(('warn' if '.odoo.com' in (base_url or '') else 'ok', 'Odoo address (web.base.url)', base_url))
+    env.cr.execute("SELECT string_agg(name, ', ') FROM mail_alias_domain WHERE name LIKE '%.odoo.com'")
+    odoo_domains = env.cr.fetchone()[0]
+    rows.append(('warn' if odoo_domains else 'ok', 'Email domains still on Odoo.sh (replies go to the old Odoo)',
+                 odoo_domains or 'none'))
+    # quotes the customers can still sign: their link names the old address;
+    # no redirect (open decision #16): resend them from here, and switch off
+    # Online Signature on the old Odoo
+    env.cr.execute("""SELECT name FROM sale_order
+                       WHERE state IN ('draft', 'sent') AND require_signature AND signed_on IS NULL
+                         AND (validity_date IS NULL OR validity_date >= current_date)
+                       ORDER BY name""")
+    quotes = [name for (name,) in env.cr.fetchall()]
+    rows.append(('warn' if quotes else 'ok', 'Quotes still signable, link sent from the old address',
+                 '%s: resend them from this Odoo, Online Signature off on the old one%s' % (
+                     len(quotes), (' (%s)' % ', '.join(quotes[:30])) if quotes else '') if quotes else 'none'))
+    _ee_report("GO-LIVE: TO DO BY HAND (docs/ee_exit_golive.md)", rows)
+
+
 def ee_final_check(env):
     """Read-only. Before the dump: no Enterprise left, the Community
     modules installed, nothing that breaks the screens, counts kept."""
@@ -1144,6 +1169,8 @@ def ee_final_check(env):
     else:
         rows.append(('warn', 'Counts before the uninstall', 'not found in %s' % folder))
     ok &= _ee_report("WHAT MUST SURVIVE: before the uninstall -> now", rows)
+
+    _ee_golive_reminders(env)
 
     neutralized = env['ir.config_parameter'].sudo().get_param('database.is_neutralized')
     _ee_print("\n  Database %s neutralized (%s)" % ('IS' if neutralized else 'is NOT',

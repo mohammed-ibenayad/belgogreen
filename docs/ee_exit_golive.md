@@ -90,8 +90,9 @@ psql -c "SELECT name, smtp_host, from_filter, active FROM ir_mail_server; SELECT
 | Team | The date and the freeze window (no Odoo use from the final copy to the switch, about half a day). The new address; bookmarks and the mobile app to change. Passwords stay the same. |
 | Team | What changes on screen: the app menu, "Prise de RDV" (call centre and commercials, menus "Call Center" and "RDV Commercial"), Documents (DMS), the SSS task form. A short demo on the staging copy. |
 | Call centre | During the freeze: note the RDVs on paper or in a shared sheet, enter them after the switch. |
+| Sales | Quotes sent before go-live and still signable (5 on 2026-10-31) are resent from the new Odoo on the day; a customer may receive the same quote twice: the new email is the one to sign. Online signature is switched off on the old Odoo. |
 | Accounting | The Enterprise accounting reports (VAT, follow-ups, assets, bank sync, CODA) stay in the old Odoo, consultable one year; bank import on the new one to settle (open decisions, general). |
-| Customers | The quotes still signable are sent again from the new Odoo (new link). Old links still open the old Odoo, read only. |
+| Customers | Only those with a quote still signable: the quote is sent again from the new Odoo (new link; the old link can no longer be signed). Old links still open the old Odoo, read only. |
 
 **During (the day)**
 
