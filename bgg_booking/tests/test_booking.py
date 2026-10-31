@@ -368,10 +368,31 @@ class TestBookingSetup(TransactionCase):
 
     def test_role_menus_open_prise_de_rdv(self):
         action = self.env.ref('bgg_booking.bgg_booking_wizard_action')
-        for xmlid, group in (('menu_call_center_booking', 'bgg_custom_dev.group_call_center'),
-                             ('menu_commercial_booking', 'bgg_custom_dev.group_commercial')):
+        for xmlid, group_xmlids in (
+                ('menu_call_center_booking', ('bgg_custom_dev.group_call_center', 'bgg_custom_dev.group_amss_admin')),
+                ('menu_commercial_booking', ('bgg_custom_dev.group_commercial',))):
             menu = self.env.ref('bgg_booking.%s' % xmlid)
             self.assertEqual(menu.action, action, xmlid)
             groups = menu['group_ids' if 'group_ids' in menu._fields else 'groups_id']
-            self.assertEqual(groups, self.env.ref(group), xmlid)
+            self.assertEqual(groups, self.env['res.groups'].union(*(self.env.ref(g) for g in group_xmlids)), xmlid)
             self.assertFalse(menu.parent_id, xmlid)
+
+    def test_amss_admin_books_the_call_centre_types(self):
+        from odoo.addons.bgg_booking.hooks import give_amss_admin_booking
+        admin_group = self.env.ref('bgg_custom_dev.group_amss_admin')
+        commercial_type = self.env['resource.booking.type'].create({
+            'name': 'Etude (par commercial)', 'resource_calendar_id': self.calendar.id,
+            'duration': 1.0, 'slot_duration': 1.0,
+            'x_rdv_type_id': (self.env['bgg.rdv.type'].search([('code', '=', 'APT-ENERG-COM')])
+                              or self.env['bgg.rdv.type'].create({'name': 'Com', 'code': 'APT-ENERG-COM'})).id,
+            'x_group_ids': [Command.set([self.env['res.groups'].create({'name': 'Commercial (test)'}).id])],
+        })
+        give_amss_admin_booking(self.env)
+        admin = self.env['res.users'].create({
+            'name': 'Admin AMSS', 'login': 'amss_admin_booking', 'email': 'amss@example.com',
+            'group_ids': [Command.set([self.env.ref('base.group_user').id, admin_group.id])],
+        })
+        self.assertIn(self.env.ref('bgg_booking.group_booking_agent'), admin.all_group_ids)
+        wizard = self.env['bgg.booking.wizard'].with_user(admin).create({})
+        self.assertIn(self.energy, wizard.allowed_type_ids)
+        self.assertNotIn(commercial_type, wizard.allowed_type_ids)

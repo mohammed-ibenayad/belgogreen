@@ -69,7 +69,8 @@ a form in the steps of those pages, on OCA `resource_booking`:
 | Needs ("Besoin") | `bgg.rdv.need` |
 | The meeting | RDV type, "Réservé" status, questionnaire summary, "pris à la place de", the commercial as organizer, Appointments-style title, CRM opportunity linked |
 | Cancelling | the meeting stays as a cancelled RDV and frees the slot |
-| Rights | group "Prise de RDV (call center)" (sees all bookings), added to the "Call Center" and "Commercial" roles at installation |
+| Rights | group "Prise de RDV (call center)" (sees all bookings), added to the "Call Center" and "Commercial" roles at installation, and to AMSS ADMIN (19.0.1.5.0) |
+| AMSS ADMIN | books the 2 call-centre types (with "pris à la place de") without being in the Call Center role: in Appointments the booking page (`/book/callcenter`) was a link anyone could open, the "Call Center" menu only showed it; added to their "Réservable par" and to the "Call Center" menu, not to the "par commercial" types |
 | Setup at installation | booking types from the RDV types, Mon–Sat 9:00–21:00, 2 h slots, one resource per commercial, no company (shared by the companies) |
 | Screens | wizard `bgg.booking.wizard`; month calendar and time buttons (OWL, Odoo colours) |
 

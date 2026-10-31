@@ -17,7 +17,7 @@
     <menuitem id="menu_call_center_booking"
               name="Call Center"
               action="bgg_booking_wizard_action"
-              groups="bgg_custom_dev.group_call_center"
+              groups="bgg_custom_dev.group_call_center,bgg_custom_dev.group_amss_admin"
               web_icon="bgg_booking,static/description/icon.svg"
               sequence="10"/>
     <menuitem id="menu_commercial_booking"

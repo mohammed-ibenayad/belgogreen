@@ -160,6 +160,24 @@ def set_booking_type_roles(env):
                                     name, booking_type.name)
 
 
+def give_amss_admin_booking(env):
+    """AMSS ADMIN books the call-centre types (CNT) as the call centre, with
+    "pris à la place de", without being in the Call Center role: in
+    Enterprise the booking page was a link anyone could open. Its group gets
+    "Prise de RDV (call center)" and is added to "Réservable par" of the CNT
+    types (the COM types stay with the commercials)."""
+    admin = env.ref('bgg_custom_dev.group_amss_admin', raise_if_not_found=False)
+    if not admin:
+        _logger.warning("bgg_booking: group AMSS ADMIN not found, give it 'Prise de RDV' by hand")
+        return
+    admin.implied_ids |= env.ref('bgg_booking.group_booking_agent')
+    types = env['resource.booking.type'].with_context(active_test=False).search(
+        [('x_rdv_type_id.code', '=like', '%-CNT')])
+    for booking_type in types.filtered(lambda t: admin not in t.x_group_ids):
+        booking_type.x_group_ids |= admin
+    _logger.info("bgg_booking: AMSS ADMIN books the call-centre types (%s)", ', '.join(types.mapped('name')))
+
+
 def share_booking_records(env):
     """The booking types, their calendar and the commercials' resources are
     shared by all companies (the call centre books for AMSS and Natur'Isol):
@@ -177,3 +195,4 @@ def post_init(env):
     setup_booking_types(env)
     share_booking_records(env)
     set_booking_type_roles(env)
+    give_amss_admin_booking(env)
