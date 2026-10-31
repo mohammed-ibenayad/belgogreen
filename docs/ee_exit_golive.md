@@ -75,8 +75,8 @@ psql -c "SELECT name, smtp_host, from_filter, active FROM ir_mail_server; SELECT
 | Action | Why |
 |---|---|
 | Switch off Online Signature (Sales → Settings, each company) | no quote signed on the old Odoo after go-live (online payment is not used: no payment provider) |
-| Resend the quotes still signable from the new Odoo | the customer gets a link to the new Odoo (count: open decision #16) |
-| Redirect module, only if many quotes are still signable (#16) | old customer links open the same page on the new Odoo |
+| Resend the quotes still signable from the new Odoo | the customer gets a link to the new Odoo. List them on the old Odoo the day of the switch: `SELECT id, name, partner_id, validity_date FROM sale_order WHERE state IN ('draft','sent') AND require_signature AND signed_on IS NULL AND (validity_date IS NULL OR validity_date >= current_date);` |
+| No redirect (#16, decided: 5 quotes still signable on 2026-10-31) | old links open the old Odoo, read only; the signable quotes are resent from the new Odoo |
 | Switch off outgoing mail servers and scheduled jobs | no reminder, follow-up or WhatsApp to customers from the old Odoo |
 | Keep one or two users, archive the others | the one-year Enterprise subscription |
 | Record nothing new | an archive; replies to old emails still arrive there (#16: forward them to a mailbox) |
