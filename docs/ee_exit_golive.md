@@ -74,7 +74,9 @@ psql -c "SELECT name, smtp_host, from_filter, active FROM ir_mail_server; SELECT
 
 | Action | Why |
 |---|---|
-| Install the redirect module (#16) | customer pages (`/my/...`, `/mail/view`, `/payment`, documents with a token, old booking pages) go to the same page on the new Odoo; the 1–2 users keep the old back office |
+| Switch off Online Signature (Sales → Settings, each company) | no quote signed on the old Odoo after go-live (online payment is not used: no payment provider) |
+| Resend the quotes still signable from the new Odoo | the customer gets a link to the new Odoo (count: open decision #16) |
+| Redirect module, only if many quotes are still signable (#16) | old customer links open the same page on the new Odoo |
 | Switch off outgoing mail servers and scheduled jobs | no reminder, follow-up or WhatsApp to customers from the old Odoo |
 | Keep one or two users, archive the others | the one-year Enterprise subscription |
 | Record nothing new | an archive; replies to old emails still arrive there (#16: forward them to a mailbox) |
@@ -89,7 +91,7 @@ psql -c "SELECT name, smtp_host, from_filter, active FROM ir_mail_server; SELECT
 | Team | What changes on screen: the app menu, "Prise de RDV" (call centre and commercials, menus "Call Center" and "RDV Commercial"), Documents (DMS), the SSS task form. A short demo on the staging copy. |
 | Call centre | During the freeze: note the RDVs on paper or in a shared sheet, enter them after the switch. |
 | Accounting | The Enterprise accounting reports (VAT, follow-ups, assets, bank sync, CODA) stay in the old Odoo, consultable one year; bank import on the new one to settle (open decisions, general). |
-| Customers | Nothing: the old links (open quotes, unpaid invoices) are redirected. |
+| Customers | The quotes still signable are sent again from the new Odoo (new link). Old links still open the old Odoo, read only. |
 
 **During (the day)**
 
