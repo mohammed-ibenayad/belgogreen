@@ -119,7 +119,7 @@ Migration 19.0.2.1.0 moves Studio into the modules, data kept.
 | Studio view | Module view |
 |---|---|
 | Calendar list, calendar form | `view_calendar_event_tree_bgg`, `view_calendar_event_form_bgg_layout`, `view_calendar_event_form_bgg_rdv_required` |
-| RDV form as in Appointments (business tests, 2026-10-31) | RDV type and status in the Options tab under Tags ("Rendez-vous", "Statut du rendez-vous"), the status as a ribbon (Réservé, Présent, No-show, Annulé), the questionnaire as the "Questions" tab right after Notes; status buttons in the header on a booked RDV (Présent highlighted, No-show), none once set, as in Appointments (`action_bgg_set_rdv_status`); ribbon Réservé also; `view_calendar_event_form_inherit_bgg` |
+| RDV form as in Appointments (business tests, 2026-10-31) | RDV type and status in the Options tab under Tags ("Rendez-vous", "Statut du rendez-vous"), the status as a ribbon (Réservé, Présent, No-show, Annulé), the questionnaire as the "Questions" tab right after Notes; status buttons in the header on a booked RDV (Présent highlighted, No-show), none once set, as in Appointments (`action_bgg_set_rdv_status`); ribbon Réservé also. The ribbon of an attended RDV says "Présent", as the status field, the button and the filters; Appointments wrote "Enregistrement" there (French of "Checked-In"), the same status (decided 2026-10-31); `view_calendar_event_form_inherit_bgg` |
 | Sale order form | `view_order_form_bgg_studio` |
 | Quotations list, sales list | `view_quotation_tree_bgg_studio`, `sale_order_list_upload_bgg_studio` |
 | Contact form, contacts list | `view_partner_form_bgg_studio`, `view_partner_tree_bgg_studio` |
